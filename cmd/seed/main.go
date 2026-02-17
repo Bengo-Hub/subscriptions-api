@@ -17,7 +17,9 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/product"
+	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/schema"
+	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 )
 
 func main() {
@@ -76,6 +78,11 @@ func runSeed(ctx context.Context, client *ent.Client) error {
 	// 3. Seed bundles (delivery, pos-suite, complete)
 	if err := seedBundles(ctx, tx); err != nil {
 		return fmt.Errorf("seed bundles: %w", err)
+	}
+
+	// 4. Seed demo tenant subscription (Urban Loft on GROWTH plan, 14-day trial)
+	if err := seedDemoSubscription(ctx, tx); err != nil {
+		return fmt.Errorf("seed demo subscription: %w", err)
 	}
 
 	return nil
@@ -179,6 +186,44 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			monthlyPrice: 500,
 			sortOrder:    21,
 		},
+
+		// Integration add-ons — purchased per-tenant, enable premium features
+		{
+			id:           uuid.MustParse("10000000-0000-0000-0000-000000000030"),
+			code:         "google_maps",
+			name:         "Google Maps Integration",
+			description:  "Google Maps API for live delivery tracking with accurate ETAs, geocoding, and route visualization. Default: OpenStreetMap (free).",
+			category:     product.CategoryAddOn,
+			monthlyPrice: 500,
+			sortOrder:    30,
+		},
+		{
+			id:           uuid.MustParse("10000000-0000-0000-0000-000000000031"),
+			code:         "paystack_gateway",
+			name:         "Paystack Payment Gateway",
+			description:  "Paystack card and mobile money payments. Enables Visa/Mastercard, bank transfers, and USSD payments alongside M-Pesa.",
+			category:     product.CategoryAddOn,
+			monthlyPrice: 300,
+			sortOrder:    31,
+		},
+		{
+			id:           uuid.MustParse("10000000-0000-0000-0000-000000000032"),
+			code:         "sms_credits",
+			name:         "SMS Credit Pack",
+			description:  "Bulk SMS credits for order notifications, OTP verification, and marketing. Base plan includes 100 SMS/month; this adds 500 extra/month.",
+			category:     product.CategoryAddOn,
+			monthlyPrice: 200,
+			sortOrder:    32,
+		},
+		{
+			id:           uuid.MustParse("10000000-0000-0000-0000-000000000033"),
+			code:         "premium_support",
+			name:         "Premium Support",
+			description:  "Dedicated support channel with 4-hour SLA, priority issue resolution, and custom integrations assistance.",
+			category:     product.CategoryAddOn,
+			monthlyPrice: 1000,
+			sortOrder:    33,
+		},
 	}
 
 	for _, p := range products {
@@ -281,6 +326,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"push_notifications",
 				"basic_analytics",
 				"custom_domain",
+				"openstreetmap_tracking",
 			},
 		},
 		{
@@ -309,11 +355,13 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"push_notifications",
 				"basic_analytics",
 				"custom_domain",
+				"openstreetmap_tracking",
 				"loyalty_program",
 				"multi_outlet",
 				"advanced_analytics",
 				"promo_codes",
 				"group_ordering",
+				"paystack_gateway",
 			},
 		},
 		{
@@ -342,16 +390,20 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"push_notifications",
 				"basic_analytics",
 				"custom_domain",
+				"openstreetmap_tracking",
 				"loyalty_program",
 				"multi_outlet",
 				"advanced_analytics",
 				"promo_codes",
 				"group_ordering",
+				"paystack_gateway",
 				"pos_integration",
 				"route_optimization",
 				"priority_support",
 				"api_webhooks",
 				"white_labeling",
+				"google_maps",
+				"premium_support",
 			},
 		},
 
@@ -382,6 +434,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"push_notifications",
 				"basic_analytics",
 				"custom_domain",
+				"openstreetmap_tracking",
 			},
 		},
 		{
@@ -410,11 +463,13 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"push_notifications",
 				"basic_analytics",
 				"custom_domain",
+				"openstreetmap_tracking",
 				"loyalty_program",
 				"multi_outlet",
 				"advanced_analytics",
 				"promo_codes",
 				"group_ordering",
+				"paystack_gateway",
 			},
 		},
 		{
@@ -443,16 +498,20 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"push_notifications",
 				"basic_analytics",
 				"custom_domain",
+				"openstreetmap_tracking",
 				"loyalty_program",
 				"multi_outlet",
 				"advanced_analytics",
 				"promo_codes",
 				"group_ordering",
+				"paystack_gateway",
 				"pos_integration",
 				"route_optimization",
 				"priority_support",
 				"api_webhooks",
 				"white_labeling",
+				"google_maps",
+				"premium_support",
 			},
 		},
 	}
@@ -654,6 +713,118 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 		}
 
 		log.Printf("  bundle: %s (%s, %d products)", b.name, b.code, len(b.products))
+	}
+
+	return nil
+}
+
+// ── Demo Subscription ────────────────────────────────────────────────────────
+// Creates a demo tenant subscription for Urban Loft Cafe on the GROWTH plan
+// with a 14-day trial period. Activates the delivery bundle products.
+
+func seedDemoSubscription(ctx context.Context, tx *ent.Tx) error {
+	// Fixed UUIDs matching auth-service seed
+	demoTenantID := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+	growthPlanID := uuid.MustParse("00000000-0000-0000-0000-000000000002") // GROWTH monthly
+	demoSubID := uuid.MustParse("30000000-0000-0000-0000-000000000001")
+
+	now := time.Now()
+	trialEnd := now.Add(14 * 24 * time.Hour)
+
+	// Check if subscription already exists for this tenant
+	existing, err := tx.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(demoTenantID)).
+		First(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return fmt.Errorf("lookup demo subscription: %w", err)
+	}
+
+	if existing != nil {
+		_, err = tx.TenantSubscription.UpdateOne(existing).
+			SetPlanID(growthPlanID).
+			SetStatus(tenantsubscription.StatusTRIAL).
+			SetTrialEndsAt(trialEnd).
+			SetCurrentPeriodStart(now).
+			SetCurrentPeriodEnd(trialEnd).
+			SetBundleCode("delivery").
+			SetMetadata(map[string]any{
+				"seeded":      true,
+				"tenant_name": "Urban Loft Cafe",
+			}).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("update demo subscription: %w", err)
+		}
+		demoSubID = existing.ID
+		log.Printf("  subscription: Urban Loft Cafe → GROWTH (trial, updated)")
+	} else {
+		_, err = tx.TenantSubscription.Create().
+			SetID(demoSubID).
+			SetTenantID(demoTenantID).
+			SetPlanID(growthPlanID).
+			SetStatus(tenantsubscription.StatusTRIAL).
+			SetTrialEndsAt(trialEnd).
+			SetCurrentPeriodStart(now).
+			SetCurrentPeriodEnd(trialEnd).
+			SetBundleCode("delivery").
+			SetMetadata(map[string]any{
+				"seeded":      true,
+				"tenant_name": "Urban Loft Cafe",
+			}).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("create demo subscription: %w", err)
+		}
+		log.Printf("  subscription: Urban Loft Cafe → GROWTH (trial, 14 days)")
+	}
+
+	// Activate delivery bundle products for the demo subscription
+	type productActivation struct {
+		productID   uuid.UUID
+		productCode string
+	}
+
+	deliveryProducts := []productActivation{
+		{uuid.MustParse("10000000-0000-0000-0000-000000000010"), "ordering"},
+		{uuid.MustParse("10000000-0000-0000-0000-000000000011"), "logistics"},
+		{uuid.MustParse("10000000-0000-0000-0000-000000000012"), "treasury"},
+		{uuid.MustParse("10000000-0000-0000-0000-000000000021"), "storefront"},
+	}
+
+	for _, p := range deliveryProducts {
+		existingPS, err := tx.ProductSubscription.Query().
+			Where(
+				productsubscription.TenantSubscriptionIDEQ(demoSubID),
+				productsubscription.ProductCodeEQ(p.productCode),
+			).
+			First(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("lookup product subscription %s: %w", p.productCode, err)
+		}
+
+		if existingPS != nil {
+			_, err = tx.ProductSubscription.UpdateOne(existingPS).
+				SetProductID(p.productID).
+				SetStatus(productsubscription.StatusActive).
+				SetActivatedAt(now).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("update product subscription %s: %w", p.productCode, err)
+			}
+		} else {
+			_, err = tx.ProductSubscription.Create().
+				SetTenantSubscriptionID(demoSubID).
+				SetProductCode(p.productCode).
+				SetProductID(p.productID).
+				SetStatus(productsubscription.StatusActive).
+				SetActivatedAt(now).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("create product subscription %s: %w", p.productCode, err)
+			}
+		}
+
+		log.Printf("    product activated: %s", p.productCode)
 	}
 
 	return nil

@@ -164,8 +164,9 @@ func New(ctx context.Context) (*App, error) {
 	// Create subscription service and handler
 	subscriptionSvc := subscriptions.New(ormClient, log)
 	subscriptionHandler := handlers.NewSubscriptionHandler(log, ormClient, subscriptionSvc)
+	addonHandler := handlers.NewAddonHandler(log, ormClient)
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins)
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),

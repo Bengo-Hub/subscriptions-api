@@ -14,7 +14,7 @@ import (
 	handlers "github.com/bengobox/subscription-service/internal/http/handlers"
 )
 
-func New(log *zap.Logger, health *handlers.HealthHandler, planHandler *handlers.PlanHandler, subscriptionHandler *handlers.SubscriptionHandler, apiKey string, authMiddleware *authclient.AuthMiddleware, allowedOrigins []string) http.Handler {
+func New(log *zap.Logger, health *handlers.HealthHandler, planHandler *handlers.PlanHandler, subscriptionHandler *handlers.SubscriptionHandler, addonHandler *handlers.AddonHandler, apiKey string, authMiddleware *authclient.AuthMiddleware, allowedOrigins []string) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RealIP)
@@ -85,6 +85,11 @@ func New(log *zap.Logger, health *handlers.HealthHandler, planHandler *handlers.
 					tenant.Get("/products", subscriptionHandler.ListProducts)
 					tenant.Post("/products/{code}/activate", subscriptionHandler.ActivateProduct)
 					tenant.Post("/products/{code}/deactivate", subscriptionHandler.DeactivateProduct)
+
+					// Add-on subscriptions
+					if addonHandler != nil {
+						addonHandler.RegisterAddonRoutes(tenant)
+					}
 				})
 			})
 		}
