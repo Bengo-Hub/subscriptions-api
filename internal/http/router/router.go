@@ -32,16 +32,14 @@ func New(log *zap.Logger, health *handlers.HealthHandler, planHandler *handlers.
 		MaxAge:           300,
 	}))
 
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/v1/docs/", http.StatusMovedPermanently)
+	})
+
 	r.Route("/api/v1", func(api chi.Router) {
-		// Health endpoints (public)
 		api.Get("/healthz", health.Liveness)
 		api.Get("/readyz", health.Readiness)
 		api.Get("/metrics", health.Metrics)
-
-		// Redirect root path to Swagger documentation
-		api.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, "/v1/docs/", http.StatusMovedPermanently)
-		})
 
 		// Apply auth middleware if configured, otherwise allow API key
 		if authMiddleware != nil {
