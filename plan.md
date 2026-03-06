@@ -38,6 +38,9 @@
 - **ORM**: Ent (schema-as-code migrations)
 - **Caching**: Redis 7+ for feature gate caching, rate limiting, usage counters
 - **Message Broker**: NATS JetStream for event-driven integration
+- **RBAC:** No local roles/permissions store. **Identity and roles are sourced from auth-api** (GET `/api/v1/auth/me`). Frontends (subscriptions-ui) use TanStack Query with TTL to cache /me; nav and route protection use returned roles/permissions. API authorization: JWT validation via shared-auth-client.
+- **Redis:** Feature gate caching, rate limiting, usage counters. Health check validates Postgres, Redis, and NATS.
+- **Events:** NATS JetStream; outbox pattern for subscription lifecycle and billing events.
 
 ### Supporting Libraries
 - **Validation**: go-playground/validator
