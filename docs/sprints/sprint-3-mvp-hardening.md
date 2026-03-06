@@ -4,7 +4,7 @@
 **Deadline**: March 17, 2026
 **Goal**: Production-ready feature gating, JWT claims enrichment, event-driven provisioning, Atlas migration transition
 
-**Progress (March 2026)**: MVP launch critical-path services (ordering, cafe-website, auth, notifications) updated; subscription-api remains dependency for Trinity. Tick items as implemented. **RBAC/Redis/Events:** No local RBAC; identity and roles from auth-api GET /me. Subscriptions-ui uses TanStack Query (useMe, 5 min TTL) for /me; nav and route protection use roles/permissions; `/unauthorized` page added. Redis and NATS/outbox events documented in plan.md.
+**Progress (March 2026)**: MVP launch critical-path services (ordering, cafe-website, auth, notifications) updated; subscription-api remains dependency for Trinity. Tick items as implemented. **RBAC/Redis/Events:** No local RBAC; identity and roles from auth-api GET /me. Subscriptions-ui uses TanStack Query (useMe, 5 min TTL) for /me; nav and route protection use roles/permissions; `/unauthorized` page added. Redis and NATS/outbox events documented in plan.md. **Seed & RBAC audit (March 2026):** cmd/seed seeds products, plans, bundles, and demo tenant subscription (Urban Loft → GROWTH trial). No local Permission/Role schema; RBAC via auth-api JWT. Subscription resources (plans, subscriptions, features) use the eight actions (add, read, read_own, change, change_own, delete, manage, manage_own) in auth-api.
 
 ---
 

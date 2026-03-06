@@ -87,6 +87,7 @@ Polls the `outbox_events` table for `PENDING` events, publishes to NATS JetStrea
 - Validates JWTs from `sso.codevertexitsolutions.com` via JWKS
 - Supports API key fallback for service-to-service calls
 - Extracts `tenant_id` from `X-Tenant-ID` header via httpware middleware
+- **RBAC:** No local roles/permissions; authorization is via auth-api JWT. Subscription resources (plans, subscriptions, features, bundles, products) use the eight actions in auth-api: `add`, `read`, `read_own`, `change`, `change_own`, `delete`, `manage`, `manage_own`. See `docs/plan.md` (Security) for full seed and RBAC notes.
 
 ---
 

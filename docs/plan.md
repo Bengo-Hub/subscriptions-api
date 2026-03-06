@@ -212,6 +212,8 @@
 - Secrets via Vault/Parameter Store
 - Rate limiting & anomaly detection middleware
 - JWT validation via auth-service
+- **RBAC:** No local Permission/Role schema; RBAC is enforced via auth-api JWT. All subscription resources (plans, subscriptions, features, bundles, products) use the standard **eight actions** defined in auth-api: `add`, `read`, `read_own`, `change`, `change_own`, `delete`, `manage`, `manage_own`. The API validates JWT via `shared-auth-client` middleware; authorization checks are performed using claims from auth-api.
+- **Seed:** Core data is seeded by `cmd/seed`: (1) **products** — platform (auth, notifications, subscription), core (ordering, logistics, treasury), add-ons (pos, storefront, google_maps, paystack_gateway, sms_credits, premium_support); (2) **subscription plans** — Starter/Growth/Professional, monthly + yearly (6 plans with features and tier limits); (3) **bundles** — delivery, pos-suite, complete with tier pricing; (4) **demo tenant subscription** — Urban Loft Cafe on GROWTH plan, 14-day trial, delivery bundle with ordering, logistics, treasury, storefront activated. No migration files are added manually (Ent schema as source of truth).
 
 ### Scalability
 - Stateless HTTP layer
