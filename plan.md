@@ -5,7 +5,8 @@
 **System Purpose**: Centralized subscription and licensing management platform for the entire BengoBox ecosystem, providing multi-tenant SaaS capabilities with tiered pricing, feature gating, usage tracking, and automated billing integration.
 
 **Key Capabilities**:
-- Subscription plan management (Starter, Growth, Professional tiers)
+- Subscription plan management (Starter, Growth, Professional tiers; **one-time** subscription type)
+- Default one-time pricing: KES 80,000–2,000,000 by tier (seed/config); admin API for subscription levels (List/Get plans; create/update optional for MVP)
 - Tenant subscription lifecycle (trial, active, cancelled, expired)
 - Feature entitlement validation and gating
 - Multi-service usage aggregation and tracking
@@ -93,7 +94,7 @@
 
 **Integration Points**:
 - **auth-service**: Tenant creation → auto-assign Starter plan
-- **treasury-service**: Renewal → emit billing event
+- **treasury-service**: Renewal → emit billing event. All payment/billing events to treasury MUST include **source_service** (`"subscription"`) and, where applicable, **product** and **tier** for income attribution.
 
 ### 3. Feature Entitlements
 

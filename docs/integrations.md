@@ -99,11 +99,15 @@ When auth-service issues JWT tokens, it calls subscription-service to enrich cla
 
 **Billing Event Flow**:
 1. Subscription service creates billing event (renewal/overage/proration)
-2. Emits event to NATS: `subscription.billing.*`
-3. Treasury service consumes event and creates invoice
+2. Emits event to NATS: `subscription.billing.*` (payload includes source_service, product, tier)
+3. Treasury service consumes event and creates invoice (or payment intent with `payment_method: "pending"`; user is redirected to shared pay page — see [payment-workflow.md](../../../shared-docs/payment-workflow.md))
 4. Treasury service updates billing_event with invoice_id via webhook
 5. On payment success, treasury emits `treasury.payment.succeeded`
 6. Subscription service activates/extends subscription
+
+Every payment/billing event sent to treasury MUST include **source_service** (`"subscription"`) and, where applicable, **product** and **tier** so treasury can attribute income by source (analytics, royalties).
+
+**Subscription types**: Recurring (product, feature plans) and **one-time**. Default one-time pricing: base KES 80,000 per service, scaling up to KES 2,000,000 by business type/level/users (seed or config). Admin can manage subscription levels via plans API (List/Get: `GET /api/v1/plans`, `GET /api/v1/plans/{id}`, `GET /api/v1/plans/code/{code}`; create/update plans for admin are optional for MVP).
 
 **Configuration**:
 - Treasury service base URL: `TREASURY_SERVICE_BASE_URL` (environment variable)
@@ -396,6 +400,8 @@ The Subscription Service is part of the **Trinity Authorization** pattern:
 ```
 Authorization = RBAC (Auth-Service) + Licensing (Subscription-Service) + Resources (Domain Services)
 ```
+
+**Subscription tiering in auth layer**: Each microservice (ordering, logistics, treasury, inventory, etc.) integrates subscription tier and product-level tiering in its authorization layer — e.g. feature gates and limits from subscription-service (via JWT claims or real-time check) before allowing access or usage.
 
 ### Authorization Flow
 

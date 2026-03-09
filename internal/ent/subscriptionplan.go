@@ -25,7 +25,7 @@ type SubscriptionPlan struct {
 	Name string `json:"name,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
-	// MONTHLY, QUARTERLY, ANNUAL
+	// MONTHLY, QUARTERLY, ANNUAL, ONE_TIME
 	BillingCycle string `json:"billing_cycle,omitempty"`
 	// Base subscription price
 	BasePrice float64 `json:"base_price,omitempty"`

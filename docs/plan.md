@@ -5,6 +5,7 @@
 **System Purpose**: Centralized subscription and licensing management platform for the entire BengoBox ecosystem, providing multi-tenant SaaS capabilities with tiered pricing, feature gating, usage tracking, and automated billing integration.
 
 **Key Capabilities**:
+- **Subscription types**: **Product** (per-product plans), **Feature** (feature-gated tiers), and **One-time** (single payment for a service or bundle).
 - Subscription plan management (Starter, Growth, Professional tiers)
 - Tenant subscription lifecycle (trial, active, cancelled, expired)
 - Feature entitlement validation and gating
@@ -12,6 +13,8 @@
 - Overage calculation and billing event generation
 - Plan transition workflows (upgrade/downgrade with proration)
 - Trinity authorization (RBAC + Licensing + Resource permissions)
+- **Default one-time pricing**: 80k–2M KES per service (config/seed); admin can add/update subscription levels via plans API.
+- **Treasury integration**: Subscription-api sends **source_service** (and product/tier where applicable) on every payment/billing event to treasury for money-by-source attribution (equity/royalty, analytics).
 
 **Entity Ownership**: This service owns all subscription-related entities: plans, features, tenant subscriptions, usage tracking, overages, feature gates, and plan transitions. **Subscription Service does NOT own**: users/tenants (auth-service), invoices/payments (treasury-service), domain data (respective services).
 
@@ -93,7 +96,7 @@
 
 **Integration Points**:
 - **auth-service**: Tenant creation → auto-assign Starter plan
-- **treasury-service**: Renewal → emit billing event
+- **treasury-service**: Renewal → emit billing event. All payment/billing events to treasury MUST include **source_service** (`"subscription"`) and, where applicable, **product** and **tier** so treasury can attribute income by source.
 
 ### 3. Feature Entitlements
 
@@ -175,19 +178,20 @@
 ### 7. Billing Integration
 
 **Subscription-Specific Features**:
-- Billing event generation (renewal, overage, proration)
+- Billing event generation (renewal, overage, proration, one-time)
+- **source_service**: Subscription-api sends **source_service** (and product/tier where applicable) on every payment/billing event to treasury so treasury can attribute income by source (money-by-source analytics, equity/royalty allocation).
 - Invoice request creation
 - Payment confirmation handling
 - Dunning workflows (failed payments)
 - Subscription suspension on non-payment
 
 **Entities Owned**:
-- `billing_events` - Events sent to treasury
+- `billing_events` - Events sent to treasury (with source_service)
 - `payment_confirmations` - Payment status tracking
 - `dunning_attempts` - Failed payment retry tracking
 
 **Integration Points**:
-- **treasury-service**: Emit billing events, consume payment events
+- **treasury-service**: Emit billing events with source_service, consume payment events
 - **notifications-service**: Payment failure alerts
 
 ---
@@ -213,7 +217,8 @@
 - Rate limiting & anomaly detection middleware
 - JWT validation via auth-service
 - **RBAC:** No local Permission/Role schema; RBAC is enforced via auth-api JWT. All subscription resources (plans, subscriptions, features, bundles, products) use the standard **eight actions** defined in auth-api: `add`, `read`, `read_own`, `change`, `change_own`, `delete`, `manage`, `manage_own`. The API validates JWT via `shared-auth-client` middleware; authorization checks are performed using claims from auth-api.
-- **Seed:** Core data is seeded by `cmd/seed`: (1) **products** — platform (auth, notifications, subscription), core (ordering, logistics, treasury), add-ons (pos, storefront, google_maps, paystack_gateway, sms_credits, premium_support); (2) **subscription plans** — Starter/Growth/Professional, monthly + yearly (6 plans with features and tier limits); (3) **bundles** — delivery, pos-suite, complete with tier pricing; (4) **demo tenant subscription** — Urban Loft Cafe on GROWTH plan, 14-day trial, delivery bundle with ordering, logistics, treasury, storefront activated. No migration files are added manually (Ent schema as source of truth).
+- **Subscription tiering in auth layer**: Each microservice (ordering, logistics, treasury, etc.) integrates subscription tier and product-level tiering in its authorization layer — e.g. feature gates and limits from subscription-service (via JWT claims or real-time check) before allowing access or usage.
+- **Seed:** Core data is seeded by `cmd/seed`: (1) **products** — platform (auth, notifications, subscription), core (ordering, logistics, treasury), add-ons (pos, storefront, google_maps, paystack_gateway, sms_credits, premium_support); (2) **subscription plans** — Starter/Growth/Professional, monthly + yearly (6 plans with features and tier limits); one-time plans and default 80k–2M tiering can be added in seed or config per product; (3) **bundles** — delivery, pos-suite, complete with tier pricing; (4) **demo tenant subscription** — Urban Loft Cafe on GROWTH plan, 14-day trial, delivery bundle with ordering, logistics, treasury, storefront activated. No migration files are added manually (Ent schema as source of truth). **Admin API for subscription levels:** List/Get plans exist (`GET /api/v1/plans`, `GET /api/v1/plans/{id}`, `GET /api/v1/plans/code/{code}`); create/update plan endpoints for admin are optional for MVP and documented in integrations.
 
 ### Scalability
 - Stateless HTTP layer

@@ -33,7 +33,7 @@ func (SubscriptionPlan) Fields() []ent.Field {
 		field.String("billing_cycle").
 			NotEmpty().
 			Default("MONTHLY").
-			Comment("MONTHLY, QUARTERLY, ANNUAL"),
+			Comment("MONTHLY, QUARTERLY, ANNUAL, ONE_TIME"),
 		field.Float("base_price").
 			Comment("Base subscription price"),
 		field.String("currency").
