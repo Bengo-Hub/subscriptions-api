@@ -16,6 +16,7 @@ RUN apk add --no-cache ca-certificates tzdata && \
 WORKDIR /app
 COPY --from=builder /bin/subscription-api /usr/local/bin/subscription-api
 COPY --from=builder /bin/subscription-seed /usr/local/bin/seed
+COPY internal/ent/migrate/migrations ./internal/ent/migrate/migrations
 USER app
 EXPOSE 4005
 ENV PORT=4005

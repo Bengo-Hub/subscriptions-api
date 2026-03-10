@@ -14,6 +14,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -25,6 +26,7 @@ type TenantSubscriptionQuery struct {
 	order                    []tenantsubscription.OrderOption
 	inters                   []Interceptor
 	predicates               []predicate.TenantSubscription
+	withTenant               *TenantQuery
 	withPlan                 *SubscriptionPlanQuery
 	withProductSubscriptions *ProductSubscriptionQuery
 	// intermediate query (i.e. traversal path).
@@ -61,6 +63,28 @@ func (tsq *TenantSubscriptionQuery) Unique(unique bool) *TenantSubscriptionQuery
 func (tsq *TenantSubscriptionQuery) Order(o ...tenantsubscription.OrderOption) *TenantSubscriptionQuery {
 	tsq.order = append(tsq.order, o...)
 	return tsq
+}
+
+// QueryTenant chains the current query on the "tenant" edge.
+func (tsq *TenantSubscriptionQuery) QueryTenant() *TenantQuery {
+	query := (&TenantClient{config: tsq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := tsq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := tsq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, selector),
+			sqlgraph.To(tenant.Table, tenant.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, tenantsubscription.TenantTable, tenantsubscription.TenantColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(tsq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryPlan chains the current query on the "plan" edge.
@@ -299,12 +323,24 @@ func (tsq *TenantSubscriptionQuery) Clone() *TenantSubscriptionQuery {
 		order:                    append([]tenantsubscription.OrderOption{}, tsq.order...),
 		inters:                   append([]Interceptor{}, tsq.inters...),
 		predicates:               append([]predicate.TenantSubscription{}, tsq.predicates...),
+		withTenant:               tsq.withTenant.Clone(),
 		withPlan:                 tsq.withPlan.Clone(),
 		withProductSubscriptions: tsq.withProductSubscriptions.Clone(),
 		// clone intermediate query.
 		sql:  tsq.sql.Clone(),
 		path: tsq.path,
 	}
+}
+
+// WithTenant tells the query-builder to eager-load the nodes that are connected to
+// the "tenant" edge. The optional arguments are used to configure the query builder of the edge.
+func (tsq *TenantSubscriptionQuery) WithTenant(opts ...func(*TenantQuery)) *TenantSubscriptionQuery {
+	query := (&TenantClient{config: tsq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	tsq.withTenant = query
+	return tsq
 }
 
 // WithPlan tells the query-builder to eager-load the nodes that are connected to
@@ -407,7 +443,8 @@ func (tsq *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHo
 	var (
 		nodes       = []*TenantSubscription{}
 		_spec       = tsq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
+			tsq.withTenant != nil,
 			tsq.withPlan != nil,
 			tsq.withProductSubscriptions != nil,
 		}
@@ -430,6 +467,12 @@ func (tsq *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHo
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := tsq.withTenant; query != nil {
+		if err := tsq.loadTenant(ctx, query, nodes, nil,
+			func(n *TenantSubscription, e *Tenant) { n.Edges.Tenant = e }); err != nil {
+			return nil, err
+		}
+	}
 	if query := tsq.withPlan; query != nil {
 		if err := tsq.loadPlan(ctx, query, nodes, nil,
 			func(n *TenantSubscription, e *SubscriptionPlan) { n.Edges.Plan = e }); err != nil {
@@ -448,6 +491,35 @@ func (tsq *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHo
 	return nodes, nil
 }
 
+func (tsq *TenantSubscriptionQuery) loadTenant(ctx context.Context, query *TenantQuery, nodes []*TenantSubscription, init func(*TenantSubscription), assign func(*TenantSubscription, *Tenant)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*TenantSubscription)
+	for i := range nodes {
+		fk := nodes[i].TenantID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(tenant.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "tenant_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (tsq *TenantSubscriptionQuery) loadPlan(ctx context.Context, query *SubscriptionPlanQuery, nodes []*TenantSubscription, init func(*TenantSubscription), assign func(*TenantSubscription, *SubscriptionPlan)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*TenantSubscription)
@@ -532,6 +604,9 @@ func (tsq *TenantSubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != tenantsubscription.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if tsq.withTenant != nil {
+			_spec.Node.AddColumnOnce(tenantsubscription.FieldTenantID)
 		}
 		if tsq.withPlan != nil {
 			_spec.Node.AddColumnOnce(tenantsubscription.FieldPlanID)

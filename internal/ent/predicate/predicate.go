@@ -27,5 +27,8 @@ type ProductSubscription func(*sql.Selector)
 // SubscriptionPlan is the predicate function for subscriptionplan builders.
 type SubscriptionPlan func(*sql.Selector)
 
+// Tenant is the predicate function for tenant builders.
+type Tenant func(*sql.Selector)
+
 // TenantSubscription is the predicate function for tenantsubscription builders.
 type TenantSubscription func(*sql.Selector)

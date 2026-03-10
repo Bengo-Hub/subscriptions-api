@@ -24,6 +24,7 @@ import (
 	
 	"github.com/bengobox/subscription-service/internal/config"
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/migrate"
 	handlers "github.com/bengobox/subscription-service/internal/http/handlers"
 	router "github.com/bengobox/subscription-service/internal/http/router"
 	"github.com/bengobox/subscription-service/internal/modules/outbox"
@@ -83,10 +84,12 @@ func New(ctx context.Context) (*App, error) {
 	drv := entsql.OpenDB(dialect.Postgres, sqlDB)
 	ormClient := ent.NewClient(ent.Driver(drv))
 	if cfg.Postgres.RunMigrations {
-		if err := ormClient.Schema.Create(ctx); err != nil {
+		if err := ormClient.Schema.Create(ctx, 
+			schema.WithDir(migrate.Dir),
+		); err != nil {
 			return nil, fmt.Errorf("ent schema create: %w", err)
 		}
-		log.Info("ent migrations completed - run 'go run cmd/seed/main.go' to seed initial data (idempotent)")
+		log.Info("versioned migrations completed - run 'go run cmd/seed/main.go' to seed initial data (idempotent)")
 	}
 
 	// Initialize auth-service JWT validator

@@ -3,8 +3,12 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"entgo.io/ent/dialect"
@@ -21,6 +25,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/schema"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 )
+
 
 func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -80,9 +85,9 @@ func runSeed(ctx context.Context, client *ent.Client) error {
 		return fmt.Errorf("seed bundles: %w", err)
 	}
 
-	// 4. Seed demo tenant subscription (Urban Loft on GROWTH plan, 14-day trial)
-	if err := seedDemoSubscription(ctx, tx); err != nil {
-		return fmt.Errorf("seed demo subscription: %w", err)
+	// 4. Seed subscriptions for ALL tenants (each tenant must have a subscription, trial periods allowed)
+	if err := seedAllTenantSubscriptions(ctx, tx); err != nil {
+		return fmt.Errorf("seed tenant subscriptions: %w", err)
 	}
 
 	return nil
@@ -300,13 +305,13 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 	plans := []planDef{
 		// ── Monthly Plans ────────────────────────────────────────────────
 		{
-			id:          uuid.MustParse("00000000-0000-0000-0000-000000000001"),
-			planCode:    "STARTER",
-			name:        "Starter (Lite)",
-			description: "Perfect for small cafes and pilot operations. Core ordering features with essential admin tools.",
+			id:           uuid.MustParse("00000000-0000-0000-0000-000000000001"),
+			planCode:     "STARTER",
+			name:         "Starter (Lite)",
+			description:  "Perfect for small cafes and pilot operations. Core ordering features with essential admin tools.",
 			billingCycle: "MONTHLY",
-			price:       2500.0,
-			tierOrder:   1,
+			price:        2500.0,
+			tierOrder:    1,
 			tierLimits: map[string]any{
 				"max_admins":          2,
 				"max_riders":          5,
@@ -315,7 +320,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"api_calls_per_month": 10000,
 				// Overage rates
 				"overage_rider_price_per_month":      250.0,
-				"overage_orders_price_per_100_month":  375.0,
+				"overage_orders_price_per_100_month": 375.0,
 			},
 			features: []string{
 				"customer_portal",
@@ -330,21 +335,21 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			},
 		},
 		{
-			id:          uuid.MustParse("00000000-0000-0000-0000-000000000002"),
-			planCode:    "GROWTH",
-			name:        "Growth (Standard)",
-			description: "Ideal for growing cafes with multiple outlets. Advanced features including loyalty program and multi-outlet support.",
+			id:           uuid.MustParse("00000000-0000-0000-0000-000000000002"),
+			planCode:     "GROWTH",
+			name:         "Growth (Standard)",
+			description:  "Ideal for growing cafes with multiple outlets. Advanced features including loyalty program and multi-outlet support.",
 			billingCycle: "MONTHLY",
-			price:       6000.0,
-			tierOrder:   2,
+			price:        6000.0,
+			tierOrder:    2,
 			tierLimits: map[string]any{
-				"max_admins":          3,
-				"max_riders":          15,
-				"max_orders_per_day":  1000,
-				"max_outlets":         3,
-				"api_calls_per_month": 50000,
+				"max_admins":                         3,
+				"max_riders":                         15,
+				"max_orders_per_day":                 1000,
+				"max_outlets":                        3,
+				"api_calls_per_month":                50000,
 				"overage_rider_price_per_month":      250.0,
-				"overage_orders_price_per_100_month":  375.0,
+				"overage_orders_price_per_100_month": 375.0,
 			},
 			features: []string{
 				"customer_portal",
@@ -365,21 +370,21 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			},
 		},
 		{
-			id:          uuid.MustParse("00000000-0000-0000-0000-000000000003"),
-			planCode:    "PROFESSIONAL",
-			name:        "Professional (Scale)",
-			description: "For multi-branch cafes and chains. Complete feature set with POS integration, route optimization, and priority support.",
+			id:           uuid.MustParse("00000000-0000-0000-0000-000000000003"),
+			planCode:     "PROFESSIONAL",
+			name:         "Professional (Scale)",
+			description:  "For multi-branch cafes and chains. Complete feature set with POS integration, route optimization, and priority support.",
 			billingCycle: "MONTHLY",
-			price:       12500.0,
-			tierOrder:   3,
+			price:        12500.0,
+			tierOrder:    3,
 			tierLimits: map[string]any{
-				"max_admins":          -1, // Unlimited
-				"max_riders":          30,
-				"max_orders_per_day":  2500,
-				"max_outlets":         -1, // Unlimited
-				"api_calls_per_month": 200000,
+				"max_admins":                         -1, // Unlimited
+				"max_riders":                         30,
+				"max_orders_per_day":                 2500,
+				"max_outlets":                        -1, // Unlimited
+				"api_calls_per_month":                200000,
 				"overage_rider_price_per_month":      250.0,
-				"overage_orders_price_per_100_month":  375.0,
+				"overage_orders_price_per_100_month": 375.0,
 			},
 			features: []string{
 				"customer_portal",
@@ -409,21 +414,21 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 
 		// ── Yearly Plans (≈10 months pricing = ~8.3% discount) ──────────
 		{
-			id:          uuid.MustParse("00000000-0000-0000-0000-000000000011"),
-			planCode:    "STARTER_YEARLY",
-			name:        "Starter (Lite) — Annual",
-			description: "Perfect for small cafes and pilot operations. Save with annual billing.",
+			id:           uuid.MustParse("00000000-0000-0000-0000-000000000011"),
+			planCode:     "STARTER_YEARLY",
+			name:         "Starter (Lite) — Annual",
+			description:  "Perfect for small cafes and pilot operations. Save with annual billing.",
 			billingCycle: "ANNUAL",
-			price:       27500.0, // 11 months for price of 10 (KES 2,500 × 11)
-			tierOrder:   1,
+			price:        27500.0, // 11 months for price of 10 (KES 2,500 × 11)
+			tierOrder:    1,
 			tierLimits: map[string]any{
-				"max_admins":          2,
-				"max_riders":          5,
-				"max_orders_per_day":  300,
-				"max_outlets":         1,
-				"api_calls_per_month": 10000,
+				"max_admins":                         2,
+				"max_riders":                         5,
+				"max_orders_per_day":                 300,
+				"max_outlets":                        1,
+				"api_calls_per_month":                10000,
 				"overage_rider_price_per_month":      250.0,
-				"overage_orders_price_per_100_month":  375.0,
+				"overage_orders_price_per_100_month": 375.0,
 			},
 			features: []string{
 				"customer_portal",
@@ -438,21 +443,21 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			},
 		},
 		{
-			id:          uuid.MustParse("00000000-0000-0000-0000-000000000012"),
-			planCode:    "GROWTH_YEARLY",
-			name:        "Growth (Standard) — Annual",
-			description: "Ideal for growing cafes with multiple outlets. Save with annual billing.",
+			id:           uuid.MustParse("00000000-0000-0000-0000-000000000012"),
+			planCode:     "GROWTH_YEARLY",
+			name:         "Growth (Standard) — Annual",
+			description:  "Ideal for growing cafes with multiple outlets. Save with annual billing.",
 			billingCycle: "ANNUAL",
-			price:       66000.0, // KES 6,000 × 11
-			tierOrder:   2,
+			price:        66000.0, // KES 6,000 × 11
+			tierOrder:    2,
 			tierLimits: map[string]any{
-				"max_admins":          3,
-				"max_riders":          15,
-				"max_orders_per_day":  1000,
-				"max_outlets":         3,
-				"api_calls_per_month": 50000,
+				"max_admins":                         3,
+				"max_riders":                         15,
+				"max_orders_per_day":                 1000,
+				"max_outlets":                        3,
+				"api_calls_per_month":                50000,
 				"overage_rider_price_per_month":      250.0,
-				"overage_orders_price_per_100_month":  375.0,
+				"overage_orders_price_per_100_month": 375.0,
 			},
 			features: []string{
 				"customer_portal",
@@ -473,21 +478,21 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			},
 		},
 		{
-			id:          uuid.MustParse("00000000-0000-0000-0000-000000000013"),
-			planCode:    "PROFESSIONAL_YEARLY",
-			name:        "Professional (Scale) — Annual",
-			description: "For multi-branch cafes and chains. Save with annual billing.",
+			id:           uuid.MustParse("00000000-0000-0000-0000-000000000013"),
+			planCode:     "PROFESSIONAL_YEARLY",
+			name:         "Professional (Scale) — Annual",
+			description:  "For multi-branch cafes and chains. Save with annual billing.",
 			billingCycle: "ANNUAL",
-			price:       137500.0, // KES 12,500 × 11
-			tierOrder:   3,
+			price:        137500.0, // KES 12,500 × 11
+			tierOrder:    3,
 			tierLimits: map[string]any{
-				"max_admins":          -1,
-				"max_riders":          30,
-				"max_orders_per_day":  2500,
-				"max_outlets":         -1,
-				"api_calls_per_month": 200000,
+				"max_admins":                         -1,
+				"max_riders":                         30,
+				"max_orders_per_day":                 2500,
+				"max_outlets":                        -1,
+				"api_calls_per_month":                200000,
 				"overage_rider_price_per_month":      250.0,
-				"overage_orders_price_per_100_month":  375.0,
+				"overage_orders_price_per_100_month": 375.0,
 			},
 			features: []string{
 				"customer_portal",
@@ -718,73 +723,170 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 	return nil
 }
 
-// ── Demo Subscription ────────────────────────────────────────────────────────
-// Creates a demo tenant subscription for Urban Loft Cafe on the GROWTH plan
-// with a 14-day trial period. Activates the delivery bundle products.
+// ── All Tenant Subscriptions ─────────────────────────────────────────────────
+// Creates subscriptions for ALL tenants. Each tenant must have a subscription.
+// Tenant UUIDs are resolved dynamically from auth-api's public endpoint
+// GET /api/v1/tenants/by-slug/{slug} so they always match the real auth-api DB.
+//
+// Override per-tenant UUIDs via env vars: TENANT_ID_URBAN_LOFT, TENANT_ID_CODEVERTEX, etc.
+// AUTH_API_URL env var controls the auth-api base URL (default: https://sso.codevertexitsolutions.com).
 
-func seedDemoSubscription(ctx context.Context, tx *ent.Tx) error {
-	// Fixed UUIDs matching auth-service seed
-	demoTenantID := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	growthPlanID := uuid.MustParse("00000000-0000-0000-0000-000000000002") // GROWTH monthly
-	demoSubID := uuid.MustParse("30000000-0000-0000-0000-000000000001")
+func resolveTenantID(slug string, authAPIURL string) (uuid.UUID, error) {
+	// Check env override first (TENANT_ID_{SLUG_UPPER_UNDERSCORE})
+	envKey := "TENANT_ID_" + strings.ToUpper(strings.ReplaceAll(slug, "-", "_"))
+	if val := os.Getenv(envKey); val != "" {
+		id, err := uuid.Parse(val)
+		if err != nil {
+			return uuid.Nil, fmt.Errorf("invalid UUID in env %s: %w", envKey, err)
+		}
+		log.Printf("  [uuid] %s → %s (from env %s)", slug, id, envKey)
+		return id, nil
+	}
+
+	// Dynamic lookup from auth-api public endpoint (no auth required)
+	url := fmt.Sprintf("%s/api/v1/tenants/by-slug/%s", strings.TrimRight(authAPIURL, "/"), slug)
+	resp, err := http.Get(url) //nolint:noctx
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("GET %s: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 404 {
+		return uuid.Nil, fmt.Errorf("tenant %q not found in auth-api (404) — run auth-api seed first", slug)
+	}
+	if resp.StatusCode != 200 {
+		return uuid.Nil, fmt.Errorf("auth-api returned HTTP %d for slug %q", resp.StatusCode, slug)
+	}
+
+	var body struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return uuid.Nil, fmt.Errorf("decode auth-api response: %w", err)
+	}
+	id, err := uuid.Parse(body.ID)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("bad UUID from auth-api %q: %w", body.ID, err)
+	}
+	log.Printf("  [uuid] %s → %s (from auth-api)", slug, id)
+	return id, nil
+}
+
+func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx) error {
+	authAPIURL := os.Getenv("AUTH_API_URL")
+	if authAPIURL == "" {
+		authAPIURL = "https://sso.codevertexitsolutions.com"
+	}
+
+	// Tenant definitions with slug → plan mapping.
+	// UUIDs are resolved at runtime from auth-api (see resolveTenantID above).
+	tenantDefs := []struct {
+		slug string
+		name string
+		plan string
+	}{
+		{"urban-loft", "Urban Loft Cafe", "GROWTH"},
+		{"codevertex", "CodeVertex", "PROFESSIONAL"},
+		{"mss", "Masterspace Solutions", "GROWTH"},
+		{"kura", "Kenya Urban Roads Authority", "STARTER"},
+		{"ultichange", "UltiChange", "STARTER"},
+	}
+
+	type resolvedTenant struct {
+		id   uuid.UUID
+		slug string
+		name string
+		plan string
+	}
+
+	var tenants []resolvedTenant
+	for _, td := range tenantDefs {
+		id, err := resolveTenantID(td.slug, authAPIURL)
+		if err != nil {
+			// Log and skip rather than aborting — allows partial seeding during
+			// initial setup when some tenants may not exist yet.
+			log.Printf("  [SKIP] tenant %q: %v", td.slug, err)
+			continue
+		}
+		tenants = append(tenants, resolvedTenant{id: id, slug: td.slug, name: td.name, plan: td.plan})
+	}
+
+	// Plan UUIDs from seedSubscriptionPlans
+	planIDs := map[string]uuid.UUID{
+		"STARTER":      uuid.MustParse("00000000-0000-0000-0000-000000000001"),
+		"GROWTH":       uuid.MustParse("00000000-0000-0000-0000-000000000002"),
+		"PROFESSIONAL": uuid.MustParse("00000000-0000-0000-0000-000000000003"),
+	}
 
 	now := time.Now()
 	trialEnd := now.Add(14 * 24 * time.Hour)
 
-	// Check if subscription already exists for this tenant
-	existing, err := tx.TenantSubscription.Query().
-		Where(tenantsubscription.TenantIDEQ(demoTenantID)).
-		First(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return fmt.Errorf("lookup demo subscription: %w", err)
-	}
+	for i, t := range tenants {
+		tenantSubID := uuid.MustParse(fmt.Sprintf("30000000-0000-0000-0000-00000000000%d", i+1))
+		planID := planIDs[t.plan]
 
-	if existing != nil {
-		_, err = tx.TenantSubscription.UpdateOne(existing).
-			SetPlanID(growthPlanID).
-			SetStatus(tenantsubscription.StatusTRIAL).
-			SetTrialEndsAt(trialEnd).
-			SetCurrentPeriodStart(now).
-			SetCurrentPeriodEnd(trialEnd).
-			SetBundleCode("delivery").
-			SetMetadata(map[string]any{
-				"seeded":      true,
-				"tenant_name": "Urban Loft Cafe",
-			}).
-			Save(ctx)
-		if err != nil {
-			return fmt.Errorf("update demo subscription: %w", err)
+		// Check if subscription already exists
+		existing, err := tx.TenantSubscription.Query().
+			Where(tenantsubscription.TenantIDEQ(t.id)).
+			First(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("lookup subscription for %s: %w", t.slug, err)
 		}
-		demoSubID = existing.ID
-		log.Printf("  subscription: Urban Loft Cafe → GROWTH (trial, updated)")
-	} else {
-		_, err = tx.TenantSubscription.Create().
-			SetID(demoSubID).
-			SetTenantID(demoTenantID).
-			SetPlanID(growthPlanID).
-			SetStatus(tenantsubscription.StatusTRIAL).
-			SetTrialEndsAt(trialEnd).
-			SetCurrentPeriodStart(now).
-			SetCurrentPeriodEnd(trialEnd).
-			SetBundleCode("delivery").
-			SetMetadata(map[string]any{
-				"seeded":      true,
-				"tenant_name": "Urban Loft Cafe",
-			}).
-			Save(ctx)
-		if err != nil {
-			return fmt.Errorf("create demo subscription: %w", err)
+
+		if existing != nil {
+			_, err = tx.TenantSubscription.UpdateOne(existing).
+				SetPlanID(planID).
+				SetStatus(tenantsubscription.StatusTRIAL).
+				SetTrialEndsAt(trialEnd).
+				SetCurrentPeriodStart(now).
+				SetCurrentPeriodEnd(trialEnd).
+				SetBundleCode("delivery").
+				SetMetadata(map[string]any{
+					"seeded":      true,
+					"tenant_name": t.name,
+					"tier":        t.plan,
+				}).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("update subscription for %s: %w", t.slug, err)
+			}
+			log.Printf("  subscription: %s → %s (trial, updated)", t.name, t.plan)
+		} else {
+			_, err = tx.TenantSubscription.Create().
+				SetID(tenantSubID).
+				SetTenantID(t.id).
+				SetPlanID(planID).
+				SetStatus(tenantsubscription.StatusTRIAL).
+				SetTrialEndsAt(trialEnd).
+				SetCurrentPeriodStart(now).
+				SetCurrentPeriodEnd(trialEnd).
+				SetBundleCode("delivery").
+				SetMetadata(map[string]any{
+					"seeded":      true,
+					"tenant_name": t.name,
+					"tier":        t.plan,
+				}).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("create subscription for %s: %w", t.slug, err)
+			}
+			log.Printf("  subscription: %s → %s (trial, 14 days)", t.name, t.plan)
 		}
-		log.Printf("  subscription: Urban Loft Cafe → GROWTH (trial, 14 days)")
+
+		// Activate delivery bundle products for the subscription
+		if err := activateDeliveryProducts(ctx, tx, tenantSubID, now); err != nil {
+			return fmt.Errorf("activate products for %s: %w", t.slug, err)
+		}
 	}
 
-	// Activate delivery bundle products for the demo subscription
-	type productActivation struct {
-		productID   uuid.UUID
-		productCode string
-	}
+	return nil
+}
 
-	deliveryProducts := []productActivation{
+func activateDeliveryProducts(ctx context.Context, tx *ent.Tx, subID uuid.UUID, now time.Time) error {
+	deliveryProducts := []struct {
+		id   uuid.UUID
+		code string
+	}{
 		{uuid.MustParse("10000000-0000-0000-0000-000000000010"), "ordering"},
 		{uuid.MustParse("10000000-0000-0000-0000-000000000011"), "logistics"},
 		{uuid.MustParse("10000000-0000-0000-0000-000000000012"), "treasury"},
@@ -794,37 +896,35 @@ func seedDemoSubscription(ctx context.Context, tx *ent.Tx) error {
 	for _, p := range deliveryProducts {
 		existingPS, err := tx.ProductSubscription.Query().
 			Where(
-				productsubscription.TenantSubscriptionIDEQ(demoSubID),
-				productsubscription.ProductCodeEQ(p.productCode),
+				productsubscription.TenantSubscriptionIDEQ(subID),
+				productsubscription.ProductCodeEQ(p.code),
 			).
 			First(ctx)
 		if err != nil && !ent.IsNotFound(err) {
-			return fmt.Errorf("lookup product subscription %s: %w", p.productCode, err)
+			return fmt.Errorf("lookup product subscription %s: %w", p.code, err)
 		}
 
 		if existingPS != nil {
 			_, err = tx.ProductSubscription.UpdateOne(existingPS).
-				SetProductID(p.productID).
+				SetProductID(p.id).
 				SetStatus(productsubscription.StatusActive).
 				SetActivatedAt(now).
 				Save(ctx)
 			if err != nil {
-				return fmt.Errorf("update product subscription %s: %w", p.productCode, err)
+				return fmt.Errorf("update product subscription %s: %w", p.code, err)
 			}
 		} else {
 			_, err = tx.ProductSubscription.Create().
-				SetTenantSubscriptionID(demoSubID).
-				SetProductCode(p.productCode).
-				SetProductID(p.productID).
+				SetTenantSubscriptionID(subID).
+				SetProductCode(p.code).
+				SetProductID(p.id).
 				SetStatus(productsubscription.StatusActive).
 				SetActivatedAt(now).
 				Save(ctx)
 			if err != nil {
-				return fmt.Errorf("create product subscription %s: %w", p.productCode, err)
+				return fmt.Errorf("create product subscription %s: %w", p.code, err)
 			}
 		}
-
-		log.Printf("    product activated: %s", p.productCode)
 	}
 
 	return nil

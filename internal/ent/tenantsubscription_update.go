@@ -14,6 +14,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -219,6 +220,11 @@ func (tsu *TenantSubscriptionUpdate) SetUpdatedAt(t time.Time) *TenantSubscripti
 	return tsu
 }
 
+// SetTenant sets the "tenant" edge to the Tenant entity.
+func (tsu *TenantSubscriptionUpdate) SetTenant(t *Tenant) *TenantSubscriptionUpdate {
+	return tsu.SetTenantID(t.ID)
+}
+
 // SetPlan sets the "plan" edge to the SubscriptionPlan entity.
 func (tsu *TenantSubscriptionUpdate) SetPlan(s *SubscriptionPlan) *TenantSubscriptionUpdate {
 	return tsu.SetPlanID(s.ID)
@@ -242,6 +248,12 @@ func (tsu *TenantSubscriptionUpdate) AddProductSubscriptions(p ...*ProductSubscr
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (tsu *TenantSubscriptionUpdate) Mutation() *TenantSubscriptionMutation {
 	return tsu.mutation
+}
+
+// ClearTenant clears the "tenant" edge to the Tenant entity.
+func (tsu *TenantSubscriptionUpdate) ClearTenant() *TenantSubscriptionUpdate {
+	tsu.mutation.ClearTenant()
+	return tsu
 }
 
 // ClearPlan clears the "plan" edge to the SubscriptionPlan entity.
@@ -314,6 +326,9 @@ func (tsu *TenantSubscriptionUpdate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "TenantSubscription.status": %w`, err)}
 		}
 	}
+	if _, ok := tsu.mutation.TenantID(); tsu.mutation.TenantCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "TenantSubscription.tenant"`)
+	}
 	if _, ok := tsu.mutation.PlanID(); tsu.mutation.PlanCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "TenantSubscription.plan"`)
 	}
@@ -331,9 +346,6 @@ func (tsu *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err er
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := tsu.mutation.TenantID(); ok {
-		_spec.SetField(tenantsubscription.FieldTenantID, field.TypeUUID, value)
 	}
 	if value, ok := tsu.mutation.Status(); ok {
 		_spec.SetField(tenantsubscription.FieldStatus, field.TypeEnum, value)
@@ -382,6 +394,35 @@ func (tsu *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err er
 	}
 	if value, ok := tsu.mutation.UpdatedAt(); ok {
 		_spec.SetField(tenantsubscription.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if tsu.mutation.TenantCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   tenantsubscription.TenantTable,
+			Columns: []string{tenantsubscription.TenantColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tsu.mutation.TenantIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   tenantsubscription.TenantTable,
+			Columns: []string{tenantsubscription.TenantColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if tsu.mutation.PlanCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -665,6 +706,11 @@ func (tsuo *TenantSubscriptionUpdateOne) SetUpdatedAt(t time.Time) *TenantSubscr
 	return tsuo
 }
 
+// SetTenant sets the "tenant" edge to the Tenant entity.
+func (tsuo *TenantSubscriptionUpdateOne) SetTenant(t *Tenant) *TenantSubscriptionUpdateOne {
+	return tsuo.SetTenantID(t.ID)
+}
+
 // SetPlan sets the "plan" edge to the SubscriptionPlan entity.
 func (tsuo *TenantSubscriptionUpdateOne) SetPlan(s *SubscriptionPlan) *TenantSubscriptionUpdateOne {
 	return tsuo.SetPlanID(s.ID)
@@ -688,6 +734,12 @@ func (tsuo *TenantSubscriptionUpdateOne) AddProductSubscriptions(p ...*ProductSu
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (tsuo *TenantSubscriptionUpdateOne) Mutation() *TenantSubscriptionMutation {
 	return tsuo.mutation
+}
+
+// ClearTenant clears the "tenant" edge to the Tenant entity.
+func (tsuo *TenantSubscriptionUpdateOne) ClearTenant() *TenantSubscriptionUpdateOne {
+	tsuo.mutation.ClearTenant()
+	return tsuo
 }
 
 // ClearPlan clears the "plan" edge to the SubscriptionPlan entity.
@@ -773,6 +825,9 @@ func (tsuo *TenantSubscriptionUpdateOne) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "TenantSubscription.status": %w`, err)}
 		}
 	}
+	if _, ok := tsuo.mutation.TenantID(); tsuo.mutation.TenantCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "TenantSubscription.tenant"`)
+	}
 	if _, ok := tsuo.mutation.PlanID(); tsuo.mutation.PlanCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "TenantSubscription.plan"`)
 	}
@@ -807,9 +862,6 @@ func (tsuo *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Te
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := tsuo.mutation.TenantID(); ok {
-		_spec.SetField(tenantsubscription.FieldTenantID, field.TypeUUID, value)
 	}
 	if value, ok := tsuo.mutation.Status(); ok {
 		_spec.SetField(tenantsubscription.FieldStatus, field.TypeEnum, value)
@@ -858,6 +910,35 @@ func (tsuo *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Te
 	}
 	if value, ok := tsuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(tenantsubscription.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if tsuo.mutation.TenantCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   tenantsubscription.TenantTable,
+			Columns: []string{tenantsubscription.TenantColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tsuo.mutation.TenantIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   tenantsubscription.TenantTable,
+			Columns: []string{tenantsubscription.TenantColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if tsuo.mutation.PlanCleared() {
 		edge := &sqlgraph.EdgeSpec{

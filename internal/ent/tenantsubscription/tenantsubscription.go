@@ -42,12 +42,21 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// EdgeTenant holds the string denoting the tenant edge name in mutations.
+	EdgeTenant = "tenant"
 	// EdgePlan holds the string denoting the plan edge name in mutations.
 	EdgePlan = "plan"
 	// EdgeProductSubscriptions holds the string denoting the product_subscriptions edge name in mutations.
 	EdgeProductSubscriptions = "product_subscriptions"
 	// Table holds the table name of the tenantsubscription in the database.
 	Table = "tenant_subscriptions"
+	// TenantTable is the table that holds the tenant relation/edge.
+	TenantTable = "tenant_subscriptions"
+	// TenantInverseTable is the table name for the Tenant entity.
+	// It exists in this package in order to avoid circular dependency with the "tenant" package.
+	TenantInverseTable = "tenants"
+	// TenantColumn is the table column denoting the tenant relation/edge.
+	TenantColumn = "tenant_id"
 	// PlanTable is the table that holds the plan relation/edge.
 	PlanTable = "tenant_subscriptions"
 	// PlanInverseTable is the table name for the SubscriptionPlan entity.
@@ -202,6 +211,13 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
+// ByTenantField orders the results by tenant field.
+func ByTenantField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTenantStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByPlanField orders the results by plan field.
 func ByPlanField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -221,6 +237,13 @@ func ByProductSubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpt
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newProductSubscriptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
+}
+func newTenantStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TenantInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, TenantTable, TenantColumn),
+	)
 }
 func newPlanStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

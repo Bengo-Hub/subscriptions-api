@@ -69,6 +69,11 @@ func (TenantSubscription) Fields() []ent.Field {
 // Edges of the TenantSubscription.
 func (TenantSubscription) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.From("tenant", Tenant.Type).
+			Ref("subscriptions").
+			Unique().
+			Required().
+			Field("tenant_id"),
 		edge.From("plan", SubscriptionPlan.Type).
 			Ref("subscriptions").
 			Unique().

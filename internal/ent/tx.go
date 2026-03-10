@@ -26,6 +26,8 @@ type Tx struct {
 	ProductSubscription *ProductSubscriptionClient
 	// SubscriptionPlan is the client for interacting with the SubscriptionPlan builders.
 	SubscriptionPlan *SubscriptionPlanClient
+	// Tenant is the client for interacting with the Tenant builders.
+	Tenant *TenantClient
 	// TenantSubscription is the client for interacting with the TenantSubscription builders.
 	TenantSubscription *TenantSubscriptionClient
 
@@ -166,6 +168,7 @@ func (tx *Tx) init() {
 	tx.Product = NewProductClient(tx.config)
 	tx.ProductSubscription = NewProductSubscriptionClient(tx.config)
 	tx.SubscriptionPlan = NewSubscriptionPlanClient(tx.config)
+	tx.Tenant = NewTenantClient(tx.config)
 	tx.TenantSubscription = NewTenantSubscriptionClient(tx.config)
 }
 

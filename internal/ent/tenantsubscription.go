@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -54,13 +55,26 @@ type TenantSubscription struct {
 
 // TenantSubscriptionEdges holds the relations/edges for other nodes in the graph.
 type TenantSubscriptionEdges struct {
+	// Tenant holds the value of the tenant edge.
+	Tenant *Tenant `json:"tenant,omitempty"`
 	// Plan holds the value of the plan edge.
 	Plan *SubscriptionPlan `json:"plan,omitempty"`
 	// ProductSubscriptions holds the value of the product_subscriptions edge.
 	ProductSubscriptions []*ProductSubscription `json:"product_subscriptions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
+}
+
+// TenantOrErr returns the Tenant value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e TenantSubscriptionEdges) TenantOrErr() (*Tenant, error) {
+	if e.Tenant != nil {
+		return e.Tenant, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: tenant.Label}
+	}
+	return nil, &NotLoadedError{edge: "tenant"}
 }
 
 // PlanOrErr returns the Plan value or an error if the edge
@@ -68,7 +82,7 @@ type TenantSubscriptionEdges struct {
 func (e TenantSubscriptionEdges) PlanOrErr() (*SubscriptionPlan, error) {
 	if e.Plan != nil {
 		return e.Plan, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: subscriptionplan.Label}
 	}
 	return nil, &NotLoadedError{edge: "plan"}
@@ -77,7 +91,7 @@ func (e TenantSubscriptionEdges) PlanOrErr() (*SubscriptionPlan, error) {
 // ProductSubscriptionsOrErr returns the ProductSubscriptions value or an error if the edge
 // was not loaded in eager-loading.
 func (e TenantSubscriptionEdges) ProductSubscriptionsOrErr() ([]*ProductSubscription, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.ProductSubscriptions, nil
 	}
 	return nil, &NotLoadedError{edge: "product_subscriptions"}
@@ -215,6 +229,11 @@ func (ts *TenantSubscription) assignValues(columns []string, values []any) error
 // This includes values selected through modifiers, order, etc.
 func (ts *TenantSubscription) Value(name string) (ent.Value, error) {
 	return ts.selectValues.Get(name)
+}
+
+// QueryTenant queries the "tenant" edge of the TenantSubscription entity.
+func (ts *TenantSubscription) QueryTenant() *TenantQuery {
+	return NewTenantSubscriptionClient(ts.config).QueryTenant(ts)
 }
 
 // QueryPlan queries the "plan" edge of the TenantSubscription entity.

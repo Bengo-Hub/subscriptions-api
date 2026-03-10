@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
@@ -20,6 +22,7 @@ type PlanFeatureCreate struct {
 	config
 	mutation *PlanFeatureMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetPlanID sets the "plan_id" field.
@@ -210,6 +213,7 @@ func (pfc *PlanFeatureCreate) createSpec() (*PlanFeature, *sqlgraph.CreateSpec) 
 		_node = &PlanFeature{config: pfc.config}
 		_spec = sqlgraph.NewCreateSpec(planfeature.Table, sqlgraph.NewFieldSpec(planfeature.FieldID, field.TypeUUID))
 	)
+	_spec.OnConflict = pfc.conflict
 	if id, ok := pfc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
@@ -254,11 +258,306 @@ func (pfc *PlanFeatureCreate) createSpec() (*PlanFeature, *sqlgraph.CreateSpec) 
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.PlanFeature.Create().
+//		SetPlanID(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.PlanFeatureUpsert) {
+//			SetPlanID(v+v).
+//		}).
+//		Exec(ctx)
+func (pfc *PlanFeatureCreate) OnConflict(opts ...sql.ConflictOption) *PlanFeatureUpsertOne {
+	pfc.conflict = opts
+	return &PlanFeatureUpsertOne{
+		create: pfc,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.PlanFeature.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (pfc *PlanFeatureCreate) OnConflictColumns(columns ...string) *PlanFeatureUpsertOne {
+	pfc.conflict = append(pfc.conflict, sql.ConflictColumns(columns...))
+	return &PlanFeatureUpsertOne{
+		create: pfc,
+	}
+}
+
+type (
+	// PlanFeatureUpsertOne is the builder for "upsert"-ing
+	//  one PlanFeature node.
+	PlanFeatureUpsertOne struct {
+		create *PlanFeatureCreate
+	}
+
+	// PlanFeatureUpsert is the "OnConflict" setter.
+	PlanFeatureUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetPlanID sets the "plan_id" field.
+func (u *PlanFeatureUpsert) SetPlanID(v uuid.UUID) *PlanFeatureUpsert {
+	u.Set(planfeature.FieldPlanID, v)
+	return u
+}
+
+// UpdatePlanID sets the "plan_id" field to the value that was provided on create.
+func (u *PlanFeatureUpsert) UpdatePlanID() *PlanFeatureUpsert {
+	u.SetExcluded(planfeature.FieldPlanID)
+	return u
+}
+
+// SetFeatureCode sets the "feature_code" field.
+func (u *PlanFeatureUpsert) SetFeatureCode(v string) *PlanFeatureUpsert {
+	u.Set(planfeature.FieldFeatureCode, v)
+	return u
+}
+
+// UpdateFeatureCode sets the "feature_code" field to the value that was provided on create.
+func (u *PlanFeatureUpsert) UpdateFeatureCode() *PlanFeatureUpsert {
+	u.SetExcluded(planfeature.FieldFeatureCode)
+	return u
+}
+
+// SetIsIncluded sets the "is_included" field.
+func (u *PlanFeatureUpsert) SetIsIncluded(v bool) *PlanFeatureUpsert {
+	u.Set(planfeature.FieldIsIncluded, v)
+	return u
+}
+
+// UpdateIsIncluded sets the "is_included" field to the value that was provided on create.
+func (u *PlanFeatureUpsert) UpdateIsIncluded() *PlanFeatureUpsert {
+	u.SetExcluded(planfeature.FieldIsIncluded)
+	return u
+}
+
+// SetLimitValue sets the "limit_value" field.
+func (u *PlanFeatureUpsert) SetLimitValue(v int) *PlanFeatureUpsert {
+	u.Set(planfeature.FieldLimitValue, v)
+	return u
+}
+
+// UpdateLimitValue sets the "limit_value" field to the value that was provided on create.
+func (u *PlanFeatureUpsert) UpdateLimitValue() *PlanFeatureUpsert {
+	u.SetExcluded(planfeature.FieldLimitValue)
+	return u
+}
+
+// AddLimitValue adds v to the "limit_value" field.
+func (u *PlanFeatureUpsert) AddLimitValue(v int) *PlanFeatureUpsert {
+	u.Add(planfeature.FieldLimitValue, v)
+	return u
+}
+
+// ClearLimitValue clears the value of the "limit_value" field.
+func (u *PlanFeatureUpsert) ClearLimitValue() *PlanFeatureUpsert {
+	u.SetNull(planfeature.FieldLimitValue)
+	return u
+}
+
+// SetMetadata sets the "metadata" field.
+func (u *PlanFeatureUpsert) SetMetadata(v map[string]interface{}) *PlanFeatureUpsert {
+	u.Set(planfeature.FieldMetadata, v)
+	return u
+}
+
+// UpdateMetadata sets the "metadata" field to the value that was provided on create.
+func (u *PlanFeatureUpsert) UpdateMetadata() *PlanFeatureUpsert {
+	u.SetExcluded(planfeature.FieldMetadata)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.PlanFeature.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(planfeature.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *PlanFeatureUpsertOne) UpdateNewValues() *PlanFeatureUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(planfeature.FieldID)
+		}
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(planfeature.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.PlanFeature.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *PlanFeatureUpsertOne) Ignore() *PlanFeatureUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *PlanFeatureUpsertOne) DoNothing() *PlanFeatureUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the PlanFeatureCreate.OnConflict
+// documentation for more info.
+func (u *PlanFeatureUpsertOne) Update(set func(*PlanFeatureUpsert)) *PlanFeatureUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&PlanFeatureUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetPlanID sets the "plan_id" field.
+func (u *PlanFeatureUpsertOne) SetPlanID(v uuid.UUID) *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.SetPlanID(v)
+	})
+}
+
+// UpdatePlanID sets the "plan_id" field to the value that was provided on create.
+func (u *PlanFeatureUpsertOne) UpdatePlanID() *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.UpdatePlanID()
+	})
+}
+
+// SetFeatureCode sets the "feature_code" field.
+func (u *PlanFeatureUpsertOne) SetFeatureCode(v string) *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.SetFeatureCode(v)
+	})
+}
+
+// UpdateFeatureCode sets the "feature_code" field to the value that was provided on create.
+func (u *PlanFeatureUpsertOne) UpdateFeatureCode() *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.UpdateFeatureCode()
+	})
+}
+
+// SetIsIncluded sets the "is_included" field.
+func (u *PlanFeatureUpsertOne) SetIsIncluded(v bool) *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.SetIsIncluded(v)
+	})
+}
+
+// UpdateIsIncluded sets the "is_included" field to the value that was provided on create.
+func (u *PlanFeatureUpsertOne) UpdateIsIncluded() *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.UpdateIsIncluded()
+	})
+}
+
+// SetLimitValue sets the "limit_value" field.
+func (u *PlanFeatureUpsertOne) SetLimitValue(v int) *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.SetLimitValue(v)
+	})
+}
+
+// AddLimitValue adds v to the "limit_value" field.
+func (u *PlanFeatureUpsertOne) AddLimitValue(v int) *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.AddLimitValue(v)
+	})
+}
+
+// UpdateLimitValue sets the "limit_value" field to the value that was provided on create.
+func (u *PlanFeatureUpsertOne) UpdateLimitValue() *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.UpdateLimitValue()
+	})
+}
+
+// ClearLimitValue clears the value of the "limit_value" field.
+func (u *PlanFeatureUpsertOne) ClearLimitValue() *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.ClearLimitValue()
+	})
+}
+
+// SetMetadata sets the "metadata" field.
+func (u *PlanFeatureUpsertOne) SetMetadata(v map[string]interface{}) *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.SetMetadata(v)
+	})
+}
+
+// UpdateMetadata sets the "metadata" field to the value that was provided on create.
+func (u *PlanFeatureUpsertOne) UpdateMetadata() *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.UpdateMetadata()
+	})
+}
+
+// Exec executes the query.
+func (u *PlanFeatureUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for PlanFeatureCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *PlanFeatureUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *PlanFeatureUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: PlanFeatureUpsertOne.ID is not supported by MySQL driver. Use PlanFeatureUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *PlanFeatureUpsertOne) IDX(ctx context.Context) uuid.UUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // PlanFeatureCreateBulk is the builder for creating many PlanFeature entities in bulk.
 type PlanFeatureCreateBulk struct {
 	config
 	err      error
 	builders []*PlanFeatureCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the PlanFeature entities in the database.
@@ -288,6 +587,7 @@ func (pfcb *PlanFeatureCreateBulk) Save(ctx context.Context) ([]*PlanFeature, er
 					_, err = mutators[i+1].Mutate(root, pfcb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = pfcb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, pfcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -334,6 +634,207 @@ func (pfcb *PlanFeatureCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (pfcb *PlanFeatureCreateBulk) ExecX(ctx context.Context) {
 	if err := pfcb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.PlanFeature.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.PlanFeatureUpsert) {
+//			SetPlanID(v+v).
+//		}).
+//		Exec(ctx)
+func (pfcb *PlanFeatureCreateBulk) OnConflict(opts ...sql.ConflictOption) *PlanFeatureUpsertBulk {
+	pfcb.conflict = opts
+	return &PlanFeatureUpsertBulk{
+		create: pfcb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.PlanFeature.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (pfcb *PlanFeatureCreateBulk) OnConflictColumns(columns ...string) *PlanFeatureUpsertBulk {
+	pfcb.conflict = append(pfcb.conflict, sql.ConflictColumns(columns...))
+	return &PlanFeatureUpsertBulk{
+		create: pfcb,
+	}
+}
+
+// PlanFeatureUpsertBulk is the builder for "upsert"-ing
+// a bulk of PlanFeature nodes.
+type PlanFeatureUpsertBulk struct {
+	create *PlanFeatureCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.PlanFeature.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(planfeature.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *PlanFeatureUpsertBulk) UpdateNewValues() *PlanFeatureUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(planfeature.FieldID)
+			}
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(planfeature.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.PlanFeature.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *PlanFeatureUpsertBulk) Ignore() *PlanFeatureUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *PlanFeatureUpsertBulk) DoNothing() *PlanFeatureUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the PlanFeatureCreateBulk.OnConflict
+// documentation for more info.
+func (u *PlanFeatureUpsertBulk) Update(set func(*PlanFeatureUpsert)) *PlanFeatureUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&PlanFeatureUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetPlanID sets the "plan_id" field.
+func (u *PlanFeatureUpsertBulk) SetPlanID(v uuid.UUID) *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.SetPlanID(v)
+	})
+}
+
+// UpdatePlanID sets the "plan_id" field to the value that was provided on create.
+func (u *PlanFeatureUpsertBulk) UpdatePlanID() *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.UpdatePlanID()
+	})
+}
+
+// SetFeatureCode sets the "feature_code" field.
+func (u *PlanFeatureUpsertBulk) SetFeatureCode(v string) *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.SetFeatureCode(v)
+	})
+}
+
+// UpdateFeatureCode sets the "feature_code" field to the value that was provided on create.
+func (u *PlanFeatureUpsertBulk) UpdateFeatureCode() *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.UpdateFeatureCode()
+	})
+}
+
+// SetIsIncluded sets the "is_included" field.
+func (u *PlanFeatureUpsertBulk) SetIsIncluded(v bool) *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.SetIsIncluded(v)
+	})
+}
+
+// UpdateIsIncluded sets the "is_included" field to the value that was provided on create.
+func (u *PlanFeatureUpsertBulk) UpdateIsIncluded() *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.UpdateIsIncluded()
+	})
+}
+
+// SetLimitValue sets the "limit_value" field.
+func (u *PlanFeatureUpsertBulk) SetLimitValue(v int) *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.SetLimitValue(v)
+	})
+}
+
+// AddLimitValue adds v to the "limit_value" field.
+func (u *PlanFeatureUpsertBulk) AddLimitValue(v int) *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.AddLimitValue(v)
+	})
+}
+
+// UpdateLimitValue sets the "limit_value" field to the value that was provided on create.
+func (u *PlanFeatureUpsertBulk) UpdateLimitValue() *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.UpdateLimitValue()
+	})
+}
+
+// ClearLimitValue clears the value of the "limit_value" field.
+func (u *PlanFeatureUpsertBulk) ClearLimitValue() *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.ClearLimitValue()
+	})
+}
+
+// SetMetadata sets the "metadata" field.
+func (u *PlanFeatureUpsertBulk) SetMetadata(v map[string]interface{}) *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.SetMetadata(v)
+	})
+}
+
+// UpdateMetadata sets the "metadata" field to the value that was provided on create.
+func (u *PlanFeatureUpsertBulk) UpdateMetadata() *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.UpdateMetadata()
+	})
+}
+
+// Exec executes the query.
+func (u *PlanFeatureUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the PlanFeatureCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for PlanFeatureCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *PlanFeatureUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

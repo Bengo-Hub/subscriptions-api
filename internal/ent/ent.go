@@ -19,6 +19,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 )
 
@@ -87,6 +88,7 @@ func checkColumn(table, column string) error {
 			product.Table:             product.ValidColumn,
 			productsubscription.Table: productsubscription.ValidColumn,
 			subscriptionplan.Table:    subscriptionplan.ValidColumn,
+			tenant.Table:              tenant.ValidColumn,
 			tenantsubscription.Table:  tenantsubscription.ValidColumn,
 		})
 	})
