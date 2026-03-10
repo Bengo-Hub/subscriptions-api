@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -19,7 +20,6 @@ func New(log *zap.Logger, health *handlers.HealthHandler, planHandler *handlers.
 
 	r.Use(middleware.RealIP)
 	r.Use(httpware.RequestID)
-	r.Use(httpware.Tenant)
 	r.Use(httpware.Logging(log))
 	r.Use(httpware.Recover(log))
 	r.Use(middleware.Timeout(30 * time.Second))
@@ -69,6 +69,18 @@ func New(log *zap.Logger, health *handlers.HealthHandler, planHandler *handlers.
 		if subscriptionHandler != nil {
 			api.Route("/tenants", func(tenants chi.Router) {
 				tenants.Route("/{tenant_id}", func(tenant chi.Router) {
+					tenant.Use(httpware.TenantV2(httpware.TenantConfig{
+						ClaimsExtractor: func(ctx context.Context) (tenantID, tenantSlug string, isPlatformOwner bool, ok bool) {
+							claims, found := authclient.ClaimsFromContext(ctx)
+							if !found {
+								return "", "", false, false
+							}
+							return claims.TenantID, claims.GetTenantSlug(), claims.IsPlatformOwner, true
+						},
+						URLParamFunc: chi.URLParam,
+						Required:     true,
+					}))
+
 					// Read-only
 					tenant.Get("/subscription", subscriptionHandler.GetTenantSubscription)
 					tenant.Get("/features/{feature_code}/check", subscriptionHandler.CheckFeature)
