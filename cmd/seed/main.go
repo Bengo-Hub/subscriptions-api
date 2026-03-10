@@ -3,12 +3,8 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
-	"os"
-	"strings"
 	"time"
 
 	"entgo.io/ent/dialect"
@@ -24,6 +20,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/schema"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/tenant"
 )
 
 
@@ -86,7 +83,8 @@ func runSeed(ctx context.Context, client *ent.Client) error {
 	}
 
 	// 4. Seed subscriptions for ALL tenants (each tenant must have a subscription, trial periods allowed)
-	if err := seedAllTenantSubscriptions(ctx, tx); err != nil {
+	syncer := tenant.NewSyncer(tx.Client())
+	if err := seedAllTenantSubscriptions(ctx, tx, syncer); err != nil {
 		return fmt.Errorf("seed tenant subscriptions: %w", err)
 	}
 
@@ -723,61 +721,7 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 	return nil
 }
 
-// ── All Tenant Subscriptions ─────────────────────────────────────────────────
-// Creates subscriptions for ALL tenants. Each tenant must have a subscription.
-// Tenant UUIDs are resolved dynamically from auth-api's public endpoint
-// GET /api/v1/tenants/by-slug/{slug} so they always match the real auth-api DB.
-//
-// Override per-tenant UUIDs via env vars: TENANT_ID_URBAN_LOFT, TENANT_ID_CODEVERTEX, etc.
-// AUTH_API_URL env var controls the auth-api base URL (default: https://sso.codevertexitsolutions.com).
-
-func resolveTenantID(slug string, authAPIURL string) (uuid.UUID, error) {
-	// Check env override first (TENANT_ID_{SLUG_UPPER_UNDERSCORE})
-	envKey := "TENANT_ID_" + strings.ToUpper(strings.ReplaceAll(slug, "-", "_"))
-	if val := os.Getenv(envKey); val != "" {
-		id, err := uuid.Parse(val)
-		if err != nil {
-			return uuid.Nil, fmt.Errorf("invalid UUID in env %s: %w", envKey, err)
-		}
-		log.Printf("  [uuid] %s → %s (from env %s)", slug, id, envKey)
-		return id, nil
-	}
-
-	// Dynamic lookup from auth-api public endpoint (no auth required)
-	url := fmt.Sprintf("%s/api/v1/tenants/by-slug/%s", strings.TrimRight(authAPIURL, "/"), slug)
-	resp, err := http.Get(url) //nolint:noctx
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("GET %s: %w", url, err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == 404 {
-		return uuid.Nil, fmt.Errorf("tenant %q not found in auth-api (404) — run auth-api seed first", slug)
-	}
-	if resp.StatusCode != 200 {
-		return uuid.Nil, fmt.Errorf("auth-api returned HTTP %d for slug %q", resp.StatusCode, slug)
-	}
-
-	var body struct {
-		ID string `json:"id"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return uuid.Nil, fmt.Errorf("decode auth-api response: %w", err)
-	}
-	id, err := uuid.Parse(body.ID)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("bad UUID from auth-api %q: %w", body.ID, err)
-	}
-	log.Printf("  [uuid] %s → %s (from auth-api)", slug, id)
-	return id, nil
-}
-
-func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx) error {
-	authAPIURL := os.Getenv("AUTH_API_URL")
-	if authAPIURL == "" {
-		authAPIURL = "https://sso.codevertexitsolutions.com"
-	}
-
+func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.Syncer) error {
 	// Tenant definitions with slug → plan mapping.
 	// UUIDs are resolved at runtime from auth-api (see resolveTenantID above).
 	tenantDefs := []struct {
@@ -801,7 +745,7 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx) error {
 
 	var tenants []resolvedTenant
 	for _, td := range tenantDefs {
-		id, err := resolveTenantID(td.slug, authAPIURL)
+		id, err := syncer.SyncTenant(ctx, td.slug)
 		if err != nil {
 			// Log and skip rather than aborting — allows partial seeding during
 			// initial setup when some tenants may not exist yet.
