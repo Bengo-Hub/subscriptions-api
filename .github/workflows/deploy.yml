@@ -2,7 +2,7 @@ name: Build and Deploy Subscriptions Service
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
