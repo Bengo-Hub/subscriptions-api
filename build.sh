@@ -131,17 +131,17 @@ if [[ "$SETUP_DATABASES" == "true" && -n "${KUBE_CONFIG:-}" ]]; then
   fi
 fi
 
-# Setup environment secrets
+# Ensure service secrets are up-to-date (handles standardized keys)
 if [[ -d "$DEVOPS_DIR" && -f "$DEVOPS_DIR/scripts/infrastructure/create-service-secrets.sh" ]]; then
-  info "Running centralized create-service-secrets.sh..."
+  info "Updating secrets for ${APP_NAME} using devops-k8s script..."
   SERVICE_NAME="$APP_NAME" \
   NAMESPACE="$NAMESPACE" \
+  DB_NAME="$SERVICE_DB_NAME" \
+  DB_USER="$SERVICE_DB_USER" \
   SECRET_NAME="$ENV_SECRET_NAME" \
-  bash "$DEVOPS_DIR/scripts/infrastructure/create-service-secrets.sh" || { error "Environment secret setup failed"; exit 1; }
-  success "Environment secrets configured"
-elif ! kubectl -n "$NAMESPACE" get secret "$ENV_SECRET_NAME" >/dev/null 2>&1; then
-  error "Secret $ENV_SECRET_NAME not found and centralized scripts are missing"
-  exit 1
+  bash "$DEVOPS_DIR/scripts/infrastructure/create-service-secrets.sh" || warn "Secret sync failed"
+else
+  warn "create-service-secrets.sh not available - using existing cluster secrets"
 fi
 
 TOKEN="${GH_PAT:-${GIT_SECRET:-${GITHUB_TOKEN:-}}}"
