@@ -26,175 +26,175 @@ type BundleCreate struct {
 }
 
 // SetCode sets the "code" field.
-func (bc *BundleCreate) SetCode(s string) *BundleCreate {
-	bc.mutation.SetCode(s)
-	return bc
+func (_c *BundleCreate) SetCode(v string) *BundleCreate {
+	_c.mutation.SetCode(v)
+	return _c
 }
 
 // SetName sets the "name" field.
-func (bc *BundleCreate) SetName(s string) *BundleCreate {
-	bc.mutation.SetName(s)
-	return bc
+func (_c *BundleCreate) SetName(v string) *BundleCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetDescription sets the "description" field.
-func (bc *BundleCreate) SetDescription(s string) *BundleCreate {
-	bc.mutation.SetDescription(s)
-	return bc
+func (_c *BundleCreate) SetDescription(v string) *BundleCreate {
+	_c.mutation.SetDescription(v)
+	return _c
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (bc *BundleCreate) SetNillableDescription(s *string) *BundleCreate {
-	if s != nil {
-		bc.SetDescription(*s)
+func (_c *BundleCreate) SetNillableDescription(v *string) *BundleCreate {
+	if v != nil {
+		_c.SetDescription(*v)
 	}
-	return bc
+	return _c
 }
 
 // SetProducts sets the "products" field.
-func (bc *BundleCreate) SetProducts(sp []schema.BundleProduct) *BundleCreate {
-	bc.mutation.SetProducts(sp)
-	return bc
+func (_c *BundleCreate) SetProducts(v []schema.BundleProduct) *BundleCreate {
+	_c.mutation.SetProducts(v)
+	return _c
 }
 
 // SetTiers sets the "tiers" field.
-func (bc *BundleCreate) SetTiers(st []schema.BundleTier) *BundleCreate {
-	bc.mutation.SetTiers(st)
-	return bc
+func (_c *BundleCreate) SetTiers(v []schema.BundleTier) *BundleCreate {
+	_c.mutation.SetTiers(v)
+	return _c
 }
 
 // SetDiscountType sets the "discount_type" field.
-func (bc *BundleCreate) SetDiscountType(bt bundle.DiscountType) *BundleCreate {
-	bc.mutation.SetDiscountType(bt)
-	return bc
+func (_c *BundleCreate) SetDiscountType(v bundle.DiscountType) *BundleCreate {
+	_c.mutation.SetDiscountType(v)
+	return _c
 }
 
 // SetNillableDiscountType sets the "discount_type" field if the given value is not nil.
-func (bc *BundleCreate) SetNillableDiscountType(bt *bundle.DiscountType) *BundleCreate {
-	if bt != nil {
-		bc.SetDiscountType(*bt)
+func (_c *BundleCreate) SetNillableDiscountType(v *bundle.DiscountType) *BundleCreate {
+	if v != nil {
+		_c.SetDiscountType(*v)
 	}
-	return bc
+	return _c
 }
 
 // SetDiscountValue sets the "discount_value" field.
-func (bc *BundleCreate) SetDiscountValue(f float64) *BundleCreate {
-	bc.mutation.SetDiscountValue(f)
-	return bc
+func (_c *BundleCreate) SetDiscountValue(v float64) *BundleCreate {
+	_c.mutation.SetDiscountValue(v)
+	return _c
 }
 
 // SetNillableDiscountValue sets the "discount_value" field if the given value is not nil.
-func (bc *BundleCreate) SetNillableDiscountValue(f *float64) *BundleCreate {
-	if f != nil {
-		bc.SetDiscountValue(*f)
+func (_c *BundleCreate) SetNillableDiscountValue(v *float64) *BundleCreate {
+	if v != nil {
+		_c.SetDiscountValue(*v)
 	}
-	return bc
+	return _c
 }
 
 // SetIsActive sets the "is_active" field.
-func (bc *BundleCreate) SetIsActive(b bool) *BundleCreate {
-	bc.mutation.SetIsActive(b)
-	return bc
+func (_c *BundleCreate) SetIsActive(v bool) *BundleCreate {
+	_c.mutation.SetIsActive(v)
+	return _c
 }
 
 // SetNillableIsActive sets the "is_active" field if the given value is not nil.
-func (bc *BundleCreate) SetNillableIsActive(b *bool) *BundleCreate {
-	if b != nil {
-		bc.SetIsActive(*b)
+func (_c *BundleCreate) SetNillableIsActive(v *bool) *BundleCreate {
+	if v != nil {
+		_c.SetIsActive(*v)
 	}
-	return bc
+	return _c
 }
 
 // SetIsDefault sets the "is_default" field.
-func (bc *BundleCreate) SetIsDefault(b bool) *BundleCreate {
-	bc.mutation.SetIsDefault(b)
-	return bc
+func (_c *BundleCreate) SetIsDefault(v bool) *BundleCreate {
+	_c.mutation.SetIsDefault(v)
+	return _c
 }
 
 // SetNillableIsDefault sets the "is_default" field if the given value is not nil.
-func (bc *BundleCreate) SetNillableIsDefault(b *bool) *BundleCreate {
-	if b != nil {
-		bc.SetIsDefault(*b)
+func (_c *BundleCreate) SetNillableIsDefault(v *bool) *BundleCreate {
+	if v != nil {
+		_c.SetIsDefault(*v)
 	}
-	return bc
+	return _c
 }
 
 // SetSortOrder sets the "sort_order" field.
-func (bc *BundleCreate) SetSortOrder(i int) *BundleCreate {
-	bc.mutation.SetSortOrder(i)
-	return bc
+func (_c *BundleCreate) SetSortOrder(v int) *BundleCreate {
+	_c.mutation.SetSortOrder(v)
+	return _c
 }
 
 // SetNillableSortOrder sets the "sort_order" field if the given value is not nil.
-func (bc *BundleCreate) SetNillableSortOrder(i *int) *BundleCreate {
-	if i != nil {
-		bc.SetSortOrder(*i)
+func (_c *BundleCreate) SetNillableSortOrder(v *int) *BundleCreate {
+	if v != nil {
+		_c.SetSortOrder(*v)
 	}
-	return bc
+	return _c
 }
 
 // SetMetadata sets the "metadata" field.
-func (bc *BundleCreate) SetMetadata(m map[string]interface{}) *BundleCreate {
-	bc.mutation.SetMetadata(m)
-	return bc
+func (_c *BundleCreate) SetMetadata(v map[string]interface{}) *BundleCreate {
+	_c.mutation.SetMetadata(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (bc *BundleCreate) SetCreatedAt(t time.Time) *BundleCreate {
-	bc.mutation.SetCreatedAt(t)
-	return bc
+func (_c *BundleCreate) SetCreatedAt(v time.Time) *BundleCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (bc *BundleCreate) SetNillableCreatedAt(t *time.Time) *BundleCreate {
-	if t != nil {
-		bc.SetCreatedAt(*t)
+func (_c *BundleCreate) SetNillableCreatedAt(v *time.Time) *BundleCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return bc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (bc *BundleCreate) SetUpdatedAt(t time.Time) *BundleCreate {
-	bc.mutation.SetUpdatedAt(t)
-	return bc
+func (_c *BundleCreate) SetUpdatedAt(v time.Time) *BundleCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (bc *BundleCreate) SetNillableUpdatedAt(t *time.Time) *BundleCreate {
-	if t != nil {
-		bc.SetUpdatedAt(*t)
+func (_c *BundleCreate) SetNillableUpdatedAt(v *time.Time) *BundleCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return bc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (bc *BundleCreate) SetID(u uuid.UUID) *BundleCreate {
-	bc.mutation.SetID(u)
-	return bc
+func (_c *BundleCreate) SetID(v uuid.UUID) *BundleCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (bc *BundleCreate) SetNillableID(u *uuid.UUID) *BundleCreate {
-	if u != nil {
-		bc.SetID(*u)
+func (_c *BundleCreate) SetNillableID(v *uuid.UUID) *BundleCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return bc
+	return _c
 }
 
 // Mutation returns the BundleMutation object of the builder.
-func (bc *BundleCreate) Mutation() *BundleMutation {
-	return bc.mutation
+func (_c *BundleCreate) Mutation() *BundleMutation {
+	return _c.mutation
 }
 
 // Save creates the Bundle in the database.
-func (bc *BundleCreate) Save(ctx context.Context) (*Bundle, error) {
-	bc.defaults()
-	return withHooks(ctx, bc.sqlSave, bc.mutation, bc.hooks)
+func (_c *BundleCreate) Save(ctx context.Context) (*Bundle, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (bc *BundleCreate) SaveX(ctx context.Context) *Bundle {
-	v, err := bc.Save(ctx)
+func (_c *BundleCreate) SaveX(ctx context.Context) *Bundle {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -202,120 +202,120 @@ func (bc *BundleCreate) SaveX(ctx context.Context) *Bundle {
 }
 
 // Exec executes the query.
-func (bc *BundleCreate) Exec(ctx context.Context) error {
-	_, err := bc.Save(ctx)
+func (_c *BundleCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (bc *BundleCreate) ExecX(ctx context.Context) {
-	if err := bc.Exec(ctx); err != nil {
+func (_c *BundleCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (bc *BundleCreate) defaults() {
-	if _, ok := bc.mutation.DiscountType(); !ok {
+func (_c *BundleCreate) defaults() {
+	if _, ok := _c.mutation.DiscountType(); !ok {
 		v := bundle.DefaultDiscountType
-		bc.mutation.SetDiscountType(v)
+		_c.mutation.SetDiscountType(v)
 	}
-	if _, ok := bc.mutation.DiscountValue(); !ok {
+	if _, ok := _c.mutation.DiscountValue(); !ok {
 		v := bundle.DefaultDiscountValue
-		bc.mutation.SetDiscountValue(v)
+		_c.mutation.SetDiscountValue(v)
 	}
-	if _, ok := bc.mutation.IsActive(); !ok {
+	if _, ok := _c.mutation.IsActive(); !ok {
 		v := bundle.DefaultIsActive
-		bc.mutation.SetIsActive(v)
+		_c.mutation.SetIsActive(v)
 	}
-	if _, ok := bc.mutation.IsDefault(); !ok {
+	if _, ok := _c.mutation.IsDefault(); !ok {
 		v := bundle.DefaultIsDefault
-		bc.mutation.SetIsDefault(v)
+		_c.mutation.SetIsDefault(v)
 	}
-	if _, ok := bc.mutation.SortOrder(); !ok {
+	if _, ok := _c.mutation.SortOrder(); !ok {
 		v := bundle.DefaultSortOrder
-		bc.mutation.SetSortOrder(v)
+		_c.mutation.SetSortOrder(v)
 	}
-	if _, ok := bc.mutation.Metadata(); !ok {
+	if _, ok := _c.mutation.Metadata(); !ok {
 		v := bundle.DefaultMetadata
-		bc.mutation.SetMetadata(v)
+		_c.mutation.SetMetadata(v)
 	}
-	if _, ok := bc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := bundle.DefaultCreatedAt()
-		bc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := bc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := bundle.DefaultUpdatedAt()
-		bc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := bc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := bundle.DefaultID()
-		bc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (bc *BundleCreate) check() error {
-	if _, ok := bc.mutation.Code(); !ok {
+func (_c *BundleCreate) check() error {
+	if _, ok := _c.mutation.Code(); !ok {
 		return &ValidationError{Name: "code", err: errors.New(`ent: missing required field "Bundle.code"`)}
 	}
-	if v, ok := bc.mutation.Code(); ok {
+	if v, ok := _c.mutation.Code(); ok {
 		if err := bundle.CodeValidator(v); err != nil {
 			return &ValidationError{Name: "code", err: fmt.Errorf(`ent: validator failed for field "Bundle.code": %w`, err)}
 		}
 	}
-	if _, ok := bc.mutation.Name(); !ok {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Bundle.name"`)}
 	}
-	if v, ok := bc.mutation.Name(); ok {
+	if v, ok := _c.mutation.Name(); ok {
 		if err := bundle.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Bundle.name": %w`, err)}
 		}
 	}
-	if _, ok := bc.mutation.Products(); !ok {
+	if _, ok := _c.mutation.Products(); !ok {
 		return &ValidationError{Name: "products", err: errors.New(`ent: missing required field "Bundle.products"`)}
 	}
-	if _, ok := bc.mutation.Tiers(); !ok {
+	if _, ok := _c.mutation.Tiers(); !ok {
 		return &ValidationError{Name: "tiers", err: errors.New(`ent: missing required field "Bundle.tiers"`)}
 	}
-	if _, ok := bc.mutation.DiscountType(); !ok {
+	if _, ok := _c.mutation.DiscountType(); !ok {
 		return &ValidationError{Name: "discount_type", err: errors.New(`ent: missing required field "Bundle.discount_type"`)}
 	}
-	if v, ok := bc.mutation.DiscountType(); ok {
+	if v, ok := _c.mutation.DiscountType(); ok {
 		if err := bundle.DiscountTypeValidator(v); err != nil {
 			return &ValidationError{Name: "discount_type", err: fmt.Errorf(`ent: validator failed for field "Bundle.discount_type": %w`, err)}
 		}
 	}
-	if _, ok := bc.mutation.DiscountValue(); !ok {
+	if _, ok := _c.mutation.DiscountValue(); !ok {
 		return &ValidationError{Name: "discount_value", err: errors.New(`ent: missing required field "Bundle.discount_value"`)}
 	}
-	if _, ok := bc.mutation.IsActive(); !ok {
+	if _, ok := _c.mutation.IsActive(); !ok {
 		return &ValidationError{Name: "is_active", err: errors.New(`ent: missing required field "Bundle.is_active"`)}
 	}
-	if _, ok := bc.mutation.IsDefault(); !ok {
+	if _, ok := _c.mutation.IsDefault(); !ok {
 		return &ValidationError{Name: "is_default", err: errors.New(`ent: missing required field "Bundle.is_default"`)}
 	}
-	if _, ok := bc.mutation.SortOrder(); !ok {
+	if _, ok := _c.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "Bundle.sort_order"`)}
 	}
-	if _, ok := bc.mutation.Metadata(); !ok {
+	if _, ok := _c.mutation.Metadata(); !ok {
 		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required field "Bundle.metadata"`)}
 	}
-	if _, ok := bc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Bundle.created_at"`)}
 	}
-	if _, ok := bc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Bundle.updated_at"`)}
 	}
 	return nil
 }
 
-func (bc *BundleCreate) sqlSave(ctx context.Context) (*Bundle, error) {
-	if err := bc.check(); err != nil {
+func (_c *BundleCreate) sqlSave(ctx context.Context) (*Bundle, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := bc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, bc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -328,70 +328,70 @@ func (bc *BundleCreate) sqlSave(ctx context.Context) (*Bundle, error) {
 			return nil, err
 		}
 	}
-	bc.mutation.id = &_node.ID
-	bc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (bc *BundleCreate) createSpec() (*Bundle, *sqlgraph.CreateSpec) {
+func (_c *BundleCreate) createSpec() (*Bundle, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Bundle{config: bc.config}
+		_node = &Bundle{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(bundle.Table, sqlgraph.NewFieldSpec(bundle.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = bc.conflict
-	if id, ok := bc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := bc.mutation.Code(); ok {
+	if value, ok := _c.mutation.Code(); ok {
 		_spec.SetField(bundle.FieldCode, field.TypeString, value)
 		_node.Code = value
 	}
-	if value, ok := bc.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(bundle.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := bc.mutation.Description(); ok {
+	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(bundle.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := bc.mutation.Products(); ok {
+	if value, ok := _c.mutation.Products(); ok {
 		_spec.SetField(bundle.FieldProducts, field.TypeJSON, value)
 		_node.Products = value
 	}
-	if value, ok := bc.mutation.Tiers(); ok {
+	if value, ok := _c.mutation.Tiers(); ok {
 		_spec.SetField(bundle.FieldTiers, field.TypeJSON, value)
 		_node.Tiers = value
 	}
-	if value, ok := bc.mutation.DiscountType(); ok {
+	if value, ok := _c.mutation.DiscountType(); ok {
 		_spec.SetField(bundle.FieldDiscountType, field.TypeEnum, value)
 		_node.DiscountType = value
 	}
-	if value, ok := bc.mutation.DiscountValue(); ok {
+	if value, ok := _c.mutation.DiscountValue(); ok {
 		_spec.SetField(bundle.FieldDiscountValue, field.TypeFloat64, value)
 		_node.DiscountValue = value
 	}
-	if value, ok := bc.mutation.IsActive(); ok {
+	if value, ok := _c.mutation.IsActive(); ok {
 		_spec.SetField(bundle.FieldIsActive, field.TypeBool, value)
 		_node.IsActive = value
 	}
-	if value, ok := bc.mutation.IsDefault(); ok {
+	if value, ok := _c.mutation.IsDefault(); ok {
 		_spec.SetField(bundle.FieldIsDefault, field.TypeBool, value)
 		_node.IsDefault = value
 	}
-	if value, ok := bc.mutation.SortOrder(); ok {
+	if value, ok := _c.mutation.SortOrder(); ok {
 		_spec.SetField(bundle.FieldSortOrder, field.TypeInt, value)
 		_node.SortOrder = value
 	}
-	if value, ok := bc.mutation.Metadata(); ok {
+	if value, ok := _c.mutation.Metadata(); ok {
 		_spec.SetField(bundle.FieldMetadata, field.TypeJSON, value)
 		_node.Metadata = value
 	}
-	if value, ok := bc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(bundle.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := bc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(bundle.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
@@ -414,10 +414,10 @@ func (bc *BundleCreate) createSpec() (*Bundle, *sqlgraph.CreateSpec) {
 //			SetCode(v+v).
 //		}).
 //		Exec(ctx)
-func (bc *BundleCreate) OnConflict(opts ...sql.ConflictOption) *BundleUpsertOne {
-	bc.conflict = opts
+func (_c *BundleCreate) OnConflict(opts ...sql.ConflictOption) *BundleUpsertOne {
+	_c.conflict = opts
 	return &BundleUpsertOne{
-		create: bc,
+		create: _c,
 	}
 }
 
@@ -427,10 +427,10 @@ func (bc *BundleCreate) OnConflict(opts ...sql.ConflictOption) *BundleUpsertOne 
 //	client.Bundle.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (bc *BundleCreate) OnConflictColumns(columns ...string) *BundleUpsertOne {
-	bc.conflict = append(bc.conflict, sql.ConflictColumns(columns...))
+func (_c *BundleCreate) OnConflictColumns(columns ...string) *BundleUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &BundleUpsertOne{
-		create: bc,
+		create: _c,
 	}
 }
 
@@ -896,16 +896,16 @@ type BundleCreateBulk struct {
 }
 
 // Save creates the Bundle entities in the database.
-func (bcb *BundleCreateBulk) Save(ctx context.Context) ([]*Bundle, error) {
-	if bcb.err != nil {
-		return nil, bcb.err
+func (_c *BundleCreateBulk) Save(ctx context.Context) ([]*Bundle, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(bcb.builders))
-	nodes := make([]*Bundle, len(bcb.builders))
-	mutators := make([]Mutator, len(bcb.builders))
-	for i := range bcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Bundle, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := bcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*BundleMutation)
@@ -919,12 +919,12 @@ func (bcb *BundleCreateBulk) Save(ctx context.Context) ([]*Bundle, error) {
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, bcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = bcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, bcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -944,7 +944,7 @@ func (bcb *BundleCreateBulk) Save(ctx context.Context) ([]*Bundle, error) {
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, bcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -952,8 +952,8 @@ func (bcb *BundleCreateBulk) Save(ctx context.Context) ([]*Bundle, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (bcb *BundleCreateBulk) SaveX(ctx context.Context) []*Bundle {
-	v, err := bcb.Save(ctx)
+func (_c *BundleCreateBulk) SaveX(ctx context.Context) []*Bundle {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -961,14 +961,14 @@ func (bcb *BundleCreateBulk) SaveX(ctx context.Context) []*Bundle {
 }
 
 // Exec executes the query.
-func (bcb *BundleCreateBulk) Exec(ctx context.Context) error {
-	_, err := bcb.Save(ctx)
+func (_c *BundleCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (bcb *BundleCreateBulk) ExecX(ctx context.Context) {
-	if err := bcb.Exec(ctx); err != nil {
+func (_c *BundleCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -988,10 +988,10 @@ func (bcb *BundleCreateBulk) ExecX(ctx context.Context) {
 //			SetCode(v+v).
 //		}).
 //		Exec(ctx)
-func (bcb *BundleCreateBulk) OnConflict(opts ...sql.ConflictOption) *BundleUpsertBulk {
-	bcb.conflict = opts
+func (_c *BundleCreateBulk) OnConflict(opts ...sql.ConflictOption) *BundleUpsertBulk {
+	_c.conflict = opts
 	return &BundleUpsertBulk{
-		create: bcb,
+		create: _c,
 	}
 }
 
@@ -1001,10 +1001,10 @@ func (bcb *BundleCreateBulk) OnConflict(opts ...sql.ConflictOption) *BundleUpser
 //	client.Bundle.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (bcb *BundleCreateBulk) OnConflictColumns(columns ...string) *BundleUpsertBulk {
-	bcb.conflict = append(bcb.conflict, sql.ConflictColumns(columns...))
+func (_c *BundleCreateBulk) OnConflictColumns(columns ...string) *BundleUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &BundleUpsertBulk{
-		create: bcb,
+		create: _c,
 	}
 }
 

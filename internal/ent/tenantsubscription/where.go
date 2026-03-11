@@ -91,6 +91,11 @@ func CancelReason(v string) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldCancelReason, v))
 }
 
+// AppliedDiscount applies equality check predicate on the "applied_discount" field. It's identical to AppliedDiscountEQ.
+func AppliedDiscount(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldAppliedDiscount, v))
+}
+
 // BundleCode applies equality check predicate on the "bundle_code" field. It's identical to BundleCodeEQ.
 func BundleCode(v string) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldBundleCode, v))
@@ -424,6 +429,66 @@ func CancelReasonEqualFold(v string) predicate.TenantSubscription {
 // CancelReasonContainsFold applies the ContainsFold predicate on the "cancel_reason" field.
 func CancelReasonContainsFold(v string) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldContainsFold(FieldCancelReason, v))
+}
+
+// BillingCycleEQ applies the EQ predicate on the "billing_cycle" field.
+func BillingCycleEQ(v BillingCycle) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldBillingCycle, v))
+}
+
+// BillingCycleNEQ applies the NEQ predicate on the "billing_cycle" field.
+func BillingCycleNEQ(v BillingCycle) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldBillingCycle, v))
+}
+
+// BillingCycleIn applies the In predicate on the "billing_cycle" field.
+func BillingCycleIn(vs ...BillingCycle) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldBillingCycle, vs...))
+}
+
+// BillingCycleNotIn applies the NotIn predicate on the "billing_cycle" field.
+func BillingCycleNotIn(vs ...BillingCycle) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldBillingCycle, vs...))
+}
+
+// AppliedDiscountEQ applies the EQ predicate on the "applied_discount" field.
+func AppliedDiscountEQ(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldAppliedDiscount, v))
+}
+
+// AppliedDiscountNEQ applies the NEQ predicate on the "applied_discount" field.
+func AppliedDiscountNEQ(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldAppliedDiscount, v))
+}
+
+// AppliedDiscountIn applies the In predicate on the "applied_discount" field.
+func AppliedDiscountIn(vs ...float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldAppliedDiscount, vs...))
+}
+
+// AppliedDiscountNotIn applies the NotIn predicate on the "applied_discount" field.
+func AppliedDiscountNotIn(vs ...float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldAppliedDiscount, vs...))
+}
+
+// AppliedDiscountGT applies the GT predicate on the "applied_discount" field.
+func AppliedDiscountGT(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldAppliedDiscount, v))
+}
+
+// AppliedDiscountGTE applies the GTE predicate on the "applied_discount" field.
+func AppliedDiscountGTE(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldAppliedDiscount, v))
+}
+
+// AppliedDiscountLT applies the LT predicate on the "applied_discount" field.
+func AppliedDiscountLT(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldAppliedDiscount, v))
+}
+
+// AppliedDiscountLTE applies the LTE predicate on the "applied_discount" field.
+func AppliedDiscountLTE(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldAppliedDiscount, v))
 }
 
 // BundleCodeEQ applies the EQ predicate on the "bundle_code" field.

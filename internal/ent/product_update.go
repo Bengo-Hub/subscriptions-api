@@ -26,237 +26,293 @@ type ProductUpdate struct {
 }
 
 // Where appends a list predicates to the ProductUpdate builder.
-func (pu *ProductUpdate) Where(ps ...predicate.Product) *ProductUpdate {
-	pu.mutation.Where(ps...)
-	return pu
+func (_u *ProductUpdate) Where(ps ...predicate.Product) *ProductUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetCode sets the "code" field.
-func (pu *ProductUpdate) SetCode(s string) *ProductUpdate {
-	pu.mutation.SetCode(s)
-	return pu
+func (_u *ProductUpdate) SetCode(v string) *ProductUpdate {
+	_u.mutation.SetCode(v)
+	return _u
 }
 
 // SetNillableCode sets the "code" field if the given value is not nil.
-func (pu *ProductUpdate) SetNillableCode(s *string) *ProductUpdate {
-	if s != nil {
-		pu.SetCode(*s)
+func (_u *ProductUpdate) SetNillableCode(v *string) *ProductUpdate {
+	if v != nil {
+		_u.SetCode(*v)
 	}
-	return pu
+	return _u
 }
 
 // SetName sets the "name" field.
-func (pu *ProductUpdate) SetName(s string) *ProductUpdate {
-	pu.mutation.SetName(s)
-	return pu
+func (_u *ProductUpdate) SetName(v string) *ProductUpdate {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (pu *ProductUpdate) SetNillableName(s *string) *ProductUpdate {
-	if s != nil {
-		pu.SetName(*s)
+func (_u *ProductUpdate) SetNillableName(v *string) *ProductUpdate {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return pu
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (pu *ProductUpdate) SetDescription(s string) *ProductUpdate {
-	pu.mutation.SetDescription(s)
-	return pu
+func (_u *ProductUpdate) SetDescription(v string) *ProductUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (pu *ProductUpdate) SetNillableDescription(s *string) *ProductUpdate {
-	if s != nil {
-		pu.SetDescription(*s)
+func (_u *ProductUpdate) SetNillableDescription(v *string) *ProductUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return pu
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (pu *ProductUpdate) ClearDescription() *ProductUpdate {
-	pu.mutation.ClearDescription()
-	return pu
+func (_u *ProductUpdate) ClearDescription() *ProductUpdate {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetCategory sets the "category" field.
-func (pu *ProductUpdate) SetCategory(pr product.Category) *ProductUpdate {
-	pu.mutation.SetCategory(pr)
-	return pu
+func (_u *ProductUpdate) SetCategory(v product.Category) *ProductUpdate {
+	_u.mutation.SetCategory(v)
+	return _u
 }
 
 // SetNillableCategory sets the "category" field if the given value is not nil.
-func (pu *ProductUpdate) SetNillableCategory(pr *product.Category) *ProductUpdate {
-	if pr != nil {
-		pu.SetCategory(*pr)
+func (_u *ProductUpdate) SetNillableCategory(v *product.Category) *ProductUpdate {
+	if v != nil {
+		_u.SetCategory(*v)
 	}
-	return pu
+	return _u
 }
 
 // SetStatus sets the "status" field.
-func (pu *ProductUpdate) SetStatus(pr product.Status) *ProductUpdate {
-	pu.mutation.SetStatus(pr)
-	return pu
+func (_u *ProductUpdate) SetStatus(v product.Status) *ProductUpdate {
+	_u.mutation.SetStatus(v)
+	return _u
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (pu *ProductUpdate) SetNillableStatus(pr *product.Status) *ProductUpdate {
-	if pr != nil {
-		pu.SetStatus(*pr)
+func (_u *ProductUpdate) SetNillableStatus(v *product.Status) *ProductUpdate {
+	if v != nil {
+		_u.SetStatus(*v)
 	}
-	return pu
+	return _u
 }
 
 // SetDependencies sets the "dependencies" field.
-func (pu *ProductUpdate) SetDependencies(s []string) *ProductUpdate {
-	pu.mutation.SetDependencies(s)
-	return pu
+func (_u *ProductUpdate) SetDependencies(v []string) *ProductUpdate {
+	_u.mutation.SetDependencies(v)
+	return _u
 }
 
-// AppendDependencies appends s to the "dependencies" field.
-func (pu *ProductUpdate) AppendDependencies(s []string) *ProductUpdate {
-	pu.mutation.AppendDependencies(s)
-	return pu
+// AppendDependencies appends value to the "dependencies" field.
+func (_u *ProductUpdate) AppendDependencies(v []string) *ProductUpdate {
+	_u.mutation.AppendDependencies(v)
+	return _u
 }
 
 // ClearDependencies clears the value of the "dependencies" field.
-func (pu *ProductUpdate) ClearDependencies() *ProductUpdate {
-	pu.mutation.ClearDependencies()
-	return pu
+func (_u *ProductUpdate) ClearDependencies() *ProductUpdate {
+	_u.mutation.ClearDependencies()
+	return _u
 }
 
 // SetIsPlatform sets the "is_platform" field.
-func (pu *ProductUpdate) SetIsPlatform(b bool) *ProductUpdate {
-	pu.mutation.SetIsPlatform(b)
-	return pu
+func (_u *ProductUpdate) SetIsPlatform(v bool) *ProductUpdate {
+	_u.mutation.SetIsPlatform(v)
+	return _u
 }
 
 // SetNillableIsPlatform sets the "is_platform" field if the given value is not nil.
-func (pu *ProductUpdate) SetNillableIsPlatform(b *bool) *ProductUpdate {
-	if b != nil {
-		pu.SetIsPlatform(*b)
+func (_u *ProductUpdate) SetNillableIsPlatform(v *bool) *ProductUpdate {
+	if v != nil {
+		_u.SetIsPlatform(*v)
 	}
-	return pu
+	return _u
 }
 
 // SetMonthlyPrice sets the "monthly_price" field.
-func (pu *ProductUpdate) SetMonthlyPrice(f float64) *ProductUpdate {
-	pu.mutation.ResetMonthlyPrice()
-	pu.mutation.SetMonthlyPrice(f)
-	return pu
+func (_u *ProductUpdate) SetMonthlyPrice(v float64) *ProductUpdate {
+	_u.mutation.ResetMonthlyPrice()
+	_u.mutation.SetMonthlyPrice(v)
+	return _u
 }
 
 // SetNillableMonthlyPrice sets the "monthly_price" field if the given value is not nil.
-func (pu *ProductUpdate) SetNillableMonthlyPrice(f *float64) *ProductUpdate {
-	if f != nil {
-		pu.SetMonthlyPrice(*f)
+func (_u *ProductUpdate) SetNillableMonthlyPrice(v *float64) *ProductUpdate {
+	if v != nil {
+		_u.SetMonthlyPrice(*v)
 	}
-	return pu
+	return _u
 }
 
-// AddMonthlyPrice adds f to the "monthly_price" field.
-func (pu *ProductUpdate) AddMonthlyPrice(f float64) *ProductUpdate {
-	pu.mutation.AddMonthlyPrice(f)
-	return pu
+// AddMonthlyPrice adds value to the "monthly_price" field.
+func (_u *ProductUpdate) AddMonthlyPrice(v float64) *ProductUpdate {
+	_u.mutation.AddMonthlyPrice(v)
+	return _u
+}
+
+// SetYearlyPrice sets the "yearly_price" field.
+func (_u *ProductUpdate) SetYearlyPrice(v float64) *ProductUpdate {
+	_u.mutation.ResetYearlyPrice()
+	_u.mutation.SetYearlyPrice(v)
+	return _u
+}
+
+// SetNillableYearlyPrice sets the "yearly_price" field if the given value is not nil.
+func (_u *ProductUpdate) SetNillableYearlyPrice(v *float64) *ProductUpdate {
+	if v != nil {
+		_u.SetYearlyPrice(*v)
+	}
+	return _u
+}
+
+// AddYearlyPrice adds value to the "yearly_price" field.
+func (_u *ProductUpdate) AddYearlyPrice(v float64) *ProductUpdate {
+	_u.mutation.AddYearlyPrice(v)
+	return _u
+}
+
+// SetOnetimePrice sets the "onetime_price" field.
+func (_u *ProductUpdate) SetOnetimePrice(v float64) *ProductUpdate {
+	_u.mutation.ResetOnetimePrice()
+	_u.mutation.SetOnetimePrice(v)
+	return _u
+}
+
+// SetNillableOnetimePrice sets the "onetime_price" field if the given value is not nil.
+func (_u *ProductUpdate) SetNillableOnetimePrice(v *float64) *ProductUpdate {
+	if v != nil {
+		_u.SetOnetimePrice(*v)
+	}
+	return _u
+}
+
+// AddOnetimePrice adds value to the "onetime_price" field.
+func (_u *ProductUpdate) AddOnetimePrice(v float64) *ProductUpdate {
+	_u.mutation.AddOnetimePrice(v)
+	return _u
 }
 
 // SetIncludedInBundle sets the "included_in_bundle" field.
-func (pu *ProductUpdate) SetIncludedInBundle(b bool) *ProductUpdate {
-	pu.mutation.SetIncludedInBundle(b)
-	return pu
+func (_u *ProductUpdate) SetIncludedInBundle(v bool) *ProductUpdate {
+	_u.mutation.SetIncludedInBundle(v)
+	return _u
 }
 
 // SetNillableIncludedInBundle sets the "included_in_bundle" field if the given value is not nil.
-func (pu *ProductUpdate) SetNillableIncludedInBundle(b *bool) *ProductUpdate {
-	if b != nil {
-		pu.SetIncludedInBundle(*b)
+func (_u *ProductUpdate) SetNillableIncludedInBundle(v *bool) *ProductUpdate {
+	if v != nil {
+		_u.SetIncludedInBundle(*v)
 	}
-	return pu
+	return _u
 }
 
 // SetSortOrder sets the "sort_order" field.
-func (pu *ProductUpdate) SetSortOrder(i int) *ProductUpdate {
-	pu.mutation.ResetSortOrder()
-	pu.mutation.SetSortOrder(i)
-	return pu
+func (_u *ProductUpdate) SetSortOrder(v int) *ProductUpdate {
+	_u.mutation.ResetSortOrder()
+	_u.mutation.SetSortOrder(v)
+	return _u
 }
 
 // SetNillableSortOrder sets the "sort_order" field if the given value is not nil.
-func (pu *ProductUpdate) SetNillableSortOrder(i *int) *ProductUpdate {
-	if i != nil {
-		pu.SetSortOrder(*i)
+func (_u *ProductUpdate) SetNillableSortOrder(v *int) *ProductUpdate {
+	if v != nil {
+		_u.SetSortOrder(*v)
 	}
-	return pu
+	return _u
 }
 
-// AddSortOrder adds i to the "sort_order" field.
-func (pu *ProductUpdate) AddSortOrder(i int) *ProductUpdate {
-	pu.mutation.AddSortOrder(i)
-	return pu
+// AddSortOrder adds value to the "sort_order" field.
+func (_u *ProductUpdate) AddSortOrder(v int) *ProductUpdate {
+	_u.mutation.AddSortOrder(v)
+	return _u
+}
+
+// SetIsBaseService sets the "is_base_service" field.
+func (_u *ProductUpdate) SetIsBaseService(v bool) *ProductUpdate {
+	_u.mutation.SetIsBaseService(v)
+	return _u
+}
+
+// SetNillableIsBaseService sets the "is_base_service" field if the given value is not nil.
+func (_u *ProductUpdate) SetNillableIsBaseService(v *bool) *ProductUpdate {
+	if v != nil {
+		_u.SetIsBaseService(*v)
+	}
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (pu *ProductUpdate) SetMetadata(m map[string]interface{}) *ProductUpdate {
-	pu.mutation.SetMetadata(m)
-	return pu
+func (_u *ProductUpdate) SetMetadata(v map[string]interface{}) *ProductUpdate {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (pu *ProductUpdate) SetUpdatedAt(t time.Time) *ProductUpdate {
-	pu.mutation.SetUpdatedAt(t)
-	return pu
+func (_u *ProductUpdate) SetUpdatedAt(v time.Time) *ProductUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // AddProductSubscriptionIDs adds the "product_subscriptions" edge to the ProductSubscription entity by IDs.
-func (pu *ProductUpdate) AddProductSubscriptionIDs(ids ...uuid.UUID) *ProductUpdate {
-	pu.mutation.AddProductSubscriptionIDs(ids...)
-	return pu
+func (_u *ProductUpdate) AddProductSubscriptionIDs(ids ...uuid.UUID) *ProductUpdate {
+	_u.mutation.AddProductSubscriptionIDs(ids...)
+	return _u
 }
 
 // AddProductSubscriptions adds the "product_subscriptions" edges to the ProductSubscription entity.
-func (pu *ProductUpdate) AddProductSubscriptions(p ...*ProductSubscription) *ProductUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *ProductUpdate) AddProductSubscriptions(v ...*ProductSubscription) *ProductUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pu.AddProductSubscriptionIDs(ids...)
+	return _u.AddProductSubscriptionIDs(ids...)
 }
 
 // Mutation returns the ProductMutation object of the builder.
-func (pu *ProductUpdate) Mutation() *ProductMutation {
-	return pu.mutation
+func (_u *ProductUpdate) Mutation() *ProductMutation {
+	return _u.mutation
 }
 
 // ClearProductSubscriptions clears all "product_subscriptions" edges to the ProductSubscription entity.
-func (pu *ProductUpdate) ClearProductSubscriptions() *ProductUpdate {
-	pu.mutation.ClearProductSubscriptions()
-	return pu
+func (_u *ProductUpdate) ClearProductSubscriptions() *ProductUpdate {
+	_u.mutation.ClearProductSubscriptions()
+	return _u
 }
 
 // RemoveProductSubscriptionIDs removes the "product_subscriptions" edge to ProductSubscription entities by IDs.
-func (pu *ProductUpdate) RemoveProductSubscriptionIDs(ids ...uuid.UUID) *ProductUpdate {
-	pu.mutation.RemoveProductSubscriptionIDs(ids...)
-	return pu
+func (_u *ProductUpdate) RemoveProductSubscriptionIDs(ids ...uuid.UUID) *ProductUpdate {
+	_u.mutation.RemoveProductSubscriptionIDs(ids...)
+	return _u
 }
 
 // RemoveProductSubscriptions removes "product_subscriptions" edges to ProductSubscription entities.
-func (pu *ProductUpdate) RemoveProductSubscriptions(p ...*ProductSubscription) *ProductUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *ProductUpdate) RemoveProductSubscriptions(v ...*ProductSubscription) *ProductUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pu.RemoveProductSubscriptionIDs(ids...)
+	return _u.RemoveProductSubscriptionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (pu *ProductUpdate) Save(ctx context.Context) (int, error) {
-	pu.defaults()
-	return withHooks(ctx, pu.sqlSave, pu.mutation, pu.hooks)
+func (_u *ProductUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pu *ProductUpdate) SaveX(ctx context.Context) int {
-	affected, err := pu.Save(ctx)
+func (_u *ProductUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -264,44 +320,44 @@ func (pu *ProductUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (pu *ProductUpdate) Exec(ctx context.Context) error {
-	_, err := pu.Save(ctx)
+func (_u *ProductUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pu *ProductUpdate) ExecX(ctx context.Context) {
-	if err := pu.Exec(ctx); err != nil {
+func (_u *ProductUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (pu *ProductUpdate) defaults() {
-	if _, ok := pu.mutation.UpdatedAt(); !ok {
+func (_u *ProductUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := product.UpdateDefaultUpdatedAt()
-		pu.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pu *ProductUpdate) check() error {
-	if v, ok := pu.mutation.Code(); ok {
+func (_u *ProductUpdate) check() error {
+	if v, ok := _u.mutation.Code(); ok {
 		if err := product.CodeValidator(v); err != nil {
 			return &ValidationError{Name: "code", err: fmt.Errorf(`ent: validator failed for field "Product.code": %w`, err)}
 		}
 	}
-	if v, ok := pu.mutation.Name(); ok {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := product.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Product.name": %w`, err)}
 		}
 	}
-	if v, ok := pu.mutation.Category(); ok {
+	if v, ok := _u.mutation.Category(); ok {
 		if err := product.CategoryValidator(v); err != nil {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Product.category": %w`, err)}
 		}
 	}
-	if v, ok := pu.mutation.Status(); ok {
+	if v, ok := _u.mutation.Status(); ok {
 		if err := product.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Product.status": %w`, err)}
 		}
@@ -309,72 +365,87 @@ func (pu *ProductUpdate) check() error {
 	return nil
 }
 
-func (pu *ProductUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := pu.check(); err != nil {
-		return n, err
+func (_u *ProductUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(product.Table, product.Columns, sqlgraph.NewFieldSpec(product.FieldID, field.TypeUUID))
-	if ps := pu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := pu.mutation.Code(); ok {
+	if value, ok := _u.mutation.Code(); ok {
 		_spec.SetField(product.FieldCode, field.TypeString, value)
 	}
-	if value, ok := pu.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(product.FieldName, field.TypeString, value)
 	}
-	if value, ok := pu.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(product.FieldDescription, field.TypeString, value)
 	}
-	if pu.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(product.FieldDescription, field.TypeString)
 	}
-	if value, ok := pu.mutation.Category(); ok {
+	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(product.FieldCategory, field.TypeEnum, value)
 	}
-	if value, ok := pu.mutation.Status(); ok {
+	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(product.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := pu.mutation.Dependencies(); ok {
+	if value, ok := _u.mutation.Dependencies(); ok {
 		_spec.SetField(product.FieldDependencies, field.TypeJSON, value)
 	}
-	if value, ok := pu.mutation.AppendedDependencies(); ok {
+	if value, ok := _u.mutation.AppendedDependencies(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, product.FieldDependencies, value)
 		})
 	}
-	if pu.mutation.DependenciesCleared() {
+	if _u.mutation.DependenciesCleared() {
 		_spec.ClearField(product.FieldDependencies, field.TypeJSON)
 	}
-	if value, ok := pu.mutation.IsPlatform(); ok {
+	if value, ok := _u.mutation.IsPlatform(); ok {
 		_spec.SetField(product.FieldIsPlatform, field.TypeBool, value)
 	}
-	if value, ok := pu.mutation.MonthlyPrice(); ok {
+	if value, ok := _u.mutation.MonthlyPrice(); ok {
 		_spec.SetField(product.FieldMonthlyPrice, field.TypeFloat64, value)
 	}
-	if value, ok := pu.mutation.AddedMonthlyPrice(); ok {
+	if value, ok := _u.mutation.AddedMonthlyPrice(); ok {
 		_spec.AddField(product.FieldMonthlyPrice, field.TypeFloat64, value)
 	}
-	if value, ok := pu.mutation.IncludedInBundle(); ok {
+	if value, ok := _u.mutation.YearlyPrice(); ok {
+		_spec.SetField(product.FieldYearlyPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedYearlyPrice(); ok {
+		_spec.AddField(product.FieldYearlyPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.OnetimePrice(); ok {
+		_spec.SetField(product.FieldOnetimePrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedOnetimePrice(); ok {
+		_spec.AddField(product.FieldOnetimePrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.IncludedInBundle(); ok {
 		_spec.SetField(product.FieldIncludedInBundle, field.TypeBool, value)
 	}
-	if value, ok := pu.mutation.SortOrder(); ok {
+	if value, ok := _u.mutation.SortOrder(); ok {
 		_spec.SetField(product.FieldSortOrder, field.TypeInt, value)
 	}
-	if value, ok := pu.mutation.AddedSortOrder(); ok {
+	if value, ok := _u.mutation.AddedSortOrder(); ok {
 		_spec.AddField(product.FieldSortOrder, field.TypeInt, value)
 	}
-	if value, ok := pu.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.IsBaseService(); ok {
+		_spec.SetField(product.FieldIsBaseService, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(product.FieldMetadata, field.TypeJSON, value)
 	}
-	if value, ok := pu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(product.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if pu.mutation.ProductSubscriptionsCleared() {
+	if _u.mutation.ProductSubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -387,7 +458,7 @@ func (pu *ProductUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.RemovedProductSubscriptionsIDs(); len(nodes) > 0 && !pu.mutation.ProductSubscriptionsCleared() {
+	if nodes := _u.mutation.RemovedProductSubscriptionsIDs(); len(nodes) > 0 && !_u.mutation.ProductSubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -403,7 +474,7 @@ func (pu *ProductUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.ProductSubscriptionsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ProductSubscriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -419,7 +490,7 @@ func (pu *ProductUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{product.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -427,8 +498,8 @@ func (pu *ProductUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	pu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // ProductUpdateOne is the builder for updating a single Product entity.
@@ -440,244 +511,300 @@ type ProductUpdateOne struct {
 }
 
 // SetCode sets the "code" field.
-func (puo *ProductUpdateOne) SetCode(s string) *ProductUpdateOne {
-	puo.mutation.SetCode(s)
-	return puo
+func (_u *ProductUpdateOne) SetCode(v string) *ProductUpdateOne {
+	_u.mutation.SetCode(v)
+	return _u
 }
 
 // SetNillableCode sets the "code" field if the given value is not nil.
-func (puo *ProductUpdateOne) SetNillableCode(s *string) *ProductUpdateOne {
-	if s != nil {
-		puo.SetCode(*s)
+func (_u *ProductUpdateOne) SetNillableCode(v *string) *ProductUpdateOne {
+	if v != nil {
+		_u.SetCode(*v)
 	}
-	return puo
+	return _u
 }
 
 // SetName sets the "name" field.
-func (puo *ProductUpdateOne) SetName(s string) *ProductUpdateOne {
-	puo.mutation.SetName(s)
-	return puo
+func (_u *ProductUpdateOne) SetName(v string) *ProductUpdateOne {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (puo *ProductUpdateOne) SetNillableName(s *string) *ProductUpdateOne {
-	if s != nil {
-		puo.SetName(*s)
+func (_u *ProductUpdateOne) SetNillableName(v *string) *ProductUpdateOne {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return puo
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (puo *ProductUpdateOne) SetDescription(s string) *ProductUpdateOne {
-	puo.mutation.SetDescription(s)
-	return puo
+func (_u *ProductUpdateOne) SetDescription(v string) *ProductUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (puo *ProductUpdateOne) SetNillableDescription(s *string) *ProductUpdateOne {
-	if s != nil {
-		puo.SetDescription(*s)
+func (_u *ProductUpdateOne) SetNillableDescription(v *string) *ProductUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return puo
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (puo *ProductUpdateOne) ClearDescription() *ProductUpdateOne {
-	puo.mutation.ClearDescription()
-	return puo
+func (_u *ProductUpdateOne) ClearDescription() *ProductUpdateOne {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetCategory sets the "category" field.
-func (puo *ProductUpdateOne) SetCategory(pr product.Category) *ProductUpdateOne {
-	puo.mutation.SetCategory(pr)
-	return puo
+func (_u *ProductUpdateOne) SetCategory(v product.Category) *ProductUpdateOne {
+	_u.mutation.SetCategory(v)
+	return _u
 }
 
 // SetNillableCategory sets the "category" field if the given value is not nil.
-func (puo *ProductUpdateOne) SetNillableCategory(pr *product.Category) *ProductUpdateOne {
-	if pr != nil {
-		puo.SetCategory(*pr)
+func (_u *ProductUpdateOne) SetNillableCategory(v *product.Category) *ProductUpdateOne {
+	if v != nil {
+		_u.SetCategory(*v)
 	}
-	return puo
+	return _u
 }
 
 // SetStatus sets the "status" field.
-func (puo *ProductUpdateOne) SetStatus(pr product.Status) *ProductUpdateOne {
-	puo.mutation.SetStatus(pr)
-	return puo
+func (_u *ProductUpdateOne) SetStatus(v product.Status) *ProductUpdateOne {
+	_u.mutation.SetStatus(v)
+	return _u
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (puo *ProductUpdateOne) SetNillableStatus(pr *product.Status) *ProductUpdateOne {
-	if pr != nil {
-		puo.SetStatus(*pr)
+func (_u *ProductUpdateOne) SetNillableStatus(v *product.Status) *ProductUpdateOne {
+	if v != nil {
+		_u.SetStatus(*v)
 	}
-	return puo
+	return _u
 }
 
 // SetDependencies sets the "dependencies" field.
-func (puo *ProductUpdateOne) SetDependencies(s []string) *ProductUpdateOne {
-	puo.mutation.SetDependencies(s)
-	return puo
+func (_u *ProductUpdateOne) SetDependencies(v []string) *ProductUpdateOne {
+	_u.mutation.SetDependencies(v)
+	return _u
 }
 
-// AppendDependencies appends s to the "dependencies" field.
-func (puo *ProductUpdateOne) AppendDependencies(s []string) *ProductUpdateOne {
-	puo.mutation.AppendDependencies(s)
-	return puo
+// AppendDependencies appends value to the "dependencies" field.
+func (_u *ProductUpdateOne) AppendDependencies(v []string) *ProductUpdateOne {
+	_u.mutation.AppendDependencies(v)
+	return _u
 }
 
 // ClearDependencies clears the value of the "dependencies" field.
-func (puo *ProductUpdateOne) ClearDependencies() *ProductUpdateOne {
-	puo.mutation.ClearDependencies()
-	return puo
+func (_u *ProductUpdateOne) ClearDependencies() *ProductUpdateOne {
+	_u.mutation.ClearDependencies()
+	return _u
 }
 
 // SetIsPlatform sets the "is_platform" field.
-func (puo *ProductUpdateOne) SetIsPlatform(b bool) *ProductUpdateOne {
-	puo.mutation.SetIsPlatform(b)
-	return puo
+func (_u *ProductUpdateOne) SetIsPlatform(v bool) *ProductUpdateOne {
+	_u.mutation.SetIsPlatform(v)
+	return _u
 }
 
 // SetNillableIsPlatform sets the "is_platform" field if the given value is not nil.
-func (puo *ProductUpdateOne) SetNillableIsPlatform(b *bool) *ProductUpdateOne {
-	if b != nil {
-		puo.SetIsPlatform(*b)
+func (_u *ProductUpdateOne) SetNillableIsPlatform(v *bool) *ProductUpdateOne {
+	if v != nil {
+		_u.SetIsPlatform(*v)
 	}
-	return puo
+	return _u
 }
 
 // SetMonthlyPrice sets the "monthly_price" field.
-func (puo *ProductUpdateOne) SetMonthlyPrice(f float64) *ProductUpdateOne {
-	puo.mutation.ResetMonthlyPrice()
-	puo.mutation.SetMonthlyPrice(f)
-	return puo
+func (_u *ProductUpdateOne) SetMonthlyPrice(v float64) *ProductUpdateOne {
+	_u.mutation.ResetMonthlyPrice()
+	_u.mutation.SetMonthlyPrice(v)
+	return _u
 }
 
 // SetNillableMonthlyPrice sets the "monthly_price" field if the given value is not nil.
-func (puo *ProductUpdateOne) SetNillableMonthlyPrice(f *float64) *ProductUpdateOne {
-	if f != nil {
-		puo.SetMonthlyPrice(*f)
+func (_u *ProductUpdateOne) SetNillableMonthlyPrice(v *float64) *ProductUpdateOne {
+	if v != nil {
+		_u.SetMonthlyPrice(*v)
 	}
-	return puo
+	return _u
 }
 
-// AddMonthlyPrice adds f to the "monthly_price" field.
-func (puo *ProductUpdateOne) AddMonthlyPrice(f float64) *ProductUpdateOne {
-	puo.mutation.AddMonthlyPrice(f)
-	return puo
+// AddMonthlyPrice adds value to the "monthly_price" field.
+func (_u *ProductUpdateOne) AddMonthlyPrice(v float64) *ProductUpdateOne {
+	_u.mutation.AddMonthlyPrice(v)
+	return _u
+}
+
+// SetYearlyPrice sets the "yearly_price" field.
+func (_u *ProductUpdateOne) SetYearlyPrice(v float64) *ProductUpdateOne {
+	_u.mutation.ResetYearlyPrice()
+	_u.mutation.SetYearlyPrice(v)
+	return _u
+}
+
+// SetNillableYearlyPrice sets the "yearly_price" field if the given value is not nil.
+func (_u *ProductUpdateOne) SetNillableYearlyPrice(v *float64) *ProductUpdateOne {
+	if v != nil {
+		_u.SetYearlyPrice(*v)
+	}
+	return _u
+}
+
+// AddYearlyPrice adds value to the "yearly_price" field.
+func (_u *ProductUpdateOne) AddYearlyPrice(v float64) *ProductUpdateOne {
+	_u.mutation.AddYearlyPrice(v)
+	return _u
+}
+
+// SetOnetimePrice sets the "onetime_price" field.
+func (_u *ProductUpdateOne) SetOnetimePrice(v float64) *ProductUpdateOne {
+	_u.mutation.ResetOnetimePrice()
+	_u.mutation.SetOnetimePrice(v)
+	return _u
+}
+
+// SetNillableOnetimePrice sets the "onetime_price" field if the given value is not nil.
+func (_u *ProductUpdateOne) SetNillableOnetimePrice(v *float64) *ProductUpdateOne {
+	if v != nil {
+		_u.SetOnetimePrice(*v)
+	}
+	return _u
+}
+
+// AddOnetimePrice adds value to the "onetime_price" field.
+func (_u *ProductUpdateOne) AddOnetimePrice(v float64) *ProductUpdateOne {
+	_u.mutation.AddOnetimePrice(v)
+	return _u
 }
 
 // SetIncludedInBundle sets the "included_in_bundle" field.
-func (puo *ProductUpdateOne) SetIncludedInBundle(b bool) *ProductUpdateOne {
-	puo.mutation.SetIncludedInBundle(b)
-	return puo
+func (_u *ProductUpdateOne) SetIncludedInBundle(v bool) *ProductUpdateOne {
+	_u.mutation.SetIncludedInBundle(v)
+	return _u
 }
 
 // SetNillableIncludedInBundle sets the "included_in_bundle" field if the given value is not nil.
-func (puo *ProductUpdateOne) SetNillableIncludedInBundle(b *bool) *ProductUpdateOne {
-	if b != nil {
-		puo.SetIncludedInBundle(*b)
+func (_u *ProductUpdateOne) SetNillableIncludedInBundle(v *bool) *ProductUpdateOne {
+	if v != nil {
+		_u.SetIncludedInBundle(*v)
 	}
-	return puo
+	return _u
 }
 
 // SetSortOrder sets the "sort_order" field.
-func (puo *ProductUpdateOne) SetSortOrder(i int) *ProductUpdateOne {
-	puo.mutation.ResetSortOrder()
-	puo.mutation.SetSortOrder(i)
-	return puo
+func (_u *ProductUpdateOne) SetSortOrder(v int) *ProductUpdateOne {
+	_u.mutation.ResetSortOrder()
+	_u.mutation.SetSortOrder(v)
+	return _u
 }
 
 // SetNillableSortOrder sets the "sort_order" field if the given value is not nil.
-func (puo *ProductUpdateOne) SetNillableSortOrder(i *int) *ProductUpdateOne {
-	if i != nil {
-		puo.SetSortOrder(*i)
+func (_u *ProductUpdateOne) SetNillableSortOrder(v *int) *ProductUpdateOne {
+	if v != nil {
+		_u.SetSortOrder(*v)
 	}
-	return puo
+	return _u
 }
 
-// AddSortOrder adds i to the "sort_order" field.
-func (puo *ProductUpdateOne) AddSortOrder(i int) *ProductUpdateOne {
-	puo.mutation.AddSortOrder(i)
-	return puo
+// AddSortOrder adds value to the "sort_order" field.
+func (_u *ProductUpdateOne) AddSortOrder(v int) *ProductUpdateOne {
+	_u.mutation.AddSortOrder(v)
+	return _u
+}
+
+// SetIsBaseService sets the "is_base_service" field.
+func (_u *ProductUpdateOne) SetIsBaseService(v bool) *ProductUpdateOne {
+	_u.mutation.SetIsBaseService(v)
+	return _u
+}
+
+// SetNillableIsBaseService sets the "is_base_service" field if the given value is not nil.
+func (_u *ProductUpdateOne) SetNillableIsBaseService(v *bool) *ProductUpdateOne {
+	if v != nil {
+		_u.SetIsBaseService(*v)
+	}
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (puo *ProductUpdateOne) SetMetadata(m map[string]interface{}) *ProductUpdateOne {
-	puo.mutation.SetMetadata(m)
-	return puo
+func (_u *ProductUpdateOne) SetMetadata(v map[string]interface{}) *ProductUpdateOne {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (puo *ProductUpdateOne) SetUpdatedAt(t time.Time) *ProductUpdateOne {
-	puo.mutation.SetUpdatedAt(t)
-	return puo
+func (_u *ProductUpdateOne) SetUpdatedAt(v time.Time) *ProductUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // AddProductSubscriptionIDs adds the "product_subscriptions" edge to the ProductSubscription entity by IDs.
-func (puo *ProductUpdateOne) AddProductSubscriptionIDs(ids ...uuid.UUID) *ProductUpdateOne {
-	puo.mutation.AddProductSubscriptionIDs(ids...)
-	return puo
+func (_u *ProductUpdateOne) AddProductSubscriptionIDs(ids ...uuid.UUID) *ProductUpdateOne {
+	_u.mutation.AddProductSubscriptionIDs(ids...)
+	return _u
 }
 
 // AddProductSubscriptions adds the "product_subscriptions" edges to the ProductSubscription entity.
-func (puo *ProductUpdateOne) AddProductSubscriptions(p ...*ProductSubscription) *ProductUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *ProductUpdateOne) AddProductSubscriptions(v ...*ProductSubscription) *ProductUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return puo.AddProductSubscriptionIDs(ids...)
+	return _u.AddProductSubscriptionIDs(ids...)
 }
 
 // Mutation returns the ProductMutation object of the builder.
-func (puo *ProductUpdateOne) Mutation() *ProductMutation {
-	return puo.mutation
+func (_u *ProductUpdateOne) Mutation() *ProductMutation {
+	return _u.mutation
 }
 
 // ClearProductSubscriptions clears all "product_subscriptions" edges to the ProductSubscription entity.
-func (puo *ProductUpdateOne) ClearProductSubscriptions() *ProductUpdateOne {
-	puo.mutation.ClearProductSubscriptions()
-	return puo
+func (_u *ProductUpdateOne) ClearProductSubscriptions() *ProductUpdateOne {
+	_u.mutation.ClearProductSubscriptions()
+	return _u
 }
 
 // RemoveProductSubscriptionIDs removes the "product_subscriptions" edge to ProductSubscription entities by IDs.
-func (puo *ProductUpdateOne) RemoveProductSubscriptionIDs(ids ...uuid.UUID) *ProductUpdateOne {
-	puo.mutation.RemoveProductSubscriptionIDs(ids...)
-	return puo
+func (_u *ProductUpdateOne) RemoveProductSubscriptionIDs(ids ...uuid.UUID) *ProductUpdateOne {
+	_u.mutation.RemoveProductSubscriptionIDs(ids...)
+	return _u
 }
 
 // RemoveProductSubscriptions removes "product_subscriptions" edges to ProductSubscription entities.
-func (puo *ProductUpdateOne) RemoveProductSubscriptions(p ...*ProductSubscription) *ProductUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *ProductUpdateOne) RemoveProductSubscriptions(v ...*ProductSubscription) *ProductUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return puo.RemoveProductSubscriptionIDs(ids...)
+	return _u.RemoveProductSubscriptionIDs(ids...)
 }
 
 // Where appends a list predicates to the ProductUpdate builder.
-func (puo *ProductUpdateOne) Where(ps ...predicate.Product) *ProductUpdateOne {
-	puo.mutation.Where(ps...)
-	return puo
+func (_u *ProductUpdateOne) Where(ps ...predicate.Product) *ProductUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (puo *ProductUpdateOne) Select(field string, fields ...string) *ProductUpdateOne {
-	puo.fields = append([]string{field}, fields...)
-	return puo
+func (_u *ProductUpdateOne) Select(field string, fields ...string) *ProductUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated Product entity.
-func (puo *ProductUpdateOne) Save(ctx context.Context) (*Product, error) {
-	puo.defaults()
-	return withHooks(ctx, puo.sqlSave, puo.mutation, puo.hooks)
+func (_u *ProductUpdateOne) Save(ctx context.Context) (*Product, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (puo *ProductUpdateOne) SaveX(ctx context.Context) *Product {
-	node, err := puo.Save(ctx)
+func (_u *ProductUpdateOne) SaveX(ctx context.Context) *Product {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -685,44 +812,44 @@ func (puo *ProductUpdateOne) SaveX(ctx context.Context) *Product {
 }
 
 // Exec executes the query on the entity.
-func (puo *ProductUpdateOne) Exec(ctx context.Context) error {
-	_, err := puo.Save(ctx)
+func (_u *ProductUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (puo *ProductUpdateOne) ExecX(ctx context.Context) {
-	if err := puo.Exec(ctx); err != nil {
+func (_u *ProductUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (puo *ProductUpdateOne) defaults() {
-	if _, ok := puo.mutation.UpdatedAt(); !ok {
+func (_u *ProductUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := product.UpdateDefaultUpdatedAt()
-		puo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (puo *ProductUpdateOne) check() error {
-	if v, ok := puo.mutation.Code(); ok {
+func (_u *ProductUpdateOne) check() error {
+	if v, ok := _u.mutation.Code(); ok {
 		if err := product.CodeValidator(v); err != nil {
 			return &ValidationError{Name: "code", err: fmt.Errorf(`ent: validator failed for field "Product.code": %w`, err)}
 		}
 	}
-	if v, ok := puo.mutation.Name(); ok {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := product.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Product.name": %w`, err)}
 		}
 	}
-	if v, ok := puo.mutation.Category(); ok {
+	if v, ok := _u.mutation.Category(); ok {
 		if err := product.CategoryValidator(v); err != nil {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Product.category": %w`, err)}
 		}
 	}
-	if v, ok := puo.mutation.Status(); ok {
+	if v, ok := _u.mutation.Status(); ok {
 		if err := product.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Product.status": %w`, err)}
 		}
@@ -730,17 +857,17 @@ func (puo *ProductUpdateOne) check() error {
 	return nil
 }
 
-func (puo *ProductUpdateOne) sqlSave(ctx context.Context) (_node *Product, err error) {
-	if err := puo.check(); err != nil {
+func (_u *ProductUpdateOne) sqlSave(ctx context.Context) (_node *Product, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(product.Table, product.Columns, sqlgraph.NewFieldSpec(product.FieldID, field.TypeUUID))
-	id, ok := puo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Product.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := puo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, product.FieldID)
 		for _, f := range fields {
@@ -752,67 +879,82 @@ func (puo *ProductUpdateOne) sqlSave(ctx context.Context) (_node *Product, err e
 			}
 		}
 	}
-	if ps := puo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := puo.mutation.Code(); ok {
+	if value, ok := _u.mutation.Code(); ok {
 		_spec.SetField(product.FieldCode, field.TypeString, value)
 	}
-	if value, ok := puo.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(product.FieldName, field.TypeString, value)
 	}
-	if value, ok := puo.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(product.FieldDescription, field.TypeString, value)
 	}
-	if puo.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(product.FieldDescription, field.TypeString)
 	}
-	if value, ok := puo.mutation.Category(); ok {
+	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(product.FieldCategory, field.TypeEnum, value)
 	}
-	if value, ok := puo.mutation.Status(); ok {
+	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(product.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := puo.mutation.Dependencies(); ok {
+	if value, ok := _u.mutation.Dependencies(); ok {
 		_spec.SetField(product.FieldDependencies, field.TypeJSON, value)
 	}
-	if value, ok := puo.mutation.AppendedDependencies(); ok {
+	if value, ok := _u.mutation.AppendedDependencies(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, product.FieldDependencies, value)
 		})
 	}
-	if puo.mutation.DependenciesCleared() {
+	if _u.mutation.DependenciesCleared() {
 		_spec.ClearField(product.FieldDependencies, field.TypeJSON)
 	}
-	if value, ok := puo.mutation.IsPlatform(); ok {
+	if value, ok := _u.mutation.IsPlatform(); ok {
 		_spec.SetField(product.FieldIsPlatform, field.TypeBool, value)
 	}
-	if value, ok := puo.mutation.MonthlyPrice(); ok {
+	if value, ok := _u.mutation.MonthlyPrice(); ok {
 		_spec.SetField(product.FieldMonthlyPrice, field.TypeFloat64, value)
 	}
-	if value, ok := puo.mutation.AddedMonthlyPrice(); ok {
+	if value, ok := _u.mutation.AddedMonthlyPrice(); ok {
 		_spec.AddField(product.FieldMonthlyPrice, field.TypeFloat64, value)
 	}
-	if value, ok := puo.mutation.IncludedInBundle(); ok {
+	if value, ok := _u.mutation.YearlyPrice(); ok {
+		_spec.SetField(product.FieldYearlyPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedYearlyPrice(); ok {
+		_spec.AddField(product.FieldYearlyPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.OnetimePrice(); ok {
+		_spec.SetField(product.FieldOnetimePrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedOnetimePrice(); ok {
+		_spec.AddField(product.FieldOnetimePrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.IncludedInBundle(); ok {
 		_spec.SetField(product.FieldIncludedInBundle, field.TypeBool, value)
 	}
-	if value, ok := puo.mutation.SortOrder(); ok {
+	if value, ok := _u.mutation.SortOrder(); ok {
 		_spec.SetField(product.FieldSortOrder, field.TypeInt, value)
 	}
-	if value, ok := puo.mutation.AddedSortOrder(); ok {
+	if value, ok := _u.mutation.AddedSortOrder(); ok {
 		_spec.AddField(product.FieldSortOrder, field.TypeInt, value)
 	}
-	if value, ok := puo.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.IsBaseService(); ok {
+		_spec.SetField(product.FieldIsBaseService, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(product.FieldMetadata, field.TypeJSON, value)
 	}
-	if value, ok := puo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(product.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if puo.mutation.ProductSubscriptionsCleared() {
+	if _u.mutation.ProductSubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -825,7 +967,7 @@ func (puo *ProductUpdateOne) sqlSave(ctx context.Context) (_node *Product, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.RemovedProductSubscriptionsIDs(); len(nodes) > 0 && !puo.mutation.ProductSubscriptionsCleared() {
+	if nodes := _u.mutation.RemovedProductSubscriptionsIDs(); len(nodes) > 0 && !_u.mutation.ProductSubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -841,7 +983,7 @@ func (puo *ProductUpdateOne) sqlSave(ctx context.Context) (_node *Product, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.ProductSubscriptionsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ProductSubscriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -857,10 +999,10 @@ func (puo *ProductUpdateOne) sqlSave(ctx context.Context) (_node *Product, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &Product{config: puo.config}
+	_node = &Product{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, puo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{product.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -868,6 +1010,6 @@ func (puo *ProductUpdateOne) sqlSave(ctx context.Context) (_node *Product, err e
 		}
 		return nil, err
 	}
-	puo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

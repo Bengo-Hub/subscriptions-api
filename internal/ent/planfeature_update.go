@@ -24,110 +24,131 @@ type PlanFeatureUpdate struct {
 }
 
 // Where appends a list predicates to the PlanFeatureUpdate builder.
-func (pfu *PlanFeatureUpdate) Where(ps ...predicate.PlanFeature) *PlanFeatureUpdate {
-	pfu.mutation.Where(ps...)
-	return pfu
+func (_u *PlanFeatureUpdate) Where(ps ...predicate.PlanFeature) *PlanFeatureUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetPlanID sets the "plan_id" field.
-func (pfu *PlanFeatureUpdate) SetPlanID(u uuid.UUID) *PlanFeatureUpdate {
-	pfu.mutation.SetPlanID(u)
-	return pfu
+func (_u *PlanFeatureUpdate) SetPlanID(v uuid.UUID) *PlanFeatureUpdate {
+	_u.mutation.SetPlanID(v)
+	return _u
 }
 
 // SetNillablePlanID sets the "plan_id" field if the given value is not nil.
-func (pfu *PlanFeatureUpdate) SetNillablePlanID(u *uuid.UUID) *PlanFeatureUpdate {
-	if u != nil {
-		pfu.SetPlanID(*u)
+func (_u *PlanFeatureUpdate) SetNillablePlanID(v *uuid.UUID) *PlanFeatureUpdate {
+	if v != nil {
+		_u.SetPlanID(*v)
 	}
-	return pfu
+	return _u
 }
 
 // SetFeatureCode sets the "feature_code" field.
-func (pfu *PlanFeatureUpdate) SetFeatureCode(s string) *PlanFeatureUpdate {
-	pfu.mutation.SetFeatureCode(s)
-	return pfu
+func (_u *PlanFeatureUpdate) SetFeatureCode(v string) *PlanFeatureUpdate {
+	_u.mutation.SetFeatureCode(v)
+	return _u
 }
 
 // SetNillableFeatureCode sets the "feature_code" field if the given value is not nil.
-func (pfu *PlanFeatureUpdate) SetNillableFeatureCode(s *string) *PlanFeatureUpdate {
-	if s != nil {
-		pfu.SetFeatureCode(*s)
+func (_u *PlanFeatureUpdate) SetNillableFeatureCode(v *string) *PlanFeatureUpdate {
+	if v != nil {
+		_u.SetFeatureCode(*v)
 	}
-	return pfu
+	return _u
 }
 
 // SetIsIncluded sets the "is_included" field.
-func (pfu *PlanFeatureUpdate) SetIsIncluded(b bool) *PlanFeatureUpdate {
-	pfu.mutation.SetIsIncluded(b)
-	return pfu
+func (_u *PlanFeatureUpdate) SetIsIncluded(v bool) *PlanFeatureUpdate {
+	_u.mutation.SetIsIncluded(v)
+	return _u
 }
 
 // SetNillableIsIncluded sets the "is_included" field if the given value is not nil.
-func (pfu *PlanFeatureUpdate) SetNillableIsIncluded(b *bool) *PlanFeatureUpdate {
-	if b != nil {
-		pfu.SetIsIncluded(*b)
+func (_u *PlanFeatureUpdate) SetNillableIsIncluded(v *bool) *PlanFeatureUpdate {
+	if v != nil {
+		_u.SetIsIncluded(*v)
 	}
-	return pfu
+	return _u
 }
 
 // SetLimitValue sets the "limit_value" field.
-func (pfu *PlanFeatureUpdate) SetLimitValue(i int) *PlanFeatureUpdate {
-	pfu.mutation.ResetLimitValue()
-	pfu.mutation.SetLimitValue(i)
-	return pfu
+func (_u *PlanFeatureUpdate) SetLimitValue(v int) *PlanFeatureUpdate {
+	_u.mutation.ResetLimitValue()
+	_u.mutation.SetLimitValue(v)
+	return _u
 }
 
 // SetNillableLimitValue sets the "limit_value" field if the given value is not nil.
-func (pfu *PlanFeatureUpdate) SetNillableLimitValue(i *int) *PlanFeatureUpdate {
-	if i != nil {
-		pfu.SetLimitValue(*i)
+func (_u *PlanFeatureUpdate) SetNillableLimitValue(v *int) *PlanFeatureUpdate {
+	if v != nil {
+		_u.SetLimitValue(*v)
 	}
-	return pfu
+	return _u
 }
 
-// AddLimitValue adds i to the "limit_value" field.
-func (pfu *PlanFeatureUpdate) AddLimitValue(i int) *PlanFeatureUpdate {
-	pfu.mutation.AddLimitValue(i)
-	return pfu
+// AddLimitValue adds value to the "limit_value" field.
+func (_u *PlanFeatureUpdate) AddLimitValue(v int) *PlanFeatureUpdate {
+	_u.mutation.AddLimitValue(v)
+	return _u
 }
 
 // ClearLimitValue clears the value of the "limit_value" field.
-func (pfu *PlanFeatureUpdate) ClearLimitValue() *PlanFeatureUpdate {
-	pfu.mutation.ClearLimitValue()
-	return pfu
+func (_u *PlanFeatureUpdate) ClearLimitValue() *PlanFeatureUpdate {
+	_u.mutation.ClearLimitValue()
+	return _u
+}
+
+// SetOverageUnitPrice sets the "overage_unit_price" field.
+func (_u *PlanFeatureUpdate) SetOverageUnitPrice(v float64) *PlanFeatureUpdate {
+	_u.mutation.ResetOverageUnitPrice()
+	_u.mutation.SetOverageUnitPrice(v)
+	return _u
+}
+
+// SetNillableOverageUnitPrice sets the "overage_unit_price" field if the given value is not nil.
+func (_u *PlanFeatureUpdate) SetNillableOverageUnitPrice(v *float64) *PlanFeatureUpdate {
+	if v != nil {
+		_u.SetOverageUnitPrice(*v)
+	}
+	return _u
+}
+
+// AddOverageUnitPrice adds value to the "overage_unit_price" field.
+func (_u *PlanFeatureUpdate) AddOverageUnitPrice(v float64) *PlanFeatureUpdate {
+	_u.mutation.AddOverageUnitPrice(v)
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (pfu *PlanFeatureUpdate) SetMetadata(m map[string]interface{}) *PlanFeatureUpdate {
-	pfu.mutation.SetMetadata(m)
-	return pfu
+func (_u *PlanFeatureUpdate) SetMetadata(v map[string]interface{}) *PlanFeatureUpdate {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // SetPlan sets the "plan" edge to the SubscriptionPlan entity.
-func (pfu *PlanFeatureUpdate) SetPlan(s *SubscriptionPlan) *PlanFeatureUpdate {
-	return pfu.SetPlanID(s.ID)
+func (_u *PlanFeatureUpdate) SetPlan(v *SubscriptionPlan) *PlanFeatureUpdate {
+	return _u.SetPlanID(v.ID)
 }
 
 // Mutation returns the PlanFeatureMutation object of the builder.
-func (pfu *PlanFeatureUpdate) Mutation() *PlanFeatureMutation {
-	return pfu.mutation
+func (_u *PlanFeatureUpdate) Mutation() *PlanFeatureMutation {
+	return _u.mutation
 }
 
 // ClearPlan clears the "plan" edge to the SubscriptionPlan entity.
-func (pfu *PlanFeatureUpdate) ClearPlan() *PlanFeatureUpdate {
-	pfu.mutation.ClearPlan()
-	return pfu
+func (_u *PlanFeatureUpdate) ClearPlan() *PlanFeatureUpdate {
+	_u.mutation.ClearPlan()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (pfu *PlanFeatureUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, pfu.sqlSave, pfu.mutation, pfu.hooks)
+func (_u *PlanFeatureUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pfu *PlanFeatureUpdate) SaveX(ctx context.Context) int {
-	affected, err := pfu.Save(ctx)
+func (_u *PlanFeatureUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -135,62 +156,68 @@ func (pfu *PlanFeatureUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (pfu *PlanFeatureUpdate) Exec(ctx context.Context) error {
-	_, err := pfu.Save(ctx)
+func (_u *PlanFeatureUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pfu *PlanFeatureUpdate) ExecX(ctx context.Context) {
-	if err := pfu.Exec(ctx); err != nil {
+func (_u *PlanFeatureUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pfu *PlanFeatureUpdate) check() error {
-	if v, ok := pfu.mutation.FeatureCode(); ok {
+func (_u *PlanFeatureUpdate) check() error {
+	if v, ok := _u.mutation.FeatureCode(); ok {
 		if err := planfeature.FeatureCodeValidator(v); err != nil {
 			return &ValidationError{Name: "feature_code", err: fmt.Errorf(`ent: validator failed for field "PlanFeature.feature_code": %w`, err)}
 		}
 	}
-	if _, ok := pfu.mutation.PlanID(); pfu.mutation.PlanCleared() && !ok {
+	if _u.mutation.PlanCleared() && len(_u.mutation.PlanIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "PlanFeature.plan"`)
 	}
 	return nil
 }
 
-func (pfu *PlanFeatureUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := pfu.check(); err != nil {
-		return n, err
+func (_u *PlanFeatureUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(planfeature.Table, planfeature.Columns, sqlgraph.NewFieldSpec(planfeature.FieldID, field.TypeUUID))
-	if ps := pfu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := pfu.mutation.FeatureCode(); ok {
+	if value, ok := _u.mutation.FeatureCode(); ok {
 		_spec.SetField(planfeature.FieldFeatureCode, field.TypeString, value)
 	}
-	if value, ok := pfu.mutation.IsIncluded(); ok {
+	if value, ok := _u.mutation.IsIncluded(); ok {
 		_spec.SetField(planfeature.FieldIsIncluded, field.TypeBool, value)
 	}
-	if value, ok := pfu.mutation.LimitValue(); ok {
+	if value, ok := _u.mutation.LimitValue(); ok {
 		_spec.SetField(planfeature.FieldLimitValue, field.TypeInt, value)
 	}
-	if value, ok := pfu.mutation.AddedLimitValue(); ok {
+	if value, ok := _u.mutation.AddedLimitValue(); ok {
 		_spec.AddField(planfeature.FieldLimitValue, field.TypeInt, value)
 	}
-	if pfu.mutation.LimitValueCleared() {
+	if _u.mutation.LimitValueCleared() {
 		_spec.ClearField(planfeature.FieldLimitValue, field.TypeInt)
 	}
-	if value, ok := pfu.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.OverageUnitPrice(); ok {
+		_spec.SetField(planfeature.FieldOverageUnitPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedOverageUnitPrice(); ok {
+		_spec.AddField(planfeature.FieldOverageUnitPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(planfeature.FieldMetadata, field.TypeJSON, value)
 	}
-	if pfu.mutation.PlanCleared() {
+	if _u.mutation.PlanCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -203,7 +230,7 @@ func (pfu *PlanFeatureUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pfu.mutation.PlanIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.PlanIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -219,7 +246,7 @@ func (pfu *PlanFeatureUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if n, err = sqlgraph.UpdateNodes(ctx, pfu.driver, _spec); err != nil {
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{planfeature.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -227,8 +254,8 @@ func (pfu *PlanFeatureUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
-	pfu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // PlanFeatureUpdateOne is the builder for updating a single PlanFeature entity.
@@ -240,117 +267,138 @@ type PlanFeatureUpdateOne struct {
 }
 
 // SetPlanID sets the "plan_id" field.
-func (pfuo *PlanFeatureUpdateOne) SetPlanID(u uuid.UUID) *PlanFeatureUpdateOne {
-	pfuo.mutation.SetPlanID(u)
-	return pfuo
+func (_u *PlanFeatureUpdateOne) SetPlanID(v uuid.UUID) *PlanFeatureUpdateOne {
+	_u.mutation.SetPlanID(v)
+	return _u
 }
 
 // SetNillablePlanID sets the "plan_id" field if the given value is not nil.
-func (pfuo *PlanFeatureUpdateOne) SetNillablePlanID(u *uuid.UUID) *PlanFeatureUpdateOne {
-	if u != nil {
-		pfuo.SetPlanID(*u)
+func (_u *PlanFeatureUpdateOne) SetNillablePlanID(v *uuid.UUID) *PlanFeatureUpdateOne {
+	if v != nil {
+		_u.SetPlanID(*v)
 	}
-	return pfuo
+	return _u
 }
 
 // SetFeatureCode sets the "feature_code" field.
-func (pfuo *PlanFeatureUpdateOne) SetFeatureCode(s string) *PlanFeatureUpdateOne {
-	pfuo.mutation.SetFeatureCode(s)
-	return pfuo
+func (_u *PlanFeatureUpdateOne) SetFeatureCode(v string) *PlanFeatureUpdateOne {
+	_u.mutation.SetFeatureCode(v)
+	return _u
 }
 
 // SetNillableFeatureCode sets the "feature_code" field if the given value is not nil.
-func (pfuo *PlanFeatureUpdateOne) SetNillableFeatureCode(s *string) *PlanFeatureUpdateOne {
-	if s != nil {
-		pfuo.SetFeatureCode(*s)
+func (_u *PlanFeatureUpdateOne) SetNillableFeatureCode(v *string) *PlanFeatureUpdateOne {
+	if v != nil {
+		_u.SetFeatureCode(*v)
 	}
-	return pfuo
+	return _u
 }
 
 // SetIsIncluded sets the "is_included" field.
-func (pfuo *PlanFeatureUpdateOne) SetIsIncluded(b bool) *PlanFeatureUpdateOne {
-	pfuo.mutation.SetIsIncluded(b)
-	return pfuo
+func (_u *PlanFeatureUpdateOne) SetIsIncluded(v bool) *PlanFeatureUpdateOne {
+	_u.mutation.SetIsIncluded(v)
+	return _u
 }
 
 // SetNillableIsIncluded sets the "is_included" field if the given value is not nil.
-func (pfuo *PlanFeatureUpdateOne) SetNillableIsIncluded(b *bool) *PlanFeatureUpdateOne {
-	if b != nil {
-		pfuo.SetIsIncluded(*b)
+func (_u *PlanFeatureUpdateOne) SetNillableIsIncluded(v *bool) *PlanFeatureUpdateOne {
+	if v != nil {
+		_u.SetIsIncluded(*v)
 	}
-	return pfuo
+	return _u
 }
 
 // SetLimitValue sets the "limit_value" field.
-func (pfuo *PlanFeatureUpdateOne) SetLimitValue(i int) *PlanFeatureUpdateOne {
-	pfuo.mutation.ResetLimitValue()
-	pfuo.mutation.SetLimitValue(i)
-	return pfuo
+func (_u *PlanFeatureUpdateOne) SetLimitValue(v int) *PlanFeatureUpdateOne {
+	_u.mutation.ResetLimitValue()
+	_u.mutation.SetLimitValue(v)
+	return _u
 }
 
 // SetNillableLimitValue sets the "limit_value" field if the given value is not nil.
-func (pfuo *PlanFeatureUpdateOne) SetNillableLimitValue(i *int) *PlanFeatureUpdateOne {
-	if i != nil {
-		pfuo.SetLimitValue(*i)
+func (_u *PlanFeatureUpdateOne) SetNillableLimitValue(v *int) *PlanFeatureUpdateOne {
+	if v != nil {
+		_u.SetLimitValue(*v)
 	}
-	return pfuo
+	return _u
 }
 
-// AddLimitValue adds i to the "limit_value" field.
-func (pfuo *PlanFeatureUpdateOne) AddLimitValue(i int) *PlanFeatureUpdateOne {
-	pfuo.mutation.AddLimitValue(i)
-	return pfuo
+// AddLimitValue adds value to the "limit_value" field.
+func (_u *PlanFeatureUpdateOne) AddLimitValue(v int) *PlanFeatureUpdateOne {
+	_u.mutation.AddLimitValue(v)
+	return _u
 }
 
 // ClearLimitValue clears the value of the "limit_value" field.
-func (pfuo *PlanFeatureUpdateOne) ClearLimitValue() *PlanFeatureUpdateOne {
-	pfuo.mutation.ClearLimitValue()
-	return pfuo
+func (_u *PlanFeatureUpdateOne) ClearLimitValue() *PlanFeatureUpdateOne {
+	_u.mutation.ClearLimitValue()
+	return _u
+}
+
+// SetOverageUnitPrice sets the "overage_unit_price" field.
+func (_u *PlanFeatureUpdateOne) SetOverageUnitPrice(v float64) *PlanFeatureUpdateOne {
+	_u.mutation.ResetOverageUnitPrice()
+	_u.mutation.SetOverageUnitPrice(v)
+	return _u
+}
+
+// SetNillableOverageUnitPrice sets the "overage_unit_price" field if the given value is not nil.
+func (_u *PlanFeatureUpdateOne) SetNillableOverageUnitPrice(v *float64) *PlanFeatureUpdateOne {
+	if v != nil {
+		_u.SetOverageUnitPrice(*v)
+	}
+	return _u
+}
+
+// AddOverageUnitPrice adds value to the "overage_unit_price" field.
+func (_u *PlanFeatureUpdateOne) AddOverageUnitPrice(v float64) *PlanFeatureUpdateOne {
+	_u.mutation.AddOverageUnitPrice(v)
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (pfuo *PlanFeatureUpdateOne) SetMetadata(m map[string]interface{}) *PlanFeatureUpdateOne {
-	pfuo.mutation.SetMetadata(m)
-	return pfuo
+func (_u *PlanFeatureUpdateOne) SetMetadata(v map[string]interface{}) *PlanFeatureUpdateOne {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // SetPlan sets the "plan" edge to the SubscriptionPlan entity.
-func (pfuo *PlanFeatureUpdateOne) SetPlan(s *SubscriptionPlan) *PlanFeatureUpdateOne {
-	return pfuo.SetPlanID(s.ID)
+func (_u *PlanFeatureUpdateOne) SetPlan(v *SubscriptionPlan) *PlanFeatureUpdateOne {
+	return _u.SetPlanID(v.ID)
 }
 
 // Mutation returns the PlanFeatureMutation object of the builder.
-func (pfuo *PlanFeatureUpdateOne) Mutation() *PlanFeatureMutation {
-	return pfuo.mutation
+func (_u *PlanFeatureUpdateOne) Mutation() *PlanFeatureMutation {
+	return _u.mutation
 }
 
 // ClearPlan clears the "plan" edge to the SubscriptionPlan entity.
-func (pfuo *PlanFeatureUpdateOne) ClearPlan() *PlanFeatureUpdateOne {
-	pfuo.mutation.ClearPlan()
-	return pfuo
+func (_u *PlanFeatureUpdateOne) ClearPlan() *PlanFeatureUpdateOne {
+	_u.mutation.ClearPlan()
+	return _u
 }
 
 // Where appends a list predicates to the PlanFeatureUpdate builder.
-func (pfuo *PlanFeatureUpdateOne) Where(ps ...predicate.PlanFeature) *PlanFeatureUpdateOne {
-	pfuo.mutation.Where(ps...)
-	return pfuo
+func (_u *PlanFeatureUpdateOne) Where(ps ...predicate.PlanFeature) *PlanFeatureUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (pfuo *PlanFeatureUpdateOne) Select(field string, fields ...string) *PlanFeatureUpdateOne {
-	pfuo.fields = append([]string{field}, fields...)
-	return pfuo
+func (_u *PlanFeatureUpdateOne) Select(field string, fields ...string) *PlanFeatureUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated PlanFeature entity.
-func (pfuo *PlanFeatureUpdateOne) Save(ctx context.Context) (*PlanFeature, error) {
-	return withHooks(ctx, pfuo.sqlSave, pfuo.mutation, pfuo.hooks)
+func (_u *PlanFeatureUpdateOne) Save(ctx context.Context) (*PlanFeature, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pfuo *PlanFeatureUpdateOne) SaveX(ctx context.Context) *PlanFeature {
-	node, err := pfuo.Save(ctx)
+func (_u *PlanFeatureUpdateOne) SaveX(ctx context.Context) *PlanFeature {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -358,42 +406,42 @@ func (pfuo *PlanFeatureUpdateOne) SaveX(ctx context.Context) *PlanFeature {
 }
 
 // Exec executes the query on the entity.
-func (pfuo *PlanFeatureUpdateOne) Exec(ctx context.Context) error {
-	_, err := pfuo.Save(ctx)
+func (_u *PlanFeatureUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pfuo *PlanFeatureUpdateOne) ExecX(ctx context.Context) {
-	if err := pfuo.Exec(ctx); err != nil {
+func (_u *PlanFeatureUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pfuo *PlanFeatureUpdateOne) check() error {
-	if v, ok := pfuo.mutation.FeatureCode(); ok {
+func (_u *PlanFeatureUpdateOne) check() error {
+	if v, ok := _u.mutation.FeatureCode(); ok {
 		if err := planfeature.FeatureCodeValidator(v); err != nil {
 			return &ValidationError{Name: "feature_code", err: fmt.Errorf(`ent: validator failed for field "PlanFeature.feature_code": %w`, err)}
 		}
 	}
-	if _, ok := pfuo.mutation.PlanID(); pfuo.mutation.PlanCleared() && !ok {
+	if _u.mutation.PlanCleared() && len(_u.mutation.PlanIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "PlanFeature.plan"`)
 	}
 	return nil
 }
 
-func (pfuo *PlanFeatureUpdateOne) sqlSave(ctx context.Context) (_node *PlanFeature, err error) {
-	if err := pfuo.check(); err != nil {
+func (_u *PlanFeatureUpdateOne) sqlSave(ctx context.Context) (_node *PlanFeature, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(planfeature.Table, planfeature.Columns, sqlgraph.NewFieldSpec(planfeature.FieldID, field.TypeUUID))
-	id, ok := pfuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "PlanFeature.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := pfuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, planfeature.FieldID)
 		for _, f := range fields {
@@ -405,32 +453,38 @@ func (pfuo *PlanFeatureUpdateOne) sqlSave(ctx context.Context) (_node *PlanFeatu
 			}
 		}
 	}
-	if ps := pfuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := pfuo.mutation.FeatureCode(); ok {
+	if value, ok := _u.mutation.FeatureCode(); ok {
 		_spec.SetField(planfeature.FieldFeatureCode, field.TypeString, value)
 	}
-	if value, ok := pfuo.mutation.IsIncluded(); ok {
+	if value, ok := _u.mutation.IsIncluded(); ok {
 		_spec.SetField(planfeature.FieldIsIncluded, field.TypeBool, value)
 	}
-	if value, ok := pfuo.mutation.LimitValue(); ok {
+	if value, ok := _u.mutation.LimitValue(); ok {
 		_spec.SetField(planfeature.FieldLimitValue, field.TypeInt, value)
 	}
-	if value, ok := pfuo.mutation.AddedLimitValue(); ok {
+	if value, ok := _u.mutation.AddedLimitValue(); ok {
 		_spec.AddField(planfeature.FieldLimitValue, field.TypeInt, value)
 	}
-	if pfuo.mutation.LimitValueCleared() {
+	if _u.mutation.LimitValueCleared() {
 		_spec.ClearField(planfeature.FieldLimitValue, field.TypeInt)
 	}
-	if value, ok := pfuo.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.OverageUnitPrice(); ok {
+		_spec.SetField(planfeature.FieldOverageUnitPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedOverageUnitPrice(); ok {
+		_spec.AddField(planfeature.FieldOverageUnitPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(planfeature.FieldMetadata, field.TypeJSON, value)
 	}
-	if pfuo.mutation.PlanCleared() {
+	if _u.mutation.PlanCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -443,7 +497,7 @@ func (pfuo *PlanFeatureUpdateOne) sqlSave(ctx context.Context) (_node *PlanFeatu
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pfuo.mutation.PlanIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.PlanIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -459,10 +513,10 @@ func (pfuo *PlanFeatureUpdateOne) sqlSave(ctx context.Context) (_node *PlanFeatu
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &PlanFeature{config: pfuo.config}
+	_node = &PlanFeature{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, pfuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{planfeature.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -470,6 +524,6 @@ func (pfuo *PlanFeatureUpdateOne) sqlSave(ctx context.Context) (_node *PlanFeatu
 		}
 		return nil, err
 	}
-	pfuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

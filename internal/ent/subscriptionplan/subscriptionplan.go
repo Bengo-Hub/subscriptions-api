@@ -3,6 +3,7 @@
 package subscriptionplan
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -25,6 +26,10 @@ const (
 	FieldBillingCycle = "billing_cycle"
 	// FieldBasePrice holds the string denoting the base_price field in the database.
 	FieldBasePrice = "base_price"
+	// FieldOnetimeAllProductsPrice holds the string denoting the onetime_all_products_price field in the database.
+	FieldOnetimeAllProductsPrice = "onetime_all_products_price"
+	// FieldUseSumBasedPricing holds the string denoting the use_sum_based_pricing field in the database.
+	FieldUseSumBasedPricing = "use_sum_based_pricing"
 	// FieldCurrency holds the string denoting the currency field in the database.
 	FieldCurrency = "currency"
 	// FieldIsActive holds the string denoting the is_active field in the database.
@@ -35,6 +40,10 @@ const (
 	FieldTierOrder = "tier_order"
 	// FieldTierLimitsJSON holds the string denoting the tier_limits_json field in the database.
 	FieldTierLimitsJSON = "tier_limits_json"
+	// FieldPlanType holds the string denoting the plan_type field in the database.
+	FieldPlanType = "plan_type"
+	// FieldDiscountRules holds the string denoting the discount_rules field in the database.
+	FieldDiscountRules = "discount_rules"
 	// FieldMetadata holds the string denoting the metadata field in the database.
 	FieldMetadata = "metadata"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -80,11 +89,15 @@ var Columns = []string{
 	FieldDescription,
 	FieldBillingCycle,
 	FieldBasePrice,
+	FieldOnetimeAllProductsPrice,
+	FieldUseSumBasedPricing,
 	FieldCurrency,
 	FieldIsActive,
 	FieldIsPublic,
 	FieldTierOrder,
 	FieldTierLimitsJSON,
+	FieldPlanType,
+	FieldDiscountRules,
 	FieldMetadata,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -109,6 +122,8 @@ var (
 	DefaultBillingCycle string
 	// BillingCycleValidator is a validator for the "billing_cycle" field. It is called by the builders before save.
 	BillingCycleValidator func(string) error
+	// DefaultUseSumBasedPricing holds the default value on creation for the "use_sum_based_pricing" field.
+	DefaultUseSumBasedPricing bool
 	// DefaultCurrency holds the default value on creation for the "currency" field.
 	DefaultCurrency string
 	// DefaultIsActive holds the default value on creation for the "is_active" field.
@@ -117,6 +132,8 @@ var (
 	DefaultIsPublic bool
 	// DefaultTierLimitsJSON holds the default value on creation for the "tier_limits_json" field.
 	DefaultTierLimitsJSON map[string]interface{}
+	// DefaultDiscountRules holds the default value on creation for the "discount_rules" field.
+	DefaultDiscountRules []map[string]interface{}
 	// DefaultMetadata holds the default value on creation for the "metadata" field.
 	DefaultMetadata map[string]interface{}
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -128,6 +145,34 @@ var (
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
+
+// PlanType defines the type for the "plan_type" enum field.
+type PlanType string
+
+// PlanTypeTIERED is the default value of the PlanType enum.
+const DefaultPlanType = PlanTypeTIERED
+
+// PlanType values.
+const (
+	PlanTypeTIERED             PlanType = "TIERED"
+	PlanTypeSTANDALONE_SERVICE PlanType = "STANDALONE_SERVICE"
+	PlanTypeBUNDLE             PlanType = "BUNDLE"
+	PlanTypeCUSTOM             PlanType = "CUSTOM"
+)
+
+func (pt PlanType) String() string {
+	return string(pt)
+}
+
+// PlanTypeValidator is a validator for the "plan_type" field enum values. It is called by the builders before save.
+func PlanTypeValidator(pt PlanType) error {
+	switch pt {
+	case PlanTypeTIERED, PlanTypeSTANDALONE_SERVICE, PlanTypeBUNDLE, PlanTypeCUSTOM:
+		return nil
+	default:
+		return fmt.Errorf("subscriptionplan: invalid enum value for plan_type field: %q", pt)
+	}
+}
 
 // OrderOption defines the ordering options for the SubscriptionPlan queries.
 type OrderOption func(*sql.Selector)
@@ -162,6 +207,16 @@ func ByBasePrice(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldBasePrice, opts...).ToFunc()
 }
 
+// ByOnetimeAllProductsPrice orders the results by the onetime_all_products_price field.
+func ByOnetimeAllProductsPrice(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOnetimeAllProductsPrice, opts...).ToFunc()
+}
+
+// ByUseSumBasedPricing orders the results by the use_sum_based_pricing field.
+func ByUseSumBasedPricing(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUseSumBasedPricing, opts...).ToFunc()
+}
+
 // ByCurrency orders the results by the currency field.
 func ByCurrency(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCurrency, opts...).ToFunc()
@@ -180,6 +235,11 @@ func ByIsPublic(opts ...sql.OrderTermOption) OrderOption {
 // ByTierOrder orders the results by the tier_order field.
 func ByTierOrder(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTierOrder, opts...).ToFunc()
+}
+
+// ByPlanType orders the results by the plan_type field.
+func ByPlanType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPlanType, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

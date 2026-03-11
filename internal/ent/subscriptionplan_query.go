@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -35,44 +36,44 @@ type SubscriptionPlanQuery struct {
 }
 
 // Where adds a new predicate for the SubscriptionPlanQuery builder.
-func (spq *SubscriptionPlanQuery) Where(ps ...predicate.SubscriptionPlan) *SubscriptionPlanQuery {
-	spq.predicates = append(spq.predicates, ps...)
-	return spq
+func (_q *SubscriptionPlanQuery) Where(ps ...predicate.SubscriptionPlan) *SubscriptionPlanQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (spq *SubscriptionPlanQuery) Limit(limit int) *SubscriptionPlanQuery {
-	spq.ctx.Limit = &limit
-	return spq
+func (_q *SubscriptionPlanQuery) Limit(limit int) *SubscriptionPlanQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (spq *SubscriptionPlanQuery) Offset(offset int) *SubscriptionPlanQuery {
-	spq.ctx.Offset = &offset
-	return spq
+func (_q *SubscriptionPlanQuery) Offset(offset int) *SubscriptionPlanQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (spq *SubscriptionPlanQuery) Unique(unique bool) *SubscriptionPlanQuery {
-	spq.ctx.Unique = &unique
-	return spq
+func (_q *SubscriptionPlanQuery) Unique(unique bool) *SubscriptionPlanQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (spq *SubscriptionPlanQuery) Order(o ...subscriptionplan.OrderOption) *SubscriptionPlanQuery {
-	spq.order = append(spq.order, o...)
-	return spq
+func (_q *SubscriptionPlanQuery) Order(o ...subscriptionplan.OrderOption) *SubscriptionPlanQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryFeatures chains the current query on the "features" edge.
-func (spq *SubscriptionPlanQuery) QueryFeatures() *PlanFeatureQuery {
-	query := (&PlanFeatureClient{config: spq.config}).Query()
+func (_q *SubscriptionPlanQuery) QueryFeatures() *PlanFeatureQuery {
+	query := (&PlanFeatureClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := spq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := spq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -81,20 +82,20 @@ func (spq *SubscriptionPlanQuery) QueryFeatures() *PlanFeatureQuery {
 			sqlgraph.To(planfeature.Table, planfeature.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionplan.FeaturesTable, subscriptionplan.FeaturesColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(spq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryPricingHistory chains the current query on the "pricing_history" edge.
-func (spq *SubscriptionPlanQuery) QueryPricingHistory() *PlanPricingHistoryQuery {
-	query := (&PlanPricingHistoryClient{config: spq.config}).Query()
+func (_q *SubscriptionPlanQuery) QueryPricingHistory() *PlanPricingHistoryQuery {
+	query := (&PlanPricingHistoryClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := spq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := spq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -103,20 +104,20 @@ func (spq *SubscriptionPlanQuery) QueryPricingHistory() *PlanPricingHistoryQuery
 			sqlgraph.To(planpricinghistory.Table, planpricinghistory.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionplan.PricingHistoryTable, subscriptionplan.PricingHistoryColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(spq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QuerySubscriptions chains the current query on the "subscriptions" edge.
-func (spq *SubscriptionPlanQuery) QuerySubscriptions() *TenantSubscriptionQuery {
-	query := (&TenantSubscriptionClient{config: spq.config}).Query()
+func (_q *SubscriptionPlanQuery) QuerySubscriptions() *TenantSubscriptionQuery {
+	query := (&TenantSubscriptionClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := spq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := spq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -125,7 +126,7 @@ func (spq *SubscriptionPlanQuery) QuerySubscriptions() *TenantSubscriptionQuery 
 			sqlgraph.To(tenantsubscription.Table, tenantsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionplan.SubscriptionsTable, subscriptionplan.SubscriptionsColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(spq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -133,8 +134,8 @@ func (spq *SubscriptionPlanQuery) QuerySubscriptions() *TenantSubscriptionQuery 
 
 // First returns the first SubscriptionPlan entity from the query.
 // Returns a *NotFoundError when no SubscriptionPlan was found.
-func (spq *SubscriptionPlanQuery) First(ctx context.Context) (*SubscriptionPlan, error) {
-	nodes, err := spq.Limit(1).All(setContextOp(ctx, spq.ctx, "First"))
+func (_q *SubscriptionPlanQuery) First(ctx context.Context) (*SubscriptionPlan, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +146,8 @@ func (spq *SubscriptionPlanQuery) First(ctx context.Context) (*SubscriptionPlan,
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (spq *SubscriptionPlanQuery) FirstX(ctx context.Context) *SubscriptionPlan {
-	node, err := spq.First(ctx)
+func (_q *SubscriptionPlanQuery) FirstX(ctx context.Context) *SubscriptionPlan {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -155,9 +156,9 @@ func (spq *SubscriptionPlanQuery) FirstX(ctx context.Context) *SubscriptionPlan 
 
 // FirstID returns the first SubscriptionPlan ID from the query.
 // Returns a *NotFoundError when no SubscriptionPlan ID was found.
-func (spq *SubscriptionPlanQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *SubscriptionPlanQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = spq.Limit(1).IDs(setContextOp(ctx, spq.ctx, "FirstID")); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -168,8 +169,8 @@ func (spq *SubscriptionPlanQuery) FirstID(ctx context.Context) (id uuid.UUID, er
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (spq *SubscriptionPlanQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := spq.FirstID(ctx)
+func (_q *SubscriptionPlanQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -179,8 +180,8 @@ func (spq *SubscriptionPlanQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single SubscriptionPlan entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one SubscriptionPlan entity is found.
 // Returns a *NotFoundError when no SubscriptionPlan entities are found.
-func (spq *SubscriptionPlanQuery) Only(ctx context.Context) (*SubscriptionPlan, error) {
-	nodes, err := spq.Limit(2).All(setContextOp(ctx, spq.ctx, "Only"))
+func (_q *SubscriptionPlanQuery) Only(ctx context.Context) (*SubscriptionPlan, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -195,8 +196,8 @@ func (spq *SubscriptionPlanQuery) Only(ctx context.Context) (*SubscriptionPlan, 
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (spq *SubscriptionPlanQuery) OnlyX(ctx context.Context) *SubscriptionPlan {
-	node, err := spq.Only(ctx)
+func (_q *SubscriptionPlanQuery) OnlyX(ctx context.Context) *SubscriptionPlan {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -206,9 +207,9 @@ func (spq *SubscriptionPlanQuery) OnlyX(ctx context.Context) *SubscriptionPlan {
 // OnlyID is like Only, but returns the only SubscriptionPlan ID in the query.
 // Returns a *NotSingularError when more than one SubscriptionPlan ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (spq *SubscriptionPlanQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *SubscriptionPlanQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = spq.Limit(2).IDs(setContextOp(ctx, spq.ctx, "OnlyID")); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -223,8 +224,8 @@ func (spq *SubscriptionPlanQuery) OnlyID(ctx context.Context) (id uuid.UUID, err
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (spq *SubscriptionPlanQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := spq.OnlyID(ctx)
+func (_q *SubscriptionPlanQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -232,18 +233,18 @@ func (spq *SubscriptionPlanQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of SubscriptionPlans.
-func (spq *SubscriptionPlanQuery) All(ctx context.Context) ([]*SubscriptionPlan, error) {
-	ctx = setContextOp(ctx, spq.ctx, "All")
-	if err := spq.prepareQuery(ctx); err != nil {
+func (_q *SubscriptionPlanQuery) All(ctx context.Context) ([]*SubscriptionPlan, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*SubscriptionPlan, *SubscriptionPlanQuery]()
-	return withInterceptors[[]*SubscriptionPlan](ctx, spq, qr, spq.inters)
+	return withInterceptors[[]*SubscriptionPlan](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (spq *SubscriptionPlanQuery) AllX(ctx context.Context) []*SubscriptionPlan {
-	nodes, err := spq.All(ctx)
+func (_q *SubscriptionPlanQuery) AllX(ctx context.Context) []*SubscriptionPlan {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -251,20 +252,20 @@ func (spq *SubscriptionPlanQuery) AllX(ctx context.Context) []*SubscriptionPlan 
 }
 
 // IDs executes the query and returns a list of SubscriptionPlan IDs.
-func (spq *SubscriptionPlanQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if spq.ctx.Unique == nil && spq.path != nil {
-		spq.Unique(true)
+func (_q *SubscriptionPlanQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, spq.ctx, "IDs")
-	if err = spq.Select(subscriptionplan.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(subscriptionplan.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (spq *SubscriptionPlanQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := spq.IDs(ctx)
+func (_q *SubscriptionPlanQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -272,17 +273,17 @@ func (spq *SubscriptionPlanQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (spq *SubscriptionPlanQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, spq.ctx, "Count")
-	if err := spq.prepareQuery(ctx); err != nil {
+func (_q *SubscriptionPlanQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, spq, querierCount[*SubscriptionPlanQuery](), spq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*SubscriptionPlanQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (spq *SubscriptionPlanQuery) CountX(ctx context.Context) int {
-	count, err := spq.Count(ctx)
+func (_q *SubscriptionPlanQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -290,9 +291,9 @@ func (spq *SubscriptionPlanQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (spq *SubscriptionPlanQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, spq.ctx, "Exist")
-	switch _, err := spq.FirstID(ctx); {
+func (_q *SubscriptionPlanQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -303,8 +304,8 @@ func (spq *SubscriptionPlanQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (spq *SubscriptionPlanQuery) ExistX(ctx context.Context) bool {
-	exist, err := spq.Exist(ctx)
+func (_q *SubscriptionPlanQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -313,56 +314,56 @@ func (spq *SubscriptionPlanQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the SubscriptionPlanQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (spq *SubscriptionPlanQuery) Clone() *SubscriptionPlanQuery {
-	if spq == nil {
+func (_q *SubscriptionPlanQuery) Clone() *SubscriptionPlanQuery {
+	if _q == nil {
 		return nil
 	}
 	return &SubscriptionPlanQuery{
-		config:             spq.config,
-		ctx:                spq.ctx.Clone(),
-		order:              append([]subscriptionplan.OrderOption{}, spq.order...),
-		inters:             append([]Interceptor{}, spq.inters...),
-		predicates:         append([]predicate.SubscriptionPlan{}, spq.predicates...),
-		withFeatures:       spq.withFeatures.Clone(),
-		withPricingHistory: spq.withPricingHistory.Clone(),
-		withSubscriptions:  spq.withSubscriptions.Clone(),
+		config:             _q.config,
+		ctx:                _q.ctx.Clone(),
+		order:              append([]subscriptionplan.OrderOption{}, _q.order...),
+		inters:             append([]Interceptor{}, _q.inters...),
+		predicates:         append([]predicate.SubscriptionPlan{}, _q.predicates...),
+		withFeatures:       _q.withFeatures.Clone(),
+		withPricingHistory: _q.withPricingHistory.Clone(),
+		withSubscriptions:  _q.withSubscriptions.Clone(),
 		// clone intermediate query.
-		sql:  spq.sql.Clone(),
-		path: spq.path,
+		sql:  _q.sql.Clone(),
+		path: _q.path,
 	}
 }
 
 // WithFeatures tells the query-builder to eager-load the nodes that are connected to
 // the "features" edge. The optional arguments are used to configure the query builder of the edge.
-func (spq *SubscriptionPlanQuery) WithFeatures(opts ...func(*PlanFeatureQuery)) *SubscriptionPlanQuery {
-	query := (&PlanFeatureClient{config: spq.config}).Query()
+func (_q *SubscriptionPlanQuery) WithFeatures(opts ...func(*PlanFeatureQuery)) *SubscriptionPlanQuery {
+	query := (&PlanFeatureClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	spq.withFeatures = query
-	return spq
+	_q.withFeatures = query
+	return _q
 }
 
 // WithPricingHistory tells the query-builder to eager-load the nodes that are connected to
 // the "pricing_history" edge. The optional arguments are used to configure the query builder of the edge.
-func (spq *SubscriptionPlanQuery) WithPricingHistory(opts ...func(*PlanPricingHistoryQuery)) *SubscriptionPlanQuery {
-	query := (&PlanPricingHistoryClient{config: spq.config}).Query()
+func (_q *SubscriptionPlanQuery) WithPricingHistory(opts ...func(*PlanPricingHistoryQuery)) *SubscriptionPlanQuery {
+	query := (&PlanPricingHistoryClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	spq.withPricingHistory = query
-	return spq
+	_q.withPricingHistory = query
+	return _q
 }
 
 // WithSubscriptions tells the query-builder to eager-load the nodes that are connected to
 // the "subscriptions" edge. The optional arguments are used to configure the query builder of the edge.
-func (spq *SubscriptionPlanQuery) WithSubscriptions(opts ...func(*TenantSubscriptionQuery)) *SubscriptionPlanQuery {
-	query := (&TenantSubscriptionClient{config: spq.config}).Query()
+func (_q *SubscriptionPlanQuery) WithSubscriptions(opts ...func(*TenantSubscriptionQuery)) *SubscriptionPlanQuery {
+	query := (&TenantSubscriptionClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	spq.withSubscriptions = query
-	return spq
+	_q.withSubscriptions = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -379,10 +380,10 @@ func (spq *SubscriptionPlanQuery) WithSubscriptions(opts ...func(*TenantSubscrip
 //		GroupBy(subscriptionplan.FieldPlanCode).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (spq *SubscriptionPlanQuery) GroupBy(field string, fields ...string) *SubscriptionPlanGroupBy {
-	spq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &SubscriptionPlanGroupBy{build: spq}
-	grbuild.flds = &spq.ctx.Fields
+func (_q *SubscriptionPlanQuery) GroupBy(field string, fields ...string) *SubscriptionPlanGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &SubscriptionPlanGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = subscriptionplan.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -400,60 +401,60 @@ func (spq *SubscriptionPlanQuery) GroupBy(field string, fields ...string) *Subsc
 //	client.SubscriptionPlan.Query().
 //		Select(subscriptionplan.FieldPlanCode).
 //		Scan(ctx, &v)
-func (spq *SubscriptionPlanQuery) Select(fields ...string) *SubscriptionPlanSelect {
-	spq.ctx.Fields = append(spq.ctx.Fields, fields...)
-	sbuild := &SubscriptionPlanSelect{SubscriptionPlanQuery: spq}
+func (_q *SubscriptionPlanQuery) Select(fields ...string) *SubscriptionPlanSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &SubscriptionPlanSelect{SubscriptionPlanQuery: _q}
 	sbuild.label = subscriptionplan.Label
-	sbuild.flds, sbuild.scan = &spq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a SubscriptionPlanSelect configured with the given aggregations.
-func (spq *SubscriptionPlanQuery) Aggregate(fns ...AggregateFunc) *SubscriptionPlanSelect {
-	return spq.Select().Aggregate(fns...)
+func (_q *SubscriptionPlanQuery) Aggregate(fns ...AggregateFunc) *SubscriptionPlanSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (spq *SubscriptionPlanQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range spq.inters {
+func (_q *SubscriptionPlanQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, spq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range spq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !subscriptionplan.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if spq.path != nil {
-		prev, err := spq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		spq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (spq *SubscriptionPlanQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*SubscriptionPlan, error) {
+func (_q *SubscriptionPlanQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*SubscriptionPlan, error) {
 	var (
 		nodes       = []*SubscriptionPlan{}
-		_spec       = spq.querySpec()
+		_spec       = _q.querySpec()
 		loadedTypes = [3]bool{
-			spq.withFeatures != nil,
-			spq.withPricingHistory != nil,
-			spq.withSubscriptions != nil,
+			_q.withFeatures != nil,
+			_q.withPricingHistory != nil,
+			_q.withSubscriptions != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*SubscriptionPlan).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &SubscriptionPlan{config: spq.config}
+		node := &SubscriptionPlan{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -461,21 +462,21 @@ func (spq *SubscriptionPlanQuery) sqlAll(ctx context.Context, hooks ...queryHook
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, spq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := spq.withFeatures; query != nil {
-		if err := spq.loadFeatures(ctx, query, nodes,
+	if query := _q.withFeatures; query != nil {
+		if err := _q.loadFeatures(ctx, query, nodes,
 			func(n *SubscriptionPlan) { n.Edges.Features = []*PlanFeature{} },
 			func(n *SubscriptionPlan, e *PlanFeature) { n.Edges.Features = append(n.Edges.Features, e) }); err != nil {
 			return nil, err
 		}
 	}
-	if query := spq.withPricingHistory; query != nil {
-		if err := spq.loadPricingHistory(ctx, query, nodes,
+	if query := _q.withPricingHistory; query != nil {
+		if err := _q.loadPricingHistory(ctx, query, nodes,
 			func(n *SubscriptionPlan) { n.Edges.PricingHistory = []*PlanPricingHistory{} },
 			func(n *SubscriptionPlan, e *PlanPricingHistory) {
 				n.Edges.PricingHistory = append(n.Edges.PricingHistory, e)
@@ -483,8 +484,8 @@ func (spq *SubscriptionPlanQuery) sqlAll(ctx context.Context, hooks ...queryHook
 			return nil, err
 		}
 	}
-	if query := spq.withSubscriptions; query != nil {
-		if err := spq.loadSubscriptions(ctx, query, nodes,
+	if query := _q.withSubscriptions; query != nil {
+		if err := _q.loadSubscriptions(ctx, query, nodes,
 			func(n *SubscriptionPlan) { n.Edges.Subscriptions = []*TenantSubscription{} },
 			func(n *SubscriptionPlan, e *TenantSubscription) {
 				n.Edges.Subscriptions = append(n.Edges.Subscriptions, e)
@@ -495,7 +496,7 @@ func (spq *SubscriptionPlanQuery) sqlAll(ctx context.Context, hooks ...queryHook
 	return nodes, nil
 }
 
-func (spq *SubscriptionPlanQuery) loadFeatures(ctx context.Context, query *PlanFeatureQuery, nodes []*SubscriptionPlan, init func(*SubscriptionPlan), assign func(*SubscriptionPlan, *PlanFeature)) error {
+func (_q *SubscriptionPlanQuery) loadFeatures(ctx context.Context, query *PlanFeatureQuery, nodes []*SubscriptionPlan, init func(*SubscriptionPlan), assign func(*SubscriptionPlan, *PlanFeature)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*SubscriptionPlan)
 	for i := range nodes {
@@ -525,7 +526,7 @@ func (spq *SubscriptionPlanQuery) loadFeatures(ctx context.Context, query *PlanF
 	}
 	return nil
 }
-func (spq *SubscriptionPlanQuery) loadPricingHistory(ctx context.Context, query *PlanPricingHistoryQuery, nodes []*SubscriptionPlan, init func(*SubscriptionPlan), assign func(*SubscriptionPlan, *PlanPricingHistory)) error {
+func (_q *SubscriptionPlanQuery) loadPricingHistory(ctx context.Context, query *PlanPricingHistoryQuery, nodes []*SubscriptionPlan, init func(*SubscriptionPlan), assign func(*SubscriptionPlan, *PlanPricingHistory)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*SubscriptionPlan)
 	for i := range nodes {
@@ -555,7 +556,7 @@ func (spq *SubscriptionPlanQuery) loadPricingHistory(ctx context.Context, query 
 	}
 	return nil
 }
-func (spq *SubscriptionPlanQuery) loadSubscriptions(ctx context.Context, query *TenantSubscriptionQuery, nodes []*SubscriptionPlan, init func(*SubscriptionPlan), assign func(*SubscriptionPlan, *TenantSubscription)) error {
+func (_q *SubscriptionPlanQuery) loadSubscriptions(ctx context.Context, query *TenantSubscriptionQuery, nodes []*SubscriptionPlan, init func(*SubscriptionPlan), assign func(*SubscriptionPlan, *TenantSubscription)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*SubscriptionPlan)
 	for i := range nodes {
@@ -586,24 +587,24 @@ func (spq *SubscriptionPlanQuery) loadSubscriptions(ctx context.Context, query *
 	return nil
 }
 
-func (spq *SubscriptionPlanQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := spq.querySpec()
-	_spec.Node.Columns = spq.ctx.Fields
-	if len(spq.ctx.Fields) > 0 {
-		_spec.Unique = spq.ctx.Unique != nil && *spq.ctx.Unique
+func (_q *SubscriptionPlanQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, spq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (spq *SubscriptionPlanQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *SubscriptionPlanQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(subscriptionplan.Table, subscriptionplan.Columns, sqlgraph.NewFieldSpec(subscriptionplan.FieldID, field.TypeUUID))
-	_spec.From = spq.sql
-	if unique := spq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if spq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := spq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, subscriptionplan.FieldID)
 		for i := range fields {
@@ -612,20 +613,20 @@ func (spq *SubscriptionPlanQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := spq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := spq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := spq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := spq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -635,33 +636,33 @@ func (spq *SubscriptionPlanQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (spq *SubscriptionPlanQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(spq.driver.Dialect())
+func (_q *SubscriptionPlanQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(subscriptionplan.Table)
-	columns := spq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = subscriptionplan.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if spq.sql != nil {
-		selector = spq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if spq.ctx.Unique != nil && *spq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, p := range spq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range spq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := spq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := spq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -674,41 +675,41 @@ type SubscriptionPlanGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (spgb *SubscriptionPlanGroupBy) Aggregate(fns ...AggregateFunc) *SubscriptionPlanGroupBy {
-	spgb.fns = append(spgb.fns, fns...)
-	return spgb
+func (_g *SubscriptionPlanGroupBy) Aggregate(fns ...AggregateFunc) *SubscriptionPlanGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (spgb *SubscriptionPlanGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, spgb.build.ctx, "GroupBy")
-	if err := spgb.build.prepareQuery(ctx); err != nil {
+func (_g *SubscriptionPlanGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*SubscriptionPlanQuery, *SubscriptionPlanGroupBy](ctx, spgb.build, spgb, spgb.build.inters, v)
+	return scanWithInterceptors[*SubscriptionPlanQuery, *SubscriptionPlanGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (spgb *SubscriptionPlanGroupBy) sqlScan(ctx context.Context, root *SubscriptionPlanQuery, v any) error {
+func (_g *SubscriptionPlanGroupBy) sqlScan(ctx context.Context, root *SubscriptionPlanQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(spgb.fns))
-	for _, fn := range spgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*spgb.flds)+len(spgb.fns))
-		for _, f := range *spgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*spgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := spgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -722,27 +723,27 @@ type SubscriptionPlanSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (sps *SubscriptionPlanSelect) Aggregate(fns ...AggregateFunc) *SubscriptionPlanSelect {
-	sps.fns = append(sps.fns, fns...)
-	return sps
+func (_s *SubscriptionPlanSelect) Aggregate(fns ...AggregateFunc) *SubscriptionPlanSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (sps *SubscriptionPlanSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, sps.ctx, "Select")
-	if err := sps.prepareQuery(ctx); err != nil {
+func (_s *SubscriptionPlanSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*SubscriptionPlanQuery, *SubscriptionPlanSelect](ctx, sps.SubscriptionPlanQuery, sps, sps.inters, v)
+	return scanWithInterceptors[*SubscriptionPlanQuery, *SubscriptionPlanSelect](ctx, _s.SubscriptionPlanQuery, _s, _s.inters, v)
 }
 
-func (sps *SubscriptionPlanSelect) sqlScan(ctx context.Context, root *SubscriptionPlanQuery, v any) error {
+func (_s *SubscriptionPlanSelect) sqlScan(ctx context.Context, root *SubscriptionPlanQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(sps.fns))
-	for _, fn := range sps.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*sps.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -750,7 +751,7 @@ func (sps *SubscriptionPlanSelect) sqlScan(ctx context.Context, root *Subscripti
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := sps.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()

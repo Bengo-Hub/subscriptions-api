@@ -99,7 +99,7 @@ Entities (current):
 
 | Entity | Table | Purpose |
 |--------|-------|---------|
-| `SubscriptionPlan` | `subscription_plans` | Plan definitions (STARTER, GROWTH, PROFESSIONAL × monthly/yearly) |
+| `SubscriptionPlan` | `subscription_plans` | Plan definitions (STARTER, GROWTH, PROFESSIONAL × monthly/yearly) with dynamic plan_type and discount_rules |
 | `PlanFeature` | `plan_features` | Feature flags per plan |
 | `PlanPricingHistory` | `plan_pricing_history` | Pricing audit trail |
 | `TenantSubscription` | `tenant_subscriptions` | Active subscription per tenant |
@@ -163,7 +163,7 @@ Seeded via `go run cmd/seed/main.go` (idempotent):
 
 - **13 Products**: 3 platform (auth, notifications, subscription), 3 core (ordering, logistics, treasury), 2 standard add-ons (pos, storefront), 5 integration add-ons
 - **3 Bundles**: delivery (default), pos-suite, complete
-- **6 Plans**: STARTER/GROWTH/PROFESSIONAL × MONTHLY/ANNUAL
+- **6 Plans**: STARTER/GROWTH/PROFESSIONAL × MONTHLY/ANNUAL (with dynamic plan_type: TIERED, STANDALONE_SERVICE, BUNDLE, CUSTOM)
 - **Demo Subscription**: Urban Loft on GROWTH plan, 14-day trial, delivery bundle
 
 ---

@@ -36,6 +36,13 @@ func (SubscriptionPlan) Fields() []ent.Field {
 			Comment("MONTHLY, QUARTERLY, ANNUAL, ONE_TIME"),
 		field.Float("base_price").
 			Comment("Base subscription price"),
+		field.Float("onetime_all_products_price").
+			Optional().
+			Nillable().
+			Comment("Applicable for ONE_TIME custom plans. If set, this overrides product-summation."),
+		field.Bool("use_sum_based_pricing").
+			Default(false).
+			Comment("If true, plan price is calculated as sum of individual products (standard for Custom/One-time)"),
 		field.String("currency").
 			Default("KES").
 			Comment("ISO currency code"),
@@ -48,6 +55,14 @@ func (SubscriptionPlan) Fields() []ent.Field {
 		field.JSON("tier_limits_json", map[string]any{}).
 			Default(map[string]any{}).
 			Comment("Tier limits (max_admins, max_riders, max_orders_per_day, etc.)"),
+		field.Enum("plan_type").
+			Values("TIERED", "STANDALONE_SERVICE", "BUNDLE", "CUSTOM").
+			Default("TIERED").
+			Comment("Type: TIERED (Urban Cafe), STANDALONE_SERVICE, BUNDLE, CUSTOM"),
+		field.JSON("discount_rules", []map[string]any{}).
+			Default([]map[string]any{}).
+			Optional().
+			Comment("Dynamic discounting rules. Types: YEARLY (percentage), LOYALTY (percentage/min_months), NEW_CUSTOMER (trial_days/percentage)."),
 		field.JSON("metadata", map[string]any{}).
 			Default(map[string]any{}),
 		field.Time("created_at").

@@ -31,6 +31,9 @@ func (PlanFeature) Fields() []ent.Field {
 		field.Int("limit_value").
 			Optional().
 			Comment("Feature-specific limit (e.g., max 5 outlets)"),
+		field.Float("overage_unit_price").
+			Default(0).
+			Comment("Price per unit above the limit"),
 		field.JSON("metadata", map[string]any{}).
 			Default(map[string]any{}),
 		field.Time("created_at").

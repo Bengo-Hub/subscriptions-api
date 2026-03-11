@@ -327,8 +327,8 @@ func (c *BundleClient) Update() *BundleUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *BundleClient) UpdateOne(b *Bundle) *BundleUpdateOne {
-	mutation := newBundleMutation(c.config, OpUpdateOne, withBundle(b))
+func (c *BundleClient) UpdateOne(_m *Bundle) *BundleUpdateOne {
+	mutation := newBundleMutation(c.config, OpUpdateOne, withBundle(_m))
 	return &BundleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -345,8 +345,8 @@ func (c *BundleClient) Delete() *BundleDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *BundleClient) DeleteOne(b *Bundle) *BundleDeleteOne {
-	return c.DeleteOneID(b.ID)
+func (c *BundleClient) DeleteOne(_m *Bundle) *BundleDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -460,8 +460,8 @@ func (c *OutboxEventClient) Update() *OutboxEventUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *OutboxEventClient) UpdateOne(oe *OutboxEvent) *OutboxEventUpdateOne {
-	mutation := newOutboxEventMutation(c.config, OpUpdateOne, withOutboxEvent(oe))
+func (c *OutboxEventClient) UpdateOne(_m *OutboxEvent) *OutboxEventUpdateOne {
+	mutation := newOutboxEventMutation(c.config, OpUpdateOne, withOutboxEvent(_m))
 	return &OutboxEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -478,8 +478,8 @@ func (c *OutboxEventClient) Delete() *OutboxEventDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *OutboxEventClient) DeleteOne(oe *OutboxEvent) *OutboxEventDeleteOne {
-	return c.DeleteOneID(oe.ID)
+func (c *OutboxEventClient) DeleteOne(_m *OutboxEvent) *OutboxEventDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -593,8 +593,8 @@ func (c *PlanFeatureClient) Update() *PlanFeatureUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *PlanFeatureClient) UpdateOne(pf *PlanFeature) *PlanFeatureUpdateOne {
-	mutation := newPlanFeatureMutation(c.config, OpUpdateOne, withPlanFeature(pf))
+func (c *PlanFeatureClient) UpdateOne(_m *PlanFeature) *PlanFeatureUpdateOne {
+	mutation := newPlanFeatureMutation(c.config, OpUpdateOne, withPlanFeature(_m))
 	return &PlanFeatureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -611,8 +611,8 @@ func (c *PlanFeatureClient) Delete() *PlanFeatureDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *PlanFeatureClient) DeleteOne(pf *PlanFeature) *PlanFeatureDeleteOne {
-	return c.DeleteOneID(pf.ID)
+func (c *PlanFeatureClient) DeleteOne(_m *PlanFeature) *PlanFeatureDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -647,16 +647,16 @@ func (c *PlanFeatureClient) GetX(ctx context.Context, id uuid.UUID) *PlanFeature
 }
 
 // QueryPlan queries the plan edge of a PlanFeature.
-func (c *PlanFeatureClient) QueryPlan(pf *PlanFeature) *SubscriptionPlanQuery {
+func (c *PlanFeatureClient) QueryPlan(_m *PlanFeature) *SubscriptionPlanQuery {
 	query := (&SubscriptionPlanClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pf.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(planfeature.Table, planfeature.FieldID, id),
 			sqlgraph.To(subscriptionplan.Table, subscriptionplan.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, planfeature.PlanTable, planfeature.PlanColumn),
 		)
-		fromV = sqlgraph.Neighbors(pf.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -742,8 +742,8 @@ func (c *PlanPricingHistoryClient) Update() *PlanPricingHistoryUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *PlanPricingHistoryClient) UpdateOne(pph *PlanPricingHistory) *PlanPricingHistoryUpdateOne {
-	mutation := newPlanPricingHistoryMutation(c.config, OpUpdateOne, withPlanPricingHistory(pph))
+func (c *PlanPricingHistoryClient) UpdateOne(_m *PlanPricingHistory) *PlanPricingHistoryUpdateOne {
+	mutation := newPlanPricingHistoryMutation(c.config, OpUpdateOne, withPlanPricingHistory(_m))
 	return &PlanPricingHistoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -760,8 +760,8 @@ func (c *PlanPricingHistoryClient) Delete() *PlanPricingHistoryDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *PlanPricingHistoryClient) DeleteOne(pph *PlanPricingHistory) *PlanPricingHistoryDeleteOne {
-	return c.DeleteOneID(pph.ID)
+func (c *PlanPricingHistoryClient) DeleteOne(_m *PlanPricingHistory) *PlanPricingHistoryDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -796,16 +796,16 @@ func (c *PlanPricingHistoryClient) GetX(ctx context.Context, id uuid.UUID) *Plan
 }
 
 // QueryPlan queries the plan edge of a PlanPricingHistory.
-func (c *PlanPricingHistoryClient) QueryPlan(pph *PlanPricingHistory) *SubscriptionPlanQuery {
+func (c *PlanPricingHistoryClient) QueryPlan(_m *PlanPricingHistory) *SubscriptionPlanQuery {
 	query := (&SubscriptionPlanClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pph.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(planpricinghistory.Table, planpricinghistory.FieldID, id),
 			sqlgraph.To(subscriptionplan.Table, subscriptionplan.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, planpricinghistory.PlanTable, planpricinghistory.PlanColumn),
 		)
-		fromV = sqlgraph.Neighbors(pph.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -891,8 +891,8 @@ func (c *ProductClient) Update() *ProductUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *ProductClient) UpdateOne(pr *Product) *ProductUpdateOne {
-	mutation := newProductMutation(c.config, OpUpdateOne, withProduct(pr))
+func (c *ProductClient) UpdateOne(_m *Product) *ProductUpdateOne {
+	mutation := newProductMutation(c.config, OpUpdateOne, withProduct(_m))
 	return &ProductUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -909,8 +909,8 @@ func (c *ProductClient) Delete() *ProductDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *ProductClient) DeleteOne(pr *Product) *ProductDeleteOne {
-	return c.DeleteOneID(pr.ID)
+func (c *ProductClient) DeleteOne(_m *Product) *ProductDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -945,16 +945,16 @@ func (c *ProductClient) GetX(ctx context.Context, id uuid.UUID) *Product {
 }
 
 // QueryProductSubscriptions queries the product_subscriptions edge of a Product.
-func (c *ProductClient) QueryProductSubscriptions(pr *Product) *ProductSubscriptionQuery {
+func (c *ProductClient) QueryProductSubscriptions(_m *Product) *ProductSubscriptionQuery {
 	query := (&ProductSubscriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pr.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(product.Table, product.FieldID, id),
 			sqlgraph.To(productsubscription.Table, productsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, product.ProductSubscriptionsTable, product.ProductSubscriptionsColumn),
 		)
-		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1040,8 +1040,8 @@ func (c *ProductSubscriptionClient) Update() *ProductSubscriptionUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *ProductSubscriptionClient) UpdateOne(ps *ProductSubscription) *ProductSubscriptionUpdateOne {
-	mutation := newProductSubscriptionMutation(c.config, OpUpdateOne, withProductSubscription(ps))
+func (c *ProductSubscriptionClient) UpdateOne(_m *ProductSubscription) *ProductSubscriptionUpdateOne {
+	mutation := newProductSubscriptionMutation(c.config, OpUpdateOne, withProductSubscription(_m))
 	return &ProductSubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1058,8 +1058,8 @@ func (c *ProductSubscriptionClient) Delete() *ProductSubscriptionDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *ProductSubscriptionClient) DeleteOne(ps *ProductSubscription) *ProductSubscriptionDeleteOne {
-	return c.DeleteOneID(ps.ID)
+func (c *ProductSubscriptionClient) DeleteOne(_m *ProductSubscription) *ProductSubscriptionDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1094,32 +1094,32 @@ func (c *ProductSubscriptionClient) GetX(ctx context.Context, id uuid.UUID) *Pro
 }
 
 // QueryTenantSubscription queries the tenant_subscription edge of a ProductSubscription.
-func (c *ProductSubscriptionClient) QueryTenantSubscription(ps *ProductSubscription) *TenantSubscriptionQuery {
+func (c *ProductSubscriptionClient) QueryTenantSubscription(_m *ProductSubscription) *TenantSubscriptionQuery {
 	query := (&TenantSubscriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ps.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(productsubscription.Table, productsubscription.FieldID, id),
 			sqlgraph.To(tenantsubscription.Table, tenantsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, productsubscription.TenantSubscriptionTable, productsubscription.TenantSubscriptionColumn),
 		)
-		fromV = sqlgraph.Neighbors(ps.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryProduct queries the product edge of a ProductSubscription.
-func (c *ProductSubscriptionClient) QueryProduct(ps *ProductSubscription) *ProductQuery {
+func (c *ProductSubscriptionClient) QueryProduct(_m *ProductSubscription) *ProductQuery {
 	query := (&ProductClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ps.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(productsubscription.Table, productsubscription.FieldID, id),
 			sqlgraph.To(product.Table, product.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, productsubscription.ProductTable, productsubscription.ProductColumn),
 		)
-		fromV = sqlgraph.Neighbors(ps.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1205,8 +1205,8 @@ func (c *SubscriptionPlanClient) Update() *SubscriptionPlanUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *SubscriptionPlanClient) UpdateOne(sp *SubscriptionPlan) *SubscriptionPlanUpdateOne {
-	mutation := newSubscriptionPlanMutation(c.config, OpUpdateOne, withSubscriptionPlan(sp))
+func (c *SubscriptionPlanClient) UpdateOne(_m *SubscriptionPlan) *SubscriptionPlanUpdateOne {
+	mutation := newSubscriptionPlanMutation(c.config, OpUpdateOne, withSubscriptionPlan(_m))
 	return &SubscriptionPlanUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1223,8 +1223,8 @@ func (c *SubscriptionPlanClient) Delete() *SubscriptionPlanDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *SubscriptionPlanClient) DeleteOne(sp *SubscriptionPlan) *SubscriptionPlanDeleteOne {
-	return c.DeleteOneID(sp.ID)
+func (c *SubscriptionPlanClient) DeleteOne(_m *SubscriptionPlan) *SubscriptionPlanDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1259,48 +1259,48 @@ func (c *SubscriptionPlanClient) GetX(ctx context.Context, id uuid.UUID) *Subscr
 }
 
 // QueryFeatures queries the features edge of a SubscriptionPlan.
-func (c *SubscriptionPlanClient) QueryFeatures(sp *SubscriptionPlan) *PlanFeatureQuery {
+func (c *SubscriptionPlanClient) QueryFeatures(_m *SubscriptionPlan) *PlanFeatureQuery {
 	query := (&PlanFeatureClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := sp.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(subscriptionplan.Table, subscriptionplan.FieldID, id),
 			sqlgraph.To(planfeature.Table, planfeature.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionplan.FeaturesTable, subscriptionplan.FeaturesColumn),
 		)
-		fromV = sqlgraph.Neighbors(sp.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryPricingHistory queries the pricing_history edge of a SubscriptionPlan.
-func (c *SubscriptionPlanClient) QueryPricingHistory(sp *SubscriptionPlan) *PlanPricingHistoryQuery {
+func (c *SubscriptionPlanClient) QueryPricingHistory(_m *SubscriptionPlan) *PlanPricingHistoryQuery {
 	query := (&PlanPricingHistoryClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := sp.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(subscriptionplan.Table, subscriptionplan.FieldID, id),
 			sqlgraph.To(planpricinghistory.Table, planpricinghistory.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionplan.PricingHistoryTable, subscriptionplan.PricingHistoryColumn),
 		)
-		fromV = sqlgraph.Neighbors(sp.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QuerySubscriptions queries the subscriptions edge of a SubscriptionPlan.
-func (c *SubscriptionPlanClient) QuerySubscriptions(sp *SubscriptionPlan) *TenantSubscriptionQuery {
+func (c *SubscriptionPlanClient) QuerySubscriptions(_m *SubscriptionPlan) *TenantSubscriptionQuery {
 	query := (&TenantSubscriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := sp.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(subscriptionplan.Table, subscriptionplan.FieldID, id),
 			sqlgraph.To(tenantsubscription.Table, tenantsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionplan.SubscriptionsTable, subscriptionplan.SubscriptionsColumn),
 		)
-		fromV = sqlgraph.Neighbors(sp.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1386,8 +1386,8 @@ func (c *TenantClient) Update() *TenantUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *TenantClient) UpdateOne(t *Tenant) *TenantUpdateOne {
-	mutation := newTenantMutation(c.config, OpUpdateOne, withTenant(t))
+func (c *TenantClient) UpdateOne(_m *Tenant) *TenantUpdateOne {
+	mutation := newTenantMutation(c.config, OpUpdateOne, withTenant(_m))
 	return &TenantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1404,8 +1404,8 @@ func (c *TenantClient) Delete() *TenantDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *TenantClient) DeleteOne(t *Tenant) *TenantDeleteOne {
-	return c.DeleteOneID(t.ID)
+func (c *TenantClient) DeleteOne(_m *Tenant) *TenantDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1440,16 +1440,16 @@ func (c *TenantClient) GetX(ctx context.Context, id uuid.UUID) *Tenant {
 }
 
 // QuerySubscriptions queries the subscriptions edge of a Tenant.
-func (c *TenantClient) QuerySubscriptions(t *Tenant) *TenantSubscriptionQuery {
+func (c *TenantClient) QuerySubscriptions(_m *Tenant) *TenantSubscriptionQuery {
 	query := (&TenantSubscriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := t.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(tenant.Table, tenant.FieldID, id),
 			sqlgraph.To(tenantsubscription.Table, tenantsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, tenant.SubscriptionsTable, tenant.SubscriptionsColumn),
 		)
-		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -1535,8 +1535,8 @@ func (c *TenantSubscriptionClient) Update() *TenantSubscriptionUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *TenantSubscriptionClient) UpdateOne(ts *TenantSubscription) *TenantSubscriptionUpdateOne {
-	mutation := newTenantSubscriptionMutation(c.config, OpUpdateOne, withTenantSubscription(ts))
+func (c *TenantSubscriptionClient) UpdateOne(_m *TenantSubscription) *TenantSubscriptionUpdateOne {
+	mutation := newTenantSubscriptionMutation(c.config, OpUpdateOne, withTenantSubscription(_m))
 	return &TenantSubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1553,8 +1553,8 @@ func (c *TenantSubscriptionClient) Delete() *TenantSubscriptionDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *TenantSubscriptionClient) DeleteOne(ts *TenantSubscription) *TenantSubscriptionDeleteOne {
-	return c.DeleteOneID(ts.ID)
+func (c *TenantSubscriptionClient) DeleteOne(_m *TenantSubscription) *TenantSubscriptionDeleteOne {
+	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -1589,48 +1589,48 @@ func (c *TenantSubscriptionClient) GetX(ctx context.Context, id uuid.UUID) *Tena
 }
 
 // QueryTenant queries the tenant edge of a TenantSubscription.
-func (c *TenantSubscriptionClient) QueryTenant(ts *TenantSubscription) *TenantQuery {
+func (c *TenantSubscriptionClient) QueryTenant(_m *TenantSubscription) *TenantQuery {
 	query := (&TenantClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ts.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, id),
 			sqlgraph.To(tenant.Table, tenant.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, tenantsubscription.TenantTable, tenantsubscription.TenantColumn),
 		)
-		fromV = sqlgraph.Neighbors(ts.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryPlan queries the plan edge of a TenantSubscription.
-func (c *TenantSubscriptionClient) QueryPlan(ts *TenantSubscription) *SubscriptionPlanQuery {
+func (c *TenantSubscriptionClient) QueryPlan(_m *TenantSubscription) *SubscriptionPlanQuery {
 	query := (&SubscriptionPlanClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ts.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, id),
 			sqlgraph.To(subscriptionplan.Table, subscriptionplan.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, tenantsubscription.PlanTable, tenantsubscription.PlanColumn),
 		)
-		fromV = sqlgraph.Neighbors(ts.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // QueryProductSubscriptions queries the product_subscriptions edge of a TenantSubscription.
-func (c *TenantSubscriptionClient) QueryProductSubscriptions(ts *TenantSubscription) *ProductSubscriptionQuery {
+func (c *TenantSubscriptionClient) QueryProductSubscriptions(_m *TenantSubscription) *ProductSubscriptionQuery {
 	query := (&ProductSubscriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ts.ID
+		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, id),
 			sqlgraph.To(productsubscription.Table, productsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.ProductSubscriptionsTable, tenantsubscription.ProductSubscriptionsColumn),
 		)
-		fromV = sqlgraph.Neighbors(ts.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query

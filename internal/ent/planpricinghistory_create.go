@@ -26,118 +26,118 @@ type PlanPricingHistoryCreate struct {
 }
 
 // SetPlanID sets the "plan_id" field.
-func (pphc *PlanPricingHistoryCreate) SetPlanID(u uuid.UUID) *PlanPricingHistoryCreate {
-	pphc.mutation.SetPlanID(u)
-	return pphc
+func (_c *PlanPricingHistoryCreate) SetPlanID(v uuid.UUID) *PlanPricingHistoryCreate {
+	_c.mutation.SetPlanID(v)
+	return _c
 }
 
 // SetBasePrice sets the "base_price" field.
-func (pphc *PlanPricingHistoryCreate) SetBasePrice(f float64) *PlanPricingHistoryCreate {
-	pphc.mutation.SetBasePrice(f)
-	return pphc
+func (_c *PlanPricingHistoryCreate) SetBasePrice(v float64) *PlanPricingHistoryCreate {
+	_c.mutation.SetBasePrice(v)
+	return _c
 }
 
 // SetEffectiveFrom sets the "effective_from" field.
-func (pphc *PlanPricingHistoryCreate) SetEffectiveFrom(t time.Time) *PlanPricingHistoryCreate {
-	pphc.mutation.SetEffectiveFrom(t)
-	return pphc
+func (_c *PlanPricingHistoryCreate) SetEffectiveFrom(v time.Time) *PlanPricingHistoryCreate {
+	_c.mutation.SetEffectiveFrom(v)
+	return _c
 }
 
 // SetEffectiveTo sets the "effective_to" field.
-func (pphc *PlanPricingHistoryCreate) SetEffectiveTo(t time.Time) *PlanPricingHistoryCreate {
-	pphc.mutation.SetEffectiveTo(t)
-	return pphc
+func (_c *PlanPricingHistoryCreate) SetEffectiveTo(v time.Time) *PlanPricingHistoryCreate {
+	_c.mutation.SetEffectiveTo(v)
+	return _c
 }
 
 // SetNillableEffectiveTo sets the "effective_to" field if the given value is not nil.
-func (pphc *PlanPricingHistoryCreate) SetNillableEffectiveTo(t *time.Time) *PlanPricingHistoryCreate {
-	if t != nil {
-		pphc.SetEffectiveTo(*t)
+func (_c *PlanPricingHistoryCreate) SetNillableEffectiveTo(v *time.Time) *PlanPricingHistoryCreate {
+	if v != nil {
+		_c.SetEffectiveTo(*v)
 	}
-	return pphc
+	return _c
 }
 
 // SetChangedBy sets the "changed_by" field.
-func (pphc *PlanPricingHistoryCreate) SetChangedBy(u uuid.UUID) *PlanPricingHistoryCreate {
-	pphc.mutation.SetChangedBy(u)
-	return pphc
+func (_c *PlanPricingHistoryCreate) SetChangedBy(v uuid.UUID) *PlanPricingHistoryCreate {
+	_c.mutation.SetChangedBy(v)
+	return _c
 }
 
 // SetNillableChangedBy sets the "changed_by" field if the given value is not nil.
-func (pphc *PlanPricingHistoryCreate) SetNillableChangedBy(u *uuid.UUID) *PlanPricingHistoryCreate {
-	if u != nil {
-		pphc.SetChangedBy(*u)
+func (_c *PlanPricingHistoryCreate) SetNillableChangedBy(v *uuid.UUID) *PlanPricingHistoryCreate {
+	if v != nil {
+		_c.SetChangedBy(*v)
 	}
-	return pphc
+	return _c
 }
 
 // SetChangeReason sets the "change_reason" field.
-func (pphc *PlanPricingHistoryCreate) SetChangeReason(s string) *PlanPricingHistoryCreate {
-	pphc.mutation.SetChangeReason(s)
-	return pphc
+func (_c *PlanPricingHistoryCreate) SetChangeReason(v string) *PlanPricingHistoryCreate {
+	_c.mutation.SetChangeReason(v)
+	return _c
 }
 
 // SetNillableChangeReason sets the "change_reason" field if the given value is not nil.
-func (pphc *PlanPricingHistoryCreate) SetNillableChangeReason(s *string) *PlanPricingHistoryCreate {
-	if s != nil {
-		pphc.SetChangeReason(*s)
+func (_c *PlanPricingHistoryCreate) SetNillableChangeReason(v *string) *PlanPricingHistoryCreate {
+	if v != nil {
+		_c.SetChangeReason(*v)
 	}
-	return pphc
+	return _c
 }
 
 // SetMetadata sets the "metadata" field.
-func (pphc *PlanPricingHistoryCreate) SetMetadata(m map[string]interface{}) *PlanPricingHistoryCreate {
-	pphc.mutation.SetMetadata(m)
-	return pphc
+func (_c *PlanPricingHistoryCreate) SetMetadata(v map[string]interface{}) *PlanPricingHistoryCreate {
+	_c.mutation.SetMetadata(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (pphc *PlanPricingHistoryCreate) SetCreatedAt(t time.Time) *PlanPricingHistoryCreate {
-	pphc.mutation.SetCreatedAt(t)
-	return pphc
+func (_c *PlanPricingHistoryCreate) SetCreatedAt(v time.Time) *PlanPricingHistoryCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (pphc *PlanPricingHistoryCreate) SetNillableCreatedAt(t *time.Time) *PlanPricingHistoryCreate {
-	if t != nil {
-		pphc.SetCreatedAt(*t)
+func (_c *PlanPricingHistoryCreate) SetNillableCreatedAt(v *time.Time) *PlanPricingHistoryCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return pphc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (pphc *PlanPricingHistoryCreate) SetID(u uuid.UUID) *PlanPricingHistoryCreate {
-	pphc.mutation.SetID(u)
-	return pphc
+func (_c *PlanPricingHistoryCreate) SetID(v uuid.UUID) *PlanPricingHistoryCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pphc *PlanPricingHistoryCreate) SetNillableID(u *uuid.UUID) *PlanPricingHistoryCreate {
-	if u != nil {
-		pphc.SetID(*u)
+func (_c *PlanPricingHistoryCreate) SetNillableID(v *uuid.UUID) *PlanPricingHistoryCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return pphc
+	return _c
 }
 
 // SetPlan sets the "plan" edge to the SubscriptionPlan entity.
-func (pphc *PlanPricingHistoryCreate) SetPlan(s *SubscriptionPlan) *PlanPricingHistoryCreate {
-	return pphc.SetPlanID(s.ID)
+func (_c *PlanPricingHistoryCreate) SetPlan(v *SubscriptionPlan) *PlanPricingHistoryCreate {
+	return _c.SetPlanID(v.ID)
 }
 
 // Mutation returns the PlanPricingHistoryMutation object of the builder.
-func (pphc *PlanPricingHistoryCreate) Mutation() *PlanPricingHistoryMutation {
-	return pphc.mutation
+func (_c *PlanPricingHistoryCreate) Mutation() *PlanPricingHistoryMutation {
+	return _c.mutation
 }
 
 // Save creates the PlanPricingHistory in the database.
-func (pphc *PlanPricingHistoryCreate) Save(ctx context.Context) (*PlanPricingHistory, error) {
-	pphc.defaults()
-	return withHooks(ctx, pphc.sqlSave, pphc.mutation, pphc.hooks)
+func (_c *PlanPricingHistoryCreate) Save(ctx context.Context) (*PlanPricingHistory, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (pphc *PlanPricingHistoryCreate) SaveX(ctx context.Context) *PlanPricingHistory {
-	v, err := pphc.Save(ctx)
+func (_c *PlanPricingHistoryCreate) SaveX(ctx context.Context) *PlanPricingHistory {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -145,63 +145,63 @@ func (pphc *PlanPricingHistoryCreate) SaveX(ctx context.Context) *PlanPricingHis
 }
 
 // Exec executes the query.
-func (pphc *PlanPricingHistoryCreate) Exec(ctx context.Context) error {
-	_, err := pphc.Save(ctx)
+func (_c *PlanPricingHistoryCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pphc *PlanPricingHistoryCreate) ExecX(ctx context.Context) {
-	if err := pphc.Exec(ctx); err != nil {
+func (_c *PlanPricingHistoryCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (pphc *PlanPricingHistoryCreate) defaults() {
-	if _, ok := pphc.mutation.Metadata(); !ok {
+func (_c *PlanPricingHistoryCreate) defaults() {
+	if _, ok := _c.mutation.Metadata(); !ok {
 		v := planpricinghistory.DefaultMetadata
-		pphc.mutation.SetMetadata(v)
+		_c.mutation.SetMetadata(v)
 	}
-	if _, ok := pphc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := planpricinghistory.DefaultCreatedAt()
-		pphc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := pphc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := planpricinghistory.DefaultID()
-		pphc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pphc *PlanPricingHistoryCreate) check() error {
-	if _, ok := pphc.mutation.PlanID(); !ok {
+func (_c *PlanPricingHistoryCreate) check() error {
+	if _, ok := _c.mutation.PlanID(); !ok {
 		return &ValidationError{Name: "plan_id", err: errors.New(`ent: missing required field "PlanPricingHistory.plan_id"`)}
 	}
-	if _, ok := pphc.mutation.BasePrice(); !ok {
+	if _, ok := _c.mutation.BasePrice(); !ok {
 		return &ValidationError{Name: "base_price", err: errors.New(`ent: missing required field "PlanPricingHistory.base_price"`)}
 	}
-	if _, ok := pphc.mutation.EffectiveFrom(); !ok {
+	if _, ok := _c.mutation.EffectiveFrom(); !ok {
 		return &ValidationError{Name: "effective_from", err: errors.New(`ent: missing required field "PlanPricingHistory.effective_from"`)}
 	}
-	if _, ok := pphc.mutation.Metadata(); !ok {
+	if _, ok := _c.mutation.Metadata(); !ok {
 		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required field "PlanPricingHistory.metadata"`)}
 	}
-	if _, ok := pphc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PlanPricingHistory.created_at"`)}
 	}
-	if _, ok := pphc.mutation.PlanID(); !ok {
+	if len(_c.mutation.PlanIDs()) == 0 {
 		return &ValidationError{Name: "plan", err: errors.New(`ent: missing required edge "PlanPricingHistory.plan"`)}
 	}
 	return nil
 }
 
-func (pphc *PlanPricingHistoryCreate) sqlSave(ctx context.Context) (*PlanPricingHistory, error) {
-	if err := pphc.check(); err != nil {
+func (_c *PlanPricingHistoryCreate) sqlSave(ctx context.Context) (*PlanPricingHistory, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := pphc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, pphc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -214,50 +214,50 @@ func (pphc *PlanPricingHistoryCreate) sqlSave(ctx context.Context) (*PlanPricing
 			return nil, err
 		}
 	}
-	pphc.mutation.id = &_node.ID
-	pphc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (pphc *PlanPricingHistoryCreate) createSpec() (*PlanPricingHistory, *sqlgraph.CreateSpec) {
+func (_c *PlanPricingHistoryCreate) createSpec() (*PlanPricingHistory, *sqlgraph.CreateSpec) {
 	var (
-		_node = &PlanPricingHistory{config: pphc.config}
+		_node = &PlanPricingHistory{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(planpricinghistory.Table, sqlgraph.NewFieldSpec(planpricinghistory.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = pphc.conflict
-	if id, ok := pphc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := pphc.mutation.BasePrice(); ok {
+	if value, ok := _c.mutation.BasePrice(); ok {
 		_spec.SetField(planpricinghistory.FieldBasePrice, field.TypeFloat64, value)
 		_node.BasePrice = value
 	}
-	if value, ok := pphc.mutation.EffectiveFrom(); ok {
+	if value, ok := _c.mutation.EffectiveFrom(); ok {
 		_spec.SetField(planpricinghistory.FieldEffectiveFrom, field.TypeTime, value)
 		_node.EffectiveFrom = value
 	}
-	if value, ok := pphc.mutation.EffectiveTo(); ok {
+	if value, ok := _c.mutation.EffectiveTo(); ok {
 		_spec.SetField(planpricinghistory.FieldEffectiveTo, field.TypeTime, value)
 		_node.EffectiveTo = value
 	}
-	if value, ok := pphc.mutation.ChangedBy(); ok {
+	if value, ok := _c.mutation.ChangedBy(); ok {
 		_spec.SetField(planpricinghistory.FieldChangedBy, field.TypeUUID, value)
 		_node.ChangedBy = value
 	}
-	if value, ok := pphc.mutation.ChangeReason(); ok {
+	if value, ok := _c.mutation.ChangeReason(); ok {
 		_spec.SetField(planpricinghistory.FieldChangeReason, field.TypeString, value)
 		_node.ChangeReason = value
 	}
-	if value, ok := pphc.mutation.Metadata(); ok {
+	if value, ok := _c.mutation.Metadata(); ok {
 		_spec.SetField(planpricinghistory.FieldMetadata, field.TypeJSON, value)
 		_node.Metadata = value
 	}
-	if value, ok := pphc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(planpricinghistory.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if nodes := pphc.mutation.PlanIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.PlanIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -293,10 +293,10 @@ func (pphc *PlanPricingHistoryCreate) createSpec() (*PlanPricingHistory, *sqlgra
 //			SetPlanID(v+v).
 //		}).
 //		Exec(ctx)
-func (pphc *PlanPricingHistoryCreate) OnConflict(opts ...sql.ConflictOption) *PlanPricingHistoryUpsertOne {
-	pphc.conflict = opts
+func (_c *PlanPricingHistoryCreate) OnConflict(opts ...sql.ConflictOption) *PlanPricingHistoryUpsertOne {
+	_c.conflict = opts
 	return &PlanPricingHistoryUpsertOne{
-		create: pphc,
+		create: _c,
 	}
 }
 
@@ -306,10 +306,10 @@ func (pphc *PlanPricingHistoryCreate) OnConflict(opts ...sql.ConflictOption) *Pl
 //	client.PlanPricingHistory.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (pphc *PlanPricingHistoryCreate) OnConflictColumns(columns ...string) *PlanPricingHistoryUpsertOne {
-	pphc.conflict = append(pphc.conflict, sql.ConflictColumns(columns...))
+func (_c *PlanPricingHistoryCreate) OnConflictColumns(columns ...string) *PlanPricingHistoryUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &PlanPricingHistoryUpsertOne{
-		create: pphc,
+		create: _c,
 	}
 }
 
@@ -658,16 +658,16 @@ type PlanPricingHistoryCreateBulk struct {
 }
 
 // Save creates the PlanPricingHistory entities in the database.
-func (pphcb *PlanPricingHistoryCreateBulk) Save(ctx context.Context) ([]*PlanPricingHistory, error) {
-	if pphcb.err != nil {
-		return nil, pphcb.err
+func (_c *PlanPricingHistoryCreateBulk) Save(ctx context.Context) ([]*PlanPricingHistory, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(pphcb.builders))
-	nodes := make([]*PlanPricingHistory, len(pphcb.builders))
-	mutators := make([]Mutator, len(pphcb.builders))
-	for i := range pphcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*PlanPricingHistory, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := pphcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*PlanPricingHistoryMutation)
@@ -681,12 +681,12 @@ func (pphcb *PlanPricingHistoryCreateBulk) Save(ctx context.Context) ([]*PlanPri
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, pphcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = pphcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, pphcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -706,7 +706,7 @@ func (pphcb *PlanPricingHistoryCreateBulk) Save(ctx context.Context) ([]*PlanPri
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, pphcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -714,8 +714,8 @@ func (pphcb *PlanPricingHistoryCreateBulk) Save(ctx context.Context) ([]*PlanPri
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pphcb *PlanPricingHistoryCreateBulk) SaveX(ctx context.Context) []*PlanPricingHistory {
-	v, err := pphcb.Save(ctx)
+func (_c *PlanPricingHistoryCreateBulk) SaveX(ctx context.Context) []*PlanPricingHistory {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -723,14 +723,14 @@ func (pphcb *PlanPricingHistoryCreateBulk) SaveX(ctx context.Context) []*PlanPri
 }
 
 // Exec executes the query.
-func (pphcb *PlanPricingHistoryCreateBulk) Exec(ctx context.Context) error {
-	_, err := pphcb.Save(ctx)
+func (_c *PlanPricingHistoryCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pphcb *PlanPricingHistoryCreateBulk) ExecX(ctx context.Context) {
-	if err := pphcb.Exec(ctx); err != nil {
+func (_c *PlanPricingHistoryCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -750,10 +750,10 @@ func (pphcb *PlanPricingHistoryCreateBulk) ExecX(ctx context.Context) {
 //			SetPlanID(v+v).
 //		}).
 //		Exec(ctx)
-func (pphcb *PlanPricingHistoryCreateBulk) OnConflict(opts ...sql.ConflictOption) *PlanPricingHistoryUpsertBulk {
-	pphcb.conflict = opts
+func (_c *PlanPricingHistoryCreateBulk) OnConflict(opts ...sql.ConflictOption) *PlanPricingHistoryUpsertBulk {
+	_c.conflict = opts
 	return &PlanPricingHistoryUpsertBulk{
-		create: pphcb,
+		create: _c,
 	}
 }
 
@@ -763,10 +763,10 @@ func (pphcb *PlanPricingHistoryCreateBulk) OnConflict(opts ...sql.ConflictOption
 //	client.PlanPricingHistory.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (pphcb *PlanPricingHistoryCreateBulk) OnConflictColumns(columns ...string) *PlanPricingHistoryUpsertBulk {
-	pphcb.conflict = append(pphcb.conflict, sql.ConflictColumns(columns...))
+func (_c *PlanPricingHistoryCreateBulk) OnConflictColumns(columns ...string) *PlanPricingHistoryUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &PlanPricingHistoryUpsertBulk{
-		create: pphcb,
+		create: _c,
 	}
 }
 

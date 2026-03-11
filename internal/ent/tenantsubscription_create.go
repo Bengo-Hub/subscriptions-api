@@ -28,200 +28,228 @@ type TenantSubscriptionCreate struct {
 }
 
 // SetTenantID sets the "tenant_id" field.
-func (tsc *TenantSubscriptionCreate) SetTenantID(u uuid.UUID) *TenantSubscriptionCreate {
-	tsc.mutation.SetTenantID(u)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetTenantID(v uuid.UUID) *TenantSubscriptionCreate {
+	_c.mutation.SetTenantID(v)
+	return _c
 }
 
 // SetPlanID sets the "plan_id" field.
-func (tsc *TenantSubscriptionCreate) SetPlanID(u uuid.UUID) *TenantSubscriptionCreate {
-	tsc.mutation.SetPlanID(u)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetPlanID(v uuid.UUID) *TenantSubscriptionCreate {
+	_c.mutation.SetPlanID(v)
+	return _c
 }
 
 // SetStatus sets the "status" field.
-func (tsc *TenantSubscriptionCreate) SetStatus(t tenantsubscription.Status) *TenantSubscriptionCreate {
-	tsc.mutation.SetStatus(t)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetStatus(v tenantsubscription.Status) *TenantSubscriptionCreate {
+	_c.mutation.SetStatus(v)
+	return _c
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (tsc *TenantSubscriptionCreate) SetNillableStatus(t *tenantsubscription.Status) *TenantSubscriptionCreate {
-	if t != nil {
-		tsc.SetStatus(*t)
+func (_c *TenantSubscriptionCreate) SetNillableStatus(v *tenantsubscription.Status) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetStatus(*v)
 	}
-	return tsc
+	return _c
 }
 
 // SetTrialEndsAt sets the "trial_ends_at" field.
-func (tsc *TenantSubscriptionCreate) SetTrialEndsAt(t time.Time) *TenantSubscriptionCreate {
-	tsc.mutation.SetTrialEndsAt(t)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetTrialEndsAt(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetTrialEndsAt(v)
+	return _c
 }
 
 // SetNillableTrialEndsAt sets the "trial_ends_at" field if the given value is not nil.
-func (tsc *TenantSubscriptionCreate) SetNillableTrialEndsAt(t *time.Time) *TenantSubscriptionCreate {
-	if t != nil {
-		tsc.SetTrialEndsAt(*t)
+func (_c *TenantSubscriptionCreate) SetNillableTrialEndsAt(v *time.Time) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetTrialEndsAt(*v)
 	}
-	return tsc
+	return _c
 }
 
 // SetCurrentPeriodStart sets the "current_period_start" field.
-func (tsc *TenantSubscriptionCreate) SetCurrentPeriodStart(t time.Time) *TenantSubscriptionCreate {
-	tsc.mutation.SetCurrentPeriodStart(t)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetCurrentPeriodStart(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetCurrentPeriodStart(v)
+	return _c
 }
 
 // SetCurrentPeriodEnd sets the "current_period_end" field.
-func (tsc *TenantSubscriptionCreate) SetCurrentPeriodEnd(t time.Time) *TenantSubscriptionCreate {
-	tsc.mutation.SetCurrentPeriodEnd(t)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetCurrentPeriodEnd(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetCurrentPeriodEnd(v)
+	return _c
 }
 
 // SetCancelledAt sets the "cancelled_at" field.
-func (tsc *TenantSubscriptionCreate) SetCancelledAt(t time.Time) *TenantSubscriptionCreate {
-	tsc.mutation.SetCancelledAt(t)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetCancelledAt(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetCancelledAt(v)
+	return _c
 }
 
 // SetNillableCancelledAt sets the "cancelled_at" field if the given value is not nil.
-func (tsc *TenantSubscriptionCreate) SetNillableCancelledAt(t *time.Time) *TenantSubscriptionCreate {
-	if t != nil {
-		tsc.SetCancelledAt(*t)
+func (_c *TenantSubscriptionCreate) SetNillableCancelledAt(v *time.Time) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetCancelledAt(*v)
 	}
-	return tsc
+	return _c
 }
 
 // SetCancelReason sets the "cancel_reason" field.
-func (tsc *TenantSubscriptionCreate) SetCancelReason(s string) *TenantSubscriptionCreate {
-	tsc.mutation.SetCancelReason(s)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetCancelReason(v string) *TenantSubscriptionCreate {
+	_c.mutation.SetCancelReason(v)
+	return _c
 }
 
 // SetNillableCancelReason sets the "cancel_reason" field if the given value is not nil.
-func (tsc *TenantSubscriptionCreate) SetNillableCancelReason(s *string) *TenantSubscriptionCreate {
-	if s != nil {
-		tsc.SetCancelReason(*s)
+func (_c *TenantSubscriptionCreate) SetNillableCancelReason(v *string) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetCancelReason(*v)
 	}
-	return tsc
+	return _c
+}
+
+// SetBillingCycle sets the "billing_cycle" field.
+func (_c *TenantSubscriptionCreate) SetBillingCycle(v tenantsubscription.BillingCycle) *TenantSubscriptionCreate {
+	_c.mutation.SetBillingCycle(v)
+	return _c
+}
+
+// SetNillableBillingCycle sets the "billing_cycle" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableBillingCycle(v *tenantsubscription.BillingCycle) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetBillingCycle(*v)
+	}
+	return _c
+}
+
+// SetAppliedDiscount sets the "applied_discount" field.
+func (_c *TenantSubscriptionCreate) SetAppliedDiscount(v float64) *TenantSubscriptionCreate {
+	_c.mutation.SetAppliedDiscount(v)
+	return _c
+}
+
+// SetNillableAppliedDiscount sets the "applied_discount" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableAppliedDiscount(v *float64) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetAppliedDiscount(*v)
+	}
+	return _c
 }
 
 // SetBundleCode sets the "bundle_code" field.
-func (tsc *TenantSubscriptionCreate) SetBundleCode(s string) *TenantSubscriptionCreate {
-	tsc.mutation.SetBundleCode(s)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetBundleCode(v string) *TenantSubscriptionCreate {
+	_c.mutation.SetBundleCode(v)
+	return _c
 }
 
 // SetNillableBundleCode sets the "bundle_code" field if the given value is not nil.
-func (tsc *TenantSubscriptionCreate) SetNillableBundleCode(s *string) *TenantSubscriptionCreate {
-	if s != nil {
-		tsc.SetBundleCode(*s)
+func (_c *TenantSubscriptionCreate) SetNillableBundleCode(v *string) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetBundleCode(*v)
 	}
-	return tsc
+	return _c
 }
 
 // SetPaymentMethodID sets the "payment_method_id" field.
-func (tsc *TenantSubscriptionCreate) SetPaymentMethodID(u uuid.UUID) *TenantSubscriptionCreate {
-	tsc.mutation.SetPaymentMethodID(u)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetPaymentMethodID(v uuid.UUID) *TenantSubscriptionCreate {
+	_c.mutation.SetPaymentMethodID(v)
+	return _c
 }
 
 // SetNillablePaymentMethodID sets the "payment_method_id" field if the given value is not nil.
-func (tsc *TenantSubscriptionCreate) SetNillablePaymentMethodID(u *uuid.UUID) *TenantSubscriptionCreate {
-	if u != nil {
-		tsc.SetPaymentMethodID(*u)
+func (_c *TenantSubscriptionCreate) SetNillablePaymentMethodID(v *uuid.UUID) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetPaymentMethodID(*v)
 	}
-	return tsc
+	return _c
 }
 
 // SetMetadata sets the "metadata" field.
-func (tsc *TenantSubscriptionCreate) SetMetadata(m map[string]interface{}) *TenantSubscriptionCreate {
-	tsc.mutation.SetMetadata(m)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetMetadata(v map[string]interface{}) *TenantSubscriptionCreate {
+	_c.mutation.SetMetadata(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (tsc *TenantSubscriptionCreate) SetCreatedAt(t time.Time) *TenantSubscriptionCreate {
-	tsc.mutation.SetCreatedAt(t)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetCreatedAt(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (tsc *TenantSubscriptionCreate) SetNillableCreatedAt(t *time.Time) *TenantSubscriptionCreate {
-	if t != nil {
-		tsc.SetCreatedAt(*t)
+func (_c *TenantSubscriptionCreate) SetNillableCreatedAt(v *time.Time) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return tsc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (tsc *TenantSubscriptionCreate) SetUpdatedAt(t time.Time) *TenantSubscriptionCreate {
-	tsc.mutation.SetUpdatedAt(t)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetUpdatedAt(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (tsc *TenantSubscriptionCreate) SetNillableUpdatedAt(t *time.Time) *TenantSubscriptionCreate {
-	if t != nil {
-		tsc.SetUpdatedAt(*t)
+func (_c *TenantSubscriptionCreate) SetNillableUpdatedAt(v *time.Time) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return tsc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (tsc *TenantSubscriptionCreate) SetID(u uuid.UUID) *TenantSubscriptionCreate {
-	tsc.mutation.SetID(u)
-	return tsc
+func (_c *TenantSubscriptionCreate) SetID(v uuid.UUID) *TenantSubscriptionCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (tsc *TenantSubscriptionCreate) SetNillableID(u *uuid.UUID) *TenantSubscriptionCreate {
-	if u != nil {
-		tsc.SetID(*u)
+func (_c *TenantSubscriptionCreate) SetNillableID(v *uuid.UUID) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return tsc
+	return _c
 }
 
 // SetTenant sets the "tenant" edge to the Tenant entity.
-func (tsc *TenantSubscriptionCreate) SetTenant(t *Tenant) *TenantSubscriptionCreate {
-	return tsc.SetTenantID(t.ID)
+func (_c *TenantSubscriptionCreate) SetTenant(v *Tenant) *TenantSubscriptionCreate {
+	return _c.SetTenantID(v.ID)
 }
 
 // SetPlan sets the "plan" edge to the SubscriptionPlan entity.
-func (tsc *TenantSubscriptionCreate) SetPlan(s *SubscriptionPlan) *TenantSubscriptionCreate {
-	return tsc.SetPlanID(s.ID)
+func (_c *TenantSubscriptionCreate) SetPlan(v *SubscriptionPlan) *TenantSubscriptionCreate {
+	return _c.SetPlanID(v.ID)
 }
 
 // AddProductSubscriptionIDs adds the "product_subscriptions" edge to the ProductSubscription entity by IDs.
-func (tsc *TenantSubscriptionCreate) AddProductSubscriptionIDs(ids ...uuid.UUID) *TenantSubscriptionCreate {
-	tsc.mutation.AddProductSubscriptionIDs(ids...)
-	return tsc
+func (_c *TenantSubscriptionCreate) AddProductSubscriptionIDs(ids ...uuid.UUID) *TenantSubscriptionCreate {
+	_c.mutation.AddProductSubscriptionIDs(ids...)
+	return _c
 }
 
 // AddProductSubscriptions adds the "product_subscriptions" edges to the ProductSubscription entity.
-func (tsc *TenantSubscriptionCreate) AddProductSubscriptions(p ...*ProductSubscription) *TenantSubscriptionCreate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_c *TenantSubscriptionCreate) AddProductSubscriptions(v ...*ProductSubscription) *TenantSubscriptionCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return tsc.AddProductSubscriptionIDs(ids...)
+	return _c.AddProductSubscriptionIDs(ids...)
 }
 
 // Mutation returns the TenantSubscriptionMutation object of the builder.
-func (tsc *TenantSubscriptionCreate) Mutation() *TenantSubscriptionMutation {
-	return tsc.mutation
+func (_c *TenantSubscriptionCreate) Mutation() *TenantSubscriptionMutation {
+	return _c.mutation
 }
 
 // Save creates the TenantSubscription in the database.
-func (tsc *TenantSubscriptionCreate) Save(ctx context.Context) (*TenantSubscription, error) {
-	tsc.defaults()
-	return withHooks(ctx, tsc.sqlSave, tsc.mutation, tsc.hooks)
+func (_c *TenantSubscriptionCreate) Save(ctx context.Context) (*TenantSubscription, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (tsc *TenantSubscriptionCreate) SaveX(ctx context.Context) *TenantSubscription {
-	v, err := tsc.Save(ctx)
+func (_c *TenantSubscriptionCreate) SaveX(ctx context.Context) *TenantSubscription {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -229,85 +257,104 @@ func (tsc *TenantSubscriptionCreate) SaveX(ctx context.Context) *TenantSubscript
 }
 
 // Exec executes the query.
-func (tsc *TenantSubscriptionCreate) Exec(ctx context.Context) error {
-	_, err := tsc.Save(ctx)
+func (_c *TenantSubscriptionCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (tsc *TenantSubscriptionCreate) ExecX(ctx context.Context) {
-	if err := tsc.Exec(ctx); err != nil {
+func (_c *TenantSubscriptionCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (tsc *TenantSubscriptionCreate) defaults() {
-	if _, ok := tsc.mutation.Status(); !ok {
+func (_c *TenantSubscriptionCreate) defaults() {
+	if _, ok := _c.mutation.Status(); !ok {
 		v := tenantsubscription.DefaultStatus
-		tsc.mutation.SetStatus(v)
+		_c.mutation.SetStatus(v)
 	}
-	if _, ok := tsc.mutation.Metadata(); !ok {
+	if _, ok := _c.mutation.BillingCycle(); !ok {
+		v := tenantsubscription.DefaultBillingCycle
+		_c.mutation.SetBillingCycle(v)
+	}
+	if _, ok := _c.mutation.AppliedDiscount(); !ok {
+		v := tenantsubscription.DefaultAppliedDiscount
+		_c.mutation.SetAppliedDiscount(v)
+	}
+	if _, ok := _c.mutation.Metadata(); !ok {
 		v := tenantsubscription.DefaultMetadata
-		tsc.mutation.SetMetadata(v)
+		_c.mutation.SetMetadata(v)
 	}
-	if _, ok := tsc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := tenantsubscription.DefaultCreatedAt()
-		tsc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := tsc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := tenantsubscription.DefaultUpdatedAt()
-		tsc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := tsc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := tenantsubscription.DefaultID()
-		tsc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (tsc *TenantSubscriptionCreate) check() error {
-	if _, ok := tsc.mutation.TenantID(); !ok {
+func (_c *TenantSubscriptionCreate) check() error {
+	if _, ok := _c.mutation.TenantID(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "TenantSubscription.tenant_id"`)}
 	}
-	if _, ok := tsc.mutation.PlanID(); !ok {
+	if _, ok := _c.mutation.PlanID(); !ok {
 		return &ValidationError{Name: "plan_id", err: errors.New(`ent: missing required field "TenantSubscription.plan_id"`)}
 	}
-	if _, ok := tsc.mutation.Status(); !ok {
+	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "TenantSubscription.status"`)}
 	}
-	if v, ok := tsc.mutation.Status(); ok {
+	if v, ok := _c.mutation.Status(); ok {
 		if err := tenantsubscription.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "TenantSubscription.status": %w`, err)}
 		}
 	}
-	if _, ok := tsc.mutation.CurrentPeriodStart(); !ok {
+	if _, ok := _c.mutation.CurrentPeriodStart(); !ok {
 		return &ValidationError{Name: "current_period_start", err: errors.New(`ent: missing required field "TenantSubscription.current_period_start"`)}
 	}
-	if _, ok := tsc.mutation.CurrentPeriodEnd(); !ok {
+	if _, ok := _c.mutation.CurrentPeriodEnd(); !ok {
 		return &ValidationError{Name: "current_period_end", err: errors.New(`ent: missing required field "TenantSubscription.current_period_end"`)}
 	}
-	if _, ok := tsc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.BillingCycle(); !ok {
+		return &ValidationError{Name: "billing_cycle", err: errors.New(`ent: missing required field "TenantSubscription.billing_cycle"`)}
+	}
+	if v, ok := _c.mutation.BillingCycle(); ok {
+		if err := tenantsubscription.BillingCycleValidator(v); err != nil {
+			return &ValidationError{Name: "billing_cycle", err: fmt.Errorf(`ent: validator failed for field "TenantSubscription.billing_cycle": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.AppliedDiscount(); !ok {
+		return &ValidationError{Name: "applied_discount", err: errors.New(`ent: missing required field "TenantSubscription.applied_discount"`)}
+	}
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "TenantSubscription.created_at"`)}
 	}
-	if _, ok := tsc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "TenantSubscription.updated_at"`)}
 	}
-	if _, ok := tsc.mutation.TenantID(); !ok {
+	if len(_c.mutation.TenantIDs()) == 0 {
 		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "TenantSubscription.tenant"`)}
 	}
-	if _, ok := tsc.mutation.PlanID(); !ok {
+	if len(_c.mutation.PlanIDs()) == 0 {
 		return &ValidationError{Name: "plan", err: errors.New(`ent: missing required edge "TenantSubscription.plan"`)}
 	}
 	return nil
 }
 
-func (tsc *TenantSubscriptionCreate) sqlSave(ctx context.Context) (*TenantSubscription, error) {
-	if err := tsc.check(); err != nil {
+func (_c *TenantSubscriptionCreate) sqlSave(ctx context.Context) (*TenantSubscription, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := tsc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, tsc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -320,66 +367,74 @@ func (tsc *TenantSubscriptionCreate) sqlSave(ctx context.Context) (*TenantSubscr
 			return nil, err
 		}
 	}
-	tsc.mutation.id = &_node.ID
-	tsc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (tsc *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgraph.CreateSpec) {
+func (_c *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgraph.CreateSpec) {
 	var (
-		_node = &TenantSubscription{config: tsc.config}
+		_node = &TenantSubscription{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(tenantsubscription.Table, sqlgraph.NewFieldSpec(tenantsubscription.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = tsc.conflict
-	if id, ok := tsc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := tsc.mutation.Status(); ok {
+	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(tenantsubscription.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
 	}
-	if value, ok := tsc.mutation.TrialEndsAt(); ok {
+	if value, ok := _c.mutation.TrialEndsAt(); ok {
 		_spec.SetField(tenantsubscription.FieldTrialEndsAt, field.TypeTime, value)
 		_node.TrialEndsAt = &value
 	}
-	if value, ok := tsc.mutation.CurrentPeriodStart(); ok {
+	if value, ok := _c.mutation.CurrentPeriodStart(); ok {
 		_spec.SetField(tenantsubscription.FieldCurrentPeriodStart, field.TypeTime, value)
 		_node.CurrentPeriodStart = value
 	}
-	if value, ok := tsc.mutation.CurrentPeriodEnd(); ok {
+	if value, ok := _c.mutation.CurrentPeriodEnd(); ok {
 		_spec.SetField(tenantsubscription.FieldCurrentPeriodEnd, field.TypeTime, value)
 		_node.CurrentPeriodEnd = value
 	}
-	if value, ok := tsc.mutation.CancelledAt(); ok {
+	if value, ok := _c.mutation.CancelledAt(); ok {
 		_spec.SetField(tenantsubscription.FieldCancelledAt, field.TypeTime, value)
 		_node.CancelledAt = &value
 	}
-	if value, ok := tsc.mutation.CancelReason(); ok {
+	if value, ok := _c.mutation.CancelReason(); ok {
 		_spec.SetField(tenantsubscription.FieldCancelReason, field.TypeString, value)
 		_node.CancelReason = &value
 	}
-	if value, ok := tsc.mutation.BundleCode(); ok {
+	if value, ok := _c.mutation.BillingCycle(); ok {
+		_spec.SetField(tenantsubscription.FieldBillingCycle, field.TypeEnum, value)
+		_node.BillingCycle = value
+	}
+	if value, ok := _c.mutation.AppliedDiscount(); ok {
+		_spec.SetField(tenantsubscription.FieldAppliedDiscount, field.TypeFloat64, value)
+		_node.AppliedDiscount = value
+	}
+	if value, ok := _c.mutation.BundleCode(); ok {
 		_spec.SetField(tenantsubscription.FieldBundleCode, field.TypeString, value)
 		_node.BundleCode = &value
 	}
-	if value, ok := tsc.mutation.PaymentMethodID(); ok {
+	if value, ok := _c.mutation.PaymentMethodID(); ok {
 		_spec.SetField(tenantsubscription.FieldPaymentMethodID, field.TypeUUID, value)
 		_node.PaymentMethodID = &value
 	}
-	if value, ok := tsc.mutation.Metadata(); ok {
+	if value, ok := _c.mutation.Metadata(); ok {
 		_spec.SetField(tenantsubscription.FieldMetadata, field.TypeJSON, value)
 		_node.Metadata = value
 	}
-	if value, ok := tsc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(tenantsubscription.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := tsc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(tenantsubscription.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if nodes := tsc.mutation.TenantIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.TenantIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -396,7 +451,7 @@ func (tsc *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgrap
 		_node.TenantID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := tsc.mutation.PlanIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.PlanIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -413,7 +468,7 @@ func (tsc *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgrap
 		_node.PlanID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := tsc.mutation.ProductSubscriptionsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ProductSubscriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -448,10 +503,10 @@ func (tsc *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgrap
 //			SetTenantID(v+v).
 //		}).
 //		Exec(ctx)
-func (tsc *TenantSubscriptionCreate) OnConflict(opts ...sql.ConflictOption) *TenantSubscriptionUpsertOne {
-	tsc.conflict = opts
+func (_c *TenantSubscriptionCreate) OnConflict(opts ...sql.ConflictOption) *TenantSubscriptionUpsertOne {
+	_c.conflict = opts
 	return &TenantSubscriptionUpsertOne{
-		create: tsc,
+		create: _c,
 	}
 }
 
@@ -461,10 +516,10 @@ func (tsc *TenantSubscriptionCreate) OnConflict(opts ...sql.ConflictOption) *Ten
 //	client.TenantSubscription.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (tsc *TenantSubscriptionCreate) OnConflictColumns(columns ...string) *TenantSubscriptionUpsertOne {
-	tsc.conflict = append(tsc.conflict, sql.ConflictColumns(columns...))
+func (_c *TenantSubscriptionCreate) OnConflictColumns(columns ...string) *TenantSubscriptionUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &TenantSubscriptionUpsertOne{
-		create: tsc,
+		create: _c,
 	}
 }
 
@@ -592,6 +647,36 @@ func (u *TenantSubscriptionUpsert) UpdateCancelReason() *TenantSubscriptionUpser
 // ClearCancelReason clears the value of the "cancel_reason" field.
 func (u *TenantSubscriptionUpsert) ClearCancelReason() *TenantSubscriptionUpsert {
 	u.SetNull(tenantsubscription.FieldCancelReason)
+	return u
+}
+
+// SetBillingCycle sets the "billing_cycle" field.
+func (u *TenantSubscriptionUpsert) SetBillingCycle(v tenantsubscription.BillingCycle) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldBillingCycle, v)
+	return u
+}
+
+// UpdateBillingCycle sets the "billing_cycle" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateBillingCycle() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldBillingCycle)
+	return u
+}
+
+// SetAppliedDiscount sets the "applied_discount" field.
+func (u *TenantSubscriptionUpsert) SetAppliedDiscount(v float64) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldAppliedDiscount, v)
+	return u
+}
+
+// UpdateAppliedDiscount sets the "applied_discount" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateAppliedDiscount() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldAppliedDiscount)
+	return u
+}
+
+// AddAppliedDiscount adds v to the "applied_discount" field.
+func (u *TenantSubscriptionUpsert) AddAppliedDiscount(v float64) *TenantSubscriptionUpsert {
+	u.Add(tenantsubscription.FieldAppliedDiscount, v)
 	return u
 }
 
@@ -845,6 +930,41 @@ func (u *TenantSubscriptionUpsertOne) ClearCancelReason() *TenantSubscriptionUps
 	})
 }
 
+// SetBillingCycle sets the "billing_cycle" field.
+func (u *TenantSubscriptionUpsertOne) SetBillingCycle(v tenantsubscription.BillingCycle) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetBillingCycle(v)
+	})
+}
+
+// UpdateBillingCycle sets the "billing_cycle" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateBillingCycle() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateBillingCycle()
+	})
+}
+
+// SetAppliedDiscount sets the "applied_discount" field.
+func (u *TenantSubscriptionUpsertOne) SetAppliedDiscount(v float64) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetAppliedDiscount(v)
+	})
+}
+
+// AddAppliedDiscount adds v to the "applied_discount" field.
+func (u *TenantSubscriptionUpsertOne) AddAppliedDiscount(v float64) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.AddAppliedDiscount(v)
+	})
+}
+
+// UpdateAppliedDiscount sets the "applied_discount" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateAppliedDiscount() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateAppliedDiscount()
+	})
+}
+
 // SetBundleCode sets the "bundle_code" field.
 func (u *TenantSubscriptionUpsertOne) SetBundleCode(v string) *TenantSubscriptionUpsertOne {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
@@ -969,16 +1089,16 @@ type TenantSubscriptionCreateBulk struct {
 }
 
 // Save creates the TenantSubscription entities in the database.
-func (tscb *TenantSubscriptionCreateBulk) Save(ctx context.Context) ([]*TenantSubscription, error) {
-	if tscb.err != nil {
-		return nil, tscb.err
+func (_c *TenantSubscriptionCreateBulk) Save(ctx context.Context) ([]*TenantSubscription, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(tscb.builders))
-	nodes := make([]*TenantSubscription, len(tscb.builders))
-	mutators := make([]Mutator, len(tscb.builders))
-	for i := range tscb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*TenantSubscription, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := tscb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*TenantSubscriptionMutation)
@@ -992,12 +1112,12 @@ func (tscb *TenantSubscriptionCreateBulk) Save(ctx context.Context) ([]*TenantSu
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, tscb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = tscb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, tscb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -1017,7 +1137,7 @@ func (tscb *TenantSubscriptionCreateBulk) Save(ctx context.Context) ([]*TenantSu
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, tscb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -1025,8 +1145,8 @@ func (tscb *TenantSubscriptionCreateBulk) Save(ctx context.Context) ([]*TenantSu
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (tscb *TenantSubscriptionCreateBulk) SaveX(ctx context.Context) []*TenantSubscription {
-	v, err := tscb.Save(ctx)
+func (_c *TenantSubscriptionCreateBulk) SaveX(ctx context.Context) []*TenantSubscription {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -1034,14 +1154,14 @@ func (tscb *TenantSubscriptionCreateBulk) SaveX(ctx context.Context) []*TenantSu
 }
 
 // Exec executes the query.
-func (tscb *TenantSubscriptionCreateBulk) Exec(ctx context.Context) error {
-	_, err := tscb.Save(ctx)
+func (_c *TenantSubscriptionCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (tscb *TenantSubscriptionCreateBulk) ExecX(ctx context.Context) {
-	if err := tscb.Exec(ctx); err != nil {
+func (_c *TenantSubscriptionCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -1061,10 +1181,10 @@ func (tscb *TenantSubscriptionCreateBulk) ExecX(ctx context.Context) {
 //			SetTenantID(v+v).
 //		}).
 //		Exec(ctx)
-func (tscb *TenantSubscriptionCreateBulk) OnConflict(opts ...sql.ConflictOption) *TenantSubscriptionUpsertBulk {
-	tscb.conflict = opts
+func (_c *TenantSubscriptionCreateBulk) OnConflict(opts ...sql.ConflictOption) *TenantSubscriptionUpsertBulk {
+	_c.conflict = opts
 	return &TenantSubscriptionUpsertBulk{
-		create: tscb,
+		create: _c,
 	}
 }
 
@@ -1074,10 +1194,10 @@ func (tscb *TenantSubscriptionCreateBulk) OnConflict(opts ...sql.ConflictOption)
 //	client.TenantSubscription.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (tscb *TenantSubscriptionCreateBulk) OnConflictColumns(columns ...string) *TenantSubscriptionUpsertBulk {
-	tscb.conflict = append(tscb.conflict, sql.ConflictColumns(columns...))
+func (_c *TenantSubscriptionCreateBulk) OnConflictColumns(columns ...string) *TenantSubscriptionUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &TenantSubscriptionUpsertBulk{
-		create: tscb,
+		create: _c,
 	}
 }
 
@@ -1270,6 +1390,41 @@ func (u *TenantSubscriptionUpsertBulk) UpdateCancelReason() *TenantSubscriptionU
 func (u *TenantSubscriptionUpsertBulk) ClearCancelReason() *TenantSubscriptionUpsertBulk {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.ClearCancelReason()
+	})
+}
+
+// SetBillingCycle sets the "billing_cycle" field.
+func (u *TenantSubscriptionUpsertBulk) SetBillingCycle(v tenantsubscription.BillingCycle) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetBillingCycle(v)
+	})
+}
+
+// UpdateBillingCycle sets the "billing_cycle" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateBillingCycle() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateBillingCycle()
+	})
+}
+
+// SetAppliedDiscount sets the "applied_discount" field.
+func (u *TenantSubscriptionUpsertBulk) SetAppliedDiscount(v float64) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetAppliedDiscount(v)
+	})
+}
+
+// AddAppliedDiscount adds v to the "applied_discount" field.
+func (u *TenantSubscriptionUpsertBulk) AddAppliedDiscount(v float64) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.AddAppliedDiscount(v)
+	})
+}
+
+// UpdateAppliedDiscount sets the "applied_discount" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateAppliedDiscount() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateAppliedDiscount()
 	})
 }
 

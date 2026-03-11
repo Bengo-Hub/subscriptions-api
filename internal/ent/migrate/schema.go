@@ -102,6 +102,7 @@ var (
 		{Name: "feature_code", Type: field.TypeString},
 		{Name: "is_included", Type: field.TypeBool, Default: true},
 		{Name: "limit_value", Type: field.TypeInt, Nullable: true},
+		{Name: "overage_unit_price", Type: field.TypeFloat64, Default: 0},
 		{Name: "metadata", Type: field.TypeJSON},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "plan_id", Type: field.TypeUUID},
@@ -114,7 +115,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "plan_features_subscription_plans_features",
-				Columns:    []*schema.Column{PlanFeaturesColumns[6]},
+				Columns:    []*schema.Column{PlanFeaturesColumns[7]},
 				RefColumns: []*schema.Column{SubscriptionPlansColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -123,7 +124,7 @@ var (
 			{
 				Name:    "planfeature_plan_id",
 				Unique:  false,
-				Columns: []*schema.Column{PlanFeaturesColumns[6]},
+				Columns: []*schema.Column{PlanFeaturesColumns[7]},
 			},
 			{
 				Name:    "planfeature_feature_code",
@@ -133,7 +134,7 @@ var (
 			{
 				Name:    "planfeature_plan_id_feature_code",
 				Unique:  true,
-				Columns: []*schema.Column{PlanFeaturesColumns[6], PlanFeaturesColumns[1]},
+				Columns: []*schema.Column{PlanFeaturesColumns[7], PlanFeaturesColumns[1]},
 			},
 		},
 	}
@@ -186,8 +187,11 @@ var (
 		{Name: "dependencies", Type: field.TypeJSON, Nullable: true},
 		{Name: "is_platform", Type: field.TypeBool, Default: false},
 		{Name: "monthly_price", Type: field.TypeFloat64, Default: 0},
+		{Name: "yearly_price", Type: field.TypeFloat64, Default: 0},
+		{Name: "onetime_price", Type: field.TypeFloat64, Default: 80000},
 		{Name: "included_in_bundle", Type: field.TypeBool, Default: true},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+		{Name: "is_base_service", Type: field.TypeBool, Default: false},
 		{Name: "metadata", Type: field.TypeJSON},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
@@ -217,6 +221,11 @@ var (
 				Name:    "product_is_platform",
 				Unique:  false,
 				Columns: []*schema.Column{ProductsColumns[7]},
+			},
+			{
+				Name:    "product_is_base_service",
+				Unique:  false,
+				Columns: []*schema.Column{ProductsColumns[13]},
 			},
 		},
 	}
@@ -284,11 +293,15 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "billing_cycle", Type: field.TypeString, Default: "MONTHLY"},
 		{Name: "base_price", Type: field.TypeFloat64},
+		{Name: "onetime_all_products_price", Type: field.TypeFloat64, Nullable: true},
+		{Name: "use_sum_based_pricing", Type: field.TypeBool, Default: false},
 		{Name: "currency", Type: field.TypeString, Default: "KES"},
 		{Name: "is_active", Type: field.TypeBool, Default: true},
 		{Name: "is_public", Type: field.TypeBool, Default: true},
 		{Name: "tier_order", Type: field.TypeInt},
 		{Name: "tier_limits_json", Type: field.TypeJSON},
+		{Name: "plan_type", Type: field.TypeEnum, Enums: []string{"TIERED", "STANDALONE_SERVICE", "BUNDLE", "CUSTOM"}, Default: "TIERED"},
+		{Name: "discount_rules", Type: field.TypeJSON, Nullable: true},
 		{Name: "metadata", Type: field.TypeJSON},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
@@ -307,12 +320,12 @@ var (
 			{
 				Name:    "subscriptionplan_is_active",
 				Unique:  false,
-				Columns: []*schema.Column{SubscriptionPlansColumns[7]},
+				Columns: []*schema.Column{SubscriptionPlansColumns[9]},
 			},
 			{
 				Name:    "subscriptionplan_tier_order",
 				Unique:  false,
-				Columns: []*schema.Column{SubscriptionPlansColumns[9]},
+				Columns: []*schema.Column{SubscriptionPlansColumns[11]},
 			},
 		},
 	}
@@ -367,6 +380,8 @@ var (
 		{Name: "current_period_end", Type: field.TypeTime},
 		{Name: "cancelled_at", Type: field.TypeTime, Nullable: true},
 		{Name: "cancel_reason", Type: field.TypeString, Nullable: true},
+		{Name: "billing_cycle", Type: field.TypeEnum, Enums: []string{"MONTHLY", "QUARTERLY", "ANNUAL", "ONE_TIME"}, Default: "MONTHLY"},
+		{Name: "applied_discount", Type: field.TypeFloat64, Default: 0},
 		{Name: "bundle_code", Type: field.TypeString, Nullable: true},
 		{Name: "payment_method_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
@@ -383,13 +398,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "tenant_subscriptions_subscription_plans_subscriptions",
-				Columns:    []*schema.Column{TenantSubscriptionsColumns[12]},
+				Columns:    []*schema.Column{TenantSubscriptionsColumns[14]},
 				RefColumns: []*schema.Column{SubscriptionPlansColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "tenant_subscriptions_tenants_subscriptions",
-				Columns:    []*schema.Column{TenantSubscriptionsColumns[13]},
+				Columns:    []*schema.Column{TenantSubscriptionsColumns[15]},
 				RefColumns: []*schema.Column{TenantsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -398,7 +413,7 @@ var (
 			{
 				Name:    "tenantsubscription_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{TenantSubscriptionsColumns[13]},
+				Columns: []*schema.Column{TenantSubscriptionsColumns[15]},
 			},
 			{
 				Name:    "tenantsubscription_status",

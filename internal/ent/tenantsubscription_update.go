@@ -27,271 +27,306 @@ type TenantSubscriptionUpdate struct {
 }
 
 // Where appends a list predicates to the TenantSubscriptionUpdate builder.
-func (tsu *TenantSubscriptionUpdate) Where(ps ...predicate.TenantSubscription) *TenantSubscriptionUpdate {
-	tsu.mutation.Where(ps...)
-	return tsu
+func (_u *TenantSubscriptionUpdate) Where(ps ...predicate.TenantSubscription) *TenantSubscriptionUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetTenantID sets the "tenant_id" field.
-func (tsu *TenantSubscriptionUpdate) SetTenantID(u uuid.UUID) *TenantSubscriptionUpdate {
-	tsu.mutation.SetTenantID(u)
-	return tsu
+func (_u *TenantSubscriptionUpdate) SetTenantID(v uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.SetTenantID(v)
+	return _u
 }
 
 // SetNillableTenantID sets the "tenant_id" field if the given value is not nil.
-func (tsu *TenantSubscriptionUpdate) SetNillableTenantID(u *uuid.UUID) *TenantSubscriptionUpdate {
-	if u != nil {
-		tsu.SetTenantID(*u)
+func (_u *TenantSubscriptionUpdate) SetNillableTenantID(v *uuid.UUID) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetTenantID(*v)
 	}
-	return tsu
+	return _u
 }
 
 // SetPlanID sets the "plan_id" field.
-func (tsu *TenantSubscriptionUpdate) SetPlanID(u uuid.UUID) *TenantSubscriptionUpdate {
-	tsu.mutation.SetPlanID(u)
-	return tsu
+func (_u *TenantSubscriptionUpdate) SetPlanID(v uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.SetPlanID(v)
+	return _u
 }
 
 // SetNillablePlanID sets the "plan_id" field if the given value is not nil.
-func (tsu *TenantSubscriptionUpdate) SetNillablePlanID(u *uuid.UUID) *TenantSubscriptionUpdate {
-	if u != nil {
-		tsu.SetPlanID(*u)
+func (_u *TenantSubscriptionUpdate) SetNillablePlanID(v *uuid.UUID) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetPlanID(*v)
 	}
-	return tsu
+	return _u
 }
 
 // SetStatus sets the "status" field.
-func (tsu *TenantSubscriptionUpdate) SetStatus(t tenantsubscription.Status) *TenantSubscriptionUpdate {
-	tsu.mutation.SetStatus(t)
-	return tsu
+func (_u *TenantSubscriptionUpdate) SetStatus(v tenantsubscription.Status) *TenantSubscriptionUpdate {
+	_u.mutation.SetStatus(v)
+	return _u
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (tsu *TenantSubscriptionUpdate) SetNillableStatus(t *tenantsubscription.Status) *TenantSubscriptionUpdate {
-	if t != nil {
-		tsu.SetStatus(*t)
+func (_u *TenantSubscriptionUpdate) SetNillableStatus(v *tenantsubscription.Status) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetStatus(*v)
 	}
-	return tsu
+	return _u
 }
 
 // SetTrialEndsAt sets the "trial_ends_at" field.
-func (tsu *TenantSubscriptionUpdate) SetTrialEndsAt(t time.Time) *TenantSubscriptionUpdate {
-	tsu.mutation.SetTrialEndsAt(t)
-	return tsu
+func (_u *TenantSubscriptionUpdate) SetTrialEndsAt(v time.Time) *TenantSubscriptionUpdate {
+	_u.mutation.SetTrialEndsAt(v)
+	return _u
 }
 
 // SetNillableTrialEndsAt sets the "trial_ends_at" field if the given value is not nil.
-func (tsu *TenantSubscriptionUpdate) SetNillableTrialEndsAt(t *time.Time) *TenantSubscriptionUpdate {
-	if t != nil {
-		tsu.SetTrialEndsAt(*t)
+func (_u *TenantSubscriptionUpdate) SetNillableTrialEndsAt(v *time.Time) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetTrialEndsAt(*v)
 	}
-	return tsu
+	return _u
 }
 
 // ClearTrialEndsAt clears the value of the "trial_ends_at" field.
-func (tsu *TenantSubscriptionUpdate) ClearTrialEndsAt() *TenantSubscriptionUpdate {
-	tsu.mutation.ClearTrialEndsAt()
-	return tsu
+func (_u *TenantSubscriptionUpdate) ClearTrialEndsAt() *TenantSubscriptionUpdate {
+	_u.mutation.ClearTrialEndsAt()
+	return _u
 }
 
 // SetCurrentPeriodStart sets the "current_period_start" field.
-func (tsu *TenantSubscriptionUpdate) SetCurrentPeriodStart(t time.Time) *TenantSubscriptionUpdate {
-	tsu.mutation.SetCurrentPeriodStart(t)
-	return tsu
+func (_u *TenantSubscriptionUpdate) SetCurrentPeriodStart(v time.Time) *TenantSubscriptionUpdate {
+	_u.mutation.SetCurrentPeriodStart(v)
+	return _u
 }
 
 // SetNillableCurrentPeriodStart sets the "current_period_start" field if the given value is not nil.
-func (tsu *TenantSubscriptionUpdate) SetNillableCurrentPeriodStart(t *time.Time) *TenantSubscriptionUpdate {
-	if t != nil {
-		tsu.SetCurrentPeriodStart(*t)
+func (_u *TenantSubscriptionUpdate) SetNillableCurrentPeriodStart(v *time.Time) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetCurrentPeriodStart(*v)
 	}
-	return tsu
+	return _u
 }
 
 // SetCurrentPeriodEnd sets the "current_period_end" field.
-func (tsu *TenantSubscriptionUpdate) SetCurrentPeriodEnd(t time.Time) *TenantSubscriptionUpdate {
-	tsu.mutation.SetCurrentPeriodEnd(t)
-	return tsu
+func (_u *TenantSubscriptionUpdate) SetCurrentPeriodEnd(v time.Time) *TenantSubscriptionUpdate {
+	_u.mutation.SetCurrentPeriodEnd(v)
+	return _u
 }
 
 // SetNillableCurrentPeriodEnd sets the "current_period_end" field if the given value is not nil.
-func (tsu *TenantSubscriptionUpdate) SetNillableCurrentPeriodEnd(t *time.Time) *TenantSubscriptionUpdate {
-	if t != nil {
-		tsu.SetCurrentPeriodEnd(*t)
+func (_u *TenantSubscriptionUpdate) SetNillableCurrentPeriodEnd(v *time.Time) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetCurrentPeriodEnd(*v)
 	}
-	return tsu
+	return _u
 }
 
 // SetCancelledAt sets the "cancelled_at" field.
-func (tsu *TenantSubscriptionUpdate) SetCancelledAt(t time.Time) *TenantSubscriptionUpdate {
-	tsu.mutation.SetCancelledAt(t)
-	return tsu
+func (_u *TenantSubscriptionUpdate) SetCancelledAt(v time.Time) *TenantSubscriptionUpdate {
+	_u.mutation.SetCancelledAt(v)
+	return _u
 }
 
 // SetNillableCancelledAt sets the "cancelled_at" field if the given value is not nil.
-func (tsu *TenantSubscriptionUpdate) SetNillableCancelledAt(t *time.Time) *TenantSubscriptionUpdate {
-	if t != nil {
-		tsu.SetCancelledAt(*t)
+func (_u *TenantSubscriptionUpdate) SetNillableCancelledAt(v *time.Time) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetCancelledAt(*v)
 	}
-	return tsu
+	return _u
 }
 
 // ClearCancelledAt clears the value of the "cancelled_at" field.
-func (tsu *TenantSubscriptionUpdate) ClearCancelledAt() *TenantSubscriptionUpdate {
-	tsu.mutation.ClearCancelledAt()
-	return tsu
+func (_u *TenantSubscriptionUpdate) ClearCancelledAt() *TenantSubscriptionUpdate {
+	_u.mutation.ClearCancelledAt()
+	return _u
 }
 
 // SetCancelReason sets the "cancel_reason" field.
-func (tsu *TenantSubscriptionUpdate) SetCancelReason(s string) *TenantSubscriptionUpdate {
-	tsu.mutation.SetCancelReason(s)
-	return tsu
+func (_u *TenantSubscriptionUpdate) SetCancelReason(v string) *TenantSubscriptionUpdate {
+	_u.mutation.SetCancelReason(v)
+	return _u
 }
 
 // SetNillableCancelReason sets the "cancel_reason" field if the given value is not nil.
-func (tsu *TenantSubscriptionUpdate) SetNillableCancelReason(s *string) *TenantSubscriptionUpdate {
-	if s != nil {
-		tsu.SetCancelReason(*s)
+func (_u *TenantSubscriptionUpdate) SetNillableCancelReason(v *string) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetCancelReason(*v)
 	}
-	return tsu
+	return _u
 }
 
 // ClearCancelReason clears the value of the "cancel_reason" field.
-func (tsu *TenantSubscriptionUpdate) ClearCancelReason() *TenantSubscriptionUpdate {
-	tsu.mutation.ClearCancelReason()
-	return tsu
+func (_u *TenantSubscriptionUpdate) ClearCancelReason() *TenantSubscriptionUpdate {
+	_u.mutation.ClearCancelReason()
+	return _u
+}
+
+// SetBillingCycle sets the "billing_cycle" field.
+func (_u *TenantSubscriptionUpdate) SetBillingCycle(v tenantsubscription.BillingCycle) *TenantSubscriptionUpdate {
+	_u.mutation.SetBillingCycle(v)
+	return _u
+}
+
+// SetNillableBillingCycle sets the "billing_cycle" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableBillingCycle(v *tenantsubscription.BillingCycle) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetBillingCycle(*v)
+	}
+	return _u
+}
+
+// SetAppliedDiscount sets the "applied_discount" field.
+func (_u *TenantSubscriptionUpdate) SetAppliedDiscount(v float64) *TenantSubscriptionUpdate {
+	_u.mutation.ResetAppliedDiscount()
+	_u.mutation.SetAppliedDiscount(v)
+	return _u
+}
+
+// SetNillableAppliedDiscount sets the "applied_discount" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableAppliedDiscount(v *float64) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetAppliedDiscount(*v)
+	}
+	return _u
+}
+
+// AddAppliedDiscount adds value to the "applied_discount" field.
+func (_u *TenantSubscriptionUpdate) AddAppliedDiscount(v float64) *TenantSubscriptionUpdate {
+	_u.mutation.AddAppliedDiscount(v)
+	return _u
 }
 
 // SetBundleCode sets the "bundle_code" field.
-func (tsu *TenantSubscriptionUpdate) SetBundleCode(s string) *TenantSubscriptionUpdate {
-	tsu.mutation.SetBundleCode(s)
-	return tsu
+func (_u *TenantSubscriptionUpdate) SetBundleCode(v string) *TenantSubscriptionUpdate {
+	_u.mutation.SetBundleCode(v)
+	return _u
 }
 
 // SetNillableBundleCode sets the "bundle_code" field if the given value is not nil.
-func (tsu *TenantSubscriptionUpdate) SetNillableBundleCode(s *string) *TenantSubscriptionUpdate {
-	if s != nil {
-		tsu.SetBundleCode(*s)
+func (_u *TenantSubscriptionUpdate) SetNillableBundleCode(v *string) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetBundleCode(*v)
 	}
-	return tsu
+	return _u
 }
 
 // ClearBundleCode clears the value of the "bundle_code" field.
-func (tsu *TenantSubscriptionUpdate) ClearBundleCode() *TenantSubscriptionUpdate {
-	tsu.mutation.ClearBundleCode()
-	return tsu
+func (_u *TenantSubscriptionUpdate) ClearBundleCode() *TenantSubscriptionUpdate {
+	_u.mutation.ClearBundleCode()
+	return _u
 }
 
 // SetPaymentMethodID sets the "payment_method_id" field.
-func (tsu *TenantSubscriptionUpdate) SetPaymentMethodID(u uuid.UUID) *TenantSubscriptionUpdate {
-	tsu.mutation.SetPaymentMethodID(u)
-	return tsu
+func (_u *TenantSubscriptionUpdate) SetPaymentMethodID(v uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.SetPaymentMethodID(v)
+	return _u
 }
 
 // SetNillablePaymentMethodID sets the "payment_method_id" field if the given value is not nil.
-func (tsu *TenantSubscriptionUpdate) SetNillablePaymentMethodID(u *uuid.UUID) *TenantSubscriptionUpdate {
-	if u != nil {
-		tsu.SetPaymentMethodID(*u)
+func (_u *TenantSubscriptionUpdate) SetNillablePaymentMethodID(v *uuid.UUID) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetPaymentMethodID(*v)
 	}
-	return tsu
+	return _u
 }
 
 // ClearPaymentMethodID clears the value of the "payment_method_id" field.
-func (tsu *TenantSubscriptionUpdate) ClearPaymentMethodID() *TenantSubscriptionUpdate {
-	tsu.mutation.ClearPaymentMethodID()
-	return tsu
+func (_u *TenantSubscriptionUpdate) ClearPaymentMethodID() *TenantSubscriptionUpdate {
+	_u.mutation.ClearPaymentMethodID()
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (tsu *TenantSubscriptionUpdate) SetMetadata(m map[string]interface{}) *TenantSubscriptionUpdate {
-	tsu.mutation.SetMetadata(m)
-	return tsu
+func (_u *TenantSubscriptionUpdate) SetMetadata(v map[string]interface{}) *TenantSubscriptionUpdate {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // ClearMetadata clears the value of the "metadata" field.
-func (tsu *TenantSubscriptionUpdate) ClearMetadata() *TenantSubscriptionUpdate {
-	tsu.mutation.ClearMetadata()
-	return tsu
+func (_u *TenantSubscriptionUpdate) ClearMetadata() *TenantSubscriptionUpdate {
+	_u.mutation.ClearMetadata()
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (tsu *TenantSubscriptionUpdate) SetUpdatedAt(t time.Time) *TenantSubscriptionUpdate {
-	tsu.mutation.SetUpdatedAt(t)
-	return tsu
+func (_u *TenantSubscriptionUpdate) SetUpdatedAt(v time.Time) *TenantSubscriptionUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetTenant sets the "tenant" edge to the Tenant entity.
-func (tsu *TenantSubscriptionUpdate) SetTenant(t *Tenant) *TenantSubscriptionUpdate {
-	return tsu.SetTenantID(t.ID)
+func (_u *TenantSubscriptionUpdate) SetTenant(v *Tenant) *TenantSubscriptionUpdate {
+	return _u.SetTenantID(v.ID)
 }
 
 // SetPlan sets the "plan" edge to the SubscriptionPlan entity.
-func (tsu *TenantSubscriptionUpdate) SetPlan(s *SubscriptionPlan) *TenantSubscriptionUpdate {
-	return tsu.SetPlanID(s.ID)
+func (_u *TenantSubscriptionUpdate) SetPlan(v *SubscriptionPlan) *TenantSubscriptionUpdate {
+	return _u.SetPlanID(v.ID)
 }
 
 // AddProductSubscriptionIDs adds the "product_subscriptions" edge to the ProductSubscription entity by IDs.
-func (tsu *TenantSubscriptionUpdate) AddProductSubscriptionIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
-	tsu.mutation.AddProductSubscriptionIDs(ids...)
-	return tsu
+func (_u *TenantSubscriptionUpdate) AddProductSubscriptionIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.AddProductSubscriptionIDs(ids...)
+	return _u
 }
 
 // AddProductSubscriptions adds the "product_subscriptions" edges to the ProductSubscription entity.
-func (tsu *TenantSubscriptionUpdate) AddProductSubscriptions(p ...*ProductSubscription) *TenantSubscriptionUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *TenantSubscriptionUpdate) AddProductSubscriptions(v ...*ProductSubscription) *TenantSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return tsu.AddProductSubscriptionIDs(ids...)
+	return _u.AddProductSubscriptionIDs(ids...)
 }
 
 // Mutation returns the TenantSubscriptionMutation object of the builder.
-func (tsu *TenantSubscriptionUpdate) Mutation() *TenantSubscriptionMutation {
-	return tsu.mutation
+func (_u *TenantSubscriptionUpdate) Mutation() *TenantSubscriptionMutation {
+	return _u.mutation
 }
 
 // ClearTenant clears the "tenant" edge to the Tenant entity.
-func (tsu *TenantSubscriptionUpdate) ClearTenant() *TenantSubscriptionUpdate {
-	tsu.mutation.ClearTenant()
-	return tsu
+func (_u *TenantSubscriptionUpdate) ClearTenant() *TenantSubscriptionUpdate {
+	_u.mutation.ClearTenant()
+	return _u
 }
 
 // ClearPlan clears the "plan" edge to the SubscriptionPlan entity.
-func (tsu *TenantSubscriptionUpdate) ClearPlan() *TenantSubscriptionUpdate {
-	tsu.mutation.ClearPlan()
-	return tsu
+func (_u *TenantSubscriptionUpdate) ClearPlan() *TenantSubscriptionUpdate {
+	_u.mutation.ClearPlan()
+	return _u
 }
 
 // ClearProductSubscriptions clears all "product_subscriptions" edges to the ProductSubscription entity.
-func (tsu *TenantSubscriptionUpdate) ClearProductSubscriptions() *TenantSubscriptionUpdate {
-	tsu.mutation.ClearProductSubscriptions()
-	return tsu
+func (_u *TenantSubscriptionUpdate) ClearProductSubscriptions() *TenantSubscriptionUpdate {
+	_u.mutation.ClearProductSubscriptions()
+	return _u
 }
 
 // RemoveProductSubscriptionIDs removes the "product_subscriptions" edge to ProductSubscription entities by IDs.
-func (tsu *TenantSubscriptionUpdate) RemoveProductSubscriptionIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
-	tsu.mutation.RemoveProductSubscriptionIDs(ids...)
-	return tsu
+func (_u *TenantSubscriptionUpdate) RemoveProductSubscriptionIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.RemoveProductSubscriptionIDs(ids...)
+	return _u
 }
 
 // RemoveProductSubscriptions removes "product_subscriptions" edges to ProductSubscription entities.
-func (tsu *TenantSubscriptionUpdate) RemoveProductSubscriptions(p ...*ProductSubscription) *TenantSubscriptionUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *TenantSubscriptionUpdate) RemoveProductSubscriptions(v ...*ProductSubscription) *TenantSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return tsu.RemoveProductSubscriptionIDs(ids...)
+	return _u.RemoveProductSubscriptionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (tsu *TenantSubscriptionUpdate) Save(ctx context.Context) (int, error) {
-	tsu.defaults()
-	return withHooks(ctx, tsu.sqlSave, tsu.mutation, tsu.hooks)
+func (_u *TenantSubscriptionUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (tsu *TenantSubscriptionUpdate) SaveX(ctx context.Context) int {
-	affected, err := tsu.Save(ctx)
+func (_u *TenantSubscriptionUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -299,103 +334,117 @@ func (tsu *TenantSubscriptionUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (tsu *TenantSubscriptionUpdate) Exec(ctx context.Context) error {
-	_, err := tsu.Save(ctx)
+func (_u *TenantSubscriptionUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (tsu *TenantSubscriptionUpdate) ExecX(ctx context.Context) {
-	if err := tsu.Exec(ctx); err != nil {
+func (_u *TenantSubscriptionUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (tsu *TenantSubscriptionUpdate) defaults() {
-	if _, ok := tsu.mutation.UpdatedAt(); !ok {
+func (_u *TenantSubscriptionUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := tenantsubscription.UpdateDefaultUpdatedAt()
-		tsu.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (tsu *TenantSubscriptionUpdate) check() error {
-	if v, ok := tsu.mutation.Status(); ok {
+func (_u *TenantSubscriptionUpdate) check() error {
+	if v, ok := _u.mutation.Status(); ok {
 		if err := tenantsubscription.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "TenantSubscription.status": %w`, err)}
 		}
 	}
-	if _, ok := tsu.mutation.TenantID(); tsu.mutation.TenantCleared() && !ok {
+	if v, ok := _u.mutation.BillingCycle(); ok {
+		if err := tenantsubscription.BillingCycleValidator(v); err != nil {
+			return &ValidationError{Name: "billing_cycle", err: fmt.Errorf(`ent: validator failed for field "TenantSubscription.billing_cycle": %w`, err)}
+		}
+	}
+	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "TenantSubscription.tenant"`)
 	}
-	if _, ok := tsu.mutation.PlanID(); tsu.mutation.PlanCleared() && !ok {
+	if _u.mutation.PlanCleared() && len(_u.mutation.PlanIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "TenantSubscription.plan"`)
 	}
 	return nil
 }
 
-func (tsu *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := tsu.check(); err != nil {
-		return n, err
+func (_u *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(tenantsubscription.Table, tenantsubscription.Columns, sqlgraph.NewFieldSpec(tenantsubscription.FieldID, field.TypeUUID))
-	if ps := tsu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := tsu.mutation.Status(); ok {
+	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(tenantsubscription.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := tsu.mutation.TrialEndsAt(); ok {
+	if value, ok := _u.mutation.TrialEndsAt(); ok {
 		_spec.SetField(tenantsubscription.FieldTrialEndsAt, field.TypeTime, value)
 	}
-	if tsu.mutation.TrialEndsAtCleared() {
+	if _u.mutation.TrialEndsAtCleared() {
 		_spec.ClearField(tenantsubscription.FieldTrialEndsAt, field.TypeTime)
 	}
-	if value, ok := tsu.mutation.CurrentPeriodStart(); ok {
+	if value, ok := _u.mutation.CurrentPeriodStart(); ok {
 		_spec.SetField(tenantsubscription.FieldCurrentPeriodStart, field.TypeTime, value)
 	}
-	if value, ok := tsu.mutation.CurrentPeriodEnd(); ok {
+	if value, ok := _u.mutation.CurrentPeriodEnd(); ok {
 		_spec.SetField(tenantsubscription.FieldCurrentPeriodEnd, field.TypeTime, value)
 	}
-	if value, ok := tsu.mutation.CancelledAt(); ok {
+	if value, ok := _u.mutation.CancelledAt(); ok {
 		_spec.SetField(tenantsubscription.FieldCancelledAt, field.TypeTime, value)
 	}
-	if tsu.mutation.CancelledAtCleared() {
+	if _u.mutation.CancelledAtCleared() {
 		_spec.ClearField(tenantsubscription.FieldCancelledAt, field.TypeTime)
 	}
-	if value, ok := tsu.mutation.CancelReason(); ok {
+	if value, ok := _u.mutation.CancelReason(); ok {
 		_spec.SetField(tenantsubscription.FieldCancelReason, field.TypeString, value)
 	}
-	if tsu.mutation.CancelReasonCleared() {
+	if _u.mutation.CancelReasonCleared() {
 		_spec.ClearField(tenantsubscription.FieldCancelReason, field.TypeString)
 	}
-	if value, ok := tsu.mutation.BundleCode(); ok {
+	if value, ok := _u.mutation.BillingCycle(); ok {
+		_spec.SetField(tenantsubscription.FieldBillingCycle, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.AppliedDiscount(); ok {
+		_spec.SetField(tenantsubscription.FieldAppliedDiscount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedAppliedDiscount(); ok {
+		_spec.AddField(tenantsubscription.FieldAppliedDiscount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.BundleCode(); ok {
 		_spec.SetField(tenantsubscription.FieldBundleCode, field.TypeString, value)
 	}
-	if tsu.mutation.BundleCodeCleared() {
+	if _u.mutation.BundleCodeCleared() {
 		_spec.ClearField(tenantsubscription.FieldBundleCode, field.TypeString)
 	}
-	if value, ok := tsu.mutation.PaymentMethodID(); ok {
+	if value, ok := _u.mutation.PaymentMethodID(); ok {
 		_spec.SetField(tenantsubscription.FieldPaymentMethodID, field.TypeUUID, value)
 	}
-	if tsu.mutation.PaymentMethodIDCleared() {
+	if _u.mutation.PaymentMethodIDCleared() {
 		_spec.ClearField(tenantsubscription.FieldPaymentMethodID, field.TypeUUID)
 	}
-	if value, ok := tsu.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(tenantsubscription.FieldMetadata, field.TypeJSON, value)
 	}
-	if tsu.mutation.MetadataCleared() {
+	if _u.mutation.MetadataCleared() {
 		_spec.ClearField(tenantsubscription.FieldMetadata, field.TypeJSON)
 	}
-	if value, ok := tsu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(tenantsubscription.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if tsu.mutation.TenantCleared() {
+	if _u.mutation.TenantCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -408,7 +457,7 @@ func (tsu *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := tsu.mutation.TenantIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.TenantIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -424,7 +473,7 @@ func (tsu *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if tsu.mutation.PlanCleared() {
+	if _u.mutation.PlanCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -437,7 +486,7 @@ func (tsu *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := tsu.mutation.PlanIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.PlanIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -453,7 +502,7 @@ func (tsu *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if tsu.mutation.ProductSubscriptionsCleared() {
+	if _u.mutation.ProductSubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -466,7 +515,7 @@ func (tsu *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := tsu.mutation.RemovedProductSubscriptionsIDs(); len(nodes) > 0 && !tsu.mutation.ProductSubscriptionsCleared() {
+	if nodes := _u.mutation.RemovedProductSubscriptionsIDs(); len(nodes) > 0 && !_u.mutation.ProductSubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -482,7 +531,7 @@ func (tsu *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := tsu.mutation.ProductSubscriptionsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ProductSubscriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -498,7 +547,7 @@ func (tsu *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if n, err = sqlgraph.UpdateNodes(ctx, tsu.driver, _spec); err != nil {
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{tenantsubscription.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -506,8 +555,8 @@ func (tsu *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err er
 		}
 		return 0, err
 	}
-	tsu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // TenantSubscriptionUpdateOne is the builder for updating a single TenantSubscription entity.
@@ -519,278 +568,313 @@ type TenantSubscriptionUpdateOne struct {
 }
 
 // SetTenantID sets the "tenant_id" field.
-func (tsuo *TenantSubscriptionUpdateOne) SetTenantID(u uuid.UUID) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.SetTenantID(u)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) SetTenantID(v uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetTenantID(v)
+	return _u
 }
 
 // SetNillableTenantID sets the "tenant_id" field if the given value is not nil.
-func (tsuo *TenantSubscriptionUpdateOne) SetNillableTenantID(u *uuid.UUID) *TenantSubscriptionUpdateOne {
-	if u != nil {
-		tsuo.SetTenantID(*u)
+func (_u *TenantSubscriptionUpdateOne) SetNillableTenantID(v *uuid.UUID) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetTenantID(*v)
 	}
-	return tsuo
+	return _u
 }
 
 // SetPlanID sets the "plan_id" field.
-func (tsuo *TenantSubscriptionUpdateOne) SetPlanID(u uuid.UUID) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.SetPlanID(u)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) SetPlanID(v uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetPlanID(v)
+	return _u
 }
 
 // SetNillablePlanID sets the "plan_id" field if the given value is not nil.
-func (tsuo *TenantSubscriptionUpdateOne) SetNillablePlanID(u *uuid.UUID) *TenantSubscriptionUpdateOne {
-	if u != nil {
-		tsuo.SetPlanID(*u)
+func (_u *TenantSubscriptionUpdateOne) SetNillablePlanID(v *uuid.UUID) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetPlanID(*v)
 	}
-	return tsuo
+	return _u
 }
 
 // SetStatus sets the "status" field.
-func (tsuo *TenantSubscriptionUpdateOne) SetStatus(t tenantsubscription.Status) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.SetStatus(t)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) SetStatus(v tenantsubscription.Status) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetStatus(v)
+	return _u
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (tsuo *TenantSubscriptionUpdateOne) SetNillableStatus(t *tenantsubscription.Status) *TenantSubscriptionUpdateOne {
-	if t != nil {
-		tsuo.SetStatus(*t)
+func (_u *TenantSubscriptionUpdateOne) SetNillableStatus(v *tenantsubscription.Status) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetStatus(*v)
 	}
-	return tsuo
+	return _u
 }
 
 // SetTrialEndsAt sets the "trial_ends_at" field.
-func (tsuo *TenantSubscriptionUpdateOne) SetTrialEndsAt(t time.Time) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.SetTrialEndsAt(t)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) SetTrialEndsAt(v time.Time) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetTrialEndsAt(v)
+	return _u
 }
 
 // SetNillableTrialEndsAt sets the "trial_ends_at" field if the given value is not nil.
-func (tsuo *TenantSubscriptionUpdateOne) SetNillableTrialEndsAt(t *time.Time) *TenantSubscriptionUpdateOne {
-	if t != nil {
-		tsuo.SetTrialEndsAt(*t)
+func (_u *TenantSubscriptionUpdateOne) SetNillableTrialEndsAt(v *time.Time) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetTrialEndsAt(*v)
 	}
-	return tsuo
+	return _u
 }
 
 // ClearTrialEndsAt clears the value of the "trial_ends_at" field.
-func (tsuo *TenantSubscriptionUpdateOne) ClearTrialEndsAt() *TenantSubscriptionUpdateOne {
-	tsuo.mutation.ClearTrialEndsAt()
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) ClearTrialEndsAt() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearTrialEndsAt()
+	return _u
 }
 
 // SetCurrentPeriodStart sets the "current_period_start" field.
-func (tsuo *TenantSubscriptionUpdateOne) SetCurrentPeriodStart(t time.Time) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.SetCurrentPeriodStart(t)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) SetCurrentPeriodStart(v time.Time) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetCurrentPeriodStart(v)
+	return _u
 }
 
 // SetNillableCurrentPeriodStart sets the "current_period_start" field if the given value is not nil.
-func (tsuo *TenantSubscriptionUpdateOne) SetNillableCurrentPeriodStart(t *time.Time) *TenantSubscriptionUpdateOne {
-	if t != nil {
-		tsuo.SetCurrentPeriodStart(*t)
+func (_u *TenantSubscriptionUpdateOne) SetNillableCurrentPeriodStart(v *time.Time) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCurrentPeriodStart(*v)
 	}
-	return tsuo
+	return _u
 }
 
 // SetCurrentPeriodEnd sets the "current_period_end" field.
-func (tsuo *TenantSubscriptionUpdateOne) SetCurrentPeriodEnd(t time.Time) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.SetCurrentPeriodEnd(t)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) SetCurrentPeriodEnd(v time.Time) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetCurrentPeriodEnd(v)
+	return _u
 }
 
 // SetNillableCurrentPeriodEnd sets the "current_period_end" field if the given value is not nil.
-func (tsuo *TenantSubscriptionUpdateOne) SetNillableCurrentPeriodEnd(t *time.Time) *TenantSubscriptionUpdateOne {
-	if t != nil {
-		tsuo.SetCurrentPeriodEnd(*t)
+func (_u *TenantSubscriptionUpdateOne) SetNillableCurrentPeriodEnd(v *time.Time) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCurrentPeriodEnd(*v)
 	}
-	return tsuo
+	return _u
 }
 
 // SetCancelledAt sets the "cancelled_at" field.
-func (tsuo *TenantSubscriptionUpdateOne) SetCancelledAt(t time.Time) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.SetCancelledAt(t)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) SetCancelledAt(v time.Time) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetCancelledAt(v)
+	return _u
 }
 
 // SetNillableCancelledAt sets the "cancelled_at" field if the given value is not nil.
-func (tsuo *TenantSubscriptionUpdateOne) SetNillableCancelledAt(t *time.Time) *TenantSubscriptionUpdateOne {
-	if t != nil {
-		tsuo.SetCancelledAt(*t)
+func (_u *TenantSubscriptionUpdateOne) SetNillableCancelledAt(v *time.Time) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCancelledAt(*v)
 	}
-	return tsuo
+	return _u
 }
 
 // ClearCancelledAt clears the value of the "cancelled_at" field.
-func (tsuo *TenantSubscriptionUpdateOne) ClearCancelledAt() *TenantSubscriptionUpdateOne {
-	tsuo.mutation.ClearCancelledAt()
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) ClearCancelledAt() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearCancelledAt()
+	return _u
 }
 
 // SetCancelReason sets the "cancel_reason" field.
-func (tsuo *TenantSubscriptionUpdateOne) SetCancelReason(s string) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.SetCancelReason(s)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) SetCancelReason(v string) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetCancelReason(v)
+	return _u
 }
 
 // SetNillableCancelReason sets the "cancel_reason" field if the given value is not nil.
-func (tsuo *TenantSubscriptionUpdateOne) SetNillableCancelReason(s *string) *TenantSubscriptionUpdateOne {
-	if s != nil {
-		tsuo.SetCancelReason(*s)
+func (_u *TenantSubscriptionUpdateOne) SetNillableCancelReason(v *string) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCancelReason(*v)
 	}
-	return tsuo
+	return _u
 }
 
 // ClearCancelReason clears the value of the "cancel_reason" field.
-func (tsuo *TenantSubscriptionUpdateOne) ClearCancelReason() *TenantSubscriptionUpdateOne {
-	tsuo.mutation.ClearCancelReason()
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) ClearCancelReason() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearCancelReason()
+	return _u
+}
+
+// SetBillingCycle sets the "billing_cycle" field.
+func (_u *TenantSubscriptionUpdateOne) SetBillingCycle(v tenantsubscription.BillingCycle) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetBillingCycle(v)
+	return _u
+}
+
+// SetNillableBillingCycle sets the "billing_cycle" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableBillingCycle(v *tenantsubscription.BillingCycle) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetBillingCycle(*v)
+	}
+	return _u
+}
+
+// SetAppliedDiscount sets the "applied_discount" field.
+func (_u *TenantSubscriptionUpdateOne) SetAppliedDiscount(v float64) *TenantSubscriptionUpdateOne {
+	_u.mutation.ResetAppliedDiscount()
+	_u.mutation.SetAppliedDiscount(v)
+	return _u
+}
+
+// SetNillableAppliedDiscount sets the "applied_discount" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableAppliedDiscount(v *float64) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetAppliedDiscount(*v)
+	}
+	return _u
+}
+
+// AddAppliedDiscount adds value to the "applied_discount" field.
+func (_u *TenantSubscriptionUpdateOne) AddAppliedDiscount(v float64) *TenantSubscriptionUpdateOne {
+	_u.mutation.AddAppliedDiscount(v)
+	return _u
 }
 
 // SetBundleCode sets the "bundle_code" field.
-func (tsuo *TenantSubscriptionUpdateOne) SetBundleCode(s string) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.SetBundleCode(s)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) SetBundleCode(v string) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetBundleCode(v)
+	return _u
 }
 
 // SetNillableBundleCode sets the "bundle_code" field if the given value is not nil.
-func (tsuo *TenantSubscriptionUpdateOne) SetNillableBundleCode(s *string) *TenantSubscriptionUpdateOne {
-	if s != nil {
-		tsuo.SetBundleCode(*s)
+func (_u *TenantSubscriptionUpdateOne) SetNillableBundleCode(v *string) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetBundleCode(*v)
 	}
-	return tsuo
+	return _u
 }
 
 // ClearBundleCode clears the value of the "bundle_code" field.
-func (tsuo *TenantSubscriptionUpdateOne) ClearBundleCode() *TenantSubscriptionUpdateOne {
-	tsuo.mutation.ClearBundleCode()
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) ClearBundleCode() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearBundleCode()
+	return _u
 }
 
 // SetPaymentMethodID sets the "payment_method_id" field.
-func (tsuo *TenantSubscriptionUpdateOne) SetPaymentMethodID(u uuid.UUID) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.SetPaymentMethodID(u)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) SetPaymentMethodID(v uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetPaymentMethodID(v)
+	return _u
 }
 
 // SetNillablePaymentMethodID sets the "payment_method_id" field if the given value is not nil.
-func (tsuo *TenantSubscriptionUpdateOne) SetNillablePaymentMethodID(u *uuid.UUID) *TenantSubscriptionUpdateOne {
-	if u != nil {
-		tsuo.SetPaymentMethodID(*u)
+func (_u *TenantSubscriptionUpdateOne) SetNillablePaymentMethodID(v *uuid.UUID) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetPaymentMethodID(*v)
 	}
-	return tsuo
+	return _u
 }
 
 // ClearPaymentMethodID clears the value of the "payment_method_id" field.
-func (tsuo *TenantSubscriptionUpdateOne) ClearPaymentMethodID() *TenantSubscriptionUpdateOne {
-	tsuo.mutation.ClearPaymentMethodID()
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) ClearPaymentMethodID() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearPaymentMethodID()
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (tsuo *TenantSubscriptionUpdateOne) SetMetadata(m map[string]interface{}) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.SetMetadata(m)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) SetMetadata(v map[string]interface{}) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // ClearMetadata clears the value of the "metadata" field.
-func (tsuo *TenantSubscriptionUpdateOne) ClearMetadata() *TenantSubscriptionUpdateOne {
-	tsuo.mutation.ClearMetadata()
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) ClearMetadata() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearMetadata()
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (tsuo *TenantSubscriptionUpdateOne) SetUpdatedAt(t time.Time) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.SetUpdatedAt(t)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) SetUpdatedAt(v time.Time) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetTenant sets the "tenant" edge to the Tenant entity.
-func (tsuo *TenantSubscriptionUpdateOne) SetTenant(t *Tenant) *TenantSubscriptionUpdateOne {
-	return tsuo.SetTenantID(t.ID)
+func (_u *TenantSubscriptionUpdateOne) SetTenant(v *Tenant) *TenantSubscriptionUpdateOne {
+	return _u.SetTenantID(v.ID)
 }
 
 // SetPlan sets the "plan" edge to the SubscriptionPlan entity.
-func (tsuo *TenantSubscriptionUpdateOne) SetPlan(s *SubscriptionPlan) *TenantSubscriptionUpdateOne {
-	return tsuo.SetPlanID(s.ID)
+func (_u *TenantSubscriptionUpdateOne) SetPlan(v *SubscriptionPlan) *TenantSubscriptionUpdateOne {
+	return _u.SetPlanID(v.ID)
 }
 
 // AddProductSubscriptionIDs adds the "product_subscriptions" edge to the ProductSubscription entity by IDs.
-func (tsuo *TenantSubscriptionUpdateOne) AddProductSubscriptionIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.AddProductSubscriptionIDs(ids...)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) AddProductSubscriptionIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.AddProductSubscriptionIDs(ids...)
+	return _u
 }
 
 // AddProductSubscriptions adds the "product_subscriptions" edges to the ProductSubscription entity.
-func (tsuo *TenantSubscriptionUpdateOne) AddProductSubscriptions(p ...*ProductSubscription) *TenantSubscriptionUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *TenantSubscriptionUpdateOne) AddProductSubscriptions(v ...*ProductSubscription) *TenantSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return tsuo.AddProductSubscriptionIDs(ids...)
+	return _u.AddProductSubscriptionIDs(ids...)
 }
 
 // Mutation returns the TenantSubscriptionMutation object of the builder.
-func (tsuo *TenantSubscriptionUpdateOne) Mutation() *TenantSubscriptionMutation {
-	return tsuo.mutation
+func (_u *TenantSubscriptionUpdateOne) Mutation() *TenantSubscriptionMutation {
+	return _u.mutation
 }
 
 // ClearTenant clears the "tenant" edge to the Tenant entity.
-func (tsuo *TenantSubscriptionUpdateOne) ClearTenant() *TenantSubscriptionUpdateOne {
-	tsuo.mutation.ClearTenant()
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) ClearTenant() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearTenant()
+	return _u
 }
 
 // ClearPlan clears the "plan" edge to the SubscriptionPlan entity.
-func (tsuo *TenantSubscriptionUpdateOne) ClearPlan() *TenantSubscriptionUpdateOne {
-	tsuo.mutation.ClearPlan()
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) ClearPlan() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearPlan()
+	return _u
 }
 
 // ClearProductSubscriptions clears all "product_subscriptions" edges to the ProductSubscription entity.
-func (tsuo *TenantSubscriptionUpdateOne) ClearProductSubscriptions() *TenantSubscriptionUpdateOne {
-	tsuo.mutation.ClearProductSubscriptions()
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) ClearProductSubscriptions() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearProductSubscriptions()
+	return _u
 }
 
 // RemoveProductSubscriptionIDs removes the "product_subscriptions" edge to ProductSubscription entities by IDs.
-func (tsuo *TenantSubscriptionUpdateOne) RemoveProductSubscriptionIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.RemoveProductSubscriptionIDs(ids...)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) RemoveProductSubscriptionIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.RemoveProductSubscriptionIDs(ids...)
+	return _u
 }
 
 // RemoveProductSubscriptions removes "product_subscriptions" edges to ProductSubscription entities.
-func (tsuo *TenantSubscriptionUpdateOne) RemoveProductSubscriptions(p ...*ProductSubscription) *TenantSubscriptionUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *TenantSubscriptionUpdateOne) RemoveProductSubscriptions(v ...*ProductSubscription) *TenantSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return tsuo.RemoveProductSubscriptionIDs(ids...)
+	return _u.RemoveProductSubscriptionIDs(ids...)
 }
 
 // Where appends a list predicates to the TenantSubscriptionUpdate builder.
-func (tsuo *TenantSubscriptionUpdateOne) Where(ps ...predicate.TenantSubscription) *TenantSubscriptionUpdateOne {
-	tsuo.mutation.Where(ps...)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) Where(ps ...predicate.TenantSubscription) *TenantSubscriptionUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (tsuo *TenantSubscriptionUpdateOne) Select(field string, fields ...string) *TenantSubscriptionUpdateOne {
-	tsuo.fields = append([]string{field}, fields...)
-	return tsuo
+func (_u *TenantSubscriptionUpdateOne) Select(field string, fields ...string) *TenantSubscriptionUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated TenantSubscription entity.
-func (tsuo *TenantSubscriptionUpdateOne) Save(ctx context.Context) (*TenantSubscription, error) {
-	tsuo.defaults()
-	return withHooks(ctx, tsuo.sqlSave, tsuo.mutation, tsuo.hooks)
+func (_u *TenantSubscriptionUpdateOne) Save(ctx context.Context) (*TenantSubscription, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (tsuo *TenantSubscriptionUpdateOne) SaveX(ctx context.Context) *TenantSubscription {
-	node, err := tsuo.Save(ctx)
+func (_u *TenantSubscriptionUpdateOne) SaveX(ctx context.Context) *TenantSubscription {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -798,53 +882,58 @@ func (tsuo *TenantSubscriptionUpdateOne) SaveX(ctx context.Context) *TenantSubsc
 }
 
 // Exec executes the query on the entity.
-func (tsuo *TenantSubscriptionUpdateOne) Exec(ctx context.Context) error {
-	_, err := tsuo.Save(ctx)
+func (_u *TenantSubscriptionUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (tsuo *TenantSubscriptionUpdateOne) ExecX(ctx context.Context) {
-	if err := tsuo.Exec(ctx); err != nil {
+func (_u *TenantSubscriptionUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (tsuo *TenantSubscriptionUpdateOne) defaults() {
-	if _, ok := tsuo.mutation.UpdatedAt(); !ok {
+func (_u *TenantSubscriptionUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := tenantsubscription.UpdateDefaultUpdatedAt()
-		tsuo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (tsuo *TenantSubscriptionUpdateOne) check() error {
-	if v, ok := tsuo.mutation.Status(); ok {
+func (_u *TenantSubscriptionUpdateOne) check() error {
+	if v, ok := _u.mutation.Status(); ok {
 		if err := tenantsubscription.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "TenantSubscription.status": %w`, err)}
 		}
 	}
-	if _, ok := tsuo.mutation.TenantID(); tsuo.mutation.TenantCleared() && !ok {
+	if v, ok := _u.mutation.BillingCycle(); ok {
+		if err := tenantsubscription.BillingCycleValidator(v); err != nil {
+			return &ValidationError{Name: "billing_cycle", err: fmt.Errorf(`ent: validator failed for field "TenantSubscription.billing_cycle": %w`, err)}
+		}
+	}
+	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "TenantSubscription.tenant"`)
 	}
-	if _, ok := tsuo.mutation.PlanID(); tsuo.mutation.PlanCleared() && !ok {
+	if _u.mutation.PlanCleared() && len(_u.mutation.PlanIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "TenantSubscription.plan"`)
 	}
 	return nil
 }
 
-func (tsuo *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *TenantSubscription, err error) {
-	if err := tsuo.check(); err != nil {
+func (_u *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *TenantSubscription, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(tenantsubscription.Table, tenantsubscription.Columns, sqlgraph.NewFieldSpec(tenantsubscription.FieldID, field.TypeUUID))
-	id, ok := tsuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "TenantSubscription.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := tsuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, tenantsubscription.FieldID)
 		for _, f := range fields {
@@ -856,62 +945,71 @@ func (tsuo *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Te
 			}
 		}
 	}
-	if ps := tsuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := tsuo.mutation.Status(); ok {
+	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(tenantsubscription.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := tsuo.mutation.TrialEndsAt(); ok {
+	if value, ok := _u.mutation.TrialEndsAt(); ok {
 		_spec.SetField(tenantsubscription.FieldTrialEndsAt, field.TypeTime, value)
 	}
-	if tsuo.mutation.TrialEndsAtCleared() {
+	if _u.mutation.TrialEndsAtCleared() {
 		_spec.ClearField(tenantsubscription.FieldTrialEndsAt, field.TypeTime)
 	}
-	if value, ok := tsuo.mutation.CurrentPeriodStart(); ok {
+	if value, ok := _u.mutation.CurrentPeriodStart(); ok {
 		_spec.SetField(tenantsubscription.FieldCurrentPeriodStart, field.TypeTime, value)
 	}
-	if value, ok := tsuo.mutation.CurrentPeriodEnd(); ok {
+	if value, ok := _u.mutation.CurrentPeriodEnd(); ok {
 		_spec.SetField(tenantsubscription.FieldCurrentPeriodEnd, field.TypeTime, value)
 	}
-	if value, ok := tsuo.mutation.CancelledAt(); ok {
+	if value, ok := _u.mutation.CancelledAt(); ok {
 		_spec.SetField(tenantsubscription.FieldCancelledAt, field.TypeTime, value)
 	}
-	if tsuo.mutation.CancelledAtCleared() {
+	if _u.mutation.CancelledAtCleared() {
 		_spec.ClearField(tenantsubscription.FieldCancelledAt, field.TypeTime)
 	}
-	if value, ok := tsuo.mutation.CancelReason(); ok {
+	if value, ok := _u.mutation.CancelReason(); ok {
 		_spec.SetField(tenantsubscription.FieldCancelReason, field.TypeString, value)
 	}
-	if tsuo.mutation.CancelReasonCleared() {
+	if _u.mutation.CancelReasonCleared() {
 		_spec.ClearField(tenantsubscription.FieldCancelReason, field.TypeString)
 	}
-	if value, ok := tsuo.mutation.BundleCode(); ok {
+	if value, ok := _u.mutation.BillingCycle(); ok {
+		_spec.SetField(tenantsubscription.FieldBillingCycle, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.AppliedDiscount(); ok {
+		_spec.SetField(tenantsubscription.FieldAppliedDiscount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedAppliedDiscount(); ok {
+		_spec.AddField(tenantsubscription.FieldAppliedDiscount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.BundleCode(); ok {
 		_spec.SetField(tenantsubscription.FieldBundleCode, field.TypeString, value)
 	}
-	if tsuo.mutation.BundleCodeCleared() {
+	if _u.mutation.BundleCodeCleared() {
 		_spec.ClearField(tenantsubscription.FieldBundleCode, field.TypeString)
 	}
-	if value, ok := tsuo.mutation.PaymentMethodID(); ok {
+	if value, ok := _u.mutation.PaymentMethodID(); ok {
 		_spec.SetField(tenantsubscription.FieldPaymentMethodID, field.TypeUUID, value)
 	}
-	if tsuo.mutation.PaymentMethodIDCleared() {
+	if _u.mutation.PaymentMethodIDCleared() {
 		_spec.ClearField(tenantsubscription.FieldPaymentMethodID, field.TypeUUID)
 	}
-	if value, ok := tsuo.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(tenantsubscription.FieldMetadata, field.TypeJSON, value)
 	}
-	if tsuo.mutation.MetadataCleared() {
+	if _u.mutation.MetadataCleared() {
 		_spec.ClearField(tenantsubscription.FieldMetadata, field.TypeJSON)
 	}
-	if value, ok := tsuo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(tenantsubscription.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if tsuo.mutation.TenantCleared() {
+	if _u.mutation.TenantCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -924,7 +1022,7 @@ func (tsuo *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Te
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := tsuo.mutation.TenantIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.TenantIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -940,7 +1038,7 @@ func (tsuo *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Te
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if tsuo.mutation.PlanCleared() {
+	if _u.mutation.PlanCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -953,7 +1051,7 @@ func (tsuo *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Te
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := tsuo.mutation.PlanIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.PlanIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -969,7 +1067,7 @@ func (tsuo *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Te
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if tsuo.mutation.ProductSubscriptionsCleared() {
+	if _u.mutation.ProductSubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -982,7 +1080,7 @@ func (tsuo *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Te
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := tsuo.mutation.RemovedProductSubscriptionsIDs(); len(nodes) > 0 && !tsuo.mutation.ProductSubscriptionsCleared() {
+	if nodes := _u.mutation.RemovedProductSubscriptionsIDs(); len(nodes) > 0 && !_u.mutation.ProductSubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -998,7 +1096,7 @@ func (tsuo *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Te
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := tsuo.mutation.ProductSubscriptionsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ProductSubscriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1014,10 +1112,10 @@ func (tsuo *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Te
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &TenantSubscription{config: tsuo.config}
+	_node = &TenantSubscription{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, tsuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{tenantsubscription.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -1025,6 +1123,6 @@ func (tsuo *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Te
 		}
 		return nil, err
 	}
-	tsuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

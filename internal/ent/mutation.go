@@ -2119,21 +2119,23 @@ func (m *OutboxEventMutation) ResetEdge(name string) error {
 // PlanFeatureMutation represents an operation that mutates the PlanFeature nodes in the graph.
 type PlanFeatureMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *uuid.UUID
-	feature_code   *string
-	is_included    *bool
-	limit_value    *int
-	addlimit_value *int
-	metadata       *map[string]interface{}
-	created_at     *time.Time
-	clearedFields  map[string]struct{}
-	plan           *uuid.UUID
-	clearedplan    bool
-	done           bool
-	oldValue       func(context.Context) (*PlanFeature, error)
-	predicates     []predicate.PlanFeature
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	feature_code          *string
+	is_included           *bool
+	limit_value           *int
+	addlimit_value        *int
+	overage_unit_price    *float64
+	addoverage_unit_price *float64
+	metadata              *map[string]interface{}
+	created_at            *time.Time
+	clearedFields         map[string]struct{}
+	plan                  *uuid.UUID
+	clearedplan           bool
+	done                  bool
+	oldValue              func(context.Context) (*PlanFeature, error)
+	predicates            []predicate.PlanFeature
 }
 
 var _ ent.Mutation = (*PlanFeatureMutation)(nil)
@@ -2418,6 +2420,62 @@ func (m *PlanFeatureMutation) ResetLimitValue() {
 	delete(m.clearedFields, planfeature.FieldLimitValue)
 }
 
+// SetOverageUnitPrice sets the "overage_unit_price" field.
+func (m *PlanFeatureMutation) SetOverageUnitPrice(f float64) {
+	m.overage_unit_price = &f
+	m.addoverage_unit_price = nil
+}
+
+// OverageUnitPrice returns the value of the "overage_unit_price" field in the mutation.
+func (m *PlanFeatureMutation) OverageUnitPrice() (r float64, exists bool) {
+	v := m.overage_unit_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOverageUnitPrice returns the old "overage_unit_price" field's value of the PlanFeature entity.
+// If the PlanFeature object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PlanFeatureMutation) OldOverageUnitPrice(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOverageUnitPrice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOverageUnitPrice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOverageUnitPrice: %w", err)
+	}
+	return oldValue.OverageUnitPrice, nil
+}
+
+// AddOverageUnitPrice adds f to the "overage_unit_price" field.
+func (m *PlanFeatureMutation) AddOverageUnitPrice(f float64) {
+	if m.addoverage_unit_price != nil {
+		*m.addoverage_unit_price += f
+	} else {
+		m.addoverage_unit_price = &f
+	}
+}
+
+// AddedOverageUnitPrice returns the value that was added to the "overage_unit_price" field in this mutation.
+func (m *PlanFeatureMutation) AddedOverageUnitPrice() (r float64, exists bool) {
+	v := m.addoverage_unit_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetOverageUnitPrice resets all changes to the "overage_unit_price" field.
+func (m *PlanFeatureMutation) ResetOverageUnitPrice() {
+	m.overage_unit_price = nil
+	m.addoverage_unit_price = nil
+}
+
 // SetMetadata sets the "metadata" field.
 func (m *PlanFeatureMutation) SetMetadata(value map[string]interface{}) {
 	m.metadata = &value
@@ -2551,7 +2609,7 @@ func (m *PlanFeatureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PlanFeatureMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.plan != nil {
 		fields = append(fields, planfeature.FieldPlanID)
 	}
@@ -2563,6 +2621,9 @@ func (m *PlanFeatureMutation) Fields() []string {
 	}
 	if m.limit_value != nil {
 		fields = append(fields, planfeature.FieldLimitValue)
+	}
+	if m.overage_unit_price != nil {
+		fields = append(fields, planfeature.FieldOverageUnitPrice)
 	}
 	if m.metadata != nil {
 		fields = append(fields, planfeature.FieldMetadata)
@@ -2586,6 +2647,8 @@ func (m *PlanFeatureMutation) Field(name string) (ent.Value, bool) {
 		return m.IsIncluded()
 	case planfeature.FieldLimitValue:
 		return m.LimitValue()
+	case planfeature.FieldOverageUnitPrice:
+		return m.OverageUnitPrice()
 	case planfeature.FieldMetadata:
 		return m.Metadata()
 	case planfeature.FieldCreatedAt:
@@ -2607,6 +2670,8 @@ func (m *PlanFeatureMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldIsIncluded(ctx)
 	case planfeature.FieldLimitValue:
 		return m.OldLimitValue(ctx)
+	case planfeature.FieldOverageUnitPrice:
+		return m.OldOverageUnitPrice(ctx)
 	case planfeature.FieldMetadata:
 		return m.OldMetadata(ctx)
 	case planfeature.FieldCreatedAt:
@@ -2648,6 +2713,13 @@ func (m *PlanFeatureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetLimitValue(v)
 		return nil
+	case planfeature.FieldOverageUnitPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOverageUnitPrice(v)
+		return nil
 	case planfeature.FieldMetadata:
 		v, ok := value.(map[string]interface{})
 		if !ok {
@@ -2673,6 +2745,9 @@ func (m *PlanFeatureMutation) AddedFields() []string {
 	if m.addlimit_value != nil {
 		fields = append(fields, planfeature.FieldLimitValue)
 	}
+	if m.addoverage_unit_price != nil {
+		fields = append(fields, planfeature.FieldOverageUnitPrice)
+	}
 	return fields
 }
 
@@ -2683,6 +2758,8 @@ func (m *PlanFeatureMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case planfeature.FieldLimitValue:
 		return m.AddedLimitValue()
+	case planfeature.FieldOverageUnitPrice:
+		return m.AddedOverageUnitPrice()
 	}
 	return nil, false
 }
@@ -2698,6 +2775,13 @@ func (m *PlanFeatureMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddLimitValue(v)
+		return nil
+	case planfeature.FieldOverageUnitPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddOverageUnitPrice(v)
 		return nil
 	}
 	return fmt.Errorf("unknown PlanFeature numeric field %s", name)
@@ -2746,6 +2830,9 @@ func (m *PlanFeatureMutation) ResetField(name string) error {
 		return nil
 	case planfeature.FieldLimitValue:
 		m.ResetLimitValue()
+		return nil
+	case planfeature.FieldOverageUnitPrice:
+		m.ResetOverageUnitPrice()
 		return nil
 	case planfeature.FieldMetadata:
 		m.ResetMetadata()
@@ -3707,9 +3794,14 @@ type ProductMutation struct {
 	is_platform                  *bool
 	monthly_price                *float64
 	addmonthly_price             *float64
+	yearly_price                 *float64
+	addyearly_price              *float64
+	onetime_price                *float64
+	addonetime_price             *float64
 	included_in_bundle           *bool
 	sort_order                   *int
 	addsort_order                *int
+	is_base_service              *bool
 	metadata                     *map[string]interface{}
 	created_at                   *time.Time
 	updated_at                   *time.Time
@@ -4176,6 +4268,118 @@ func (m *ProductMutation) ResetMonthlyPrice() {
 	m.addmonthly_price = nil
 }
 
+// SetYearlyPrice sets the "yearly_price" field.
+func (m *ProductMutation) SetYearlyPrice(f float64) {
+	m.yearly_price = &f
+	m.addyearly_price = nil
+}
+
+// YearlyPrice returns the value of the "yearly_price" field in the mutation.
+func (m *ProductMutation) YearlyPrice() (r float64, exists bool) {
+	v := m.yearly_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldYearlyPrice returns the old "yearly_price" field's value of the Product entity.
+// If the Product object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProductMutation) OldYearlyPrice(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldYearlyPrice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldYearlyPrice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldYearlyPrice: %w", err)
+	}
+	return oldValue.YearlyPrice, nil
+}
+
+// AddYearlyPrice adds f to the "yearly_price" field.
+func (m *ProductMutation) AddYearlyPrice(f float64) {
+	if m.addyearly_price != nil {
+		*m.addyearly_price += f
+	} else {
+		m.addyearly_price = &f
+	}
+}
+
+// AddedYearlyPrice returns the value that was added to the "yearly_price" field in this mutation.
+func (m *ProductMutation) AddedYearlyPrice() (r float64, exists bool) {
+	v := m.addyearly_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetYearlyPrice resets all changes to the "yearly_price" field.
+func (m *ProductMutation) ResetYearlyPrice() {
+	m.yearly_price = nil
+	m.addyearly_price = nil
+}
+
+// SetOnetimePrice sets the "onetime_price" field.
+func (m *ProductMutation) SetOnetimePrice(f float64) {
+	m.onetime_price = &f
+	m.addonetime_price = nil
+}
+
+// OnetimePrice returns the value of the "onetime_price" field in the mutation.
+func (m *ProductMutation) OnetimePrice() (r float64, exists bool) {
+	v := m.onetime_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOnetimePrice returns the old "onetime_price" field's value of the Product entity.
+// If the Product object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProductMutation) OldOnetimePrice(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOnetimePrice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOnetimePrice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOnetimePrice: %w", err)
+	}
+	return oldValue.OnetimePrice, nil
+}
+
+// AddOnetimePrice adds f to the "onetime_price" field.
+func (m *ProductMutation) AddOnetimePrice(f float64) {
+	if m.addonetime_price != nil {
+		*m.addonetime_price += f
+	} else {
+		m.addonetime_price = &f
+	}
+}
+
+// AddedOnetimePrice returns the value that was added to the "onetime_price" field in this mutation.
+func (m *ProductMutation) AddedOnetimePrice() (r float64, exists bool) {
+	v := m.addonetime_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetOnetimePrice resets all changes to the "onetime_price" field.
+func (m *ProductMutation) ResetOnetimePrice() {
+	m.onetime_price = nil
+	m.addonetime_price = nil
+}
+
 // SetIncludedInBundle sets the "included_in_bundle" field.
 func (m *ProductMutation) SetIncludedInBundle(b bool) {
 	m.included_in_bundle = &b
@@ -4266,6 +4470,42 @@ func (m *ProductMutation) AddedSortOrder() (r int, exists bool) {
 func (m *ProductMutation) ResetSortOrder() {
 	m.sort_order = nil
 	m.addsort_order = nil
+}
+
+// SetIsBaseService sets the "is_base_service" field.
+func (m *ProductMutation) SetIsBaseService(b bool) {
+	m.is_base_service = &b
+}
+
+// IsBaseService returns the value of the "is_base_service" field in the mutation.
+func (m *ProductMutation) IsBaseService() (r bool, exists bool) {
+	v := m.is_base_service
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsBaseService returns the old "is_base_service" field's value of the Product entity.
+// If the Product object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProductMutation) OldIsBaseService(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsBaseService is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsBaseService requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsBaseService: %w", err)
+	}
+	return oldValue.IsBaseService, nil
+}
+
+// ResetIsBaseService resets all changes to the "is_base_service" field.
+func (m *ProductMutation) ResetIsBaseService() {
+	m.is_base_service = nil
 }
 
 // SetMetadata sets the "metadata" field.
@@ -4464,7 +4704,7 @@ func (m *ProductMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProductMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 16)
 	if m.code != nil {
 		fields = append(fields, product.FieldCode)
 	}
@@ -4489,11 +4729,20 @@ func (m *ProductMutation) Fields() []string {
 	if m.monthly_price != nil {
 		fields = append(fields, product.FieldMonthlyPrice)
 	}
+	if m.yearly_price != nil {
+		fields = append(fields, product.FieldYearlyPrice)
+	}
+	if m.onetime_price != nil {
+		fields = append(fields, product.FieldOnetimePrice)
+	}
 	if m.included_in_bundle != nil {
 		fields = append(fields, product.FieldIncludedInBundle)
 	}
 	if m.sort_order != nil {
 		fields = append(fields, product.FieldSortOrder)
+	}
+	if m.is_base_service != nil {
+		fields = append(fields, product.FieldIsBaseService)
 	}
 	if m.metadata != nil {
 		fields = append(fields, product.FieldMetadata)
@@ -4528,10 +4777,16 @@ func (m *ProductMutation) Field(name string) (ent.Value, bool) {
 		return m.IsPlatform()
 	case product.FieldMonthlyPrice:
 		return m.MonthlyPrice()
+	case product.FieldYearlyPrice:
+		return m.YearlyPrice()
+	case product.FieldOnetimePrice:
+		return m.OnetimePrice()
 	case product.FieldIncludedInBundle:
 		return m.IncludedInBundle()
 	case product.FieldSortOrder:
 		return m.SortOrder()
+	case product.FieldIsBaseService:
+		return m.IsBaseService()
 	case product.FieldMetadata:
 		return m.Metadata()
 	case product.FieldCreatedAt:
@@ -4563,10 +4818,16 @@ func (m *ProductMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldIsPlatform(ctx)
 	case product.FieldMonthlyPrice:
 		return m.OldMonthlyPrice(ctx)
+	case product.FieldYearlyPrice:
+		return m.OldYearlyPrice(ctx)
+	case product.FieldOnetimePrice:
+		return m.OldOnetimePrice(ctx)
 	case product.FieldIncludedInBundle:
 		return m.OldIncludedInBundle(ctx)
 	case product.FieldSortOrder:
 		return m.OldSortOrder(ctx)
+	case product.FieldIsBaseService:
+		return m.OldIsBaseService(ctx)
 	case product.FieldMetadata:
 		return m.OldMetadata(ctx)
 	case product.FieldCreatedAt:
@@ -4638,6 +4899,20 @@ func (m *ProductMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetMonthlyPrice(v)
 		return nil
+	case product.FieldYearlyPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetYearlyPrice(v)
+		return nil
+	case product.FieldOnetimePrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOnetimePrice(v)
+		return nil
 	case product.FieldIncludedInBundle:
 		v, ok := value.(bool)
 		if !ok {
@@ -4651,6 +4926,13 @@ func (m *ProductMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSortOrder(v)
+		return nil
+	case product.FieldIsBaseService:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsBaseService(v)
 		return nil
 	case product.FieldMetadata:
 		v, ok := value.(map[string]interface{})
@@ -4684,6 +4966,12 @@ func (m *ProductMutation) AddedFields() []string {
 	if m.addmonthly_price != nil {
 		fields = append(fields, product.FieldMonthlyPrice)
 	}
+	if m.addyearly_price != nil {
+		fields = append(fields, product.FieldYearlyPrice)
+	}
+	if m.addonetime_price != nil {
+		fields = append(fields, product.FieldOnetimePrice)
+	}
 	if m.addsort_order != nil {
 		fields = append(fields, product.FieldSortOrder)
 	}
@@ -4697,6 +4985,10 @@ func (m *ProductMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case product.FieldMonthlyPrice:
 		return m.AddedMonthlyPrice()
+	case product.FieldYearlyPrice:
+		return m.AddedYearlyPrice()
+	case product.FieldOnetimePrice:
+		return m.AddedOnetimePrice()
 	case product.FieldSortOrder:
 		return m.AddedSortOrder()
 	}
@@ -4714,6 +5006,20 @@ func (m *ProductMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddMonthlyPrice(v)
+		return nil
+	case product.FieldYearlyPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddYearlyPrice(v)
+		return nil
+	case product.FieldOnetimePrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddOnetimePrice(v)
 		return nil
 	case product.FieldSortOrder:
 		v, ok := value.(int)
@@ -4788,11 +5094,20 @@ func (m *ProductMutation) ResetField(name string) error {
 	case product.FieldMonthlyPrice:
 		m.ResetMonthlyPrice()
 		return nil
+	case product.FieldYearlyPrice:
+		m.ResetYearlyPrice()
+		return nil
+	case product.FieldOnetimePrice:
+		m.ResetOnetimePrice()
+		return nil
 	case product.FieldIncludedInBundle:
 		m.ResetIncludedInBundle()
 		return nil
 	case product.FieldSortOrder:
 		m.ResetSortOrder()
+		return nil
+	case product.FieldIsBaseService:
+		m.ResetIsBaseService()
 		return nil
 	case product.FieldMetadata:
 		m.ResetMetadata()
@@ -5872,37 +6187,43 @@ func (m *ProductSubscriptionMutation) ResetEdge(name string) error {
 // SubscriptionPlanMutation represents an operation that mutates the SubscriptionPlan nodes in the graph.
 type SubscriptionPlanMutation struct {
 	config
-	op                     Op
-	typ                    string
-	id                     *uuid.UUID
-	plan_code              *string
-	name                   *string
-	description            *string
-	billing_cycle          *string
-	base_price             *float64
-	addbase_price          *float64
-	currency               *string
-	is_active              *bool
-	is_public              *bool
-	tier_order             *int
-	addtier_order          *int
-	tier_limits_json       *map[string]interface{}
-	metadata               *map[string]interface{}
-	created_at             *time.Time
-	updated_at             *time.Time
-	clearedFields          map[string]struct{}
-	features               map[uuid.UUID]struct{}
-	removedfeatures        map[uuid.UUID]struct{}
-	clearedfeatures        bool
-	pricing_history        map[uuid.UUID]struct{}
-	removedpricing_history map[uuid.UUID]struct{}
-	clearedpricing_history bool
-	subscriptions          map[uuid.UUID]struct{}
-	removedsubscriptions   map[uuid.UUID]struct{}
-	clearedsubscriptions   bool
-	done                   bool
-	oldValue               func(context.Context) (*SubscriptionPlan, error)
-	predicates             []predicate.SubscriptionPlan
+	op                            Op
+	typ                           string
+	id                            *uuid.UUID
+	plan_code                     *string
+	name                          *string
+	description                   *string
+	billing_cycle                 *string
+	base_price                    *float64
+	addbase_price                 *float64
+	onetime_all_products_price    *float64
+	addonetime_all_products_price *float64
+	use_sum_based_pricing         *bool
+	currency                      *string
+	is_active                     *bool
+	is_public                     *bool
+	tier_order                    *int
+	addtier_order                 *int
+	tier_limits_json              *map[string]interface{}
+	plan_type                     *subscriptionplan.PlanType
+	discount_rules                *[]map[string]interface{}
+	appenddiscount_rules          []map[string]interface{}
+	metadata                      *map[string]interface{}
+	created_at                    *time.Time
+	updated_at                    *time.Time
+	clearedFields                 map[string]struct{}
+	features                      map[uuid.UUID]struct{}
+	removedfeatures               map[uuid.UUID]struct{}
+	clearedfeatures               bool
+	pricing_history               map[uuid.UUID]struct{}
+	removedpricing_history        map[uuid.UUID]struct{}
+	clearedpricing_history        bool
+	subscriptions                 map[uuid.UUID]struct{}
+	removedsubscriptions          map[uuid.UUID]struct{}
+	clearedsubscriptions          bool
+	done                          bool
+	oldValue                      func(context.Context) (*SubscriptionPlan, error)
+	predicates                    []predicate.SubscriptionPlan
 }
 
 var _ ent.Mutation = (*SubscriptionPlanMutation)(nil)
@@ -6222,6 +6543,112 @@ func (m *SubscriptionPlanMutation) ResetBasePrice() {
 	m.addbase_price = nil
 }
 
+// SetOnetimeAllProductsPrice sets the "onetime_all_products_price" field.
+func (m *SubscriptionPlanMutation) SetOnetimeAllProductsPrice(f float64) {
+	m.onetime_all_products_price = &f
+	m.addonetime_all_products_price = nil
+}
+
+// OnetimeAllProductsPrice returns the value of the "onetime_all_products_price" field in the mutation.
+func (m *SubscriptionPlanMutation) OnetimeAllProductsPrice() (r float64, exists bool) {
+	v := m.onetime_all_products_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOnetimeAllProductsPrice returns the old "onetime_all_products_price" field's value of the SubscriptionPlan entity.
+// If the SubscriptionPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionPlanMutation) OldOnetimeAllProductsPrice(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOnetimeAllProductsPrice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOnetimeAllProductsPrice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOnetimeAllProductsPrice: %w", err)
+	}
+	return oldValue.OnetimeAllProductsPrice, nil
+}
+
+// AddOnetimeAllProductsPrice adds f to the "onetime_all_products_price" field.
+func (m *SubscriptionPlanMutation) AddOnetimeAllProductsPrice(f float64) {
+	if m.addonetime_all_products_price != nil {
+		*m.addonetime_all_products_price += f
+	} else {
+		m.addonetime_all_products_price = &f
+	}
+}
+
+// AddedOnetimeAllProductsPrice returns the value that was added to the "onetime_all_products_price" field in this mutation.
+func (m *SubscriptionPlanMutation) AddedOnetimeAllProductsPrice() (r float64, exists bool) {
+	v := m.addonetime_all_products_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearOnetimeAllProductsPrice clears the value of the "onetime_all_products_price" field.
+func (m *SubscriptionPlanMutation) ClearOnetimeAllProductsPrice() {
+	m.onetime_all_products_price = nil
+	m.addonetime_all_products_price = nil
+	m.clearedFields[subscriptionplan.FieldOnetimeAllProductsPrice] = struct{}{}
+}
+
+// OnetimeAllProductsPriceCleared returns if the "onetime_all_products_price" field was cleared in this mutation.
+func (m *SubscriptionPlanMutation) OnetimeAllProductsPriceCleared() bool {
+	_, ok := m.clearedFields[subscriptionplan.FieldOnetimeAllProductsPrice]
+	return ok
+}
+
+// ResetOnetimeAllProductsPrice resets all changes to the "onetime_all_products_price" field.
+func (m *SubscriptionPlanMutation) ResetOnetimeAllProductsPrice() {
+	m.onetime_all_products_price = nil
+	m.addonetime_all_products_price = nil
+	delete(m.clearedFields, subscriptionplan.FieldOnetimeAllProductsPrice)
+}
+
+// SetUseSumBasedPricing sets the "use_sum_based_pricing" field.
+func (m *SubscriptionPlanMutation) SetUseSumBasedPricing(b bool) {
+	m.use_sum_based_pricing = &b
+}
+
+// UseSumBasedPricing returns the value of the "use_sum_based_pricing" field in the mutation.
+func (m *SubscriptionPlanMutation) UseSumBasedPricing() (r bool, exists bool) {
+	v := m.use_sum_based_pricing
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUseSumBasedPricing returns the old "use_sum_based_pricing" field's value of the SubscriptionPlan entity.
+// If the SubscriptionPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionPlanMutation) OldUseSumBasedPricing(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUseSumBasedPricing is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUseSumBasedPricing requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUseSumBasedPricing: %w", err)
+	}
+	return oldValue.UseSumBasedPricing, nil
+}
+
+// ResetUseSumBasedPricing resets all changes to the "use_sum_based_pricing" field.
+func (m *SubscriptionPlanMutation) ResetUseSumBasedPricing() {
+	m.use_sum_based_pricing = nil
+}
+
 // SetCurrency sets the "currency" field.
 func (m *SubscriptionPlanMutation) SetCurrency(s string) {
 	m.currency = &s
@@ -6420,6 +6847,107 @@ func (m *SubscriptionPlanMutation) OldTierLimitsJSON(ctx context.Context) (v map
 // ResetTierLimitsJSON resets all changes to the "tier_limits_json" field.
 func (m *SubscriptionPlanMutation) ResetTierLimitsJSON() {
 	m.tier_limits_json = nil
+}
+
+// SetPlanType sets the "plan_type" field.
+func (m *SubscriptionPlanMutation) SetPlanType(st subscriptionplan.PlanType) {
+	m.plan_type = &st
+}
+
+// PlanType returns the value of the "plan_type" field in the mutation.
+func (m *SubscriptionPlanMutation) PlanType() (r subscriptionplan.PlanType, exists bool) {
+	v := m.plan_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlanType returns the old "plan_type" field's value of the SubscriptionPlan entity.
+// If the SubscriptionPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionPlanMutation) OldPlanType(ctx context.Context) (v subscriptionplan.PlanType, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlanType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlanType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlanType: %w", err)
+	}
+	return oldValue.PlanType, nil
+}
+
+// ResetPlanType resets all changes to the "plan_type" field.
+func (m *SubscriptionPlanMutation) ResetPlanType() {
+	m.plan_type = nil
+}
+
+// SetDiscountRules sets the "discount_rules" field.
+func (m *SubscriptionPlanMutation) SetDiscountRules(value []map[string]interface{}) {
+	m.discount_rules = &value
+	m.appenddiscount_rules = nil
+}
+
+// DiscountRules returns the value of the "discount_rules" field in the mutation.
+func (m *SubscriptionPlanMutation) DiscountRules() (r []map[string]interface{}, exists bool) {
+	v := m.discount_rules
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDiscountRules returns the old "discount_rules" field's value of the SubscriptionPlan entity.
+// If the SubscriptionPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionPlanMutation) OldDiscountRules(ctx context.Context) (v []map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDiscountRules is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDiscountRules requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDiscountRules: %w", err)
+	}
+	return oldValue.DiscountRules, nil
+}
+
+// AppendDiscountRules adds value to the "discount_rules" field.
+func (m *SubscriptionPlanMutation) AppendDiscountRules(value []map[string]interface{}) {
+	m.appenddiscount_rules = append(m.appenddiscount_rules, value...)
+}
+
+// AppendedDiscountRules returns the list of values that were appended to the "discount_rules" field in this mutation.
+func (m *SubscriptionPlanMutation) AppendedDiscountRules() ([]map[string]interface{}, bool) {
+	if len(m.appenddiscount_rules) == 0 {
+		return nil, false
+	}
+	return m.appenddiscount_rules, true
+}
+
+// ClearDiscountRules clears the value of the "discount_rules" field.
+func (m *SubscriptionPlanMutation) ClearDiscountRules() {
+	m.discount_rules = nil
+	m.appenddiscount_rules = nil
+	m.clearedFields[subscriptionplan.FieldDiscountRules] = struct{}{}
+}
+
+// DiscountRulesCleared returns if the "discount_rules" field was cleared in this mutation.
+func (m *SubscriptionPlanMutation) DiscountRulesCleared() bool {
+	_, ok := m.clearedFields[subscriptionplan.FieldDiscountRules]
+	return ok
+}
+
+// ResetDiscountRules resets all changes to the "discount_rules" field.
+func (m *SubscriptionPlanMutation) ResetDiscountRules() {
+	m.discount_rules = nil
+	m.appenddiscount_rules = nil
+	delete(m.clearedFields, subscriptionplan.FieldDiscountRules)
 }
 
 // SetMetadata sets the "metadata" field.
@@ -6726,7 +7254,7 @@ func (m *SubscriptionPlanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SubscriptionPlanMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 17)
 	if m.plan_code != nil {
 		fields = append(fields, subscriptionplan.FieldPlanCode)
 	}
@@ -6742,6 +7270,12 @@ func (m *SubscriptionPlanMutation) Fields() []string {
 	if m.base_price != nil {
 		fields = append(fields, subscriptionplan.FieldBasePrice)
 	}
+	if m.onetime_all_products_price != nil {
+		fields = append(fields, subscriptionplan.FieldOnetimeAllProductsPrice)
+	}
+	if m.use_sum_based_pricing != nil {
+		fields = append(fields, subscriptionplan.FieldUseSumBasedPricing)
+	}
 	if m.currency != nil {
 		fields = append(fields, subscriptionplan.FieldCurrency)
 	}
@@ -6756,6 +7290,12 @@ func (m *SubscriptionPlanMutation) Fields() []string {
 	}
 	if m.tier_limits_json != nil {
 		fields = append(fields, subscriptionplan.FieldTierLimitsJSON)
+	}
+	if m.plan_type != nil {
+		fields = append(fields, subscriptionplan.FieldPlanType)
+	}
+	if m.discount_rules != nil {
+		fields = append(fields, subscriptionplan.FieldDiscountRules)
 	}
 	if m.metadata != nil {
 		fields = append(fields, subscriptionplan.FieldMetadata)
@@ -6784,6 +7324,10 @@ func (m *SubscriptionPlanMutation) Field(name string) (ent.Value, bool) {
 		return m.BillingCycle()
 	case subscriptionplan.FieldBasePrice:
 		return m.BasePrice()
+	case subscriptionplan.FieldOnetimeAllProductsPrice:
+		return m.OnetimeAllProductsPrice()
+	case subscriptionplan.FieldUseSumBasedPricing:
+		return m.UseSumBasedPricing()
 	case subscriptionplan.FieldCurrency:
 		return m.Currency()
 	case subscriptionplan.FieldIsActive:
@@ -6794,6 +7338,10 @@ func (m *SubscriptionPlanMutation) Field(name string) (ent.Value, bool) {
 		return m.TierOrder()
 	case subscriptionplan.FieldTierLimitsJSON:
 		return m.TierLimitsJSON()
+	case subscriptionplan.FieldPlanType:
+		return m.PlanType()
+	case subscriptionplan.FieldDiscountRules:
+		return m.DiscountRules()
 	case subscriptionplan.FieldMetadata:
 		return m.Metadata()
 	case subscriptionplan.FieldCreatedAt:
@@ -6819,6 +7367,10 @@ func (m *SubscriptionPlanMutation) OldField(ctx context.Context, name string) (e
 		return m.OldBillingCycle(ctx)
 	case subscriptionplan.FieldBasePrice:
 		return m.OldBasePrice(ctx)
+	case subscriptionplan.FieldOnetimeAllProductsPrice:
+		return m.OldOnetimeAllProductsPrice(ctx)
+	case subscriptionplan.FieldUseSumBasedPricing:
+		return m.OldUseSumBasedPricing(ctx)
 	case subscriptionplan.FieldCurrency:
 		return m.OldCurrency(ctx)
 	case subscriptionplan.FieldIsActive:
@@ -6829,6 +7381,10 @@ func (m *SubscriptionPlanMutation) OldField(ctx context.Context, name string) (e
 		return m.OldTierOrder(ctx)
 	case subscriptionplan.FieldTierLimitsJSON:
 		return m.OldTierLimitsJSON(ctx)
+	case subscriptionplan.FieldPlanType:
+		return m.OldPlanType(ctx)
+	case subscriptionplan.FieldDiscountRules:
+		return m.OldDiscountRules(ctx)
 	case subscriptionplan.FieldMetadata:
 		return m.OldMetadata(ctx)
 	case subscriptionplan.FieldCreatedAt:
@@ -6879,6 +7435,20 @@ func (m *SubscriptionPlanMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetBasePrice(v)
 		return nil
+	case subscriptionplan.FieldOnetimeAllProductsPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOnetimeAllProductsPrice(v)
+		return nil
+	case subscriptionplan.FieldUseSumBasedPricing:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUseSumBasedPricing(v)
+		return nil
 	case subscriptionplan.FieldCurrency:
 		v, ok := value.(string)
 		if !ok {
@@ -6914,6 +7484,20 @@ func (m *SubscriptionPlanMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetTierLimitsJSON(v)
 		return nil
+	case subscriptionplan.FieldPlanType:
+		v, ok := value.(subscriptionplan.PlanType)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlanType(v)
+		return nil
+	case subscriptionplan.FieldDiscountRules:
+		v, ok := value.([]map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDiscountRules(v)
+		return nil
 	case subscriptionplan.FieldMetadata:
 		v, ok := value.(map[string]interface{})
 		if !ok {
@@ -6946,6 +7530,9 @@ func (m *SubscriptionPlanMutation) AddedFields() []string {
 	if m.addbase_price != nil {
 		fields = append(fields, subscriptionplan.FieldBasePrice)
 	}
+	if m.addonetime_all_products_price != nil {
+		fields = append(fields, subscriptionplan.FieldOnetimeAllProductsPrice)
+	}
 	if m.addtier_order != nil {
 		fields = append(fields, subscriptionplan.FieldTierOrder)
 	}
@@ -6959,6 +7546,8 @@ func (m *SubscriptionPlanMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case subscriptionplan.FieldBasePrice:
 		return m.AddedBasePrice()
+	case subscriptionplan.FieldOnetimeAllProductsPrice:
+		return m.AddedOnetimeAllProductsPrice()
 	case subscriptionplan.FieldTierOrder:
 		return m.AddedTierOrder()
 	}
@@ -6976,6 +7565,13 @@ func (m *SubscriptionPlanMutation) AddField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddBasePrice(v)
+		return nil
+	case subscriptionplan.FieldOnetimeAllProductsPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddOnetimeAllProductsPrice(v)
 		return nil
 	case subscriptionplan.FieldTierOrder:
 		v, ok := value.(int)
@@ -6995,6 +7591,12 @@ func (m *SubscriptionPlanMutation) ClearedFields() []string {
 	if m.FieldCleared(subscriptionplan.FieldDescription) {
 		fields = append(fields, subscriptionplan.FieldDescription)
 	}
+	if m.FieldCleared(subscriptionplan.FieldOnetimeAllProductsPrice) {
+		fields = append(fields, subscriptionplan.FieldOnetimeAllProductsPrice)
+	}
+	if m.FieldCleared(subscriptionplan.FieldDiscountRules) {
+		fields = append(fields, subscriptionplan.FieldDiscountRules)
+	}
 	return fields
 }
 
@@ -7011,6 +7613,12 @@ func (m *SubscriptionPlanMutation) ClearField(name string) error {
 	switch name {
 	case subscriptionplan.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case subscriptionplan.FieldOnetimeAllProductsPrice:
+		m.ClearOnetimeAllProductsPrice()
+		return nil
+	case subscriptionplan.FieldDiscountRules:
+		m.ClearDiscountRules()
 		return nil
 	}
 	return fmt.Errorf("unknown SubscriptionPlan nullable field %s", name)
@@ -7035,6 +7643,12 @@ func (m *SubscriptionPlanMutation) ResetField(name string) error {
 	case subscriptionplan.FieldBasePrice:
 		m.ResetBasePrice()
 		return nil
+	case subscriptionplan.FieldOnetimeAllProductsPrice:
+		m.ResetOnetimeAllProductsPrice()
+		return nil
+	case subscriptionplan.FieldUseSumBasedPricing:
+		m.ResetUseSumBasedPricing()
+		return nil
 	case subscriptionplan.FieldCurrency:
 		m.ResetCurrency()
 		return nil
@@ -7049,6 +7663,12 @@ func (m *SubscriptionPlanMutation) ResetField(name string) error {
 		return nil
 	case subscriptionplan.FieldTierLimitsJSON:
 		m.ResetTierLimitsJSON()
+		return nil
+	case subscriptionplan.FieldPlanType:
+		m.ResetPlanType()
+		return nil
+	case subscriptionplan.FieldDiscountRules:
+		m.ResetDiscountRules()
 		return nil
 	case subscriptionplan.FieldMetadata:
 		m.ResetMetadata()
@@ -8950,6 +9570,9 @@ type TenantSubscriptionMutation struct {
 	current_period_end           *time.Time
 	cancelled_at                 *time.Time
 	cancel_reason                *string
+	billing_cycle                *tenantsubscription.BillingCycle
+	applied_discount             *float64
+	addapplied_discount          *float64
 	bundle_code                  *string
 	payment_method_id            *uuid.UUID
 	metadata                     *map[string]interface{}
@@ -9399,6 +10022,98 @@ func (m *TenantSubscriptionMutation) ResetCancelReason() {
 	delete(m.clearedFields, tenantsubscription.FieldCancelReason)
 }
 
+// SetBillingCycle sets the "billing_cycle" field.
+func (m *TenantSubscriptionMutation) SetBillingCycle(tc tenantsubscription.BillingCycle) {
+	m.billing_cycle = &tc
+}
+
+// BillingCycle returns the value of the "billing_cycle" field in the mutation.
+func (m *TenantSubscriptionMutation) BillingCycle() (r tenantsubscription.BillingCycle, exists bool) {
+	v := m.billing_cycle
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBillingCycle returns the old "billing_cycle" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldBillingCycle(ctx context.Context) (v tenantsubscription.BillingCycle, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBillingCycle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBillingCycle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBillingCycle: %w", err)
+	}
+	return oldValue.BillingCycle, nil
+}
+
+// ResetBillingCycle resets all changes to the "billing_cycle" field.
+func (m *TenantSubscriptionMutation) ResetBillingCycle() {
+	m.billing_cycle = nil
+}
+
+// SetAppliedDiscount sets the "applied_discount" field.
+func (m *TenantSubscriptionMutation) SetAppliedDiscount(f float64) {
+	m.applied_discount = &f
+	m.addapplied_discount = nil
+}
+
+// AppliedDiscount returns the value of the "applied_discount" field in the mutation.
+func (m *TenantSubscriptionMutation) AppliedDiscount() (r float64, exists bool) {
+	v := m.applied_discount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAppliedDiscount returns the old "applied_discount" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldAppliedDiscount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAppliedDiscount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAppliedDiscount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAppliedDiscount: %w", err)
+	}
+	return oldValue.AppliedDiscount, nil
+}
+
+// AddAppliedDiscount adds f to the "applied_discount" field.
+func (m *TenantSubscriptionMutation) AddAppliedDiscount(f float64) {
+	if m.addapplied_discount != nil {
+		*m.addapplied_discount += f
+	} else {
+		m.addapplied_discount = &f
+	}
+}
+
+// AddedAppliedDiscount returns the value that was added to the "applied_discount" field in this mutation.
+func (m *TenantSubscriptionMutation) AddedAppliedDiscount() (r float64, exists bool) {
+	v := m.addapplied_discount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAppliedDiscount resets all changes to the "applied_discount" field.
+func (m *TenantSubscriptionMutation) ResetAppliedDiscount() {
+	m.applied_discount = nil
+	m.addapplied_discount = nil
+}
+
 // SetBundleCode sets the "bundle_code" field.
 func (m *TenantSubscriptionMutation) SetBundleCode(s string) {
 	m.bundle_code = &s
@@ -9760,7 +10475,7 @@ func (m *TenantSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TenantSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 15)
 	if m.tenant != nil {
 		fields = append(fields, tenantsubscription.FieldTenantID)
 	}
@@ -9784,6 +10499,12 @@ func (m *TenantSubscriptionMutation) Fields() []string {
 	}
 	if m.cancel_reason != nil {
 		fields = append(fields, tenantsubscription.FieldCancelReason)
+	}
+	if m.billing_cycle != nil {
+		fields = append(fields, tenantsubscription.FieldBillingCycle)
+	}
+	if m.applied_discount != nil {
+		fields = append(fields, tenantsubscription.FieldAppliedDiscount)
 	}
 	if m.bundle_code != nil {
 		fields = append(fields, tenantsubscription.FieldBundleCode)
@@ -9824,6 +10545,10 @@ func (m *TenantSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.CancelledAt()
 	case tenantsubscription.FieldCancelReason:
 		return m.CancelReason()
+	case tenantsubscription.FieldBillingCycle:
+		return m.BillingCycle()
+	case tenantsubscription.FieldAppliedDiscount:
+		return m.AppliedDiscount()
 	case tenantsubscription.FieldBundleCode:
 		return m.BundleCode()
 	case tenantsubscription.FieldPaymentMethodID:
@@ -9859,6 +10584,10 @@ func (m *TenantSubscriptionMutation) OldField(ctx context.Context, name string) 
 		return m.OldCancelledAt(ctx)
 	case tenantsubscription.FieldCancelReason:
 		return m.OldCancelReason(ctx)
+	case tenantsubscription.FieldBillingCycle:
+		return m.OldBillingCycle(ctx)
+	case tenantsubscription.FieldAppliedDiscount:
+		return m.OldAppliedDiscount(ctx)
 	case tenantsubscription.FieldBundleCode:
 		return m.OldBundleCode(ctx)
 	case tenantsubscription.FieldPaymentMethodID:
@@ -9934,6 +10663,20 @@ func (m *TenantSubscriptionMutation) SetField(name string, value ent.Value) erro
 		}
 		m.SetCancelReason(v)
 		return nil
+	case tenantsubscription.FieldBillingCycle:
+		v, ok := value.(tenantsubscription.BillingCycle)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBillingCycle(v)
+		return nil
+	case tenantsubscription.FieldAppliedDiscount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAppliedDiscount(v)
+		return nil
 	case tenantsubscription.FieldBundleCode:
 		v, ok := value.(string)
 		if !ok {
@@ -9976,13 +10719,21 @@ func (m *TenantSubscriptionMutation) SetField(name string, value ent.Value) erro
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *TenantSubscriptionMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addapplied_discount != nil {
+		fields = append(fields, tenantsubscription.FieldAppliedDiscount)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *TenantSubscriptionMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case tenantsubscription.FieldAppliedDiscount:
+		return m.AddedAppliedDiscount()
+	}
 	return nil, false
 }
 
@@ -9991,6 +10742,13 @@ func (m *TenantSubscriptionMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *TenantSubscriptionMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case tenantsubscription.FieldAppliedDiscount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAppliedDiscount(v)
+		return nil
 	}
 	return fmt.Errorf("unknown TenantSubscription numeric field %s", name)
 }
@@ -10080,6 +10838,12 @@ func (m *TenantSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case tenantsubscription.FieldCancelReason:
 		m.ResetCancelReason()
+		return nil
+	case tenantsubscription.FieldBillingCycle:
+		m.ResetBillingCycle()
+		return nil
+	case tenantsubscription.FieldAppliedDiscount:
+		m.ResetAppliedDiscount()
 		return nil
 	case tenantsubscription.FieldBundleCode:
 		m.ResetBundleCode()

@@ -102,12 +102,16 @@ func init() {
 	planfeatureDescIsIncluded := planfeatureFields[3].Descriptor()
 	// planfeature.DefaultIsIncluded holds the default value on creation for the is_included field.
 	planfeature.DefaultIsIncluded = planfeatureDescIsIncluded.Default.(bool)
+	// planfeatureDescOverageUnitPrice is the schema descriptor for overage_unit_price field.
+	planfeatureDescOverageUnitPrice := planfeatureFields[5].Descriptor()
+	// planfeature.DefaultOverageUnitPrice holds the default value on creation for the overage_unit_price field.
+	planfeature.DefaultOverageUnitPrice = planfeatureDescOverageUnitPrice.Default.(float64)
 	// planfeatureDescMetadata is the schema descriptor for metadata field.
-	planfeatureDescMetadata := planfeatureFields[5].Descriptor()
+	planfeatureDescMetadata := planfeatureFields[6].Descriptor()
 	// planfeature.DefaultMetadata holds the default value on creation for the metadata field.
 	planfeature.DefaultMetadata = planfeatureDescMetadata.Default.(map[string]interface{})
 	// planfeatureDescCreatedAt is the schema descriptor for created_at field.
-	planfeatureDescCreatedAt := planfeatureFields[6].Descriptor()
+	planfeatureDescCreatedAt := planfeatureFields[7].Descriptor()
 	// planfeature.DefaultCreatedAt holds the default value on creation for the created_at field.
 	planfeature.DefaultCreatedAt = planfeatureDescCreatedAt.Default.(func() time.Time)
 	// planfeatureDescID is the schema descriptor for id field.
@@ -146,24 +150,36 @@ func init() {
 	productDescMonthlyPrice := productFields[8].Descriptor()
 	// product.DefaultMonthlyPrice holds the default value on creation for the monthly_price field.
 	product.DefaultMonthlyPrice = productDescMonthlyPrice.Default.(float64)
+	// productDescYearlyPrice is the schema descriptor for yearly_price field.
+	productDescYearlyPrice := productFields[9].Descriptor()
+	// product.DefaultYearlyPrice holds the default value on creation for the yearly_price field.
+	product.DefaultYearlyPrice = productDescYearlyPrice.Default.(float64)
+	// productDescOnetimePrice is the schema descriptor for onetime_price field.
+	productDescOnetimePrice := productFields[10].Descriptor()
+	// product.DefaultOnetimePrice holds the default value on creation for the onetime_price field.
+	product.DefaultOnetimePrice = productDescOnetimePrice.Default.(float64)
 	// productDescIncludedInBundle is the schema descriptor for included_in_bundle field.
-	productDescIncludedInBundle := productFields[9].Descriptor()
+	productDescIncludedInBundle := productFields[11].Descriptor()
 	// product.DefaultIncludedInBundle holds the default value on creation for the included_in_bundle field.
 	product.DefaultIncludedInBundle = productDescIncludedInBundle.Default.(bool)
 	// productDescSortOrder is the schema descriptor for sort_order field.
-	productDescSortOrder := productFields[10].Descriptor()
+	productDescSortOrder := productFields[12].Descriptor()
 	// product.DefaultSortOrder holds the default value on creation for the sort_order field.
 	product.DefaultSortOrder = productDescSortOrder.Default.(int)
+	// productDescIsBaseService is the schema descriptor for is_base_service field.
+	productDescIsBaseService := productFields[13].Descriptor()
+	// product.DefaultIsBaseService holds the default value on creation for the is_base_service field.
+	product.DefaultIsBaseService = productDescIsBaseService.Default.(bool)
 	// productDescMetadata is the schema descriptor for metadata field.
-	productDescMetadata := productFields[11].Descriptor()
+	productDescMetadata := productFields[14].Descriptor()
 	// product.DefaultMetadata holds the default value on creation for the metadata field.
 	product.DefaultMetadata = productDescMetadata.Default.(map[string]interface{})
 	// productDescCreatedAt is the schema descriptor for created_at field.
-	productDescCreatedAt := productFields[12].Descriptor()
+	productDescCreatedAt := productFields[15].Descriptor()
 	// product.DefaultCreatedAt holds the default value on creation for the created_at field.
 	product.DefaultCreatedAt = productDescCreatedAt.Default.(func() time.Time)
 	// productDescUpdatedAt is the schema descriptor for updated_at field.
-	productDescUpdatedAt := productFields[13].Descriptor()
+	productDescUpdatedAt := productFields[16].Descriptor()
 	// product.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	product.DefaultUpdatedAt = productDescUpdatedAt.Default.(func() time.Time)
 	// product.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -212,32 +228,40 @@ func init() {
 	subscriptionplan.DefaultBillingCycle = subscriptionplanDescBillingCycle.Default.(string)
 	// subscriptionplan.BillingCycleValidator is a validator for the "billing_cycle" field. It is called by the builders before save.
 	subscriptionplan.BillingCycleValidator = subscriptionplanDescBillingCycle.Validators[0].(func(string) error)
+	// subscriptionplanDescUseSumBasedPricing is the schema descriptor for use_sum_based_pricing field.
+	subscriptionplanDescUseSumBasedPricing := subscriptionplanFields[7].Descriptor()
+	// subscriptionplan.DefaultUseSumBasedPricing holds the default value on creation for the use_sum_based_pricing field.
+	subscriptionplan.DefaultUseSumBasedPricing = subscriptionplanDescUseSumBasedPricing.Default.(bool)
 	// subscriptionplanDescCurrency is the schema descriptor for currency field.
-	subscriptionplanDescCurrency := subscriptionplanFields[6].Descriptor()
+	subscriptionplanDescCurrency := subscriptionplanFields[8].Descriptor()
 	// subscriptionplan.DefaultCurrency holds the default value on creation for the currency field.
 	subscriptionplan.DefaultCurrency = subscriptionplanDescCurrency.Default.(string)
 	// subscriptionplanDescIsActive is the schema descriptor for is_active field.
-	subscriptionplanDescIsActive := subscriptionplanFields[7].Descriptor()
+	subscriptionplanDescIsActive := subscriptionplanFields[9].Descriptor()
 	// subscriptionplan.DefaultIsActive holds the default value on creation for the is_active field.
 	subscriptionplan.DefaultIsActive = subscriptionplanDescIsActive.Default.(bool)
 	// subscriptionplanDescIsPublic is the schema descriptor for is_public field.
-	subscriptionplanDescIsPublic := subscriptionplanFields[8].Descriptor()
+	subscriptionplanDescIsPublic := subscriptionplanFields[10].Descriptor()
 	// subscriptionplan.DefaultIsPublic holds the default value on creation for the is_public field.
 	subscriptionplan.DefaultIsPublic = subscriptionplanDescIsPublic.Default.(bool)
 	// subscriptionplanDescTierLimitsJSON is the schema descriptor for tier_limits_json field.
-	subscriptionplanDescTierLimitsJSON := subscriptionplanFields[10].Descriptor()
+	subscriptionplanDescTierLimitsJSON := subscriptionplanFields[12].Descriptor()
 	// subscriptionplan.DefaultTierLimitsJSON holds the default value on creation for the tier_limits_json field.
 	subscriptionplan.DefaultTierLimitsJSON = subscriptionplanDescTierLimitsJSON.Default.(map[string]interface{})
+	// subscriptionplanDescDiscountRules is the schema descriptor for discount_rules field.
+	subscriptionplanDescDiscountRules := subscriptionplanFields[14].Descriptor()
+	// subscriptionplan.DefaultDiscountRules holds the default value on creation for the discount_rules field.
+	subscriptionplan.DefaultDiscountRules = subscriptionplanDescDiscountRules.Default.([]map[string]interface{})
 	// subscriptionplanDescMetadata is the schema descriptor for metadata field.
-	subscriptionplanDescMetadata := subscriptionplanFields[11].Descriptor()
+	subscriptionplanDescMetadata := subscriptionplanFields[15].Descriptor()
 	// subscriptionplan.DefaultMetadata holds the default value on creation for the metadata field.
 	subscriptionplan.DefaultMetadata = subscriptionplanDescMetadata.Default.(map[string]interface{})
 	// subscriptionplanDescCreatedAt is the schema descriptor for created_at field.
-	subscriptionplanDescCreatedAt := subscriptionplanFields[12].Descriptor()
+	subscriptionplanDescCreatedAt := subscriptionplanFields[16].Descriptor()
 	// subscriptionplan.DefaultCreatedAt holds the default value on creation for the created_at field.
 	subscriptionplan.DefaultCreatedAt = subscriptionplanDescCreatedAt.Default.(func() time.Time)
 	// subscriptionplanDescUpdatedAt is the schema descriptor for updated_at field.
-	subscriptionplanDescUpdatedAt := subscriptionplanFields[13].Descriptor()
+	subscriptionplanDescUpdatedAt := subscriptionplanFields[17].Descriptor()
 	// subscriptionplan.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	subscriptionplan.DefaultUpdatedAt = subscriptionplanDescUpdatedAt.Default.(func() time.Time)
 	// subscriptionplan.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -288,16 +312,20 @@ func init() {
 	tenant.DefaultID = tenantDescID.Default.(func() uuid.UUID)
 	tenantsubscriptionFields := schema.TenantSubscription{}.Fields()
 	_ = tenantsubscriptionFields
+	// tenantsubscriptionDescAppliedDiscount is the schema descriptor for applied_discount field.
+	tenantsubscriptionDescAppliedDiscount := tenantsubscriptionFields[10].Descriptor()
+	// tenantsubscription.DefaultAppliedDiscount holds the default value on creation for the applied_discount field.
+	tenantsubscription.DefaultAppliedDiscount = tenantsubscriptionDescAppliedDiscount.Default.(float64)
 	// tenantsubscriptionDescMetadata is the schema descriptor for metadata field.
-	tenantsubscriptionDescMetadata := tenantsubscriptionFields[11].Descriptor()
+	tenantsubscriptionDescMetadata := tenantsubscriptionFields[13].Descriptor()
 	// tenantsubscription.DefaultMetadata holds the default value on creation for the metadata field.
 	tenantsubscription.DefaultMetadata = tenantsubscriptionDescMetadata.Default.(map[string]interface{})
 	// tenantsubscriptionDescCreatedAt is the schema descriptor for created_at field.
-	tenantsubscriptionDescCreatedAt := tenantsubscriptionFields[12].Descriptor()
+	tenantsubscriptionDescCreatedAt := tenantsubscriptionFields[14].Descriptor()
 	// tenantsubscription.DefaultCreatedAt holds the default value on creation for the created_at field.
 	tenantsubscription.DefaultCreatedAt = tenantsubscriptionDescCreatedAt.Default.(func() time.Time)
 	// tenantsubscriptionDescUpdatedAt is the schema descriptor for updated_at field.
-	tenantsubscriptionDescUpdatedAt := tenantsubscriptionFields[13].Descriptor()
+	tenantsubscriptionDescUpdatedAt := tenantsubscriptionFields[15].Descriptor()
 	// tenantsubscription.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	tenantsubscription.DefaultUpdatedAt = tenantsubscriptionDescUpdatedAt.Default.(func() time.Time)
 	// tenantsubscription.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

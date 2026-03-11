@@ -10,6 +10,7 @@ import (
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
+	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 )
 
@@ -46,11 +47,14 @@ func (r *EntRepository) CreatePlan(ctx context.Context, plan *SubscriptionPlan) 
 		SetNillableDescription(&plan.Description).
 		SetBillingCycle(plan.BillingCycle).
 		SetBasePrice(plan.BasePrice).
+		SetNillableOnetimeAllProductsPrice(plan.OnetimeAllProductsPrice).
+		SetUseSumBasedPricing(plan.UseSumBasedPricing).
 		SetCurrency(plan.Currency).
 		SetIsActive(plan.IsActive).
 		SetIsPublic(plan.IsPublic).
 		SetTierOrder(plan.TierOrder).
 		SetTierLimitsJSON(tierLimits).
+		SetDiscountRules(plan.DiscountRules).
 		SetMetadata(metadata).
 		Save(ctx)
 
@@ -81,6 +85,8 @@ func (r *EntRepository) UpdatePlan(ctx context.Context, plan *SubscriptionPlan) 
 	if plan.BasePrice >= 0 {
 		update = update.SetBasePrice(plan.BasePrice)
 	}
+	update = update.SetNillableOnetimeAllProductsPrice(plan.OnetimeAllProductsPrice)
+	update = update.SetUseSumBasedPricing(plan.UseSumBasedPricing)
 	if plan.Currency != "" {
 		update = update.SetCurrency(plan.Currency)
 	}
@@ -94,6 +100,9 @@ func (r *EntRepository) UpdatePlan(ctx context.Context, plan *SubscriptionPlan) 
 	}
 	if plan.Metadata != nil {
 		update = update.SetMetadata(plan.Metadata)
+	}
+	if plan.DiscountRules != nil {
+		update = update.SetDiscountRules(plan.DiscountRules)
 	}
 
 	update = update.SetUpdatedAt(time.Now())
@@ -165,6 +174,15 @@ func (r *EntRepository) ListPlans(ctx context.Context, activeOnly bool) ([]*Subs
 	return plans, nil
 }
 
+// DeletePlan removes a subscription plan.
+func (r *EntRepository) DeletePlan(ctx context.Context, id uuid.UUID) error {
+	err := r.client.SubscriptionPlan.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("plans: delete plan: %w", err)
+	}
+	return nil
+}
+
 // CreateFeature persists a new plan feature.
 func (r *EntRepository) CreateFeature(ctx context.Context, feature *PlanFeature) error {
 	if feature == nil {
@@ -181,6 +199,7 @@ func (r *EntRepository) CreateFeature(ctx context.Context, feature *PlanFeature)
 		SetPlanID(feature.PlanID).
 		SetFeatureCode(feature.FeatureCode).
 		SetIsIncluded(feature.IsIncluded).
+		SetOverageUnitPrice(feature.OverageUnitPrice).
 		SetMetadata(metadata)
 
 	if feature.LimitValue != nil {
@@ -207,6 +226,7 @@ func (r *EntRepository) UpdateFeature(ctx context.Context, feature *PlanFeature)
 		update = update.SetFeatureCode(feature.FeatureCode)
 	}
 	update = update.SetIsIncluded(feature.IsIncluded)
+	update = update.SetOverageUnitPrice(feature.OverageUnitPrice)
 	if feature.LimitValue != nil {
 		update = update.SetLimitValue(*feature.LimitValue)
 	} else {
@@ -268,6 +288,40 @@ func (r *EntRepository) DeleteFeature(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+// FindProductByCode retrieves a product by its code.
+func (r *EntRepository) FindProductByCode(ctx context.Context, code string) (*Product, error) {
+	entProduct, err := r.client.Product.Query().
+		Where(product.Code(code)).
+		Only(ctx)
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("plans: product not found: %w", err)
+		}
+		return nil, fmt.Errorf("plans: find product by code: %w", err)
+	}
+
+	return mapEntProduct(entProduct), nil
+}
+
+// ListProducts retrieves all products.
+func (r *EntRepository) ListProducts(ctx context.Context) ([]*Product, error) {
+	entProducts, err := r.client.Product.Query().
+		Order(ent.Asc(product.FieldSortOrder)).
+		All(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("plans: list products: %w", err)
+	}
+
+	products := make([]*Product, len(entProducts))
+	for i, entProduct := range entProducts {
+		products[i] = mapEntProduct(entProduct)
+	}
+
+	return products, nil
+}
+
 // mapEntPlan converts an Ent SubscriptionPlan entity to a domain SubscriptionPlan.
 func mapEntPlan(entPlan *ent.SubscriptionPlan) *SubscriptionPlan {
 	plan := &SubscriptionPlan{
@@ -276,6 +330,8 @@ func mapEntPlan(entPlan *ent.SubscriptionPlan) *SubscriptionPlan {
 		Name:         entPlan.Name,
 		BillingCycle: entPlan.BillingCycle,
 		BasePrice:    entPlan.BasePrice,
+		OnetimeAllProductsPrice: entPlan.OnetimeAllProductsPrice,
+		UseSumBasedPricing:     entPlan.UseSumBasedPricing,
 		Currency:     entPlan.Currency,
 		IsActive:     entPlan.IsActive,
 		IsPublic:     entPlan.IsPublic,
@@ -285,6 +341,14 @@ func mapEntPlan(entPlan *ent.SubscriptionPlan) *SubscriptionPlan {
 		CreatedAt:    entPlan.CreatedAt,
 		UpdatedAt:    entPlan.UpdatedAt,
 		Description:  entPlan.Description,
+		DiscountRules: entPlan.DiscountRules,
+	}
+
+	if entPlan.Edges.Features != nil {
+		plan.Features = make([]*PlanFeature, len(entPlan.Edges.Features))
+		for i, f := range entPlan.Edges.Features {
+			plan.Features[i] = mapEntFeature(f)
+		}
 	}
 
 	if plan.TierLimits == nil {
@@ -304,6 +368,7 @@ func mapEntFeature(entFeature *ent.PlanFeature) *PlanFeature {
 		PlanID:      entFeature.PlanID,
 		FeatureCode: entFeature.FeatureCode,
 		IsIncluded:  entFeature.IsIncluded,
+		OverageUnitPrice: entFeature.OverageUnitPrice,
 		Metadata:    entFeature.Metadata,
 		CreatedAt:   entFeature.CreatedAt,
 	}
@@ -318,4 +383,21 @@ func mapEntFeature(entFeature *ent.PlanFeature) *PlanFeature {
 	}
 
 	return feature
+}
+
+// mapEntProduct converts an Ent Product entity to a domain Product.
+func mapEntProduct(entProduct *ent.Product) *Product {
+	return &Product{
+		ID:            entProduct.ID,
+		Code:          entProduct.Code,
+		Name:          entProduct.Name,
+		Description:   entProduct.Description,
+		Category:      string(entProduct.Category),
+		IsPlatform:    entProduct.IsPlatform,
+		IsBaseService: entProduct.IsBaseService,
+		MonthlyPrice:  entProduct.MonthlyPrice,
+		YearlyPrice:   entProduct.YearlyPrice,
+		OnetimePrice:  entProduct.OnetimePrice,
+		Metadata:      entProduct.Metadata,
+	}
 }

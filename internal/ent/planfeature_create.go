@@ -26,98 +26,112 @@ type PlanFeatureCreate struct {
 }
 
 // SetPlanID sets the "plan_id" field.
-func (pfc *PlanFeatureCreate) SetPlanID(u uuid.UUID) *PlanFeatureCreate {
-	pfc.mutation.SetPlanID(u)
-	return pfc
+func (_c *PlanFeatureCreate) SetPlanID(v uuid.UUID) *PlanFeatureCreate {
+	_c.mutation.SetPlanID(v)
+	return _c
 }
 
 // SetFeatureCode sets the "feature_code" field.
-func (pfc *PlanFeatureCreate) SetFeatureCode(s string) *PlanFeatureCreate {
-	pfc.mutation.SetFeatureCode(s)
-	return pfc
+func (_c *PlanFeatureCreate) SetFeatureCode(v string) *PlanFeatureCreate {
+	_c.mutation.SetFeatureCode(v)
+	return _c
 }
 
 // SetIsIncluded sets the "is_included" field.
-func (pfc *PlanFeatureCreate) SetIsIncluded(b bool) *PlanFeatureCreate {
-	pfc.mutation.SetIsIncluded(b)
-	return pfc
+func (_c *PlanFeatureCreate) SetIsIncluded(v bool) *PlanFeatureCreate {
+	_c.mutation.SetIsIncluded(v)
+	return _c
 }
 
 // SetNillableIsIncluded sets the "is_included" field if the given value is not nil.
-func (pfc *PlanFeatureCreate) SetNillableIsIncluded(b *bool) *PlanFeatureCreate {
-	if b != nil {
-		pfc.SetIsIncluded(*b)
+func (_c *PlanFeatureCreate) SetNillableIsIncluded(v *bool) *PlanFeatureCreate {
+	if v != nil {
+		_c.SetIsIncluded(*v)
 	}
-	return pfc
+	return _c
 }
 
 // SetLimitValue sets the "limit_value" field.
-func (pfc *PlanFeatureCreate) SetLimitValue(i int) *PlanFeatureCreate {
-	pfc.mutation.SetLimitValue(i)
-	return pfc
+func (_c *PlanFeatureCreate) SetLimitValue(v int) *PlanFeatureCreate {
+	_c.mutation.SetLimitValue(v)
+	return _c
 }
 
 // SetNillableLimitValue sets the "limit_value" field if the given value is not nil.
-func (pfc *PlanFeatureCreate) SetNillableLimitValue(i *int) *PlanFeatureCreate {
-	if i != nil {
-		pfc.SetLimitValue(*i)
+func (_c *PlanFeatureCreate) SetNillableLimitValue(v *int) *PlanFeatureCreate {
+	if v != nil {
+		_c.SetLimitValue(*v)
 	}
-	return pfc
+	return _c
+}
+
+// SetOverageUnitPrice sets the "overage_unit_price" field.
+func (_c *PlanFeatureCreate) SetOverageUnitPrice(v float64) *PlanFeatureCreate {
+	_c.mutation.SetOverageUnitPrice(v)
+	return _c
+}
+
+// SetNillableOverageUnitPrice sets the "overage_unit_price" field if the given value is not nil.
+func (_c *PlanFeatureCreate) SetNillableOverageUnitPrice(v *float64) *PlanFeatureCreate {
+	if v != nil {
+		_c.SetOverageUnitPrice(*v)
+	}
+	return _c
 }
 
 // SetMetadata sets the "metadata" field.
-func (pfc *PlanFeatureCreate) SetMetadata(m map[string]interface{}) *PlanFeatureCreate {
-	pfc.mutation.SetMetadata(m)
-	return pfc
+func (_c *PlanFeatureCreate) SetMetadata(v map[string]interface{}) *PlanFeatureCreate {
+	_c.mutation.SetMetadata(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (pfc *PlanFeatureCreate) SetCreatedAt(t time.Time) *PlanFeatureCreate {
-	pfc.mutation.SetCreatedAt(t)
-	return pfc
+func (_c *PlanFeatureCreate) SetCreatedAt(v time.Time) *PlanFeatureCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (pfc *PlanFeatureCreate) SetNillableCreatedAt(t *time.Time) *PlanFeatureCreate {
-	if t != nil {
-		pfc.SetCreatedAt(*t)
+func (_c *PlanFeatureCreate) SetNillableCreatedAt(v *time.Time) *PlanFeatureCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return pfc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (pfc *PlanFeatureCreate) SetID(u uuid.UUID) *PlanFeatureCreate {
-	pfc.mutation.SetID(u)
-	return pfc
+func (_c *PlanFeatureCreate) SetID(v uuid.UUID) *PlanFeatureCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pfc *PlanFeatureCreate) SetNillableID(u *uuid.UUID) *PlanFeatureCreate {
-	if u != nil {
-		pfc.SetID(*u)
+func (_c *PlanFeatureCreate) SetNillableID(v *uuid.UUID) *PlanFeatureCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return pfc
+	return _c
 }
 
 // SetPlan sets the "plan" edge to the SubscriptionPlan entity.
-func (pfc *PlanFeatureCreate) SetPlan(s *SubscriptionPlan) *PlanFeatureCreate {
-	return pfc.SetPlanID(s.ID)
+func (_c *PlanFeatureCreate) SetPlan(v *SubscriptionPlan) *PlanFeatureCreate {
+	return _c.SetPlanID(v.ID)
 }
 
 // Mutation returns the PlanFeatureMutation object of the builder.
-func (pfc *PlanFeatureCreate) Mutation() *PlanFeatureMutation {
-	return pfc.mutation
+func (_c *PlanFeatureCreate) Mutation() *PlanFeatureMutation {
+	return _c.mutation
 }
 
 // Save creates the PlanFeature in the database.
-func (pfc *PlanFeatureCreate) Save(ctx context.Context) (*PlanFeature, error) {
-	pfc.defaults()
-	return withHooks(ctx, pfc.sqlSave, pfc.mutation, pfc.hooks)
+func (_c *PlanFeatureCreate) Save(ctx context.Context) (*PlanFeature, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (pfc *PlanFeatureCreate) SaveX(ctx context.Context) *PlanFeature {
-	v, err := pfc.Save(ctx)
+func (_c *PlanFeatureCreate) SaveX(ctx context.Context) *PlanFeature {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -125,72 +139,79 @@ func (pfc *PlanFeatureCreate) SaveX(ctx context.Context) *PlanFeature {
 }
 
 // Exec executes the query.
-func (pfc *PlanFeatureCreate) Exec(ctx context.Context) error {
-	_, err := pfc.Save(ctx)
+func (_c *PlanFeatureCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pfc *PlanFeatureCreate) ExecX(ctx context.Context) {
-	if err := pfc.Exec(ctx); err != nil {
+func (_c *PlanFeatureCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (pfc *PlanFeatureCreate) defaults() {
-	if _, ok := pfc.mutation.IsIncluded(); !ok {
+func (_c *PlanFeatureCreate) defaults() {
+	if _, ok := _c.mutation.IsIncluded(); !ok {
 		v := planfeature.DefaultIsIncluded
-		pfc.mutation.SetIsIncluded(v)
+		_c.mutation.SetIsIncluded(v)
 	}
-	if _, ok := pfc.mutation.Metadata(); !ok {
+	if _, ok := _c.mutation.OverageUnitPrice(); !ok {
+		v := planfeature.DefaultOverageUnitPrice
+		_c.mutation.SetOverageUnitPrice(v)
+	}
+	if _, ok := _c.mutation.Metadata(); !ok {
 		v := planfeature.DefaultMetadata
-		pfc.mutation.SetMetadata(v)
+		_c.mutation.SetMetadata(v)
 	}
-	if _, ok := pfc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := planfeature.DefaultCreatedAt()
-		pfc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := pfc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := planfeature.DefaultID()
-		pfc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pfc *PlanFeatureCreate) check() error {
-	if _, ok := pfc.mutation.PlanID(); !ok {
+func (_c *PlanFeatureCreate) check() error {
+	if _, ok := _c.mutation.PlanID(); !ok {
 		return &ValidationError{Name: "plan_id", err: errors.New(`ent: missing required field "PlanFeature.plan_id"`)}
 	}
-	if _, ok := pfc.mutation.FeatureCode(); !ok {
+	if _, ok := _c.mutation.FeatureCode(); !ok {
 		return &ValidationError{Name: "feature_code", err: errors.New(`ent: missing required field "PlanFeature.feature_code"`)}
 	}
-	if v, ok := pfc.mutation.FeatureCode(); ok {
+	if v, ok := _c.mutation.FeatureCode(); ok {
 		if err := planfeature.FeatureCodeValidator(v); err != nil {
 			return &ValidationError{Name: "feature_code", err: fmt.Errorf(`ent: validator failed for field "PlanFeature.feature_code": %w`, err)}
 		}
 	}
-	if _, ok := pfc.mutation.IsIncluded(); !ok {
+	if _, ok := _c.mutation.IsIncluded(); !ok {
 		return &ValidationError{Name: "is_included", err: errors.New(`ent: missing required field "PlanFeature.is_included"`)}
 	}
-	if _, ok := pfc.mutation.Metadata(); !ok {
+	if _, ok := _c.mutation.OverageUnitPrice(); !ok {
+		return &ValidationError{Name: "overage_unit_price", err: errors.New(`ent: missing required field "PlanFeature.overage_unit_price"`)}
+	}
+	if _, ok := _c.mutation.Metadata(); !ok {
 		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required field "PlanFeature.metadata"`)}
 	}
-	if _, ok := pfc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PlanFeature.created_at"`)}
 	}
-	if _, ok := pfc.mutation.PlanID(); !ok {
+	if len(_c.mutation.PlanIDs()) == 0 {
 		return &ValidationError{Name: "plan", err: errors.New(`ent: missing required edge "PlanFeature.plan"`)}
 	}
 	return nil
 }
 
-func (pfc *PlanFeatureCreate) sqlSave(ctx context.Context) (*PlanFeature, error) {
-	if err := pfc.check(); err != nil {
+func (_c *PlanFeatureCreate) sqlSave(ctx context.Context) (*PlanFeature, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := pfc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, pfc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -203,42 +224,46 @@ func (pfc *PlanFeatureCreate) sqlSave(ctx context.Context) (*PlanFeature, error)
 			return nil, err
 		}
 	}
-	pfc.mutation.id = &_node.ID
-	pfc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (pfc *PlanFeatureCreate) createSpec() (*PlanFeature, *sqlgraph.CreateSpec) {
+func (_c *PlanFeatureCreate) createSpec() (*PlanFeature, *sqlgraph.CreateSpec) {
 	var (
-		_node = &PlanFeature{config: pfc.config}
+		_node = &PlanFeature{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(planfeature.Table, sqlgraph.NewFieldSpec(planfeature.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = pfc.conflict
-	if id, ok := pfc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := pfc.mutation.FeatureCode(); ok {
+	if value, ok := _c.mutation.FeatureCode(); ok {
 		_spec.SetField(planfeature.FieldFeatureCode, field.TypeString, value)
 		_node.FeatureCode = value
 	}
-	if value, ok := pfc.mutation.IsIncluded(); ok {
+	if value, ok := _c.mutation.IsIncluded(); ok {
 		_spec.SetField(planfeature.FieldIsIncluded, field.TypeBool, value)
 		_node.IsIncluded = value
 	}
-	if value, ok := pfc.mutation.LimitValue(); ok {
+	if value, ok := _c.mutation.LimitValue(); ok {
 		_spec.SetField(planfeature.FieldLimitValue, field.TypeInt, value)
 		_node.LimitValue = value
 	}
-	if value, ok := pfc.mutation.Metadata(); ok {
+	if value, ok := _c.mutation.OverageUnitPrice(); ok {
+		_spec.SetField(planfeature.FieldOverageUnitPrice, field.TypeFloat64, value)
+		_node.OverageUnitPrice = value
+	}
+	if value, ok := _c.mutation.Metadata(); ok {
 		_spec.SetField(planfeature.FieldMetadata, field.TypeJSON, value)
 		_node.Metadata = value
 	}
-	if value, ok := pfc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(planfeature.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if nodes := pfc.mutation.PlanIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.PlanIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -274,10 +299,10 @@ func (pfc *PlanFeatureCreate) createSpec() (*PlanFeature, *sqlgraph.CreateSpec) 
 //			SetPlanID(v+v).
 //		}).
 //		Exec(ctx)
-func (pfc *PlanFeatureCreate) OnConflict(opts ...sql.ConflictOption) *PlanFeatureUpsertOne {
-	pfc.conflict = opts
+func (_c *PlanFeatureCreate) OnConflict(opts ...sql.ConflictOption) *PlanFeatureUpsertOne {
+	_c.conflict = opts
 	return &PlanFeatureUpsertOne{
-		create: pfc,
+		create: _c,
 	}
 }
 
@@ -287,10 +312,10 @@ func (pfc *PlanFeatureCreate) OnConflict(opts ...sql.ConflictOption) *PlanFeatur
 //	client.PlanFeature.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (pfc *PlanFeatureCreate) OnConflictColumns(columns ...string) *PlanFeatureUpsertOne {
-	pfc.conflict = append(pfc.conflict, sql.ConflictColumns(columns...))
+func (_c *PlanFeatureCreate) OnConflictColumns(columns ...string) *PlanFeatureUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &PlanFeatureUpsertOne{
-		create: pfc,
+		create: _c,
 	}
 }
 
@@ -364,6 +389,24 @@ func (u *PlanFeatureUpsert) AddLimitValue(v int) *PlanFeatureUpsert {
 // ClearLimitValue clears the value of the "limit_value" field.
 func (u *PlanFeatureUpsert) ClearLimitValue() *PlanFeatureUpsert {
 	u.SetNull(planfeature.FieldLimitValue)
+	return u
+}
+
+// SetOverageUnitPrice sets the "overage_unit_price" field.
+func (u *PlanFeatureUpsert) SetOverageUnitPrice(v float64) *PlanFeatureUpsert {
+	u.Set(planfeature.FieldOverageUnitPrice, v)
+	return u
+}
+
+// UpdateOverageUnitPrice sets the "overage_unit_price" field to the value that was provided on create.
+func (u *PlanFeatureUpsert) UpdateOverageUnitPrice() *PlanFeatureUpsert {
+	u.SetExcluded(planfeature.FieldOverageUnitPrice)
+	return u
+}
+
+// AddOverageUnitPrice adds v to the "overage_unit_price" field.
+func (u *PlanFeatureUpsert) AddOverageUnitPrice(v float64) *PlanFeatureUpsert {
+	u.Add(planfeature.FieldOverageUnitPrice, v)
 	return u
 }
 
@@ -500,6 +543,27 @@ func (u *PlanFeatureUpsertOne) ClearLimitValue() *PlanFeatureUpsertOne {
 	})
 }
 
+// SetOverageUnitPrice sets the "overage_unit_price" field.
+func (u *PlanFeatureUpsertOne) SetOverageUnitPrice(v float64) *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.SetOverageUnitPrice(v)
+	})
+}
+
+// AddOverageUnitPrice adds v to the "overage_unit_price" field.
+func (u *PlanFeatureUpsertOne) AddOverageUnitPrice(v float64) *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.AddOverageUnitPrice(v)
+	})
+}
+
+// UpdateOverageUnitPrice sets the "overage_unit_price" field to the value that was provided on create.
+func (u *PlanFeatureUpsertOne) UpdateOverageUnitPrice() *PlanFeatureUpsertOne {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.UpdateOverageUnitPrice()
+	})
+}
+
 // SetMetadata sets the "metadata" field.
 func (u *PlanFeatureUpsertOne) SetMetadata(v map[string]interface{}) *PlanFeatureUpsertOne {
 	return u.Update(func(s *PlanFeatureUpsert) {
@@ -561,16 +625,16 @@ type PlanFeatureCreateBulk struct {
 }
 
 // Save creates the PlanFeature entities in the database.
-func (pfcb *PlanFeatureCreateBulk) Save(ctx context.Context) ([]*PlanFeature, error) {
-	if pfcb.err != nil {
-		return nil, pfcb.err
+func (_c *PlanFeatureCreateBulk) Save(ctx context.Context) ([]*PlanFeature, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(pfcb.builders))
-	nodes := make([]*PlanFeature, len(pfcb.builders))
-	mutators := make([]Mutator, len(pfcb.builders))
-	for i := range pfcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*PlanFeature, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := pfcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*PlanFeatureMutation)
@@ -584,12 +648,12 @@ func (pfcb *PlanFeatureCreateBulk) Save(ctx context.Context) ([]*PlanFeature, er
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, pfcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = pfcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, pfcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -609,7 +673,7 @@ func (pfcb *PlanFeatureCreateBulk) Save(ctx context.Context) ([]*PlanFeature, er
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, pfcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -617,8 +681,8 @@ func (pfcb *PlanFeatureCreateBulk) Save(ctx context.Context) ([]*PlanFeature, er
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pfcb *PlanFeatureCreateBulk) SaveX(ctx context.Context) []*PlanFeature {
-	v, err := pfcb.Save(ctx)
+func (_c *PlanFeatureCreateBulk) SaveX(ctx context.Context) []*PlanFeature {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -626,14 +690,14 @@ func (pfcb *PlanFeatureCreateBulk) SaveX(ctx context.Context) []*PlanFeature {
 }
 
 // Exec executes the query.
-func (pfcb *PlanFeatureCreateBulk) Exec(ctx context.Context) error {
-	_, err := pfcb.Save(ctx)
+func (_c *PlanFeatureCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pfcb *PlanFeatureCreateBulk) ExecX(ctx context.Context) {
-	if err := pfcb.Exec(ctx); err != nil {
+func (_c *PlanFeatureCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -653,10 +717,10 @@ func (pfcb *PlanFeatureCreateBulk) ExecX(ctx context.Context) {
 //			SetPlanID(v+v).
 //		}).
 //		Exec(ctx)
-func (pfcb *PlanFeatureCreateBulk) OnConflict(opts ...sql.ConflictOption) *PlanFeatureUpsertBulk {
-	pfcb.conflict = opts
+func (_c *PlanFeatureCreateBulk) OnConflict(opts ...sql.ConflictOption) *PlanFeatureUpsertBulk {
+	_c.conflict = opts
 	return &PlanFeatureUpsertBulk{
-		create: pfcb,
+		create: _c,
 	}
 }
 
@@ -666,10 +730,10 @@ func (pfcb *PlanFeatureCreateBulk) OnConflict(opts ...sql.ConflictOption) *PlanF
 //	client.PlanFeature.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (pfcb *PlanFeatureCreateBulk) OnConflictColumns(columns ...string) *PlanFeatureUpsertBulk {
-	pfcb.conflict = append(pfcb.conflict, sql.ConflictColumns(columns...))
+func (_c *PlanFeatureCreateBulk) OnConflictColumns(columns ...string) *PlanFeatureUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &PlanFeatureUpsertBulk{
-		create: pfcb,
+		create: _c,
 	}
 }
 
@@ -799,6 +863,27 @@ func (u *PlanFeatureUpsertBulk) UpdateLimitValue() *PlanFeatureUpsertBulk {
 func (u *PlanFeatureUpsertBulk) ClearLimitValue() *PlanFeatureUpsertBulk {
 	return u.Update(func(s *PlanFeatureUpsert) {
 		s.ClearLimitValue()
+	})
+}
+
+// SetOverageUnitPrice sets the "overage_unit_price" field.
+func (u *PlanFeatureUpsertBulk) SetOverageUnitPrice(v float64) *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.SetOverageUnitPrice(v)
+	})
+}
+
+// AddOverageUnitPrice adds v to the "overage_unit_price" field.
+func (u *PlanFeatureUpsertBulk) AddOverageUnitPrice(v float64) *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.AddOverageUnitPrice(v)
+	})
+}
+
+// UpdateOverageUnitPrice sets the "overage_unit_price" field to the value that was provided on create.
+func (u *PlanFeatureUpsertBulk) UpdateOverageUnitPrice() *PlanFeatureUpsertBulk {
+	return u.Update(func(s *PlanFeatureUpsert) {
+		s.UpdateOverageUnitPrice()
 	})
 }
 

@@ -32,6 +32,10 @@ const (
 	FieldCancelledAt = "cancelled_at"
 	// FieldCancelReason holds the string denoting the cancel_reason field in the database.
 	FieldCancelReason = "cancel_reason"
+	// FieldBillingCycle holds the string denoting the billing_cycle field in the database.
+	FieldBillingCycle = "billing_cycle"
+	// FieldAppliedDiscount holds the string denoting the applied_discount field in the database.
+	FieldAppliedDiscount = "applied_discount"
 	// FieldBundleCode holds the string denoting the bundle_code field in the database.
 	FieldBundleCode = "bundle_code"
 	// FieldPaymentMethodID holds the string denoting the payment_method_id field in the database.
@@ -84,6 +88,8 @@ var Columns = []string{
 	FieldCurrentPeriodEnd,
 	FieldCancelledAt,
 	FieldCancelReason,
+	FieldBillingCycle,
+	FieldAppliedDiscount,
 	FieldBundleCode,
 	FieldPaymentMethodID,
 	FieldMetadata,
@@ -102,6 +108,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultAppliedDiscount holds the default value on creation for the "applied_discount" field.
+	DefaultAppliedDiscount float64
 	// DefaultMetadata holds the default value on creation for the "metadata" field.
 	DefaultMetadata map[string]interface{}
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -140,6 +148,34 @@ func StatusValidator(s Status) error {
 		return nil
 	default:
 		return fmt.Errorf("tenantsubscription: invalid enum value for status field: %q", s)
+	}
+}
+
+// BillingCycle defines the type for the "billing_cycle" enum field.
+type BillingCycle string
+
+// BillingCycleMONTHLY is the default value of the BillingCycle enum.
+const DefaultBillingCycle = BillingCycleMONTHLY
+
+// BillingCycle values.
+const (
+	BillingCycleMONTHLY   BillingCycle = "MONTHLY"
+	BillingCycleQUARTERLY BillingCycle = "QUARTERLY"
+	BillingCycleANNUAL    BillingCycle = "ANNUAL"
+	BillingCycleONE_TIME  BillingCycle = "ONE_TIME"
+)
+
+func (bc BillingCycle) String() string {
+	return string(bc)
+}
+
+// BillingCycleValidator is a validator for the "billing_cycle" field enum values. It is called by the builders before save.
+func BillingCycleValidator(bc BillingCycle) error {
+	switch bc {
+	case BillingCycleMONTHLY, BillingCycleQUARTERLY, BillingCycleANNUAL, BillingCycleONE_TIME:
+		return nil
+	default:
+		return fmt.Errorf("tenantsubscription: invalid enum value for billing_cycle field: %q", bc)
 	}
 }
 
@@ -189,6 +225,16 @@ func ByCancelledAt(opts ...sql.OrderTermOption) OrderOption {
 // ByCancelReason orders the results by the cancel_reason field.
 func ByCancelReason(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCancelReason, opts...).ToFunc()
+}
+
+// ByBillingCycle orders the results by the billing_cycle field.
+func ByBillingCycle(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBillingCycle, opts...).ToFunc()
+}
+
+// ByAppliedDiscount orders the results by the applied_discount field.
+func ByAppliedDiscount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAppliedDiscount, opts...).ToFunc()
 }
 
 // ByBundleCode orders the results by the bundle_code field.

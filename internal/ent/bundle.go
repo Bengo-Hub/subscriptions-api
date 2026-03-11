@@ -77,7 +77,7 @@ func (*Bundle) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Bundle fields.
-func (b *Bundle) assignValues(columns []string, values []any) error {
+func (_m *Bundle) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -87,31 +87,31 @@ func (b *Bundle) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				b.ID = *value
+				_m.ID = *value
 			}
 		case bundle.FieldCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field code", values[i])
 			} else if value.Valid {
-				b.Code = value.String
+				_m.Code = value.String
 			}
 		case bundle.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				b.Name = value.String
+				_m.Name = value.String
 			}
 		case bundle.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				b.Description = value.String
+				_m.Description = value.String
 			}
 		case bundle.FieldProducts:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field products", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &b.Products); err != nil {
+				if err := json.Unmarshal(*value, &_m.Products); err != nil {
 					return fmt.Errorf("unmarshal field products: %w", err)
 				}
 			}
@@ -119,7 +119,7 @@ func (b *Bundle) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field tiers", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &b.Tiers); err != nil {
+				if err := json.Unmarshal(*value, &_m.Tiers); err != nil {
 					return fmt.Errorf("unmarshal field tiers: %w", err)
 				}
 			}
@@ -127,37 +127,37 @@ func (b *Bundle) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field discount_type", values[i])
 			} else if value.Valid {
-				b.DiscountType = bundle.DiscountType(value.String)
+				_m.DiscountType = bundle.DiscountType(value.String)
 			}
 		case bundle.FieldDiscountValue:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field discount_value", values[i])
 			} else if value.Valid {
-				b.DiscountValue = value.Float64
+				_m.DiscountValue = value.Float64
 			}
 		case bundle.FieldIsActive:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field is_active", values[i])
 			} else if value.Valid {
-				b.IsActive = value.Bool
+				_m.IsActive = value.Bool
 			}
 		case bundle.FieldIsDefault:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field is_default", values[i])
 			} else if value.Valid {
-				b.IsDefault = value.Bool
+				_m.IsDefault = value.Bool
 			}
 		case bundle.FieldSortOrder:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field sort_order", values[i])
 			} else if value.Valid {
-				b.SortOrder = int(value.Int64)
+				_m.SortOrder = int(value.Int64)
 			}
 		case bundle.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &b.Metadata); err != nil {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
 					return fmt.Errorf("unmarshal field metadata: %w", err)
 				}
 			}
@@ -165,16 +165,16 @@ func (b *Bundle) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				b.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case bundle.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				b.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		default:
-			b.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -182,71 +182,71 @@ func (b *Bundle) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Bundle.
 // This includes values selected through modifiers, order, etc.
-func (b *Bundle) Value(name string) (ent.Value, error) {
-	return b.selectValues.Get(name)
+func (_m *Bundle) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // Update returns a builder for updating this Bundle.
 // Note that you need to call Bundle.Unwrap() before calling this method if this Bundle
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (b *Bundle) Update() *BundleUpdateOne {
-	return NewBundleClient(b.config).UpdateOne(b)
+func (_m *Bundle) Update() *BundleUpdateOne {
+	return NewBundleClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Bundle entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (b *Bundle) Unwrap() *Bundle {
-	_tx, ok := b.config.driver.(*txDriver)
+func (_m *Bundle) Unwrap() *Bundle {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Bundle is not a transactional entity")
 	}
-	b.config.driver = _tx.drv
-	return b
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (b *Bundle) String() string {
+func (_m *Bundle) String() string {
 	var builder strings.Builder
 	builder.WriteString("Bundle(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", b.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("code=")
-	builder.WriteString(b.Code)
+	builder.WriteString(_m.Code)
 	builder.WriteString(", ")
 	builder.WriteString("name=")
-	builder.WriteString(b.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(b.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("products=")
-	builder.WriteString(fmt.Sprintf("%v", b.Products))
+	builder.WriteString(fmt.Sprintf("%v", _m.Products))
 	builder.WriteString(", ")
 	builder.WriteString("tiers=")
-	builder.WriteString(fmt.Sprintf("%v", b.Tiers))
+	builder.WriteString(fmt.Sprintf("%v", _m.Tiers))
 	builder.WriteString(", ")
 	builder.WriteString("discount_type=")
-	builder.WriteString(fmt.Sprintf("%v", b.DiscountType))
+	builder.WriteString(fmt.Sprintf("%v", _m.DiscountType))
 	builder.WriteString(", ")
 	builder.WriteString("discount_value=")
-	builder.WriteString(fmt.Sprintf("%v", b.DiscountValue))
+	builder.WriteString(fmt.Sprintf("%v", _m.DiscountValue))
 	builder.WriteString(", ")
 	builder.WriteString("is_active=")
-	builder.WriteString(fmt.Sprintf("%v", b.IsActive))
+	builder.WriteString(fmt.Sprintf("%v", _m.IsActive))
 	builder.WriteString(", ")
 	builder.WriteString("is_default=")
-	builder.WriteString(fmt.Sprintf("%v", b.IsDefault))
+	builder.WriteString(fmt.Sprintf("%v", _m.IsDefault))
 	builder.WriteString(", ")
 	builder.WriteString("sort_order=")
-	builder.WriteString(fmt.Sprintf("%v", b.SortOrder))
+	builder.WriteString(fmt.Sprintf("%v", _m.SortOrder))
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
-	builder.WriteString(fmt.Sprintf("%v", b.Metadata))
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(b.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(b.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

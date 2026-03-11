@@ -5,7 +5,9 @@
 **System Purpose**: Centralized subscription and licensing management platform for the entire BengoBox ecosystem, providing multi-tenant SaaS capabilities with tiered pricing, feature gating, usage tracking, and automated billing integration.
 
 **Key Capabilities**:
-- **Subscription types**: **Product** (per-product plans), **Feature** (feature-gated tiers), and **One-time** (single payment for a service or bundle).
+- **Subscription types**: **Product** (a-la-carte), **Tiered Bundles** (Starter, Growth, Prof), and **One-time** (summation of product onetime fees).
+- **Core System Features**: SSO, Notifications (Email), Subscription Service, and Payment Gateways are **included by default** in all plans/tiers and not sold as individual products.
+- **Credit-Based Notifications**: SMS and WhatsApp require tenants to purchase credits at platform-set rates. Email remains free.
 - Subscription plan management (Starter, Growth, Professional tiers)
 - Tenant subscription lifecycle (trial, active, cancelled, expired)
 - Feature entitlement validation and gating
@@ -13,7 +15,7 @@
 - Overage calculation and billing event generation
 - Plan transition workflows (upgrade/downgrade with proration)
 - Trinity authorization (RBAC + Licensing + Resource permissions)
-- **Default one-time pricing**: 80k–2M KES per service (config/seed); admin can add/update subscription levels via plans API.
+- **One-time pricing**: Minimum KES 80,000 per module. A-la-carte combinations sum these individual one-time fees.
 - **Treasury integration**: Subscription-api sends **source_service** (and product/tier where applicable) on every payment/billing event to treasury for money-by-source attribution (equity/royalty, analytics).
 
 **Entity Ownership**: This service owns all subscription-related entities: plans, features, tenant subscriptions, usage tracking, overages, feature gates, and plan transitions. **Subscription Service does NOT own**: users/tenants (auth-service), invoices/payments (treasury-service), domain data (respective services).
@@ -218,7 +220,9 @@
 - JWT validation via auth-service
 - **RBAC:** No local Permission/Role schema; RBAC is enforced via auth-api JWT. All subscription resources (plans, subscriptions, features, bundles, products) use the standard **eight actions** defined in auth-api: `add`, `read`, `read_own`, `change`, `change_own`, `delete`, `manage`, `manage_own`. The API validates JWT via `shared-auth-client` middleware; authorization checks are performed using claims from auth-api.
 - **Subscription tiering in auth layer**: Each microservice (ordering, logistics, treasury, etc.) integrates subscription tier and product-level tiering in its authorization layer — e.g. feature gates and limits from subscription-service (via JWT claims or real-time check) before allowing access or usage.
-- **Seed:** Core data is seeded by `cmd/seed`: (1) **products** — platform (auth, notifications, subscription), core (ordering, logistics, treasury), add-ons (pos, storefront, google_maps, paystack_gateway, sms_credits, premium_support); (2) **subscription plans** — Starter/Growth/Professional, monthly + yearly (6 plans with features and tier limits); one-time plans and default 80k–2M tiering can be added in seed or config per product; (3) **bundles** — delivery, pos-suite, complete with tier pricing; (4) **demo tenant subscription** — Urban Loft Cafe on GROWTH plan, 14-day trial, delivery bundle with ordering, logistics, treasury, storefront activated. No migration files are added manually (Ent schema as source of truth). **Admin API for subscription levels:** List/Get plans exist (`GET /api/v1/plans`, `GET /api/v1/plans/{id}`, `GET /api/v1/plans/code/{code}`); create/update plan endpoints for admin are optional for MVP and documented in integrations.
+- **Seed:** Core data is seeded by `cmd/seed`: (1) **Base Products** (Hidden from storefront: auth, notifications, subscription, treasury); (2) **Selectable Modules** (POS, Ordering, Logistics, Storefront, Inventory, etc.); (3) **Subscription Plans** — Urban Loft Tiers (Starter: 20k/mo, Growth: 45k/mo, Professional: 95k/mo); (4) **One-time summation logic** — A-la-carte plans sum the `onetime_price` of each included module (min 80k each).
+- **Discounts & Promo Codes**: Plans support `discount_rules` for Yearly (fixed %), Loyal customers, and New Customer promotions.
+- **Notification Credits**: Implementation of `TenantCredit` system for SMS/WhatsApp. Platform admins set rates; tenants purchase bucketed credits.
 
 ### Scalability
 - Stateless HTTP layer

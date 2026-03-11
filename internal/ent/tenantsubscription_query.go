@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -35,44 +36,44 @@ type TenantSubscriptionQuery struct {
 }
 
 // Where adds a new predicate for the TenantSubscriptionQuery builder.
-func (tsq *TenantSubscriptionQuery) Where(ps ...predicate.TenantSubscription) *TenantSubscriptionQuery {
-	tsq.predicates = append(tsq.predicates, ps...)
-	return tsq
+func (_q *TenantSubscriptionQuery) Where(ps ...predicate.TenantSubscription) *TenantSubscriptionQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (tsq *TenantSubscriptionQuery) Limit(limit int) *TenantSubscriptionQuery {
-	tsq.ctx.Limit = &limit
-	return tsq
+func (_q *TenantSubscriptionQuery) Limit(limit int) *TenantSubscriptionQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (tsq *TenantSubscriptionQuery) Offset(offset int) *TenantSubscriptionQuery {
-	tsq.ctx.Offset = &offset
-	return tsq
+func (_q *TenantSubscriptionQuery) Offset(offset int) *TenantSubscriptionQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (tsq *TenantSubscriptionQuery) Unique(unique bool) *TenantSubscriptionQuery {
-	tsq.ctx.Unique = &unique
-	return tsq
+func (_q *TenantSubscriptionQuery) Unique(unique bool) *TenantSubscriptionQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (tsq *TenantSubscriptionQuery) Order(o ...tenantsubscription.OrderOption) *TenantSubscriptionQuery {
-	tsq.order = append(tsq.order, o...)
-	return tsq
+func (_q *TenantSubscriptionQuery) Order(o ...tenantsubscription.OrderOption) *TenantSubscriptionQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryTenant chains the current query on the "tenant" edge.
-func (tsq *TenantSubscriptionQuery) QueryTenant() *TenantQuery {
-	query := (&TenantClient{config: tsq.config}).Query()
+func (_q *TenantSubscriptionQuery) QueryTenant() *TenantQuery {
+	query := (&TenantClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := tsq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := tsq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -81,20 +82,20 @@ func (tsq *TenantSubscriptionQuery) QueryTenant() *TenantQuery {
 			sqlgraph.To(tenant.Table, tenant.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, tenantsubscription.TenantTable, tenantsubscription.TenantColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(tsq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryPlan chains the current query on the "plan" edge.
-func (tsq *TenantSubscriptionQuery) QueryPlan() *SubscriptionPlanQuery {
-	query := (&SubscriptionPlanClient{config: tsq.config}).Query()
+func (_q *TenantSubscriptionQuery) QueryPlan() *SubscriptionPlanQuery {
+	query := (&SubscriptionPlanClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := tsq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := tsq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -103,20 +104,20 @@ func (tsq *TenantSubscriptionQuery) QueryPlan() *SubscriptionPlanQuery {
 			sqlgraph.To(subscriptionplan.Table, subscriptionplan.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, tenantsubscription.PlanTable, tenantsubscription.PlanColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(tsq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryProductSubscriptions chains the current query on the "product_subscriptions" edge.
-func (tsq *TenantSubscriptionQuery) QueryProductSubscriptions() *ProductSubscriptionQuery {
-	query := (&ProductSubscriptionClient{config: tsq.config}).Query()
+func (_q *TenantSubscriptionQuery) QueryProductSubscriptions() *ProductSubscriptionQuery {
+	query := (&ProductSubscriptionClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := tsq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := tsq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -125,7 +126,7 @@ func (tsq *TenantSubscriptionQuery) QueryProductSubscriptions() *ProductSubscrip
 			sqlgraph.To(productsubscription.Table, productsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.ProductSubscriptionsTable, tenantsubscription.ProductSubscriptionsColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(tsq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -133,8 +134,8 @@ func (tsq *TenantSubscriptionQuery) QueryProductSubscriptions() *ProductSubscrip
 
 // First returns the first TenantSubscription entity from the query.
 // Returns a *NotFoundError when no TenantSubscription was found.
-func (tsq *TenantSubscriptionQuery) First(ctx context.Context) (*TenantSubscription, error) {
-	nodes, err := tsq.Limit(1).All(setContextOp(ctx, tsq.ctx, "First"))
+func (_q *TenantSubscriptionQuery) First(ctx context.Context) (*TenantSubscription, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +146,8 @@ func (tsq *TenantSubscriptionQuery) First(ctx context.Context) (*TenantSubscript
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (tsq *TenantSubscriptionQuery) FirstX(ctx context.Context) *TenantSubscription {
-	node, err := tsq.First(ctx)
+func (_q *TenantSubscriptionQuery) FirstX(ctx context.Context) *TenantSubscription {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -155,9 +156,9 @@ func (tsq *TenantSubscriptionQuery) FirstX(ctx context.Context) *TenantSubscript
 
 // FirstID returns the first TenantSubscription ID from the query.
 // Returns a *NotFoundError when no TenantSubscription ID was found.
-func (tsq *TenantSubscriptionQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *TenantSubscriptionQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = tsq.Limit(1).IDs(setContextOp(ctx, tsq.ctx, "FirstID")); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -168,8 +169,8 @@ func (tsq *TenantSubscriptionQuery) FirstID(ctx context.Context) (id uuid.UUID, 
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (tsq *TenantSubscriptionQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := tsq.FirstID(ctx)
+func (_q *TenantSubscriptionQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -179,8 +180,8 @@ func (tsq *TenantSubscriptionQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single TenantSubscription entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one TenantSubscription entity is found.
 // Returns a *NotFoundError when no TenantSubscription entities are found.
-func (tsq *TenantSubscriptionQuery) Only(ctx context.Context) (*TenantSubscription, error) {
-	nodes, err := tsq.Limit(2).All(setContextOp(ctx, tsq.ctx, "Only"))
+func (_q *TenantSubscriptionQuery) Only(ctx context.Context) (*TenantSubscription, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -195,8 +196,8 @@ func (tsq *TenantSubscriptionQuery) Only(ctx context.Context) (*TenantSubscripti
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (tsq *TenantSubscriptionQuery) OnlyX(ctx context.Context) *TenantSubscription {
-	node, err := tsq.Only(ctx)
+func (_q *TenantSubscriptionQuery) OnlyX(ctx context.Context) *TenantSubscription {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -206,9 +207,9 @@ func (tsq *TenantSubscriptionQuery) OnlyX(ctx context.Context) *TenantSubscripti
 // OnlyID is like Only, but returns the only TenantSubscription ID in the query.
 // Returns a *NotSingularError when more than one TenantSubscription ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (tsq *TenantSubscriptionQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *TenantSubscriptionQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = tsq.Limit(2).IDs(setContextOp(ctx, tsq.ctx, "OnlyID")); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -223,8 +224,8 @@ func (tsq *TenantSubscriptionQuery) OnlyID(ctx context.Context) (id uuid.UUID, e
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (tsq *TenantSubscriptionQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := tsq.OnlyID(ctx)
+func (_q *TenantSubscriptionQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -232,18 +233,18 @@ func (tsq *TenantSubscriptionQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of TenantSubscriptions.
-func (tsq *TenantSubscriptionQuery) All(ctx context.Context) ([]*TenantSubscription, error) {
-	ctx = setContextOp(ctx, tsq.ctx, "All")
-	if err := tsq.prepareQuery(ctx); err != nil {
+func (_q *TenantSubscriptionQuery) All(ctx context.Context) ([]*TenantSubscription, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*TenantSubscription, *TenantSubscriptionQuery]()
-	return withInterceptors[[]*TenantSubscription](ctx, tsq, qr, tsq.inters)
+	return withInterceptors[[]*TenantSubscription](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (tsq *TenantSubscriptionQuery) AllX(ctx context.Context) []*TenantSubscription {
-	nodes, err := tsq.All(ctx)
+func (_q *TenantSubscriptionQuery) AllX(ctx context.Context) []*TenantSubscription {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -251,20 +252,20 @@ func (tsq *TenantSubscriptionQuery) AllX(ctx context.Context) []*TenantSubscript
 }
 
 // IDs executes the query and returns a list of TenantSubscription IDs.
-func (tsq *TenantSubscriptionQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if tsq.ctx.Unique == nil && tsq.path != nil {
-		tsq.Unique(true)
+func (_q *TenantSubscriptionQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, tsq.ctx, "IDs")
-	if err = tsq.Select(tenantsubscription.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(tenantsubscription.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (tsq *TenantSubscriptionQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := tsq.IDs(ctx)
+func (_q *TenantSubscriptionQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -272,17 +273,17 @@ func (tsq *TenantSubscriptionQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (tsq *TenantSubscriptionQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, tsq.ctx, "Count")
-	if err := tsq.prepareQuery(ctx); err != nil {
+func (_q *TenantSubscriptionQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, tsq, querierCount[*TenantSubscriptionQuery](), tsq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*TenantSubscriptionQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (tsq *TenantSubscriptionQuery) CountX(ctx context.Context) int {
-	count, err := tsq.Count(ctx)
+func (_q *TenantSubscriptionQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -290,9 +291,9 @@ func (tsq *TenantSubscriptionQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (tsq *TenantSubscriptionQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, tsq.ctx, "Exist")
-	switch _, err := tsq.FirstID(ctx); {
+func (_q *TenantSubscriptionQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -303,8 +304,8 @@ func (tsq *TenantSubscriptionQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (tsq *TenantSubscriptionQuery) ExistX(ctx context.Context) bool {
-	exist, err := tsq.Exist(ctx)
+func (_q *TenantSubscriptionQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -313,56 +314,56 @@ func (tsq *TenantSubscriptionQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the TenantSubscriptionQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (tsq *TenantSubscriptionQuery) Clone() *TenantSubscriptionQuery {
-	if tsq == nil {
+func (_q *TenantSubscriptionQuery) Clone() *TenantSubscriptionQuery {
+	if _q == nil {
 		return nil
 	}
 	return &TenantSubscriptionQuery{
-		config:                   tsq.config,
-		ctx:                      tsq.ctx.Clone(),
-		order:                    append([]tenantsubscription.OrderOption{}, tsq.order...),
-		inters:                   append([]Interceptor{}, tsq.inters...),
-		predicates:               append([]predicate.TenantSubscription{}, tsq.predicates...),
-		withTenant:               tsq.withTenant.Clone(),
-		withPlan:                 tsq.withPlan.Clone(),
-		withProductSubscriptions: tsq.withProductSubscriptions.Clone(),
+		config:                   _q.config,
+		ctx:                      _q.ctx.Clone(),
+		order:                    append([]tenantsubscription.OrderOption{}, _q.order...),
+		inters:                   append([]Interceptor{}, _q.inters...),
+		predicates:               append([]predicate.TenantSubscription{}, _q.predicates...),
+		withTenant:               _q.withTenant.Clone(),
+		withPlan:                 _q.withPlan.Clone(),
+		withProductSubscriptions: _q.withProductSubscriptions.Clone(),
 		// clone intermediate query.
-		sql:  tsq.sql.Clone(),
-		path: tsq.path,
+		sql:  _q.sql.Clone(),
+		path: _q.path,
 	}
 }
 
 // WithTenant tells the query-builder to eager-load the nodes that are connected to
 // the "tenant" edge. The optional arguments are used to configure the query builder of the edge.
-func (tsq *TenantSubscriptionQuery) WithTenant(opts ...func(*TenantQuery)) *TenantSubscriptionQuery {
-	query := (&TenantClient{config: tsq.config}).Query()
+func (_q *TenantSubscriptionQuery) WithTenant(opts ...func(*TenantQuery)) *TenantSubscriptionQuery {
+	query := (&TenantClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	tsq.withTenant = query
-	return tsq
+	_q.withTenant = query
+	return _q
 }
 
 // WithPlan tells the query-builder to eager-load the nodes that are connected to
 // the "plan" edge. The optional arguments are used to configure the query builder of the edge.
-func (tsq *TenantSubscriptionQuery) WithPlan(opts ...func(*SubscriptionPlanQuery)) *TenantSubscriptionQuery {
-	query := (&SubscriptionPlanClient{config: tsq.config}).Query()
+func (_q *TenantSubscriptionQuery) WithPlan(opts ...func(*SubscriptionPlanQuery)) *TenantSubscriptionQuery {
+	query := (&SubscriptionPlanClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	tsq.withPlan = query
-	return tsq
+	_q.withPlan = query
+	return _q
 }
 
 // WithProductSubscriptions tells the query-builder to eager-load the nodes that are connected to
 // the "product_subscriptions" edge. The optional arguments are used to configure the query builder of the edge.
-func (tsq *TenantSubscriptionQuery) WithProductSubscriptions(opts ...func(*ProductSubscriptionQuery)) *TenantSubscriptionQuery {
-	query := (&ProductSubscriptionClient{config: tsq.config}).Query()
+func (_q *TenantSubscriptionQuery) WithProductSubscriptions(opts ...func(*ProductSubscriptionQuery)) *TenantSubscriptionQuery {
+	query := (&ProductSubscriptionClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	tsq.withProductSubscriptions = query
-	return tsq
+	_q.withProductSubscriptions = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -379,10 +380,10 @@ func (tsq *TenantSubscriptionQuery) WithProductSubscriptions(opts ...func(*Produ
 //		GroupBy(tenantsubscription.FieldTenantID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (tsq *TenantSubscriptionQuery) GroupBy(field string, fields ...string) *TenantSubscriptionGroupBy {
-	tsq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &TenantSubscriptionGroupBy{build: tsq}
-	grbuild.flds = &tsq.ctx.Fields
+func (_q *TenantSubscriptionQuery) GroupBy(field string, fields ...string) *TenantSubscriptionGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &TenantSubscriptionGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = tenantsubscription.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -400,60 +401,60 @@ func (tsq *TenantSubscriptionQuery) GroupBy(field string, fields ...string) *Ten
 //	client.TenantSubscription.Query().
 //		Select(tenantsubscription.FieldTenantID).
 //		Scan(ctx, &v)
-func (tsq *TenantSubscriptionQuery) Select(fields ...string) *TenantSubscriptionSelect {
-	tsq.ctx.Fields = append(tsq.ctx.Fields, fields...)
-	sbuild := &TenantSubscriptionSelect{TenantSubscriptionQuery: tsq}
+func (_q *TenantSubscriptionQuery) Select(fields ...string) *TenantSubscriptionSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &TenantSubscriptionSelect{TenantSubscriptionQuery: _q}
 	sbuild.label = tenantsubscription.Label
-	sbuild.flds, sbuild.scan = &tsq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a TenantSubscriptionSelect configured with the given aggregations.
-func (tsq *TenantSubscriptionQuery) Aggregate(fns ...AggregateFunc) *TenantSubscriptionSelect {
-	return tsq.Select().Aggregate(fns...)
+func (_q *TenantSubscriptionQuery) Aggregate(fns ...AggregateFunc) *TenantSubscriptionSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (tsq *TenantSubscriptionQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range tsq.inters {
+func (_q *TenantSubscriptionQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, tsq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range tsq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !tenantsubscription.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if tsq.path != nil {
-		prev, err := tsq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		tsq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (tsq *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*TenantSubscription, error) {
+func (_q *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*TenantSubscription, error) {
 	var (
 		nodes       = []*TenantSubscription{}
-		_spec       = tsq.querySpec()
+		_spec       = _q.querySpec()
 		loadedTypes = [3]bool{
-			tsq.withTenant != nil,
-			tsq.withPlan != nil,
-			tsq.withProductSubscriptions != nil,
+			_q.withTenant != nil,
+			_q.withPlan != nil,
+			_q.withProductSubscriptions != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*TenantSubscription).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &TenantSubscription{config: tsq.config}
+		node := &TenantSubscription{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -461,26 +462,26 @@ func (tsq *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHo
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, tsq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := tsq.withTenant; query != nil {
-		if err := tsq.loadTenant(ctx, query, nodes, nil,
+	if query := _q.withTenant; query != nil {
+		if err := _q.loadTenant(ctx, query, nodes, nil,
 			func(n *TenantSubscription, e *Tenant) { n.Edges.Tenant = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := tsq.withPlan; query != nil {
-		if err := tsq.loadPlan(ctx, query, nodes, nil,
+	if query := _q.withPlan; query != nil {
+		if err := _q.loadPlan(ctx, query, nodes, nil,
 			func(n *TenantSubscription, e *SubscriptionPlan) { n.Edges.Plan = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := tsq.withProductSubscriptions; query != nil {
-		if err := tsq.loadProductSubscriptions(ctx, query, nodes,
+	if query := _q.withProductSubscriptions; query != nil {
+		if err := _q.loadProductSubscriptions(ctx, query, nodes,
 			func(n *TenantSubscription) { n.Edges.ProductSubscriptions = []*ProductSubscription{} },
 			func(n *TenantSubscription, e *ProductSubscription) {
 				n.Edges.ProductSubscriptions = append(n.Edges.ProductSubscriptions, e)
@@ -491,7 +492,7 @@ func (tsq *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHo
 	return nodes, nil
 }
 
-func (tsq *TenantSubscriptionQuery) loadTenant(ctx context.Context, query *TenantQuery, nodes []*TenantSubscription, init func(*TenantSubscription), assign func(*TenantSubscription, *Tenant)) error {
+func (_q *TenantSubscriptionQuery) loadTenant(ctx context.Context, query *TenantQuery, nodes []*TenantSubscription, init func(*TenantSubscription), assign func(*TenantSubscription, *Tenant)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*TenantSubscription)
 	for i := range nodes {
@@ -520,7 +521,7 @@ func (tsq *TenantSubscriptionQuery) loadTenant(ctx context.Context, query *Tenan
 	}
 	return nil
 }
-func (tsq *TenantSubscriptionQuery) loadPlan(ctx context.Context, query *SubscriptionPlanQuery, nodes []*TenantSubscription, init func(*TenantSubscription), assign func(*TenantSubscription, *SubscriptionPlan)) error {
+func (_q *TenantSubscriptionQuery) loadPlan(ctx context.Context, query *SubscriptionPlanQuery, nodes []*TenantSubscription, init func(*TenantSubscription), assign func(*TenantSubscription, *SubscriptionPlan)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*TenantSubscription)
 	for i := range nodes {
@@ -549,7 +550,7 @@ func (tsq *TenantSubscriptionQuery) loadPlan(ctx context.Context, query *Subscri
 	}
 	return nil
 }
-func (tsq *TenantSubscriptionQuery) loadProductSubscriptions(ctx context.Context, query *ProductSubscriptionQuery, nodes []*TenantSubscription, init func(*TenantSubscription), assign func(*TenantSubscription, *ProductSubscription)) error {
+func (_q *TenantSubscriptionQuery) loadProductSubscriptions(ctx context.Context, query *ProductSubscriptionQuery, nodes []*TenantSubscription, init func(*TenantSubscription), assign func(*TenantSubscription, *ProductSubscription)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*TenantSubscription)
 	for i := range nodes {
@@ -580,24 +581,24 @@ func (tsq *TenantSubscriptionQuery) loadProductSubscriptions(ctx context.Context
 	return nil
 }
 
-func (tsq *TenantSubscriptionQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := tsq.querySpec()
-	_spec.Node.Columns = tsq.ctx.Fields
-	if len(tsq.ctx.Fields) > 0 {
-		_spec.Unique = tsq.ctx.Unique != nil && *tsq.ctx.Unique
+func (_q *TenantSubscriptionQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, tsq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (tsq *TenantSubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *TenantSubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(tenantsubscription.Table, tenantsubscription.Columns, sqlgraph.NewFieldSpec(tenantsubscription.FieldID, field.TypeUUID))
-	_spec.From = tsq.sql
-	if unique := tsq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if tsq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := tsq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, tenantsubscription.FieldID)
 		for i := range fields {
@@ -605,27 +606,27 @@ func (tsq *TenantSubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if tsq.withTenant != nil {
+		if _q.withTenant != nil {
 			_spec.Node.AddColumnOnce(tenantsubscription.FieldTenantID)
 		}
-		if tsq.withPlan != nil {
+		if _q.withPlan != nil {
 			_spec.Node.AddColumnOnce(tenantsubscription.FieldPlanID)
 		}
 	}
-	if ps := tsq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := tsq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := tsq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := tsq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -635,33 +636,33 @@ func (tsq *TenantSubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (tsq *TenantSubscriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(tsq.driver.Dialect())
+func (_q *TenantSubscriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(tenantsubscription.Table)
-	columns := tsq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = tenantsubscription.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if tsq.sql != nil {
-		selector = tsq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if tsq.ctx.Unique != nil && *tsq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, p := range tsq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range tsq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := tsq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := tsq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -674,41 +675,41 @@ type TenantSubscriptionGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (tsgb *TenantSubscriptionGroupBy) Aggregate(fns ...AggregateFunc) *TenantSubscriptionGroupBy {
-	tsgb.fns = append(tsgb.fns, fns...)
-	return tsgb
+func (_g *TenantSubscriptionGroupBy) Aggregate(fns ...AggregateFunc) *TenantSubscriptionGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (tsgb *TenantSubscriptionGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, tsgb.build.ctx, "GroupBy")
-	if err := tsgb.build.prepareQuery(ctx); err != nil {
+func (_g *TenantSubscriptionGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*TenantSubscriptionQuery, *TenantSubscriptionGroupBy](ctx, tsgb.build, tsgb, tsgb.build.inters, v)
+	return scanWithInterceptors[*TenantSubscriptionQuery, *TenantSubscriptionGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (tsgb *TenantSubscriptionGroupBy) sqlScan(ctx context.Context, root *TenantSubscriptionQuery, v any) error {
+func (_g *TenantSubscriptionGroupBy) sqlScan(ctx context.Context, root *TenantSubscriptionQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(tsgb.fns))
-	for _, fn := range tsgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*tsgb.flds)+len(tsgb.fns))
-		for _, f := range *tsgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*tsgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := tsgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -722,27 +723,27 @@ type TenantSubscriptionSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (tss *TenantSubscriptionSelect) Aggregate(fns ...AggregateFunc) *TenantSubscriptionSelect {
-	tss.fns = append(tss.fns, fns...)
-	return tss
+func (_s *TenantSubscriptionSelect) Aggregate(fns ...AggregateFunc) *TenantSubscriptionSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (tss *TenantSubscriptionSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, tss.ctx, "Select")
-	if err := tss.prepareQuery(ctx); err != nil {
+func (_s *TenantSubscriptionSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*TenantSubscriptionQuery, *TenantSubscriptionSelect](ctx, tss.TenantSubscriptionQuery, tss, tss.inters, v)
+	return scanWithInterceptors[*TenantSubscriptionQuery, *TenantSubscriptionSelect](ctx, _s.TenantSubscriptionQuery, _s, _s.inters, v)
 }
 
-func (tss *TenantSubscriptionSelect) sqlScan(ctx context.Context, root *TenantSubscriptionQuery, v any) error {
+func (_s *TenantSubscriptionSelect) sqlScan(ctx context.Context, root *TenantSubscriptionQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(tss.fns))
-	for _, fn := range tss.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*tss.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -750,7 +751,7 @@ func (tss *TenantSubscriptionSelect) sqlScan(ctx context.Context, root *TenantSu
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := tss.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()

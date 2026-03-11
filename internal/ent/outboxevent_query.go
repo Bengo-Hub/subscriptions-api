@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -28,40 +29,40 @@ type OutboxEventQuery struct {
 }
 
 // Where adds a new predicate for the OutboxEventQuery builder.
-func (oeq *OutboxEventQuery) Where(ps ...predicate.OutboxEvent) *OutboxEventQuery {
-	oeq.predicates = append(oeq.predicates, ps...)
-	return oeq
+func (_q *OutboxEventQuery) Where(ps ...predicate.OutboxEvent) *OutboxEventQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (oeq *OutboxEventQuery) Limit(limit int) *OutboxEventQuery {
-	oeq.ctx.Limit = &limit
-	return oeq
+func (_q *OutboxEventQuery) Limit(limit int) *OutboxEventQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (oeq *OutboxEventQuery) Offset(offset int) *OutboxEventQuery {
-	oeq.ctx.Offset = &offset
-	return oeq
+func (_q *OutboxEventQuery) Offset(offset int) *OutboxEventQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (oeq *OutboxEventQuery) Unique(unique bool) *OutboxEventQuery {
-	oeq.ctx.Unique = &unique
-	return oeq
+func (_q *OutboxEventQuery) Unique(unique bool) *OutboxEventQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (oeq *OutboxEventQuery) Order(o ...outboxevent.OrderOption) *OutboxEventQuery {
-	oeq.order = append(oeq.order, o...)
-	return oeq
+func (_q *OutboxEventQuery) Order(o ...outboxevent.OrderOption) *OutboxEventQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // First returns the first OutboxEvent entity from the query.
 // Returns a *NotFoundError when no OutboxEvent was found.
-func (oeq *OutboxEventQuery) First(ctx context.Context) (*OutboxEvent, error) {
-	nodes, err := oeq.Limit(1).All(setContextOp(ctx, oeq.ctx, "First"))
+func (_q *OutboxEventQuery) First(ctx context.Context) (*OutboxEvent, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +73,8 @@ func (oeq *OutboxEventQuery) First(ctx context.Context) (*OutboxEvent, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (oeq *OutboxEventQuery) FirstX(ctx context.Context) *OutboxEvent {
-	node, err := oeq.First(ctx)
+func (_q *OutboxEventQuery) FirstX(ctx context.Context) *OutboxEvent {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -82,9 +83,9 @@ func (oeq *OutboxEventQuery) FirstX(ctx context.Context) *OutboxEvent {
 
 // FirstID returns the first OutboxEvent ID from the query.
 // Returns a *NotFoundError when no OutboxEvent ID was found.
-func (oeq *OutboxEventQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *OutboxEventQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = oeq.Limit(1).IDs(setContextOp(ctx, oeq.ctx, "FirstID")); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -95,8 +96,8 @@ func (oeq *OutboxEventQuery) FirstID(ctx context.Context) (id uuid.UUID, err err
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (oeq *OutboxEventQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := oeq.FirstID(ctx)
+func (_q *OutboxEventQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -106,8 +107,8 @@ func (oeq *OutboxEventQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single OutboxEvent entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one OutboxEvent entity is found.
 // Returns a *NotFoundError when no OutboxEvent entities are found.
-func (oeq *OutboxEventQuery) Only(ctx context.Context) (*OutboxEvent, error) {
-	nodes, err := oeq.Limit(2).All(setContextOp(ctx, oeq.ctx, "Only"))
+func (_q *OutboxEventQuery) Only(ctx context.Context) (*OutboxEvent, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +123,8 @@ func (oeq *OutboxEventQuery) Only(ctx context.Context) (*OutboxEvent, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (oeq *OutboxEventQuery) OnlyX(ctx context.Context) *OutboxEvent {
-	node, err := oeq.Only(ctx)
+func (_q *OutboxEventQuery) OnlyX(ctx context.Context) *OutboxEvent {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -133,9 +134,9 @@ func (oeq *OutboxEventQuery) OnlyX(ctx context.Context) *OutboxEvent {
 // OnlyID is like Only, but returns the only OutboxEvent ID in the query.
 // Returns a *NotSingularError when more than one OutboxEvent ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (oeq *OutboxEventQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *OutboxEventQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = oeq.Limit(2).IDs(setContextOp(ctx, oeq.ctx, "OnlyID")); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -150,8 +151,8 @@ func (oeq *OutboxEventQuery) OnlyID(ctx context.Context) (id uuid.UUID, err erro
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (oeq *OutboxEventQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := oeq.OnlyID(ctx)
+func (_q *OutboxEventQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -159,18 +160,18 @@ func (oeq *OutboxEventQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of OutboxEvents.
-func (oeq *OutboxEventQuery) All(ctx context.Context) ([]*OutboxEvent, error) {
-	ctx = setContextOp(ctx, oeq.ctx, "All")
-	if err := oeq.prepareQuery(ctx); err != nil {
+func (_q *OutboxEventQuery) All(ctx context.Context) ([]*OutboxEvent, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*OutboxEvent, *OutboxEventQuery]()
-	return withInterceptors[[]*OutboxEvent](ctx, oeq, qr, oeq.inters)
+	return withInterceptors[[]*OutboxEvent](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (oeq *OutboxEventQuery) AllX(ctx context.Context) []*OutboxEvent {
-	nodes, err := oeq.All(ctx)
+func (_q *OutboxEventQuery) AllX(ctx context.Context) []*OutboxEvent {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -178,20 +179,20 @@ func (oeq *OutboxEventQuery) AllX(ctx context.Context) []*OutboxEvent {
 }
 
 // IDs executes the query and returns a list of OutboxEvent IDs.
-func (oeq *OutboxEventQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if oeq.ctx.Unique == nil && oeq.path != nil {
-		oeq.Unique(true)
+func (_q *OutboxEventQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, oeq.ctx, "IDs")
-	if err = oeq.Select(outboxevent.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(outboxevent.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (oeq *OutboxEventQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := oeq.IDs(ctx)
+func (_q *OutboxEventQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -199,17 +200,17 @@ func (oeq *OutboxEventQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (oeq *OutboxEventQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, oeq.ctx, "Count")
-	if err := oeq.prepareQuery(ctx); err != nil {
+func (_q *OutboxEventQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, oeq, querierCount[*OutboxEventQuery](), oeq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*OutboxEventQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (oeq *OutboxEventQuery) CountX(ctx context.Context) int {
-	count, err := oeq.Count(ctx)
+func (_q *OutboxEventQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -217,9 +218,9 @@ func (oeq *OutboxEventQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (oeq *OutboxEventQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, oeq.ctx, "Exist")
-	switch _, err := oeq.FirstID(ctx); {
+func (_q *OutboxEventQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -230,8 +231,8 @@ func (oeq *OutboxEventQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (oeq *OutboxEventQuery) ExistX(ctx context.Context) bool {
-	exist, err := oeq.Exist(ctx)
+func (_q *OutboxEventQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -240,19 +241,19 @@ func (oeq *OutboxEventQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the OutboxEventQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (oeq *OutboxEventQuery) Clone() *OutboxEventQuery {
-	if oeq == nil {
+func (_q *OutboxEventQuery) Clone() *OutboxEventQuery {
+	if _q == nil {
 		return nil
 	}
 	return &OutboxEventQuery{
-		config:     oeq.config,
-		ctx:        oeq.ctx.Clone(),
-		order:      append([]outboxevent.OrderOption{}, oeq.order...),
-		inters:     append([]Interceptor{}, oeq.inters...),
-		predicates: append([]predicate.OutboxEvent{}, oeq.predicates...),
+		config:     _q.config,
+		ctx:        _q.ctx.Clone(),
+		order:      append([]outboxevent.OrderOption{}, _q.order...),
+		inters:     append([]Interceptor{}, _q.inters...),
+		predicates: append([]predicate.OutboxEvent{}, _q.predicates...),
 		// clone intermediate query.
-		sql:  oeq.sql.Clone(),
-		path: oeq.path,
+		sql:  _q.sql.Clone(),
+		path: _q.path,
 	}
 }
 
@@ -270,10 +271,10 @@ func (oeq *OutboxEventQuery) Clone() *OutboxEventQuery {
 //		GroupBy(outboxevent.FieldTenantID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (oeq *OutboxEventQuery) GroupBy(field string, fields ...string) *OutboxEventGroupBy {
-	oeq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &OutboxEventGroupBy{build: oeq}
-	grbuild.flds = &oeq.ctx.Fields
+func (_q *OutboxEventQuery) GroupBy(field string, fields ...string) *OutboxEventGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &OutboxEventGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = outboxevent.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -291,62 +292,62 @@ func (oeq *OutboxEventQuery) GroupBy(field string, fields ...string) *OutboxEven
 //	client.OutboxEvent.Query().
 //		Select(outboxevent.FieldTenantID).
 //		Scan(ctx, &v)
-func (oeq *OutboxEventQuery) Select(fields ...string) *OutboxEventSelect {
-	oeq.ctx.Fields = append(oeq.ctx.Fields, fields...)
-	sbuild := &OutboxEventSelect{OutboxEventQuery: oeq}
+func (_q *OutboxEventQuery) Select(fields ...string) *OutboxEventSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &OutboxEventSelect{OutboxEventQuery: _q}
 	sbuild.label = outboxevent.Label
-	sbuild.flds, sbuild.scan = &oeq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a OutboxEventSelect configured with the given aggregations.
-func (oeq *OutboxEventQuery) Aggregate(fns ...AggregateFunc) *OutboxEventSelect {
-	return oeq.Select().Aggregate(fns...)
+func (_q *OutboxEventQuery) Aggregate(fns ...AggregateFunc) *OutboxEventSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (oeq *OutboxEventQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range oeq.inters {
+func (_q *OutboxEventQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, oeq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range oeq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !outboxevent.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if oeq.path != nil {
-		prev, err := oeq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		oeq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (oeq *OutboxEventQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*OutboxEvent, error) {
+func (_q *OutboxEventQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*OutboxEvent, error) {
 	var (
 		nodes = []*OutboxEvent{}
-		_spec = oeq.querySpec()
+		_spec = _q.querySpec()
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*OutboxEvent).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &OutboxEvent{config: oeq.config}
+		node := &OutboxEvent{config: _q.config}
 		nodes = append(nodes, node)
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, oeq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
@@ -355,24 +356,24 @@ func (oeq *OutboxEventQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	return nodes, nil
 }
 
-func (oeq *OutboxEventQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := oeq.querySpec()
-	_spec.Node.Columns = oeq.ctx.Fields
-	if len(oeq.ctx.Fields) > 0 {
-		_spec.Unique = oeq.ctx.Unique != nil && *oeq.ctx.Unique
+func (_q *OutboxEventQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, oeq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (oeq *OutboxEventQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *OutboxEventQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(outboxevent.Table, outboxevent.Columns, sqlgraph.NewFieldSpec(outboxevent.FieldID, field.TypeUUID))
-	_spec.From = oeq.sql
-	if unique := oeq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if oeq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := oeq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, outboxevent.FieldID)
 		for i := range fields {
@@ -381,20 +382,20 @@ func (oeq *OutboxEventQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := oeq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := oeq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := oeq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := oeq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -404,33 +405,33 @@ func (oeq *OutboxEventQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (oeq *OutboxEventQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(oeq.driver.Dialect())
+func (_q *OutboxEventQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(outboxevent.Table)
-	columns := oeq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = outboxevent.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if oeq.sql != nil {
-		selector = oeq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if oeq.ctx.Unique != nil && *oeq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, p := range oeq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range oeq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := oeq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := oeq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -443,41 +444,41 @@ type OutboxEventGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (oegb *OutboxEventGroupBy) Aggregate(fns ...AggregateFunc) *OutboxEventGroupBy {
-	oegb.fns = append(oegb.fns, fns...)
-	return oegb
+func (_g *OutboxEventGroupBy) Aggregate(fns ...AggregateFunc) *OutboxEventGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (oegb *OutboxEventGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, oegb.build.ctx, "GroupBy")
-	if err := oegb.build.prepareQuery(ctx); err != nil {
+func (_g *OutboxEventGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*OutboxEventQuery, *OutboxEventGroupBy](ctx, oegb.build, oegb, oegb.build.inters, v)
+	return scanWithInterceptors[*OutboxEventQuery, *OutboxEventGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (oegb *OutboxEventGroupBy) sqlScan(ctx context.Context, root *OutboxEventQuery, v any) error {
+func (_g *OutboxEventGroupBy) sqlScan(ctx context.Context, root *OutboxEventQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(oegb.fns))
-	for _, fn := range oegb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*oegb.flds)+len(oegb.fns))
-		for _, f := range *oegb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*oegb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := oegb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -491,27 +492,27 @@ type OutboxEventSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (oes *OutboxEventSelect) Aggregate(fns ...AggregateFunc) *OutboxEventSelect {
-	oes.fns = append(oes.fns, fns...)
-	return oes
+func (_s *OutboxEventSelect) Aggregate(fns ...AggregateFunc) *OutboxEventSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (oes *OutboxEventSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, oes.ctx, "Select")
-	if err := oes.prepareQuery(ctx); err != nil {
+func (_s *OutboxEventSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*OutboxEventQuery, *OutboxEventSelect](ctx, oes.OutboxEventQuery, oes, oes.inters, v)
+	return scanWithInterceptors[*OutboxEventQuery, *OutboxEventSelect](ctx, _s.OutboxEventQuery, _s, _s.inters, v)
 }
 
-func (oes *OutboxEventSelect) sqlScan(ctx context.Context, root *OutboxEventQuery, v any) error {
+func (_s *OutboxEventSelect) sqlScan(ctx context.Context, root *OutboxEventQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(oes.fns))
-	for _, fn := range oes.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*oes.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -519,7 +520,7 @@ func (oes *OutboxEventSelect) sqlScan(ctx context.Context, root *OutboxEventQuer
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := oes.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()

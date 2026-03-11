@@ -22,6 +22,7 @@ import (
 
 	authclient "github.com/Bengo-Hub/shared-auth-client"
 	eventslib "github.com/Bengo-Hub/shared-events"
+	serviceclient "github.com/Bengo-Hub/shared-service-client"
 	
 	"github.com/bengobox/subscription-service/internal/config"
 	"github.com/bengobox/subscription-service/internal/ent"
@@ -31,6 +32,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/modules/outbox"
 	"github.com/bengobox/subscription-service/internal/modules/plans"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
+	"github.com/bengobox/subscription-service/internal/modules/tenant"
 	"github.com/bengobox/subscription-service/internal/platform/cache"
 	"github.com/bengobox/subscription-service/internal/platform/database"
 	"github.com/bengobox/subscription-service/internal/platform/events"
@@ -93,6 +95,16 @@ func New(ctx context.Context) (*App, error) {
 		log.Info("versioned migrations completed - run 'go run cmd/seed/main.go' to seed initial data (idempotent)")
 	}
 
+	// Sync platform owner tenant
+	tenantSyncer := tenant.NewSyncer(ormClient, cfg.Services.AuthAPI)
+	if _, err := tenantSyncer.SyncTenant(ctx, "codevertex"); err != nil {
+		log.Warn("failed to sync platform owner", zap.Error(err))
+	}
+
+	// Initialize Treasury service client
+	treasuryCfg := serviceclient.DefaultConfig(cfg.Services.TreasuryAPI, "treasury-api", log)
+	treasuryClient := serviceclient.New(treasuryCfg)
+
 	// Initialize auth-service JWT validator
 	var authMiddleware *authclient.AuthMiddleware
 	if cfg.Security.RequireJWT {
@@ -142,7 +154,8 @@ func New(ctx context.Context) (*App, error) {
 	var planHandler *handlers.PlanHandler
 	if ormClient != nil {
 		planRepo := plans.NewEntRepository(ormClient)
-		planHandler = handlers.NewPlanHandler(log, planRepo)
+		planService := plans.NewService(log, planRepo)
+		planHandler = handlers.NewPlanHandler(log, planService)
 	}
 
 	// Initialize outbox publisher
@@ -166,7 +179,7 @@ func New(ctx context.Context) (*App, error) {
 	}
 
 	// Create subscription service and handler
-	subscriptionSvc := subscriptions.New(ormClient, log)
+	subscriptionSvc := subscriptions.New(ormClient, log, treasuryClient)
 	subscriptionHandler := handlers.NewSubscriptionHandler(log, ormClient, subscriptionSvc)
 	addonHandler := handlers.NewAddonHandler(log, ormClient)
 

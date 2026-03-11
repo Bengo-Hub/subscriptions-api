@@ -81,6 +81,16 @@ func BasePrice(v float64) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldBasePrice, v))
 }
 
+// OnetimeAllProductsPrice applies equality check predicate on the "onetime_all_products_price" field. It's identical to OnetimeAllProductsPriceEQ.
+func OnetimeAllProductsPrice(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldOnetimeAllProductsPrice, v))
+}
+
+// UseSumBasedPricing applies equality check predicate on the "use_sum_based_pricing" field. It's identical to UseSumBasedPricingEQ.
+func UseSumBasedPricing(v bool) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldUseSumBasedPricing, v))
+}
+
 // Currency applies equality check predicate on the "currency" field. It's identical to CurrencyEQ.
 func Currency(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldCurrency, v))
@@ -421,6 +431,66 @@ func BasePriceLTE(v float64) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldLTE(FieldBasePrice, v))
 }
 
+// OnetimeAllProductsPriceEQ applies the EQ predicate on the "onetime_all_products_price" field.
+func OnetimeAllProductsPriceEQ(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldOnetimeAllProductsPrice, v))
+}
+
+// OnetimeAllProductsPriceNEQ applies the NEQ predicate on the "onetime_all_products_price" field.
+func OnetimeAllProductsPriceNEQ(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldOnetimeAllProductsPrice, v))
+}
+
+// OnetimeAllProductsPriceIn applies the In predicate on the "onetime_all_products_price" field.
+func OnetimeAllProductsPriceIn(vs ...float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldOnetimeAllProductsPrice, vs...))
+}
+
+// OnetimeAllProductsPriceNotIn applies the NotIn predicate on the "onetime_all_products_price" field.
+func OnetimeAllProductsPriceNotIn(vs ...float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldOnetimeAllProductsPrice, vs...))
+}
+
+// OnetimeAllProductsPriceGT applies the GT predicate on the "onetime_all_products_price" field.
+func OnetimeAllProductsPriceGT(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGT(FieldOnetimeAllProductsPrice, v))
+}
+
+// OnetimeAllProductsPriceGTE applies the GTE predicate on the "onetime_all_products_price" field.
+func OnetimeAllProductsPriceGTE(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGTE(FieldOnetimeAllProductsPrice, v))
+}
+
+// OnetimeAllProductsPriceLT applies the LT predicate on the "onetime_all_products_price" field.
+func OnetimeAllProductsPriceLT(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLT(FieldOnetimeAllProductsPrice, v))
+}
+
+// OnetimeAllProductsPriceLTE applies the LTE predicate on the "onetime_all_products_price" field.
+func OnetimeAllProductsPriceLTE(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLTE(FieldOnetimeAllProductsPrice, v))
+}
+
+// OnetimeAllProductsPriceIsNil applies the IsNil predicate on the "onetime_all_products_price" field.
+func OnetimeAllProductsPriceIsNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIsNull(FieldOnetimeAllProductsPrice))
+}
+
+// OnetimeAllProductsPriceNotNil applies the NotNil predicate on the "onetime_all_products_price" field.
+func OnetimeAllProductsPriceNotNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotNull(FieldOnetimeAllProductsPrice))
+}
+
+// UseSumBasedPricingEQ applies the EQ predicate on the "use_sum_based_pricing" field.
+func UseSumBasedPricingEQ(v bool) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldUseSumBasedPricing, v))
+}
+
+// UseSumBasedPricingNEQ applies the NEQ predicate on the "use_sum_based_pricing" field.
+func UseSumBasedPricingNEQ(v bool) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldUseSumBasedPricing, v))
+}
+
 // CurrencyEQ applies the EQ predicate on the "currency" field.
 func CurrencyEQ(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldCurrency, v))
@@ -544,6 +614,36 @@ func TierOrderLT(v int) predicate.SubscriptionPlan {
 // TierOrderLTE applies the LTE predicate on the "tier_order" field.
 func TierOrderLTE(v int) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldLTE(FieldTierOrder, v))
+}
+
+// PlanTypeEQ applies the EQ predicate on the "plan_type" field.
+func PlanTypeEQ(v PlanType) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldPlanType, v))
+}
+
+// PlanTypeNEQ applies the NEQ predicate on the "plan_type" field.
+func PlanTypeNEQ(v PlanType) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldPlanType, v))
+}
+
+// PlanTypeIn applies the In predicate on the "plan_type" field.
+func PlanTypeIn(vs ...PlanType) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldPlanType, vs...))
+}
+
+// PlanTypeNotIn applies the NotIn predicate on the "plan_type" field.
+func PlanTypeNotIn(vs ...PlanType) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldPlanType, vs...))
+}
+
+// DiscountRulesIsNil applies the IsNil predicate on the "discount_rules" field.
+func DiscountRulesIsNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIsNull(FieldDiscountRules))
+}
+
+// DiscountRulesNotNil applies the NotNil predicate on the "discount_rules" field.
+func DiscountRulesNotNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotNull(FieldDiscountRules))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

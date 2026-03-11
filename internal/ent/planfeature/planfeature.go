@@ -23,6 +23,8 @@ const (
 	FieldIsIncluded = "is_included"
 	// FieldLimitValue holds the string denoting the limit_value field in the database.
 	FieldLimitValue = "limit_value"
+	// FieldOverageUnitPrice holds the string denoting the overage_unit_price field in the database.
+	FieldOverageUnitPrice = "overage_unit_price"
 	// FieldMetadata holds the string denoting the metadata field in the database.
 	FieldMetadata = "metadata"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -47,6 +49,7 @@ var Columns = []string{
 	FieldFeatureCode,
 	FieldIsIncluded,
 	FieldLimitValue,
+	FieldOverageUnitPrice,
 	FieldMetadata,
 	FieldCreatedAt,
 }
@@ -66,6 +69,8 @@ var (
 	FeatureCodeValidator func(string) error
 	// DefaultIsIncluded holds the default value on creation for the "is_included" field.
 	DefaultIsIncluded bool
+	// DefaultOverageUnitPrice holds the default value on creation for the "overage_unit_price" field.
+	DefaultOverageUnitPrice float64
 	// DefaultMetadata holds the default value on creation for the "metadata" field.
 	DefaultMetadata map[string]interface{}
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -100,6 +105,11 @@ func ByIsIncluded(opts ...sql.OrderTermOption) OrderOption {
 // ByLimitValue orders the results by the limit_value field.
 func ByLimitValue(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLimitValue, opts...).ToFunc()
+}
+
+// ByOverageUnitPrice orders the results by the overage_unit_price field.
+func ByOverageUnitPrice(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOverageUnitPrice, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

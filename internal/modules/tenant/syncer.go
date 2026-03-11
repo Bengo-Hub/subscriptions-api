@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/google/uuid"
@@ -17,12 +16,16 @@ import (
 
 // Syncer handles dynamic syncing of tenant data from auth-api using Ent ORM.
 type Syncer struct {
-	client *ent.Client
+	client  *ent.Client
+	authURL string
 }
 
 // NewSyncer creates a new TenantSyncer.
-func NewSyncer(client *ent.Client) *Syncer {
-	return &Syncer{client: client}
+func NewSyncer(client *ent.Client, authURL string) *Syncer {
+	return &Syncer{
+		client:  client,
+		authURL: authURL,
+	}
 }
 
 // authAPITenantResponse is the full tenant JSON response from GET /api/v1/tenants/by-slug/{slug}.
@@ -55,11 +58,7 @@ func (s *Syncer) SyncTenant(ctx context.Context, slug string) (uuid.UUID, error)
 		return existing.ID, nil
 	}
 
-	authAPIURL := os.Getenv("AUTH_API_URL")
-	if authAPIURL == "" {
-		authAPIURL = "https://sso.codevertexitsolutions.com"
-	}
-	endpoint := strings.TrimRight(authAPIURL, "/") + "/api/v1/tenants/by-slug/" + slug
+	endpoint := strings.TrimRight(s.authURL, "/") + "/api/v1/tenants/by-slug/" + slug
 
 	log.Printf("  [tenant-sync] dynamically fetching %s from %s", slug, endpoint)
 	resp, err := http.Get(endpoint) //nolint:noctx
@@ -84,11 +83,6 @@ func (s *Syncer) SyncTenant(ctx context.Context, slug string) (uuid.UUID, error)
 		return uuid.Nil, fmt.Errorf("tenant.Syncer: invalid UUID %q: %w", remote.ID, err)
 	}
 
-	extMeta := map[string]any{}
-	for k, v := range remote.Metadata {
-		extMeta[k] = v
-	}
-
 	// Use Ent Upsert
 	err = s.client.Tenant.Create().
 		SetID(realID).
@@ -107,8 +101,8 @@ func (s *Syncer) SyncTenant(ctx context.Context, slug string) (uuid.UUID, error)
 		SetSubscriptionPlan(remote.SubscriptionPlan).
 		SetSubscriptionStatus(remote.SubscriptionStatus).
 		SetTierLimits(remote.TierLimits).
-		SetMetadata(extMeta).
-		OnConflictColumns(enttenant.FieldID).
+		SetMetadata(remote.Metadata).
+		OnConflict().
 		UpdateNewValues().
 		Exec(ctx)
 

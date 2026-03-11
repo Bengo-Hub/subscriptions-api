@@ -19,6 +19,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/schema"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/tenant"
 )
@@ -42,19 +43,19 @@ func main() {
 	db.SetMaxIdleConns(10)
 	db.SetMaxOpenConns(25)
 	db.SetConnMaxIdleTime(5 * time.Minute)
-	driver := entsql.OpenDB(dialect.Postgres, db)
 
+	driver := entsql.OpenDB(dialect.Postgres, db)
 	client := ent.NewClient(ent.Driver(driver))
 	defer client.Close()
 
-	if err := runSeed(ctx, client); err != nil {
+	if err := runSeed(ctx, client, cfg); err != nil {
 		log.Fatalf("seed data: %v", err)
 	}
 
 	log.Println("database seed completed successfully")
 }
 
-func runSeed(ctx context.Context, client *ent.Client) error {
+func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error {
 	tx, err := client.Tx(ctx)
 	if err != nil {
 		return err
@@ -83,7 +84,7 @@ func runSeed(ctx context.Context, client *ent.Client) error {
 	}
 
 	// 4. Seed subscriptions for ALL tenants (each tenant must have a subscription, trial periods allowed)
-	syncer := tenant.NewSyncer(tx.Client())
+	syncer := tenant.NewSyncer(tx.Client(), cfg.Services.AuthAPI)
 	if err := seedAllTenantSubscriptions(ctx, tx, syncer); err != nil {
 		return fmt.Errorf("seed tenant subscriptions: %w", err)
 	}
@@ -95,48 +96,60 @@ func runSeed(ctx context.Context, client *ent.Client) error {
 
 func seedProducts(ctx context.Context, tx *ent.Tx) error {
 	type productDef struct {
-		id           uuid.UUID
-		code         string
-		name         string
-		description  string
-		category     product.Category
-		isPlatform   bool
-		monthlyPrice float64
-		dependencies []string
-		sortOrder    int
+		id            uuid.UUID
+		code          string
+		name          string
+		description   string
+		category      product.Category
+		isPlatform    bool
+		isBaseService bool
+		monthlyPrice  float64
+		yearlyPrice   float64
+		onetimePrice  float64
+		dependencies  []string
+		sortOrder     int
 	}
 
 	products := []productDef{
 		// Platform products — always included, no extra cost
 		{
-			id:           uuid.MustParse("10000000-0000-0000-0000-000000000001"),
-			code:         "auth",
-			name:         "Authentication & SSO",
-			description:  "User authentication, multi-factor auth, OAuth 2.0, OpenID Connect, session management, and single sign-on across all BengoBox services.",
-			category:     product.CategoryPlatform,
-			isPlatform:   true,
-			monthlyPrice: 0,
-			sortOrder:    1,
+			id:            uuid.MustParse("10000000-0000-0000-0000-000000000001"),
+			code:          "auth",
+			name:          "Authentication & SSO",
+			description:   "User authentication, multi-factor auth, OAuth 2.0, OpenID Connect, session management, and single sign-on across all BengoBox services.",
+			category:      product.CategoryPlatform,
+			isPlatform:    true,
+			isBaseService: true,
+			monthlyPrice:  0,
+			yearlyPrice:   0,
+			onetimePrice:  0,
+			sortOrder:     1,
 		},
 		{
-			id:           uuid.MustParse("10000000-0000-0000-0000-000000000002"),
-			code:         "notifications",
-			name:         "Notifications",
-			description:  "Multi-channel notification delivery: email (SMTP/SendGrid), SMS (Africa's Talking), and push notifications with template management.",
-			category:     product.CategoryPlatform,
-			isPlatform:   true,
-			monthlyPrice: 0,
-			sortOrder:    2,
+			id:            uuid.MustParse("10000000-0000-0000-0000-000000000002"),
+			code:          "notifications",
+			name:          "Notifications",
+			description:   "Multi-channel notification delivery: email (SMTP/SendGrid), SMS (Africa's Talking), and push notifications with template management.",
+			category:      product.CategoryPlatform,
+			isPlatform:    true,
+			isBaseService: true,
+			monthlyPrice:  0,
+			yearlyPrice:   0,
+			onetimePrice:  0,
+			sortOrder:     2,
 		},
 		{
-			id:           uuid.MustParse("10000000-0000-0000-0000-000000000003"),
-			code:         "subscription",
-			name:         "Subscription Management",
-			description:  "Plan management, billing lifecycle, feature entitlements, usage tracking, and tier enforcement.",
-			category:     product.CategoryPlatform,
-			isPlatform:   true,
-			monthlyPrice: 0,
-			sortOrder:    3,
+			id:            uuid.MustParse("10000000-0000-0000-0000-000000000003"),
+			code:          "subscription",
+			name:          "Subscription Management",
+			description:   "Plan management, billing lifecycle, feature entitlements, usage tracking, and tier enforcement.",
+			category:      product.CategoryPlatform,
+			isPlatform:    true,
+			isBaseService: true,
+			monthlyPrice:  0,
+			yearlyPrice:   0,
+			onetimePrice:  0,
+			sortOrder:     3,
 		},
 
 		// Core products — subscribable individually or via bundles
@@ -147,6 +160,8 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			description:  "Customer-facing ordering portal (web + PWA), menu management, cart & checkout, order lifecycle tracking, and M-Pesa payment integration.",
 			category:     product.CategoryProduct,
 			monthlyPrice: 1500,
+			yearlyPrice:  15000,
+			onetimePrice: 100000,
 			sortOrder:    10,
 		},
 		{
@@ -156,17 +171,22 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			description:  "Rider management, delivery assignment, real-time tracking, route optimization, and rider mobile app.",
 			category:     product.CategoryProduct,
 			monthlyPrice: 1500,
+			yearlyPrice:  15000,
+			onetimePrice: 80000,
 			dependencies: []string{"ordering"},
 			sortOrder:    11,
 		},
 		{
-			id:           uuid.MustParse("10000000-0000-0000-0000-000000000012"),
-			code:         "treasury",
-			name:         "Payments & Invoicing",
-			description:  "Payment processing, M-Pesa integration, invoicing, receipts, financial reporting, and revenue tracking.",
-			category:     product.CategoryProduct,
-			monthlyPrice: 1000,
-			sortOrder:    12,
+			id:            uuid.MustParse("10000000-0000-0000-0000-000000000012"),
+			code:          "treasury",
+			name:          "Payments & Invoicing",
+			description:   "Payment processing, M-Pesa integration, invoicing, receipts, financial reporting, and revenue tracking.",
+			category:      product.CategoryProduct,
+			isBaseService: true,
+			monthlyPrice:  1000,
+			yearlyPrice:   10000,
+			onetimePrice:  80000,
+			sortOrder:     12,
 		},
 
 		// Add-on products
@@ -177,6 +197,8 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			description:  "In-store point-of-sale terminal integration, walk-in order management, and cash register support.",
 			category:     product.CategoryAddOn,
 			monthlyPrice: 2000,
+			yearlyPrice:  20000,
+			onetimePrice: 120000,
 			dependencies: []string{"treasury"},
 			sortOrder:    20,
 		},
@@ -187,6 +209,8 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			description:  "Branded website with menu display, business info, SEO, custom domain, and social media integration.",
 			category:     product.CategoryAddOn,
 			monthlyPrice: 500,
+			yearlyPrice:  5000,
+			onetimePrice: 80000,
 			sortOrder:    21,
 		},
 
@@ -198,6 +222,8 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			description:  "Google Maps API for live delivery tracking with accurate ETAs, geocoding, and route visualization. Default: OpenStreetMap (free).",
 			category:     product.CategoryAddOn,
 			monthlyPrice: 500,
+			yearlyPrice:  5000,
+			onetimePrice: 80000,
 			sortOrder:    30,
 		},
 		{
@@ -207,6 +233,8 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			description:  "Paystack card and mobile money payments. Enables Visa/Mastercard, bank transfers, and USSD payments alongside M-Pesa.",
 			category:     product.CategoryAddOn,
 			monthlyPrice: 300,
+			yearlyPrice:  3000,
+			onetimePrice: 80000,
 			sortOrder:    31,
 		},
 		{
@@ -216,6 +244,8 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			description:  "Bulk SMS credits for order notifications, OTP verification, and marketing. Base plan includes 100 SMS/month; this adds 500 extra/month.",
 			category:     product.CategoryAddOn,
 			monthlyPrice: 200,
+			yearlyPrice:  2000,
+			onetimePrice: 80000,
 			sortOrder:    32,
 		},
 		{
@@ -225,6 +255,8 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			description:  "Dedicated support channel with 4-hour SLA, priority issue resolution, and custom integrations assistance.",
 			category:     product.CategoryAddOn,
 			monthlyPrice: 1000,
+			yearlyPrice:  10000,
+			onetimePrice: 80000,
 			sortOrder:    33,
 		},
 	}
@@ -243,7 +275,10 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 				SetCategory(p.category).
 				SetStatus(product.StatusActive).
 				SetIsPlatform(p.isPlatform).
+				SetIsBaseService(p.isBaseService).
 				SetMonthlyPrice(p.monthlyPrice).
+				SetYearlyPrice(p.yearlyPrice).
+				SetOnetimePrice(p.onetimePrice).
 				SetIncludedInBundle(true).
 				SetSortOrder(p.sortOrder)
 			if len(p.dependencies) > 0 {
@@ -263,7 +298,10 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 				SetCategory(p.category).
 				SetStatus(product.StatusActive).
 				SetIsPlatform(p.isPlatform).
+				SetIsBaseService(p.isBaseService).
 				SetMonthlyPrice(p.monthlyPrice).
+				SetYearlyPrice(p.yearlyPrice).
+				SetOnetimePrice(p.onetimePrice).
 				SetIncludedInBundle(true).
 				SetSortOrder(p.sortOrder)
 			if len(p.dependencies) > 0 {
@@ -294,6 +332,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 		name         string
 		description  string
 		billingCycle string
+		planType     subscriptionplan.PlanType
 		price        float64
 		tierOrder    int
 		tierLimits   map[string]any
@@ -308,6 +347,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			name:         "Starter (Lite)",
 			description:  "Perfect for small cafes and pilot operations. Core ordering features with essential admin tools.",
 			billingCycle: "MONTHLY",
+			planType:     subscriptionplan.PlanTypeTIERED,
 			price:        2500.0,
 			tierOrder:    1,
 			tierLimits: map[string]any{
@@ -338,6 +378,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			name:         "Growth (Standard)",
 			description:  "Ideal for growing cafes with multiple outlets. Advanced features including loyalty program and multi-outlet support.",
 			billingCycle: "MONTHLY",
+			planType:     subscriptionplan.PlanTypeTIERED,
 			price:        6000.0,
 			tierOrder:    2,
 			tierLimits: map[string]any{
@@ -373,6 +414,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			name:         "Professional (Scale)",
 			description:  "For multi-branch cafes and chains. Complete feature set with POS integration, route optimization, and priority support.",
 			billingCycle: "MONTHLY",
+			planType:     subscriptionplan.PlanTypeTIERED,
 			price:        12500.0,
 			tierOrder:    3,
 			tierLimits: map[string]any{
@@ -417,7 +459,8 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			name:         "Starter (Lite) — Annual",
 			description:  "Perfect for small cafes and pilot operations. Save with annual billing.",
 			billingCycle: "ANNUAL",
-			price:        27500.0, // 11 months for price of 10 (KES 2,500 × 11)
+			planType:     subscriptionplan.PlanTypeTIERED,
+			price:        27500.0, // 11 months for price of 10 (KES 2,500 × 11) - Wait, inception says 27,500/year (11 months)
 			tierOrder:    1,
 			tierLimits: map[string]any{
 				"max_admins":                         2,
@@ -446,6 +489,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			name:         "Growth (Standard) — Annual",
 			description:  "Ideal for growing cafes with multiple outlets. Save with annual billing.",
 			billingCycle: "ANNUAL",
+			planType:     subscriptionplan.PlanTypeTIERED,
 			price:        66000.0, // KES 6,000 × 11
 			tierOrder:    2,
 			tierLimits: map[string]any{
@@ -481,6 +525,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			name:         "Professional (Scale) — Annual",
 			description:  "For multi-branch cafes and chains. Save with annual billing.",
 			billingCycle: "ANNUAL",
+			planType:     subscriptionplan.PlanTypeTIERED,
 			price:        137500.0, // KES 12,500 × 11
 			tierOrder:    3,
 			tierLimits: map[string]any{
@@ -531,6 +576,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				SetName(p.name).
 				SetDescription(p.description).
 				SetBillingCycle(p.billingCycle).
+				SetPlanType(p.planType).
 				SetBasePrice(p.price).
 				SetCurrency("KES").
 				SetIsActive(true).
@@ -549,6 +595,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				SetName(p.name).
 				SetDescription(p.description).
 				SetBillingCycle(p.billingCycle).
+				SetPlanType(p.planType).
 				SetBasePrice(p.price).
 				SetCurrency("KES").
 				SetIsActive(true).

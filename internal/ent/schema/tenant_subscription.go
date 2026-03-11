@@ -46,6 +46,13 @@ func (TenantSubscription) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("Reason for cancellation"),
+		field.Enum("billing_cycle").
+			Values("MONTHLY", "QUARTERLY", "ANNUAL", "ONE_TIME").
+			Default("MONTHLY").
+			Comment("Tenant's chosen billing cycle (may override plan default)"),
+		field.Float("applied_discount").
+			Default(0).
+			Comment("Discount applied to this subscription based on rules (e.g., 20% for yearly)"),
 		field.String("bundle_code").
 			Optional().
 			Nillable().

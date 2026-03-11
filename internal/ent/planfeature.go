@@ -28,6 +28,8 @@ type PlanFeature struct {
 	IsIncluded bool `json:"is_included,omitempty"`
 	// Feature-specific limit (e.g., max 5 outlets)
 	LimitValue int `json:"limit_value,omitempty"`
+	// Price per unit above the limit
+	OverageUnitPrice float64 `json:"overage_unit_price,omitempty"`
 	// Metadata holds the value of the "metadata" field.
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -67,6 +69,8 @@ func (*PlanFeature) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case planfeature.FieldIsIncluded:
 			values[i] = new(sql.NullBool)
+		case planfeature.FieldOverageUnitPrice:
+			values[i] = new(sql.NullFloat64)
 		case planfeature.FieldLimitValue:
 			values[i] = new(sql.NullInt64)
 		case planfeature.FieldFeatureCode:
@@ -84,7 +88,7 @@ func (*PlanFeature) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the PlanFeature fields.
-func (pf *PlanFeature) assignValues(columns []string, values []any) error {
+func (_m *PlanFeature) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -94,37 +98,43 @@ func (pf *PlanFeature) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				pf.ID = *value
+				_m.ID = *value
 			}
 		case planfeature.FieldPlanID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field plan_id", values[i])
 			} else if value != nil {
-				pf.PlanID = *value
+				_m.PlanID = *value
 			}
 		case planfeature.FieldFeatureCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field feature_code", values[i])
 			} else if value.Valid {
-				pf.FeatureCode = value.String
+				_m.FeatureCode = value.String
 			}
 		case planfeature.FieldIsIncluded:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field is_included", values[i])
 			} else if value.Valid {
-				pf.IsIncluded = value.Bool
+				_m.IsIncluded = value.Bool
 			}
 		case planfeature.FieldLimitValue:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field limit_value", values[i])
 			} else if value.Valid {
-				pf.LimitValue = int(value.Int64)
+				_m.LimitValue = int(value.Int64)
+			}
+		case planfeature.FieldOverageUnitPrice:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field overage_unit_price", values[i])
+			} else if value.Valid {
+				_m.OverageUnitPrice = value.Float64
 			}
 		case planfeature.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &pf.Metadata); err != nil {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
 					return fmt.Errorf("unmarshal field metadata: %w", err)
 				}
 			}
@@ -132,10 +142,10 @@ func (pf *PlanFeature) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				pf.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		default:
-			pf.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -143,55 +153,58 @@ func (pf *PlanFeature) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the PlanFeature.
 // This includes values selected through modifiers, order, etc.
-func (pf *PlanFeature) Value(name string) (ent.Value, error) {
-	return pf.selectValues.Get(name)
+func (_m *PlanFeature) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryPlan queries the "plan" edge of the PlanFeature entity.
-func (pf *PlanFeature) QueryPlan() *SubscriptionPlanQuery {
-	return NewPlanFeatureClient(pf.config).QueryPlan(pf)
+func (_m *PlanFeature) QueryPlan() *SubscriptionPlanQuery {
+	return NewPlanFeatureClient(_m.config).QueryPlan(_m)
 }
 
 // Update returns a builder for updating this PlanFeature.
 // Note that you need to call PlanFeature.Unwrap() before calling this method if this PlanFeature
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (pf *PlanFeature) Update() *PlanFeatureUpdateOne {
-	return NewPlanFeatureClient(pf.config).UpdateOne(pf)
+func (_m *PlanFeature) Update() *PlanFeatureUpdateOne {
+	return NewPlanFeatureClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the PlanFeature entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (pf *PlanFeature) Unwrap() *PlanFeature {
-	_tx, ok := pf.config.driver.(*txDriver)
+func (_m *PlanFeature) Unwrap() *PlanFeature {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: PlanFeature is not a transactional entity")
 	}
-	pf.config.driver = _tx.drv
-	return pf
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (pf *PlanFeature) String() string {
+func (_m *PlanFeature) String() string {
 	var builder strings.Builder
 	builder.WriteString("PlanFeature(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", pf.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("plan_id=")
-	builder.WriteString(fmt.Sprintf("%v", pf.PlanID))
+	builder.WriteString(fmt.Sprintf("%v", _m.PlanID))
 	builder.WriteString(", ")
 	builder.WriteString("feature_code=")
-	builder.WriteString(pf.FeatureCode)
+	builder.WriteString(_m.FeatureCode)
 	builder.WriteString(", ")
 	builder.WriteString("is_included=")
-	builder.WriteString(fmt.Sprintf("%v", pf.IsIncluded))
+	builder.WriteString(fmt.Sprintf("%v", _m.IsIncluded))
 	builder.WriteString(", ")
 	builder.WriteString("limit_value=")
-	builder.WriteString(fmt.Sprintf("%v", pf.LimitValue))
+	builder.WriteString(fmt.Sprintf("%v", _m.LimitValue))
+	builder.WriteString(", ")
+	builder.WriteString("overage_unit_price=")
+	builder.WriteString(fmt.Sprintf("%v", _m.OverageUnitPrice))
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
-	builder.WriteString(fmt.Sprintf("%v", pf.Metadata))
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(pf.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

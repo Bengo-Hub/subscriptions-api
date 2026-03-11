@@ -26,175 +26,175 @@ type ProductSubscriptionUpdate struct {
 }
 
 // Where appends a list predicates to the ProductSubscriptionUpdate builder.
-func (psu *ProductSubscriptionUpdate) Where(ps ...predicate.ProductSubscription) *ProductSubscriptionUpdate {
-	psu.mutation.Where(ps...)
-	return psu
+func (_u *ProductSubscriptionUpdate) Where(ps ...predicate.ProductSubscription) *ProductSubscriptionUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetTenantSubscriptionID sets the "tenant_subscription_id" field.
-func (psu *ProductSubscriptionUpdate) SetTenantSubscriptionID(u uuid.UUID) *ProductSubscriptionUpdate {
-	psu.mutation.SetTenantSubscriptionID(u)
-	return psu
+func (_u *ProductSubscriptionUpdate) SetTenantSubscriptionID(v uuid.UUID) *ProductSubscriptionUpdate {
+	_u.mutation.SetTenantSubscriptionID(v)
+	return _u
 }
 
 // SetNillableTenantSubscriptionID sets the "tenant_subscription_id" field if the given value is not nil.
-func (psu *ProductSubscriptionUpdate) SetNillableTenantSubscriptionID(u *uuid.UUID) *ProductSubscriptionUpdate {
-	if u != nil {
-		psu.SetTenantSubscriptionID(*u)
+func (_u *ProductSubscriptionUpdate) SetNillableTenantSubscriptionID(v *uuid.UUID) *ProductSubscriptionUpdate {
+	if v != nil {
+		_u.SetTenantSubscriptionID(*v)
 	}
-	return psu
+	return _u
 }
 
 // SetProductCode sets the "product_code" field.
-func (psu *ProductSubscriptionUpdate) SetProductCode(s string) *ProductSubscriptionUpdate {
-	psu.mutation.SetProductCode(s)
-	return psu
+func (_u *ProductSubscriptionUpdate) SetProductCode(v string) *ProductSubscriptionUpdate {
+	_u.mutation.SetProductCode(v)
+	return _u
 }
 
 // SetNillableProductCode sets the "product_code" field if the given value is not nil.
-func (psu *ProductSubscriptionUpdate) SetNillableProductCode(s *string) *ProductSubscriptionUpdate {
-	if s != nil {
-		psu.SetProductCode(*s)
+func (_u *ProductSubscriptionUpdate) SetNillableProductCode(v *string) *ProductSubscriptionUpdate {
+	if v != nil {
+		_u.SetProductCode(*v)
 	}
-	return psu
+	return _u
 }
 
 // SetProductID sets the "product_id" field.
-func (psu *ProductSubscriptionUpdate) SetProductID(u uuid.UUID) *ProductSubscriptionUpdate {
-	psu.mutation.SetProductID(u)
-	return psu
+func (_u *ProductSubscriptionUpdate) SetProductID(v uuid.UUID) *ProductSubscriptionUpdate {
+	_u.mutation.SetProductID(v)
+	return _u
 }
 
 // SetNillableProductID sets the "product_id" field if the given value is not nil.
-func (psu *ProductSubscriptionUpdate) SetNillableProductID(u *uuid.UUID) *ProductSubscriptionUpdate {
-	if u != nil {
-		psu.SetProductID(*u)
+func (_u *ProductSubscriptionUpdate) SetNillableProductID(v *uuid.UUID) *ProductSubscriptionUpdate {
+	if v != nil {
+		_u.SetProductID(*v)
 	}
-	return psu
+	return _u
 }
 
 // SetStatus sets the "status" field.
-func (psu *ProductSubscriptionUpdate) SetStatus(pr productsubscription.Status) *ProductSubscriptionUpdate {
-	psu.mutation.SetStatus(pr)
-	return psu
+func (_u *ProductSubscriptionUpdate) SetStatus(v productsubscription.Status) *ProductSubscriptionUpdate {
+	_u.mutation.SetStatus(v)
+	return _u
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (psu *ProductSubscriptionUpdate) SetNillableStatus(pr *productsubscription.Status) *ProductSubscriptionUpdate {
-	if pr != nil {
-		psu.SetStatus(*pr)
+func (_u *ProductSubscriptionUpdate) SetNillableStatus(v *productsubscription.Status) *ProductSubscriptionUpdate {
+	if v != nil {
+		_u.SetStatus(*v)
 	}
-	return psu
+	return _u
 }
 
 // SetTrialEndsAt sets the "trial_ends_at" field.
-func (psu *ProductSubscriptionUpdate) SetTrialEndsAt(t time.Time) *ProductSubscriptionUpdate {
-	psu.mutation.SetTrialEndsAt(t)
-	return psu
+func (_u *ProductSubscriptionUpdate) SetTrialEndsAt(v time.Time) *ProductSubscriptionUpdate {
+	_u.mutation.SetTrialEndsAt(v)
+	return _u
 }
 
 // SetNillableTrialEndsAt sets the "trial_ends_at" field if the given value is not nil.
-func (psu *ProductSubscriptionUpdate) SetNillableTrialEndsAt(t *time.Time) *ProductSubscriptionUpdate {
-	if t != nil {
-		psu.SetTrialEndsAt(*t)
+func (_u *ProductSubscriptionUpdate) SetNillableTrialEndsAt(v *time.Time) *ProductSubscriptionUpdate {
+	if v != nil {
+		_u.SetTrialEndsAt(*v)
 	}
-	return psu
+	return _u
 }
 
 // ClearTrialEndsAt clears the value of the "trial_ends_at" field.
-func (psu *ProductSubscriptionUpdate) ClearTrialEndsAt() *ProductSubscriptionUpdate {
-	psu.mutation.ClearTrialEndsAt()
-	return psu
+func (_u *ProductSubscriptionUpdate) ClearTrialEndsAt() *ProductSubscriptionUpdate {
+	_u.mutation.ClearTrialEndsAt()
+	return _u
 }
 
 // SetActivatedAt sets the "activated_at" field.
-func (psu *ProductSubscriptionUpdate) SetActivatedAt(t time.Time) *ProductSubscriptionUpdate {
-	psu.mutation.SetActivatedAt(t)
-	return psu
+func (_u *ProductSubscriptionUpdate) SetActivatedAt(v time.Time) *ProductSubscriptionUpdate {
+	_u.mutation.SetActivatedAt(v)
+	return _u
 }
 
 // SetNillableActivatedAt sets the "activated_at" field if the given value is not nil.
-func (psu *ProductSubscriptionUpdate) SetNillableActivatedAt(t *time.Time) *ProductSubscriptionUpdate {
-	if t != nil {
-		psu.SetActivatedAt(*t)
+func (_u *ProductSubscriptionUpdate) SetNillableActivatedAt(v *time.Time) *ProductSubscriptionUpdate {
+	if v != nil {
+		_u.SetActivatedAt(*v)
 	}
-	return psu
+	return _u
 }
 
 // ClearActivatedAt clears the value of the "activated_at" field.
-func (psu *ProductSubscriptionUpdate) ClearActivatedAt() *ProductSubscriptionUpdate {
-	psu.mutation.ClearActivatedAt()
-	return psu
+func (_u *ProductSubscriptionUpdate) ClearActivatedAt() *ProductSubscriptionUpdate {
+	_u.mutation.ClearActivatedAt()
+	return _u
 }
 
 // SetDeactivatedAt sets the "deactivated_at" field.
-func (psu *ProductSubscriptionUpdate) SetDeactivatedAt(t time.Time) *ProductSubscriptionUpdate {
-	psu.mutation.SetDeactivatedAt(t)
-	return psu
+func (_u *ProductSubscriptionUpdate) SetDeactivatedAt(v time.Time) *ProductSubscriptionUpdate {
+	_u.mutation.SetDeactivatedAt(v)
+	return _u
 }
 
 // SetNillableDeactivatedAt sets the "deactivated_at" field if the given value is not nil.
-func (psu *ProductSubscriptionUpdate) SetNillableDeactivatedAt(t *time.Time) *ProductSubscriptionUpdate {
-	if t != nil {
-		psu.SetDeactivatedAt(*t)
+func (_u *ProductSubscriptionUpdate) SetNillableDeactivatedAt(v *time.Time) *ProductSubscriptionUpdate {
+	if v != nil {
+		_u.SetDeactivatedAt(*v)
 	}
-	return psu
+	return _u
 }
 
 // ClearDeactivatedAt clears the value of the "deactivated_at" field.
-func (psu *ProductSubscriptionUpdate) ClearDeactivatedAt() *ProductSubscriptionUpdate {
-	psu.mutation.ClearDeactivatedAt()
-	return psu
+func (_u *ProductSubscriptionUpdate) ClearDeactivatedAt() *ProductSubscriptionUpdate {
+	_u.mutation.ClearDeactivatedAt()
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (psu *ProductSubscriptionUpdate) SetMetadata(m map[string]interface{}) *ProductSubscriptionUpdate {
-	psu.mutation.SetMetadata(m)
-	return psu
+func (_u *ProductSubscriptionUpdate) SetMetadata(v map[string]interface{}) *ProductSubscriptionUpdate {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (psu *ProductSubscriptionUpdate) SetUpdatedAt(t time.Time) *ProductSubscriptionUpdate {
-	psu.mutation.SetUpdatedAt(t)
-	return psu
+func (_u *ProductSubscriptionUpdate) SetUpdatedAt(v time.Time) *ProductSubscriptionUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetTenantSubscription sets the "tenant_subscription" edge to the TenantSubscription entity.
-func (psu *ProductSubscriptionUpdate) SetTenantSubscription(t *TenantSubscription) *ProductSubscriptionUpdate {
-	return psu.SetTenantSubscriptionID(t.ID)
+func (_u *ProductSubscriptionUpdate) SetTenantSubscription(v *TenantSubscription) *ProductSubscriptionUpdate {
+	return _u.SetTenantSubscriptionID(v.ID)
 }
 
 // SetProduct sets the "product" edge to the Product entity.
-func (psu *ProductSubscriptionUpdate) SetProduct(p *Product) *ProductSubscriptionUpdate {
-	return psu.SetProductID(p.ID)
+func (_u *ProductSubscriptionUpdate) SetProduct(v *Product) *ProductSubscriptionUpdate {
+	return _u.SetProductID(v.ID)
 }
 
 // Mutation returns the ProductSubscriptionMutation object of the builder.
-func (psu *ProductSubscriptionUpdate) Mutation() *ProductSubscriptionMutation {
-	return psu.mutation
+func (_u *ProductSubscriptionUpdate) Mutation() *ProductSubscriptionMutation {
+	return _u.mutation
 }
 
 // ClearTenantSubscription clears the "tenant_subscription" edge to the TenantSubscription entity.
-func (psu *ProductSubscriptionUpdate) ClearTenantSubscription() *ProductSubscriptionUpdate {
-	psu.mutation.ClearTenantSubscription()
-	return psu
+func (_u *ProductSubscriptionUpdate) ClearTenantSubscription() *ProductSubscriptionUpdate {
+	_u.mutation.ClearTenantSubscription()
+	return _u
 }
 
 // ClearProduct clears the "product" edge to the Product entity.
-func (psu *ProductSubscriptionUpdate) ClearProduct() *ProductSubscriptionUpdate {
-	psu.mutation.ClearProduct()
-	return psu
+func (_u *ProductSubscriptionUpdate) ClearProduct() *ProductSubscriptionUpdate {
+	_u.mutation.ClearProduct()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (psu *ProductSubscriptionUpdate) Save(ctx context.Context) (int, error) {
-	psu.defaults()
-	return withHooks(ctx, psu.sqlSave, psu.mutation, psu.hooks)
+func (_u *ProductSubscriptionUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (psu *ProductSubscriptionUpdate) SaveX(ctx context.Context) int {
-	affected, err := psu.Save(ctx)
+func (_u *ProductSubscriptionUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -202,90 +202,90 @@ func (psu *ProductSubscriptionUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (psu *ProductSubscriptionUpdate) Exec(ctx context.Context) error {
-	_, err := psu.Save(ctx)
+func (_u *ProductSubscriptionUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (psu *ProductSubscriptionUpdate) ExecX(ctx context.Context) {
-	if err := psu.Exec(ctx); err != nil {
+func (_u *ProductSubscriptionUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (psu *ProductSubscriptionUpdate) defaults() {
-	if _, ok := psu.mutation.UpdatedAt(); !ok {
+func (_u *ProductSubscriptionUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := productsubscription.UpdateDefaultUpdatedAt()
-		psu.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (psu *ProductSubscriptionUpdate) check() error {
-	if v, ok := psu.mutation.ProductCode(); ok {
+func (_u *ProductSubscriptionUpdate) check() error {
+	if v, ok := _u.mutation.ProductCode(); ok {
 		if err := productsubscription.ProductCodeValidator(v); err != nil {
 			return &ValidationError{Name: "product_code", err: fmt.Errorf(`ent: validator failed for field "ProductSubscription.product_code": %w`, err)}
 		}
 	}
-	if v, ok := psu.mutation.Status(); ok {
+	if v, ok := _u.mutation.Status(); ok {
 		if err := productsubscription.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "ProductSubscription.status": %w`, err)}
 		}
 	}
-	if _, ok := psu.mutation.TenantSubscriptionID(); psu.mutation.TenantSubscriptionCleared() && !ok {
+	if _u.mutation.TenantSubscriptionCleared() && len(_u.mutation.TenantSubscriptionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ProductSubscription.tenant_subscription"`)
 	}
-	if _, ok := psu.mutation.ProductID(); psu.mutation.ProductCleared() && !ok {
+	if _u.mutation.ProductCleared() && len(_u.mutation.ProductIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ProductSubscription.product"`)
 	}
 	return nil
 }
 
-func (psu *ProductSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := psu.check(); err != nil {
-		return n, err
+func (_u *ProductSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(productsubscription.Table, productsubscription.Columns, sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID))
-	if ps := psu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := psu.mutation.ProductCode(); ok {
+	if value, ok := _u.mutation.ProductCode(); ok {
 		_spec.SetField(productsubscription.FieldProductCode, field.TypeString, value)
 	}
-	if value, ok := psu.mutation.Status(); ok {
+	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(productsubscription.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := psu.mutation.TrialEndsAt(); ok {
+	if value, ok := _u.mutation.TrialEndsAt(); ok {
 		_spec.SetField(productsubscription.FieldTrialEndsAt, field.TypeTime, value)
 	}
-	if psu.mutation.TrialEndsAtCleared() {
+	if _u.mutation.TrialEndsAtCleared() {
 		_spec.ClearField(productsubscription.FieldTrialEndsAt, field.TypeTime)
 	}
-	if value, ok := psu.mutation.ActivatedAt(); ok {
+	if value, ok := _u.mutation.ActivatedAt(); ok {
 		_spec.SetField(productsubscription.FieldActivatedAt, field.TypeTime, value)
 	}
-	if psu.mutation.ActivatedAtCleared() {
+	if _u.mutation.ActivatedAtCleared() {
 		_spec.ClearField(productsubscription.FieldActivatedAt, field.TypeTime)
 	}
-	if value, ok := psu.mutation.DeactivatedAt(); ok {
+	if value, ok := _u.mutation.DeactivatedAt(); ok {
 		_spec.SetField(productsubscription.FieldDeactivatedAt, field.TypeTime, value)
 	}
-	if psu.mutation.DeactivatedAtCleared() {
+	if _u.mutation.DeactivatedAtCleared() {
 		_spec.ClearField(productsubscription.FieldDeactivatedAt, field.TypeTime)
 	}
-	if value, ok := psu.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(productsubscription.FieldMetadata, field.TypeJSON, value)
 	}
-	if value, ok := psu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(productsubscription.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if psu.mutation.TenantSubscriptionCleared() {
+	if _u.mutation.TenantSubscriptionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -298,7 +298,7 @@ func (psu *ProductSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := psu.mutation.TenantSubscriptionIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.TenantSubscriptionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -314,7 +314,7 @@ func (psu *ProductSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if psu.mutation.ProductCleared() {
+	if _u.mutation.ProductCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -327,7 +327,7 @@ func (psu *ProductSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := psu.mutation.ProductIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ProductIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -343,7 +343,7 @@ func (psu *ProductSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if n, err = sqlgraph.UpdateNodes(ctx, psu.driver, _spec); err != nil {
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{productsubscription.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -351,8 +351,8 @@ func (psu *ProductSubscriptionUpdate) sqlSave(ctx context.Context) (n int, err e
 		}
 		return 0, err
 	}
-	psu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // ProductSubscriptionUpdateOne is the builder for updating a single ProductSubscription entity.
@@ -364,182 +364,182 @@ type ProductSubscriptionUpdateOne struct {
 }
 
 // SetTenantSubscriptionID sets the "tenant_subscription_id" field.
-func (psuo *ProductSubscriptionUpdateOne) SetTenantSubscriptionID(u uuid.UUID) *ProductSubscriptionUpdateOne {
-	psuo.mutation.SetTenantSubscriptionID(u)
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) SetTenantSubscriptionID(v uuid.UUID) *ProductSubscriptionUpdateOne {
+	_u.mutation.SetTenantSubscriptionID(v)
+	return _u
 }
 
 // SetNillableTenantSubscriptionID sets the "tenant_subscription_id" field if the given value is not nil.
-func (psuo *ProductSubscriptionUpdateOne) SetNillableTenantSubscriptionID(u *uuid.UUID) *ProductSubscriptionUpdateOne {
-	if u != nil {
-		psuo.SetTenantSubscriptionID(*u)
+func (_u *ProductSubscriptionUpdateOne) SetNillableTenantSubscriptionID(v *uuid.UUID) *ProductSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetTenantSubscriptionID(*v)
 	}
-	return psuo
+	return _u
 }
 
 // SetProductCode sets the "product_code" field.
-func (psuo *ProductSubscriptionUpdateOne) SetProductCode(s string) *ProductSubscriptionUpdateOne {
-	psuo.mutation.SetProductCode(s)
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) SetProductCode(v string) *ProductSubscriptionUpdateOne {
+	_u.mutation.SetProductCode(v)
+	return _u
 }
 
 // SetNillableProductCode sets the "product_code" field if the given value is not nil.
-func (psuo *ProductSubscriptionUpdateOne) SetNillableProductCode(s *string) *ProductSubscriptionUpdateOne {
-	if s != nil {
-		psuo.SetProductCode(*s)
+func (_u *ProductSubscriptionUpdateOne) SetNillableProductCode(v *string) *ProductSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetProductCode(*v)
 	}
-	return psuo
+	return _u
 }
 
 // SetProductID sets the "product_id" field.
-func (psuo *ProductSubscriptionUpdateOne) SetProductID(u uuid.UUID) *ProductSubscriptionUpdateOne {
-	psuo.mutation.SetProductID(u)
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) SetProductID(v uuid.UUID) *ProductSubscriptionUpdateOne {
+	_u.mutation.SetProductID(v)
+	return _u
 }
 
 // SetNillableProductID sets the "product_id" field if the given value is not nil.
-func (psuo *ProductSubscriptionUpdateOne) SetNillableProductID(u *uuid.UUID) *ProductSubscriptionUpdateOne {
-	if u != nil {
-		psuo.SetProductID(*u)
+func (_u *ProductSubscriptionUpdateOne) SetNillableProductID(v *uuid.UUID) *ProductSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetProductID(*v)
 	}
-	return psuo
+	return _u
 }
 
 // SetStatus sets the "status" field.
-func (psuo *ProductSubscriptionUpdateOne) SetStatus(pr productsubscription.Status) *ProductSubscriptionUpdateOne {
-	psuo.mutation.SetStatus(pr)
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) SetStatus(v productsubscription.Status) *ProductSubscriptionUpdateOne {
+	_u.mutation.SetStatus(v)
+	return _u
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (psuo *ProductSubscriptionUpdateOne) SetNillableStatus(pr *productsubscription.Status) *ProductSubscriptionUpdateOne {
-	if pr != nil {
-		psuo.SetStatus(*pr)
+func (_u *ProductSubscriptionUpdateOne) SetNillableStatus(v *productsubscription.Status) *ProductSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetStatus(*v)
 	}
-	return psuo
+	return _u
 }
 
 // SetTrialEndsAt sets the "trial_ends_at" field.
-func (psuo *ProductSubscriptionUpdateOne) SetTrialEndsAt(t time.Time) *ProductSubscriptionUpdateOne {
-	psuo.mutation.SetTrialEndsAt(t)
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) SetTrialEndsAt(v time.Time) *ProductSubscriptionUpdateOne {
+	_u.mutation.SetTrialEndsAt(v)
+	return _u
 }
 
 // SetNillableTrialEndsAt sets the "trial_ends_at" field if the given value is not nil.
-func (psuo *ProductSubscriptionUpdateOne) SetNillableTrialEndsAt(t *time.Time) *ProductSubscriptionUpdateOne {
-	if t != nil {
-		psuo.SetTrialEndsAt(*t)
+func (_u *ProductSubscriptionUpdateOne) SetNillableTrialEndsAt(v *time.Time) *ProductSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetTrialEndsAt(*v)
 	}
-	return psuo
+	return _u
 }
 
 // ClearTrialEndsAt clears the value of the "trial_ends_at" field.
-func (psuo *ProductSubscriptionUpdateOne) ClearTrialEndsAt() *ProductSubscriptionUpdateOne {
-	psuo.mutation.ClearTrialEndsAt()
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) ClearTrialEndsAt() *ProductSubscriptionUpdateOne {
+	_u.mutation.ClearTrialEndsAt()
+	return _u
 }
 
 // SetActivatedAt sets the "activated_at" field.
-func (psuo *ProductSubscriptionUpdateOne) SetActivatedAt(t time.Time) *ProductSubscriptionUpdateOne {
-	psuo.mutation.SetActivatedAt(t)
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) SetActivatedAt(v time.Time) *ProductSubscriptionUpdateOne {
+	_u.mutation.SetActivatedAt(v)
+	return _u
 }
 
 // SetNillableActivatedAt sets the "activated_at" field if the given value is not nil.
-func (psuo *ProductSubscriptionUpdateOne) SetNillableActivatedAt(t *time.Time) *ProductSubscriptionUpdateOne {
-	if t != nil {
-		psuo.SetActivatedAt(*t)
+func (_u *ProductSubscriptionUpdateOne) SetNillableActivatedAt(v *time.Time) *ProductSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetActivatedAt(*v)
 	}
-	return psuo
+	return _u
 }
 
 // ClearActivatedAt clears the value of the "activated_at" field.
-func (psuo *ProductSubscriptionUpdateOne) ClearActivatedAt() *ProductSubscriptionUpdateOne {
-	psuo.mutation.ClearActivatedAt()
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) ClearActivatedAt() *ProductSubscriptionUpdateOne {
+	_u.mutation.ClearActivatedAt()
+	return _u
 }
 
 // SetDeactivatedAt sets the "deactivated_at" field.
-func (psuo *ProductSubscriptionUpdateOne) SetDeactivatedAt(t time.Time) *ProductSubscriptionUpdateOne {
-	psuo.mutation.SetDeactivatedAt(t)
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) SetDeactivatedAt(v time.Time) *ProductSubscriptionUpdateOne {
+	_u.mutation.SetDeactivatedAt(v)
+	return _u
 }
 
 // SetNillableDeactivatedAt sets the "deactivated_at" field if the given value is not nil.
-func (psuo *ProductSubscriptionUpdateOne) SetNillableDeactivatedAt(t *time.Time) *ProductSubscriptionUpdateOne {
-	if t != nil {
-		psuo.SetDeactivatedAt(*t)
+func (_u *ProductSubscriptionUpdateOne) SetNillableDeactivatedAt(v *time.Time) *ProductSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetDeactivatedAt(*v)
 	}
-	return psuo
+	return _u
 }
 
 // ClearDeactivatedAt clears the value of the "deactivated_at" field.
-func (psuo *ProductSubscriptionUpdateOne) ClearDeactivatedAt() *ProductSubscriptionUpdateOne {
-	psuo.mutation.ClearDeactivatedAt()
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) ClearDeactivatedAt() *ProductSubscriptionUpdateOne {
+	_u.mutation.ClearDeactivatedAt()
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (psuo *ProductSubscriptionUpdateOne) SetMetadata(m map[string]interface{}) *ProductSubscriptionUpdateOne {
-	psuo.mutation.SetMetadata(m)
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) SetMetadata(v map[string]interface{}) *ProductSubscriptionUpdateOne {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (psuo *ProductSubscriptionUpdateOne) SetUpdatedAt(t time.Time) *ProductSubscriptionUpdateOne {
-	psuo.mutation.SetUpdatedAt(t)
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) SetUpdatedAt(v time.Time) *ProductSubscriptionUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetTenantSubscription sets the "tenant_subscription" edge to the TenantSubscription entity.
-func (psuo *ProductSubscriptionUpdateOne) SetTenantSubscription(t *TenantSubscription) *ProductSubscriptionUpdateOne {
-	return psuo.SetTenantSubscriptionID(t.ID)
+func (_u *ProductSubscriptionUpdateOne) SetTenantSubscription(v *TenantSubscription) *ProductSubscriptionUpdateOne {
+	return _u.SetTenantSubscriptionID(v.ID)
 }
 
 // SetProduct sets the "product" edge to the Product entity.
-func (psuo *ProductSubscriptionUpdateOne) SetProduct(p *Product) *ProductSubscriptionUpdateOne {
-	return psuo.SetProductID(p.ID)
+func (_u *ProductSubscriptionUpdateOne) SetProduct(v *Product) *ProductSubscriptionUpdateOne {
+	return _u.SetProductID(v.ID)
 }
 
 // Mutation returns the ProductSubscriptionMutation object of the builder.
-func (psuo *ProductSubscriptionUpdateOne) Mutation() *ProductSubscriptionMutation {
-	return psuo.mutation
+func (_u *ProductSubscriptionUpdateOne) Mutation() *ProductSubscriptionMutation {
+	return _u.mutation
 }
 
 // ClearTenantSubscription clears the "tenant_subscription" edge to the TenantSubscription entity.
-func (psuo *ProductSubscriptionUpdateOne) ClearTenantSubscription() *ProductSubscriptionUpdateOne {
-	psuo.mutation.ClearTenantSubscription()
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) ClearTenantSubscription() *ProductSubscriptionUpdateOne {
+	_u.mutation.ClearTenantSubscription()
+	return _u
 }
 
 // ClearProduct clears the "product" edge to the Product entity.
-func (psuo *ProductSubscriptionUpdateOne) ClearProduct() *ProductSubscriptionUpdateOne {
-	psuo.mutation.ClearProduct()
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) ClearProduct() *ProductSubscriptionUpdateOne {
+	_u.mutation.ClearProduct()
+	return _u
 }
 
 // Where appends a list predicates to the ProductSubscriptionUpdate builder.
-func (psuo *ProductSubscriptionUpdateOne) Where(ps ...predicate.ProductSubscription) *ProductSubscriptionUpdateOne {
-	psuo.mutation.Where(ps...)
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) Where(ps ...predicate.ProductSubscription) *ProductSubscriptionUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (psuo *ProductSubscriptionUpdateOne) Select(field string, fields ...string) *ProductSubscriptionUpdateOne {
-	psuo.fields = append([]string{field}, fields...)
-	return psuo
+func (_u *ProductSubscriptionUpdateOne) Select(field string, fields ...string) *ProductSubscriptionUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated ProductSubscription entity.
-func (psuo *ProductSubscriptionUpdateOne) Save(ctx context.Context) (*ProductSubscription, error) {
-	psuo.defaults()
-	return withHooks(ctx, psuo.sqlSave, psuo.mutation, psuo.hooks)
+func (_u *ProductSubscriptionUpdateOne) Save(ctx context.Context) (*ProductSubscription, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (psuo *ProductSubscriptionUpdateOne) SaveX(ctx context.Context) *ProductSubscription {
-	node, err := psuo.Save(ctx)
+func (_u *ProductSubscriptionUpdateOne) SaveX(ctx context.Context) *ProductSubscription {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -547,58 +547,58 @@ func (psuo *ProductSubscriptionUpdateOne) SaveX(ctx context.Context) *ProductSub
 }
 
 // Exec executes the query on the entity.
-func (psuo *ProductSubscriptionUpdateOne) Exec(ctx context.Context) error {
-	_, err := psuo.Save(ctx)
+func (_u *ProductSubscriptionUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (psuo *ProductSubscriptionUpdateOne) ExecX(ctx context.Context) {
-	if err := psuo.Exec(ctx); err != nil {
+func (_u *ProductSubscriptionUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (psuo *ProductSubscriptionUpdateOne) defaults() {
-	if _, ok := psuo.mutation.UpdatedAt(); !ok {
+func (_u *ProductSubscriptionUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := productsubscription.UpdateDefaultUpdatedAt()
-		psuo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (psuo *ProductSubscriptionUpdateOne) check() error {
-	if v, ok := psuo.mutation.ProductCode(); ok {
+func (_u *ProductSubscriptionUpdateOne) check() error {
+	if v, ok := _u.mutation.ProductCode(); ok {
 		if err := productsubscription.ProductCodeValidator(v); err != nil {
 			return &ValidationError{Name: "product_code", err: fmt.Errorf(`ent: validator failed for field "ProductSubscription.product_code": %w`, err)}
 		}
 	}
-	if v, ok := psuo.mutation.Status(); ok {
+	if v, ok := _u.mutation.Status(); ok {
 		if err := productsubscription.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "ProductSubscription.status": %w`, err)}
 		}
 	}
-	if _, ok := psuo.mutation.TenantSubscriptionID(); psuo.mutation.TenantSubscriptionCleared() && !ok {
+	if _u.mutation.TenantSubscriptionCleared() && len(_u.mutation.TenantSubscriptionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ProductSubscription.tenant_subscription"`)
 	}
-	if _, ok := psuo.mutation.ProductID(); psuo.mutation.ProductCleared() && !ok {
+	if _u.mutation.ProductCleared() && len(_u.mutation.ProductIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ProductSubscription.product"`)
 	}
 	return nil
 }
 
-func (psuo *ProductSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ProductSubscription, err error) {
-	if err := psuo.check(); err != nil {
+func (_u *ProductSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ProductSubscription, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(productsubscription.Table, productsubscription.Columns, sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID))
-	id, ok := psuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ProductSubscription.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := psuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, productsubscription.FieldID)
 		for _, f := range fields {
@@ -610,44 +610,44 @@ func (psuo *ProductSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *P
 			}
 		}
 	}
-	if ps := psuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := psuo.mutation.ProductCode(); ok {
+	if value, ok := _u.mutation.ProductCode(); ok {
 		_spec.SetField(productsubscription.FieldProductCode, field.TypeString, value)
 	}
-	if value, ok := psuo.mutation.Status(); ok {
+	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(productsubscription.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := psuo.mutation.TrialEndsAt(); ok {
+	if value, ok := _u.mutation.TrialEndsAt(); ok {
 		_spec.SetField(productsubscription.FieldTrialEndsAt, field.TypeTime, value)
 	}
-	if psuo.mutation.TrialEndsAtCleared() {
+	if _u.mutation.TrialEndsAtCleared() {
 		_spec.ClearField(productsubscription.FieldTrialEndsAt, field.TypeTime)
 	}
-	if value, ok := psuo.mutation.ActivatedAt(); ok {
+	if value, ok := _u.mutation.ActivatedAt(); ok {
 		_spec.SetField(productsubscription.FieldActivatedAt, field.TypeTime, value)
 	}
-	if psuo.mutation.ActivatedAtCleared() {
+	if _u.mutation.ActivatedAtCleared() {
 		_spec.ClearField(productsubscription.FieldActivatedAt, field.TypeTime)
 	}
-	if value, ok := psuo.mutation.DeactivatedAt(); ok {
+	if value, ok := _u.mutation.DeactivatedAt(); ok {
 		_spec.SetField(productsubscription.FieldDeactivatedAt, field.TypeTime, value)
 	}
-	if psuo.mutation.DeactivatedAtCleared() {
+	if _u.mutation.DeactivatedAtCleared() {
 		_spec.ClearField(productsubscription.FieldDeactivatedAt, field.TypeTime)
 	}
-	if value, ok := psuo.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(productsubscription.FieldMetadata, field.TypeJSON, value)
 	}
-	if value, ok := psuo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(productsubscription.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if psuo.mutation.TenantSubscriptionCleared() {
+	if _u.mutation.TenantSubscriptionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -660,7 +660,7 @@ func (psuo *ProductSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *P
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := psuo.mutation.TenantSubscriptionIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.TenantSubscriptionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -676,7 +676,7 @@ func (psuo *ProductSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *P
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if psuo.mutation.ProductCleared() {
+	if _u.mutation.ProductCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -689,7 +689,7 @@ func (psuo *ProductSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *P
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := psuo.mutation.ProductIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.ProductIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -705,10 +705,10 @@ func (psuo *ProductSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *P
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &ProductSubscription{config: psuo.config}
+	_node = &ProductSubscription{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, psuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{productsubscription.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -716,6 +716,6 @@ func (psuo *ProductSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *P
 		}
 		return nil, err
 	}
-	psuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

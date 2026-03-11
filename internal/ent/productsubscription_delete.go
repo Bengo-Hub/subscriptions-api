@@ -20,56 +20,56 @@ type ProductSubscriptionDelete struct {
 }
 
 // Where appends a list predicates to the ProductSubscriptionDelete builder.
-func (psd *ProductSubscriptionDelete) Where(ps ...predicate.ProductSubscription) *ProductSubscriptionDelete {
-	psd.mutation.Where(ps...)
-	return psd
+func (_d *ProductSubscriptionDelete) Where(ps ...predicate.ProductSubscription) *ProductSubscriptionDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (psd *ProductSubscriptionDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, psd.sqlExec, psd.mutation, psd.hooks)
+func (_d *ProductSubscriptionDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (psd *ProductSubscriptionDelete) ExecX(ctx context.Context) int {
-	n, err := psd.Exec(ctx)
+func (_d *ProductSubscriptionDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (psd *ProductSubscriptionDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *ProductSubscriptionDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(productsubscription.Table, sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID))
-	if ps := psd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, psd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	psd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // ProductSubscriptionDeleteOne is the builder for deleting a single ProductSubscription entity.
 type ProductSubscriptionDeleteOne struct {
-	psd *ProductSubscriptionDelete
+	_d *ProductSubscriptionDelete
 }
 
 // Where appends a list predicates to the ProductSubscriptionDelete builder.
-func (psdo *ProductSubscriptionDeleteOne) Where(ps ...predicate.ProductSubscription) *ProductSubscriptionDeleteOne {
-	psdo.psd.mutation.Where(ps...)
-	return psdo
+func (_d *ProductSubscriptionDeleteOne) Where(ps ...predicate.ProductSubscription) *ProductSubscriptionDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (psdo *ProductSubscriptionDeleteOne) Exec(ctx context.Context) error {
-	n, err := psdo.psd.Exec(ctx)
+func (_d *ProductSubscriptionDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (psdo *ProductSubscriptionDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (psdo *ProductSubscriptionDeleteOne) ExecX(ctx context.Context) {
-	if err := psdo.Exec(ctx); err != nil {
+func (_d *ProductSubscriptionDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

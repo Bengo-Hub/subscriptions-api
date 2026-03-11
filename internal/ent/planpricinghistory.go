@@ -86,7 +86,7 @@ func (*PlanPricingHistory) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the PlanPricingHistory fields.
-func (pph *PlanPricingHistory) assignValues(columns []string, values []any) error {
+func (_m *PlanPricingHistory) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -96,49 +96,49 @@ func (pph *PlanPricingHistory) assignValues(columns []string, values []any) erro
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				pph.ID = *value
+				_m.ID = *value
 			}
 		case planpricinghistory.FieldPlanID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field plan_id", values[i])
 			} else if value != nil {
-				pph.PlanID = *value
+				_m.PlanID = *value
 			}
 		case planpricinghistory.FieldBasePrice:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field base_price", values[i])
 			} else if value.Valid {
-				pph.BasePrice = value.Float64
+				_m.BasePrice = value.Float64
 			}
 		case planpricinghistory.FieldEffectiveFrom:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field effective_from", values[i])
 			} else if value.Valid {
-				pph.EffectiveFrom = value.Time
+				_m.EffectiveFrom = value.Time
 			}
 		case planpricinghistory.FieldEffectiveTo:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field effective_to", values[i])
 			} else if value.Valid {
-				pph.EffectiveTo = value.Time
+				_m.EffectiveTo = value.Time
 			}
 		case planpricinghistory.FieldChangedBy:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field changed_by", values[i])
 			} else if value != nil {
-				pph.ChangedBy = *value
+				_m.ChangedBy = *value
 			}
 		case planpricinghistory.FieldChangeReason:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field change_reason", values[i])
 			} else if value.Valid {
-				pph.ChangeReason = value.String
+				_m.ChangeReason = value.String
 			}
 		case planpricinghistory.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &pph.Metadata); err != nil {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
 					return fmt.Errorf("unmarshal field metadata: %w", err)
 				}
 			}
@@ -146,10 +146,10 @@ func (pph *PlanPricingHistory) assignValues(columns []string, values []any) erro
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				pph.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		default:
-			pph.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -157,61 +157,61 @@ func (pph *PlanPricingHistory) assignValues(columns []string, values []any) erro
 
 // Value returns the ent.Value that was dynamically selected and assigned to the PlanPricingHistory.
 // This includes values selected through modifiers, order, etc.
-func (pph *PlanPricingHistory) Value(name string) (ent.Value, error) {
-	return pph.selectValues.Get(name)
+func (_m *PlanPricingHistory) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryPlan queries the "plan" edge of the PlanPricingHistory entity.
-func (pph *PlanPricingHistory) QueryPlan() *SubscriptionPlanQuery {
-	return NewPlanPricingHistoryClient(pph.config).QueryPlan(pph)
+func (_m *PlanPricingHistory) QueryPlan() *SubscriptionPlanQuery {
+	return NewPlanPricingHistoryClient(_m.config).QueryPlan(_m)
 }
 
 // Update returns a builder for updating this PlanPricingHistory.
 // Note that you need to call PlanPricingHistory.Unwrap() before calling this method if this PlanPricingHistory
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (pph *PlanPricingHistory) Update() *PlanPricingHistoryUpdateOne {
-	return NewPlanPricingHistoryClient(pph.config).UpdateOne(pph)
+func (_m *PlanPricingHistory) Update() *PlanPricingHistoryUpdateOne {
+	return NewPlanPricingHistoryClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the PlanPricingHistory entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (pph *PlanPricingHistory) Unwrap() *PlanPricingHistory {
-	_tx, ok := pph.config.driver.(*txDriver)
+func (_m *PlanPricingHistory) Unwrap() *PlanPricingHistory {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: PlanPricingHistory is not a transactional entity")
 	}
-	pph.config.driver = _tx.drv
-	return pph
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (pph *PlanPricingHistory) String() string {
+func (_m *PlanPricingHistory) String() string {
 	var builder strings.Builder
 	builder.WriteString("PlanPricingHistory(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", pph.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("plan_id=")
-	builder.WriteString(fmt.Sprintf("%v", pph.PlanID))
+	builder.WriteString(fmt.Sprintf("%v", _m.PlanID))
 	builder.WriteString(", ")
 	builder.WriteString("base_price=")
-	builder.WriteString(fmt.Sprintf("%v", pph.BasePrice))
+	builder.WriteString(fmt.Sprintf("%v", _m.BasePrice))
 	builder.WriteString(", ")
 	builder.WriteString("effective_from=")
-	builder.WriteString(pph.EffectiveFrom.Format(time.ANSIC))
+	builder.WriteString(_m.EffectiveFrom.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("effective_to=")
-	builder.WriteString(pph.EffectiveTo.Format(time.ANSIC))
+	builder.WriteString(_m.EffectiveTo.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("changed_by=")
-	builder.WriteString(fmt.Sprintf("%v", pph.ChangedBy))
+	builder.WriteString(fmt.Sprintf("%v", _m.ChangedBy))
 	builder.WriteString(", ")
 	builder.WriteString("change_reason=")
-	builder.WriteString(pph.ChangeReason)
+	builder.WriteString(_m.ChangeReason)
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
-	builder.WriteString(fmt.Sprintf("%v", pph.Metadata))
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(pph.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

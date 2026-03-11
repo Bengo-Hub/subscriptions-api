@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -32,44 +33,44 @@ type ProductSubscriptionQuery struct {
 }
 
 // Where adds a new predicate for the ProductSubscriptionQuery builder.
-func (psq *ProductSubscriptionQuery) Where(ps ...predicate.ProductSubscription) *ProductSubscriptionQuery {
-	psq.predicates = append(psq.predicates, ps...)
-	return psq
+func (_q *ProductSubscriptionQuery) Where(ps ...predicate.ProductSubscription) *ProductSubscriptionQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (psq *ProductSubscriptionQuery) Limit(limit int) *ProductSubscriptionQuery {
-	psq.ctx.Limit = &limit
-	return psq
+func (_q *ProductSubscriptionQuery) Limit(limit int) *ProductSubscriptionQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (psq *ProductSubscriptionQuery) Offset(offset int) *ProductSubscriptionQuery {
-	psq.ctx.Offset = &offset
-	return psq
+func (_q *ProductSubscriptionQuery) Offset(offset int) *ProductSubscriptionQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (psq *ProductSubscriptionQuery) Unique(unique bool) *ProductSubscriptionQuery {
-	psq.ctx.Unique = &unique
-	return psq
+func (_q *ProductSubscriptionQuery) Unique(unique bool) *ProductSubscriptionQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (psq *ProductSubscriptionQuery) Order(o ...productsubscription.OrderOption) *ProductSubscriptionQuery {
-	psq.order = append(psq.order, o...)
-	return psq
+func (_q *ProductSubscriptionQuery) Order(o ...productsubscription.OrderOption) *ProductSubscriptionQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryTenantSubscription chains the current query on the "tenant_subscription" edge.
-func (psq *ProductSubscriptionQuery) QueryTenantSubscription() *TenantSubscriptionQuery {
-	query := (&TenantSubscriptionClient{config: psq.config}).Query()
+func (_q *ProductSubscriptionQuery) QueryTenantSubscription() *TenantSubscriptionQuery {
+	query := (&TenantSubscriptionClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := psq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := psq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -78,20 +79,20 @@ func (psq *ProductSubscriptionQuery) QueryTenantSubscription() *TenantSubscripti
 			sqlgraph.To(tenantsubscription.Table, tenantsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, productsubscription.TenantSubscriptionTable, productsubscription.TenantSubscriptionColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(psq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
 }
 
 // QueryProduct chains the current query on the "product" edge.
-func (psq *ProductSubscriptionQuery) QueryProduct() *ProductQuery {
-	query := (&ProductClient{config: psq.config}).Query()
+func (_q *ProductSubscriptionQuery) QueryProduct() *ProductQuery {
+	query := (&ProductClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := psq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := psq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -100,7 +101,7 @@ func (psq *ProductSubscriptionQuery) QueryProduct() *ProductQuery {
 			sqlgraph.To(product.Table, product.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, productsubscription.ProductTable, productsubscription.ProductColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(psq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -108,8 +109,8 @@ func (psq *ProductSubscriptionQuery) QueryProduct() *ProductQuery {
 
 // First returns the first ProductSubscription entity from the query.
 // Returns a *NotFoundError when no ProductSubscription was found.
-func (psq *ProductSubscriptionQuery) First(ctx context.Context) (*ProductSubscription, error) {
-	nodes, err := psq.Limit(1).All(setContextOp(ctx, psq.ctx, "First"))
+func (_q *ProductSubscriptionQuery) First(ctx context.Context) (*ProductSubscription, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -120,8 +121,8 @@ func (psq *ProductSubscriptionQuery) First(ctx context.Context) (*ProductSubscri
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (psq *ProductSubscriptionQuery) FirstX(ctx context.Context) *ProductSubscription {
-	node, err := psq.First(ctx)
+func (_q *ProductSubscriptionQuery) FirstX(ctx context.Context) *ProductSubscription {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -130,9 +131,9 @@ func (psq *ProductSubscriptionQuery) FirstX(ctx context.Context) *ProductSubscri
 
 // FirstID returns the first ProductSubscription ID from the query.
 // Returns a *NotFoundError when no ProductSubscription ID was found.
-func (psq *ProductSubscriptionQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *ProductSubscriptionQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = psq.Limit(1).IDs(setContextOp(ctx, psq.ctx, "FirstID")); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -143,8 +144,8 @@ func (psq *ProductSubscriptionQuery) FirstID(ctx context.Context) (id uuid.UUID,
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (psq *ProductSubscriptionQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := psq.FirstID(ctx)
+func (_q *ProductSubscriptionQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -154,8 +155,8 @@ func (psq *ProductSubscriptionQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single ProductSubscription entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one ProductSubscription entity is found.
 // Returns a *NotFoundError when no ProductSubscription entities are found.
-func (psq *ProductSubscriptionQuery) Only(ctx context.Context) (*ProductSubscription, error) {
-	nodes, err := psq.Limit(2).All(setContextOp(ctx, psq.ctx, "Only"))
+func (_q *ProductSubscriptionQuery) Only(ctx context.Context) (*ProductSubscription, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -170,8 +171,8 @@ func (psq *ProductSubscriptionQuery) Only(ctx context.Context) (*ProductSubscrip
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (psq *ProductSubscriptionQuery) OnlyX(ctx context.Context) *ProductSubscription {
-	node, err := psq.Only(ctx)
+func (_q *ProductSubscriptionQuery) OnlyX(ctx context.Context) *ProductSubscription {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -181,9 +182,9 @@ func (psq *ProductSubscriptionQuery) OnlyX(ctx context.Context) *ProductSubscrip
 // OnlyID is like Only, but returns the only ProductSubscription ID in the query.
 // Returns a *NotSingularError when more than one ProductSubscription ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (psq *ProductSubscriptionQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *ProductSubscriptionQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = psq.Limit(2).IDs(setContextOp(ctx, psq.ctx, "OnlyID")); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -198,8 +199,8 @@ func (psq *ProductSubscriptionQuery) OnlyID(ctx context.Context) (id uuid.UUID, 
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (psq *ProductSubscriptionQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := psq.OnlyID(ctx)
+func (_q *ProductSubscriptionQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -207,18 +208,18 @@ func (psq *ProductSubscriptionQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of ProductSubscriptions.
-func (psq *ProductSubscriptionQuery) All(ctx context.Context) ([]*ProductSubscription, error) {
-	ctx = setContextOp(ctx, psq.ctx, "All")
-	if err := psq.prepareQuery(ctx); err != nil {
+func (_q *ProductSubscriptionQuery) All(ctx context.Context) ([]*ProductSubscription, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*ProductSubscription, *ProductSubscriptionQuery]()
-	return withInterceptors[[]*ProductSubscription](ctx, psq, qr, psq.inters)
+	return withInterceptors[[]*ProductSubscription](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (psq *ProductSubscriptionQuery) AllX(ctx context.Context) []*ProductSubscription {
-	nodes, err := psq.All(ctx)
+func (_q *ProductSubscriptionQuery) AllX(ctx context.Context) []*ProductSubscription {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -226,20 +227,20 @@ func (psq *ProductSubscriptionQuery) AllX(ctx context.Context) []*ProductSubscri
 }
 
 // IDs executes the query and returns a list of ProductSubscription IDs.
-func (psq *ProductSubscriptionQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if psq.ctx.Unique == nil && psq.path != nil {
-		psq.Unique(true)
+func (_q *ProductSubscriptionQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, psq.ctx, "IDs")
-	if err = psq.Select(productsubscription.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(productsubscription.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (psq *ProductSubscriptionQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := psq.IDs(ctx)
+func (_q *ProductSubscriptionQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -247,17 +248,17 @@ func (psq *ProductSubscriptionQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (psq *ProductSubscriptionQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, psq.ctx, "Count")
-	if err := psq.prepareQuery(ctx); err != nil {
+func (_q *ProductSubscriptionQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, psq, querierCount[*ProductSubscriptionQuery](), psq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*ProductSubscriptionQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (psq *ProductSubscriptionQuery) CountX(ctx context.Context) int {
-	count, err := psq.Count(ctx)
+func (_q *ProductSubscriptionQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -265,9 +266,9 @@ func (psq *ProductSubscriptionQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (psq *ProductSubscriptionQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, psq.ctx, "Exist")
-	switch _, err := psq.FirstID(ctx); {
+func (_q *ProductSubscriptionQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -278,8 +279,8 @@ func (psq *ProductSubscriptionQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (psq *ProductSubscriptionQuery) ExistX(ctx context.Context) bool {
-	exist, err := psq.Exist(ctx)
+func (_q *ProductSubscriptionQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -288,44 +289,44 @@ func (psq *ProductSubscriptionQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the ProductSubscriptionQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (psq *ProductSubscriptionQuery) Clone() *ProductSubscriptionQuery {
-	if psq == nil {
+func (_q *ProductSubscriptionQuery) Clone() *ProductSubscriptionQuery {
+	if _q == nil {
 		return nil
 	}
 	return &ProductSubscriptionQuery{
-		config:                 psq.config,
-		ctx:                    psq.ctx.Clone(),
-		order:                  append([]productsubscription.OrderOption{}, psq.order...),
-		inters:                 append([]Interceptor{}, psq.inters...),
-		predicates:             append([]predicate.ProductSubscription{}, psq.predicates...),
-		withTenantSubscription: psq.withTenantSubscription.Clone(),
-		withProduct:            psq.withProduct.Clone(),
+		config:                 _q.config,
+		ctx:                    _q.ctx.Clone(),
+		order:                  append([]productsubscription.OrderOption{}, _q.order...),
+		inters:                 append([]Interceptor{}, _q.inters...),
+		predicates:             append([]predicate.ProductSubscription{}, _q.predicates...),
+		withTenantSubscription: _q.withTenantSubscription.Clone(),
+		withProduct:            _q.withProduct.Clone(),
 		// clone intermediate query.
-		sql:  psq.sql.Clone(),
-		path: psq.path,
+		sql:  _q.sql.Clone(),
+		path: _q.path,
 	}
 }
 
 // WithTenantSubscription tells the query-builder to eager-load the nodes that are connected to
 // the "tenant_subscription" edge. The optional arguments are used to configure the query builder of the edge.
-func (psq *ProductSubscriptionQuery) WithTenantSubscription(opts ...func(*TenantSubscriptionQuery)) *ProductSubscriptionQuery {
-	query := (&TenantSubscriptionClient{config: psq.config}).Query()
+func (_q *ProductSubscriptionQuery) WithTenantSubscription(opts ...func(*TenantSubscriptionQuery)) *ProductSubscriptionQuery {
+	query := (&TenantSubscriptionClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	psq.withTenantSubscription = query
-	return psq
+	_q.withTenantSubscription = query
+	return _q
 }
 
 // WithProduct tells the query-builder to eager-load the nodes that are connected to
 // the "product" edge. The optional arguments are used to configure the query builder of the edge.
-func (psq *ProductSubscriptionQuery) WithProduct(opts ...func(*ProductQuery)) *ProductSubscriptionQuery {
-	query := (&ProductClient{config: psq.config}).Query()
+func (_q *ProductSubscriptionQuery) WithProduct(opts ...func(*ProductQuery)) *ProductSubscriptionQuery {
+	query := (&ProductClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	psq.withProduct = query
-	return psq
+	_q.withProduct = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -342,10 +343,10 @@ func (psq *ProductSubscriptionQuery) WithProduct(opts ...func(*ProductQuery)) *P
 //		GroupBy(productsubscription.FieldTenantSubscriptionID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (psq *ProductSubscriptionQuery) GroupBy(field string, fields ...string) *ProductSubscriptionGroupBy {
-	psq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &ProductSubscriptionGroupBy{build: psq}
-	grbuild.flds = &psq.ctx.Fields
+func (_q *ProductSubscriptionQuery) GroupBy(field string, fields ...string) *ProductSubscriptionGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &ProductSubscriptionGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = productsubscription.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -363,59 +364,59 @@ func (psq *ProductSubscriptionQuery) GroupBy(field string, fields ...string) *Pr
 //	client.ProductSubscription.Query().
 //		Select(productsubscription.FieldTenantSubscriptionID).
 //		Scan(ctx, &v)
-func (psq *ProductSubscriptionQuery) Select(fields ...string) *ProductSubscriptionSelect {
-	psq.ctx.Fields = append(psq.ctx.Fields, fields...)
-	sbuild := &ProductSubscriptionSelect{ProductSubscriptionQuery: psq}
+func (_q *ProductSubscriptionQuery) Select(fields ...string) *ProductSubscriptionSelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &ProductSubscriptionSelect{ProductSubscriptionQuery: _q}
 	sbuild.label = productsubscription.Label
-	sbuild.flds, sbuild.scan = &psq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a ProductSubscriptionSelect configured with the given aggregations.
-func (psq *ProductSubscriptionQuery) Aggregate(fns ...AggregateFunc) *ProductSubscriptionSelect {
-	return psq.Select().Aggregate(fns...)
+func (_q *ProductSubscriptionQuery) Aggregate(fns ...AggregateFunc) *ProductSubscriptionSelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (psq *ProductSubscriptionQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range psq.inters {
+func (_q *ProductSubscriptionQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, psq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range psq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !productsubscription.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if psq.path != nil {
-		prev, err := psq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		psq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (psq *ProductSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ProductSubscription, error) {
+func (_q *ProductSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ProductSubscription, error) {
 	var (
 		nodes       = []*ProductSubscription{}
-		_spec       = psq.querySpec()
+		_spec       = _q.querySpec()
 		loadedTypes = [2]bool{
-			psq.withTenantSubscription != nil,
-			psq.withProduct != nil,
+			_q.withTenantSubscription != nil,
+			_q.withProduct != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*ProductSubscription).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &ProductSubscription{config: psq.config}
+		node := &ProductSubscription{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -423,20 +424,20 @@ func (psq *ProductSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryH
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, psq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := psq.withTenantSubscription; query != nil {
-		if err := psq.loadTenantSubscription(ctx, query, nodes, nil,
+	if query := _q.withTenantSubscription; query != nil {
+		if err := _q.loadTenantSubscription(ctx, query, nodes, nil,
 			func(n *ProductSubscription, e *TenantSubscription) { n.Edges.TenantSubscription = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := psq.withProduct; query != nil {
-		if err := psq.loadProduct(ctx, query, nodes, nil,
+	if query := _q.withProduct; query != nil {
+		if err := _q.loadProduct(ctx, query, nodes, nil,
 			func(n *ProductSubscription, e *Product) { n.Edges.Product = e }); err != nil {
 			return nil, err
 		}
@@ -444,7 +445,7 @@ func (psq *ProductSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryH
 	return nodes, nil
 }
 
-func (psq *ProductSubscriptionQuery) loadTenantSubscription(ctx context.Context, query *TenantSubscriptionQuery, nodes []*ProductSubscription, init func(*ProductSubscription), assign func(*ProductSubscription, *TenantSubscription)) error {
+func (_q *ProductSubscriptionQuery) loadTenantSubscription(ctx context.Context, query *TenantSubscriptionQuery, nodes []*ProductSubscription, init func(*ProductSubscription), assign func(*ProductSubscription, *TenantSubscription)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*ProductSubscription)
 	for i := range nodes {
@@ -473,7 +474,7 @@ func (psq *ProductSubscriptionQuery) loadTenantSubscription(ctx context.Context,
 	}
 	return nil
 }
-func (psq *ProductSubscriptionQuery) loadProduct(ctx context.Context, query *ProductQuery, nodes []*ProductSubscription, init func(*ProductSubscription), assign func(*ProductSubscription, *Product)) error {
+func (_q *ProductSubscriptionQuery) loadProduct(ctx context.Context, query *ProductQuery, nodes []*ProductSubscription, init func(*ProductSubscription), assign func(*ProductSubscription, *Product)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*ProductSubscription)
 	for i := range nodes {
@@ -503,24 +504,24 @@ func (psq *ProductSubscriptionQuery) loadProduct(ctx context.Context, query *Pro
 	return nil
 }
 
-func (psq *ProductSubscriptionQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := psq.querySpec()
-	_spec.Node.Columns = psq.ctx.Fields
-	if len(psq.ctx.Fields) > 0 {
-		_spec.Unique = psq.ctx.Unique != nil && *psq.ctx.Unique
+func (_q *ProductSubscriptionQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, psq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (psq *ProductSubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *ProductSubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(productsubscription.Table, productsubscription.Columns, sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID))
-	_spec.From = psq.sql
-	if unique := psq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if psq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := psq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, productsubscription.FieldID)
 		for i := range fields {
@@ -528,27 +529,27 @@ func (psq *ProductSubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if psq.withTenantSubscription != nil {
+		if _q.withTenantSubscription != nil {
 			_spec.Node.AddColumnOnce(productsubscription.FieldTenantSubscriptionID)
 		}
-		if psq.withProduct != nil {
+		if _q.withProduct != nil {
 			_spec.Node.AddColumnOnce(productsubscription.FieldProductID)
 		}
 	}
-	if ps := psq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := psq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := psq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := psq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -558,33 +559,33 @@ func (psq *ProductSubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (psq *ProductSubscriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(psq.driver.Dialect())
+func (_q *ProductSubscriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(productsubscription.Table)
-	columns := psq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = productsubscription.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if psq.sql != nil {
-		selector = psq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if psq.ctx.Unique != nil && *psq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, p := range psq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range psq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := psq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := psq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -597,41 +598,41 @@ type ProductSubscriptionGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (psgb *ProductSubscriptionGroupBy) Aggregate(fns ...AggregateFunc) *ProductSubscriptionGroupBy {
-	psgb.fns = append(psgb.fns, fns...)
-	return psgb
+func (_g *ProductSubscriptionGroupBy) Aggregate(fns ...AggregateFunc) *ProductSubscriptionGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (psgb *ProductSubscriptionGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, psgb.build.ctx, "GroupBy")
-	if err := psgb.build.prepareQuery(ctx); err != nil {
+func (_g *ProductSubscriptionGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ProductSubscriptionQuery, *ProductSubscriptionGroupBy](ctx, psgb.build, psgb, psgb.build.inters, v)
+	return scanWithInterceptors[*ProductSubscriptionQuery, *ProductSubscriptionGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (psgb *ProductSubscriptionGroupBy) sqlScan(ctx context.Context, root *ProductSubscriptionQuery, v any) error {
+func (_g *ProductSubscriptionGroupBy) sqlScan(ctx context.Context, root *ProductSubscriptionQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(psgb.fns))
-	for _, fn := range psgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*psgb.flds)+len(psgb.fns))
-		for _, f := range *psgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*psgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := psgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -645,27 +646,27 @@ type ProductSubscriptionSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (pss *ProductSubscriptionSelect) Aggregate(fns ...AggregateFunc) *ProductSubscriptionSelect {
-	pss.fns = append(pss.fns, fns...)
-	return pss
+func (_s *ProductSubscriptionSelect) Aggregate(fns ...AggregateFunc) *ProductSubscriptionSelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (pss *ProductSubscriptionSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, pss.ctx, "Select")
-	if err := pss.prepareQuery(ctx); err != nil {
+func (_s *ProductSubscriptionSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ProductSubscriptionQuery, *ProductSubscriptionSelect](ctx, pss.ProductSubscriptionQuery, pss, pss.inters, v)
+	return scanWithInterceptors[*ProductSubscriptionQuery, *ProductSubscriptionSelect](ctx, _s.ProductSubscriptionQuery, _s, _s.inters, v)
 }
 
-func (pss *ProductSubscriptionSelect) sqlScan(ctx context.Context, root *ProductSubscriptionQuery, v any) error {
+func (_s *ProductSubscriptionSelect) sqlScan(ctx context.Context, root *ProductSubscriptionQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(pss.fns))
-	for _, fn := range pss.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*pss.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -673,7 +674,7 @@ func (pss *ProductSubscriptionSelect) sqlScan(ctx context.Context, root *Product
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := pss.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()

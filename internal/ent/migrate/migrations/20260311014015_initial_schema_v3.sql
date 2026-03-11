@@ -21,7 +21,7 @@ CREATE INDEX "outboxevent_status" ON "outbox_events" ("status");
 -- Create index "outboxevent_tenant_id" to table: "outbox_events"
 CREATE INDEX "outboxevent_tenant_id" ON "outbox_events" ("tenant_id");
 -- Create "subscription_plans" table
-CREATE TABLE "subscription_plans" ("id" uuid NOT NULL, "plan_code" character varying NOT NULL, "name" character varying NOT NULL, "description" text NULL, "billing_cycle" character varying NOT NULL DEFAULT 'MONTHLY', "base_price" double precision NOT NULL, "currency" character varying NOT NULL DEFAULT 'KES', "is_active" boolean NOT NULL DEFAULT true, "is_public" boolean NOT NULL DEFAULT true, "tier_order" bigint NOT NULL, "tier_limits_json" jsonb NOT NULL, "metadata" jsonb NOT NULL, "created_at" timestamptz NOT NULL, "updated_at" timestamptz NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "subscription_plans" ("id" uuid NOT NULL, "plan_code" character varying NOT NULL, "name" character varying NOT NULL, "description" text NULL, "billing_cycle" character varying NOT NULL DEFAULT 'MONTHLY', "base_price" double precision NOT NULL, "onetime_all_products_price" double precision NULL, "use_sum_based_pricing" boolean NOT NULL DEFAULT false, "currency" character varying NOT NULL DEFAULT 'KES', "is_active" boolean NOT NULL DEFAULT true, "is_public" boolean NOT NULL DEFAULT true, "tier_order" bigint NOT NULL, "tier_limits_json" jsonb NOT NULL, "plan_type" character varying NOT NULL DEFAULT 'TIERED', "discount_rules" jsonb NULL, "metadata" jsonb NOT NULL, "created_at" timestamptz NOT NULL, "updated_at" timestamptz NOT NULL, PRIMARY KEY ("id"));
 -- Create index "subscription_plans_plan_code_key" to table: "subscription_plans"
 CREATE UNIQUE INDEX "subscription_plans_plan_code_key" ON "subscription_plans" ("plan_code");
 -- Create index "subscriptionplan_is_active" to table: "subscription_plans"
@@ -45,11 +45,13 @@ CREATE INDEX "planpricinghistory_effective_from_effective_to" ON "plan_pricing_h
 -- Create index "planpricinghistory_plan_id" to table: "plan_pricing_histories"
 CREATE INDEX "planpricinghistory_plan_id" ON "plan_pricing_histories" ("plan_id");
 -- Create "products" table
-CREATE TABLE "products" ("id" uuid NOT NULL, "code" character varying NOT NULL, "name" character varying NOT NULL, "description" text NULL, "category" character varying NOT NULL, "status" character varying NOT NULL DEFAULT 'active', "dependencies" jsonb NULL, "is_platform" boolean NOT NULL DEFAULT false, "monthly_price" double precision NOT NULL DEFAULT 0, "included_in_bundle" boolean NOT NULL DEFAULT true, "sort_order" bigint NOT NULL DEFAULT 0, "metadata" jsonb NOT NULL, "created_at" timestamptz NOT NULL, "updated_at" timestamptz NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "products" ("id" uuid NOT NULL, "code" character varying NOT NULL, "name" character varying NOT NULL, "description" text NULL, "category" character varying NOT NULL, "status" character varying NOT NULL DEFAULT 'active', "dependencies" jsonb NULL, "is_platform" boolean NOT NULL DEFAULT false, "monthly_price" double precision NOT NULL DEFAULT 0, "yearly_price" double precision NOT NULL DEFAULT 0, "onetime_price" double precision NOT NULL DEFAULT 80000, "included_in_bundle" boolean NOT NULL DEFAULT true, "sort_order" bigint NOT NULL DEFAULT 0, "is_base_service" boolean NOT NULL DEFAULT false, "metadata" jsonb NOT NULL, "created_at" timestamptz NOT NULL, "updated_at" timestamptz NOT NULL, PRIMARY KEY ("id"));
 -- Create index "product_category" to table: "products"
 CREATE INDEX "product_category" ON "products" ("category");
 -- Create index "product_code" to table: "products"
 CREATE INDEX "product_code" ON "products" ("code");
+-- Create index "product_is_base_service" to table: "products"
+CREATE INDEX "product_is_base_service" ON "products" ("is_base_service");
 -- Create index "product_is_platform" to table: "products"
 CREATE INDEX "product_is_platform" ON "products" ("is_platform");
 -- Create index "product_status" to table: "products"
@@ -65,7 +67,7 @@ CREATE INDEX "tenant_status" ON "tenants" ("status");
 -- Create index "tenants_slug_key" to table: "tenants"
 CREATE UNIQUE INDEX "tenants_slug_key" ON "tenants" ("slug");
 -- Create "tenant_subscriptions" table
-CREATE TABLE "tenant_subscriptions" ("id" uuid NOT NULL, "status" character varying NOT NULL DEFAULT 'TRIAL', "trial_ends_at" timestamptz NULL, "current_period_start" timestamptz NOT NULL, "current_period_end" timestamptz NOT NULL, "cancelled_at" timestamptz NULL, "cancel_reason" character varying NULL, "bundle_code" character varying NULL, "payment_method_id" uuid NULL, "metadata" jsonb NULL, "created_at" timestamptz NOT NULL, "updated_at" timestamptz NOT NULL, "plan_id" uuid NOT NULL, "tenant_id" uuid NOT NULL, PRIMARY KEY ("id"), CONSTRAINT "tenant_subscriptions_subscription_plans_subscriptions" FOREIGN KEY ("plan_id") REFERENCES "subscription_plans" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "tenant_subscriptions_tenants_subscriptions" FOREIGN KEY ("tenant_id") REFERENCES "tenants" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION);
+CREATE TABLE "tenant_subscriptions" ("id" uuid NOT NULL, "status" character varying NOT NULL DEFAULT 'TRIAL', "trial_ends_at" timestamptz NULL, "current_period_start" timestamptz NOT NULL, "current_period_end" timestamptz NOT NULL, "cancelled_at" timestamptz NULL, "cancel_reason" character varying NULL, "billing_cycle" character varying NOT NULL DEFAULT 'MONTHLY', "applied_discount" double precision NOT NULL DEFAULT 0, "bundle_code" character varying NULL, "payment_method_id" uuid NULL, "metadata" jsonb NULL, "created_at" timestamptz NOT NULL, "updated_at" timestamptz NOT NULL, "plan_id" uuid NOT NULL, "tenant_id" uuid NOT NULL, PRIMARY KEY ("id"), CONSTRAINT "tenant_subscriptions_subscription_plans_subscriptions" FOREIGN KEY ("plan_id") REFERENCES "subscription_plans" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "tenant_subscriptions_tenants_subscriptions" FOREIGN KEY ("tenant_id") REFERENCES "tenants" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION);
 -- Create index "tenantsubscription_current_period_end" to table: "tenant_subscriptions"
 CREATE INDEX "tenantsubscription_current_period_end" ON "tenant_subscriptions" ("current_period_end");
 -- Create index "tenantsubscription_status" to table: "tenant_subscriptions"

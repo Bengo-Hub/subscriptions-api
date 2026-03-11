@@ -11,20 +11,24 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
+	serviceclient "github.com/Bengo-Hub/shared-service-client"
 )
 
 // Service handles subscription lifecycle operations with state machine validation.
 type Service struct {
-	client *ent.Client
-	log    *zap.Logger
+	client         *ent.Client
+	log            *zap.Logger
+	treasuryClient *serviceclient.Client
 }
 
 // New creates a subscription lifecycle service.
-func New(client *ent.Client, log *zap.Logger) *Service {
+func New(client *ent.Client, log *zap.Logger, treasuryClient *serviceclient.Client) *Service {
 	return &Service{
-		client: client,
-		log:    log.Named("subscriptions.service"),
+		client:         client,
+		log:            log.Named("subscriptions.service"),
+		treasuryClient: treasuryClient,
 	}
 }
 
@@ -54,6 +58,22 @@ type CancelInput struct {
 type RenewInput struct {
 	TenantID uuid.UUID
 	PlanCode string // optional: renew on a different plan
+}
+
+// InitiateSubscriptionInput defines the payload for starting a subscription checkout.
+type InitiateSubscriptionInput struct {
+	TenantID  uuid.UUID `json:"tenant_id"`
+	PlanCode  string    `json:"plan_code"`
+	ReturnURL string    `json:"return_url,omitempty"` // Callback after payment
+}
+
+// InitiateSubscriptionResult contains payment intent info from Treasury.
+type InitiateSubscriptionResult struct {
+	IntentID         uuid.UUID       `json:"intent_id"`
+	Status           string          `json:"status"`
+	Amount           decimal.Decimal `json:"amount"`
+	Currency         string          `json:"currency"`
+	AuthorizationURL *string         `json:"authorization_url,omitempty"`
 }
 
 // SubscriptionResult is returned from lifecycle operations.
@@ -98,6 +118,95 @@ func canTransition(from, to tenantsubscription.Status) bool {
 }
 
 // --- Lifecycle operations ---
+
+// GetSubscriptionResult returns the subscription result for a tenant.
+func (s *Service) GetSubscriptionResult(ctx context.Context, tenantID uuid.UUID) (*SubscriptionResult, error) {
+	sub, err := s.getSubscription(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	plan, err := s.client.SubscriptionPlan.Query().
+		Where(subscriptionplan.IDEQ(sub.PlanID)).
+		WithFeatures(func(q *ent.PlanFeatureQuery) {
+			q.Where(planfeature.IsIncludedEQ(true))
+		}).
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("lookup plan: %w", err)
+	}
+
+	return s.buildResult(sub, plan), nil
+}
+
+// InitiateSubscription initiates the payment flow for a new or changed subscription.
+func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscriptionInput) (*InitiateSubscriptionResult, error) {
+	// 1. Lookup plan
+	plan, err := s.client.SubscriptionPlan.Query().
+		Where(
+			subscriptionplan.PlanCodeEQ(in.PlanCode),
+			subscriptionplan.IsActiveEQ(true),
+		).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("plan not found: %s", in.PlanCode)
+		}
+		return nil, fmt.Errorf("lookup plan: %w", err)
+	}
+
+	// 2. Prepare payment intent request for Treasury
+	amount := decimal.NewFromFloat(plan.BasePrice)
+	if amount.IsZero() {
+		// For free plans, we can just create the subscription directly or return a special status
+		// For now, let's assume UI handles free plans by calling CreateSubscription (TRIAL/ACTIVE)
+		return nil, fmt.Errorf("use create endpoint for free plans or trials")
+	}
+
+	req := map[string]any{
+		"amount":         amount,
+		"currency":       plan.Currency,
+		"payment_method": "pending", // User selects method on Treasury-UI
+		"reference_id":   fmt.Sprintf("SUB-%s-%d", in.TenantID.String()[:8], time.Now().Unix()),
+		"reference_type": "subscription",
+		"source_service": "subscription-service",
+		"description":    fmt.Sprintf("Subscription for %s plan", plan.Name),
+		"callback_url":   in.ReturnURL,
+		"metadata": map[string]any{
+			"tenant_id": in.TenantID.String(),
+			"plan_code": plan.PlanCode,
+		},
+	}
+
+	// 3. Call Treasury-API
+	resp, err := s.treasuryClient.Post(ctx, fmt.Sprintf("/api/v1/%s/payments/intents", in.TenantID), req, nil)
+	if err != nil {
+		return nil, fmt.Errorf("treasury api error: %w", err)
+	}
+
+	if !resp.IsSuccess() {
+		return nil, fmt.Errorf("treasury api failed with status %d: %s", resp.StatusCode, string(resp.Body))
+	}
+
+	var treasuryResp struct {
+		IntentID         uuid.UUID       `json:"intent_id"`
+		Status           string          `json:"status"`
+		Amount           decimal.Decimal `json:"amount"`
+		Currency         string          `json:"currency"`
+		AuthorizationURL *string         `json:"authorization_url,omitempty"`
+	}
+	if err := resp.DecodeJSON(&treasuryResp); err != nil {
+		return nil, fmt.Errorf("decode treasury response: %w", err)
+	}
+
+	return &InitiateSubscriptionResult{
+		IntentID:         treasuryResp.IntentID,
+		Status:           treasuryResp.Status,
+		Amount:           treasuryResp.Amount,
+		Currency:         treasuryResp.Currency,
+		AuthorizationURL: treasuryResp.AuthorizationURL,
+	}, nil
+}
 
 // CreateSubscription provisions a new subscription for a tenant.
 func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*SubscriptionResult, error) {
@@ -463,6 +572,24 @@ func (s *Service) ListProducts(ctx context.Context, tenantID uuid.UUID) ([]*ent.
 	return s.client.ProductSubscription.Query().
 		Where(productsubscription.TenantSubscriptionIDEQ(sub.ID)).
 		All(ctx)
+}
+
+// ListSubscriptions returns all tenant subscriptions (Admin only).
+func (s *Service) ListSubscriptions(ctx context.Context) ([]*SubscriptionResult, error) {
+	subs, err := s.client.TenantSubscription.Query().
+		WithPlan(func(q *ent.SubscriptionPlanQuery) {
+			q.WithFeatures()
+		}).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list subscriptions: %w", err)
+	}
+
+	results := make([]*SubscriptionResult, len(subs))
+	for i, sub := range subs {
+		results[i] = s.buildResult(sub, sub.Edges.Plan)
+	}
+	return results, nil
 }
 
 // --- Helpers ---

@@ -37,6 +37,10 @@ type TenantSubscription struct {
 	CancelledAt *time.Time `json:"cancelled_at,omitempty"`
 	// Reason for cancellation
 	CancelReason *string `json:"cancel_reason,omitempty"`
+	// Tenant's chosen billing cycle (may override plan default)
+	BillingCycle tenantsubscription.BillingCycle `json:"billing_cycle,omitempty"`
+	// Discount applied to this subscription based on rules (e.g., 20% for yearly)
+	AppliedDiscount float64 `json:"applied_discount,omitempty"`
 	// Bundle code if subscribed via bundle (delivery, pos-suite, complete)
 	BundleCode *string `json:"bundle_code,omitempty"`
 	// Reference to treasury payment method
@@ -106,7 +110,9 @@ func (*TenantSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case tenantsubscription.FieldMetadata:
 			values[i] = new([]byte)
-		case tenantsubscription.FieldStatus, tenantsubscription.FieldCancelReason, tenantsubscription.FieldBundleCode:
+		case tenantsubscription.FieldAppliedDiscount:
+			values[i] = new(sql.NullFloat64)
+		case tenantsubscription.FieldStatus, tenantsubscription.FieldCancelReason, tenantsubscription.FieldBillingCycle, tenantsubscription.FieldBundleCode:
 			values[i] = new(sql.NullString)
 		case tenantsubscription.FieldTrialEndsAt, tenantsubscription.FieldCurrentPeriodStart, tenantsubscription.FieldCurrentPeriodEnd, tenantsubscription.FieldCancelledAt, tenantsubscription.FieldCreatedAt, tenantsubscription.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -121,7 +127,7 @@ func (*TenantSubscription) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the TenantSubscription fields.
-func (ts *TenantSubscription) assignValues(columns []string, values []any) error {
+func (_m *TenantSubscription) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -131,78 +137,90 @@ func (ts *TenantSubscription) assignValues(columns []string, values []any) error
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				ts.ID = *value
+				_m.ID = *value
 			}
 		case tenantsubscription.FieldTenantID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
 			} else if value != nil {
-				ts.TenantID = *value
+				_m.TenantID = *value
 			}
 		case tenantsubscription.FieldPlanID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field plan_id", values[i])
 			} else if value != nil {
-				ts.PlanID = *value
+				_m.PlanID = *value
 			}
 		case tenantsubscription.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
-				ts.Status = tenantsubscription.Status(value.String)
+				_m.Status = tenantsubscription.Status(value.String)
 			}
 		case tenantsubscription.FieldTrialEndsAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field trial_ends_at", values[i])
 			} else if value.Valid {
-				ts.TrialEndsAt = new(time.Time)
-				*ts.TrialEndsAt = value.Time
+				_m.TrialEndsAt = new(time.Time)
+				*_m.TrialEndsAt = value.Time
 			}
 		case tenantsubscription.FieldCurrentPeriodStart:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field current_period_start", values[i])
 			} else if value.Valid {
-				ts.CurrentPeriodStart = value.Time
+				_m.CurrentPeriodStart = value.Time
 			}
 		case tenantsubscription.FieldCurrentPeriodEnd:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field current_period_end", values[i])
 			} else if value.Valid {
-				ts.CurrentPeriodEnd = value.Time
+				_m.CurrentPeriodEnd = value.Time
 			}
 		case tenantsubscription.FieldCancelledAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field cancelled_at", values[i])
 			} else if value.Valid {
-				ts.CancelledAt = new(time.Time)
-				*ts.CancelledAt = value.Time
+				_m.CancelledAt = new(time.Time)
+				*_m.CancelledAt = value.Time
 			}
 		case tenantsubscription.FieldCancelReason:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field cancel_reason", values[i])
 			} else if value.Valid {
-				ts.CancelReason = new(string)
-				*ts.CancelReason = value.String
+				_m.CancelReason = new(string)
+				*_m.CancelReason = value.String
+			}
+		case tenantsubscription.FieldBillingCycle:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field billing_cycle", values[i])
+			} else if value.Valid {
+				_m.BillingCycle = tenantsubscription.BillingCycle(value.String)
+			}
+		case tenantsubscription.FieldAppliedDiscount:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field applied_discount", values[i])
+			} else if value.Valid {
+				_m.AppliedDiscount = value.Float64
 			}
 		case tenantsubscription.FieldBundleCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field bundle_code", values[i])
 			} else if value.Valid {
-				ts.BundleCode = new(string)
-				*ts.BundleCode = value.String
+				_m.BundleCode = new(string)
+				*_m.BundleCode = value.String
 			}
 		case tenantsubscription.FieldPaymentMethodID:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field payment_method_id", values[i])
 			} else if value.Valid {
-				ts.PaymentMethodID = new(uuid.UUID)
-				*ts.PaymentMethodID = *value.S.(*uuid.UUID)
+				_m.PaymentMethodID = new(uuid.UUID)
+				*_m.PaymentMethodID = *value.S.(*uuid.UUID)
 			}
 		case tenantsubscription.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &ts.Metadata); err != nil {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
 					return fmt.Errorf("unmarshal field metadata: %w", err)
 				}
 			}
@@ -210,16 +228,16 @@ func (ts *TenantSubscription) assignValues(columns []string, values []any) error
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				ts.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case tenantsubscription.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				ts.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		default:
-			ts.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -227,96 +245,102 @@ func (ts *TenantSubscription) assignValues(columns []string, values []any) error
 
 // Value returns the ent.Value that was dynamically selected and assigned to the TenantSubscription.
 // This includes values selected through modifiers, order, etc.
-func (ts *TenantSubscription) Value(name string) (ent.Value, error) {
-	return ts.selectValues.Get(name)
+func (_m *TenantSubscription) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryTenant queries the "tenant" edge of the TenantSubscription entity.
-func (ts *TenantSubscription) QueryTenant() *TenantQuery {
-	return NewTenantSubscriptionClient(ts.config).QueryTenant(ts)
+func (_m *TenantSubscription) QueryTenant() *TenantQuery {
+	return NewTenantSubscriptionClient(_m.config).QueryTenant(_m)
 }
 
 // QueryPlan queries the "plan" edge of the TenantSubscription entity.
-func (ts *TenantSubscription) QueryPlan() *SubscriptionPlanQuery {
-	return NewTenantSubscriptionClient(ts.config).QueryPlan(ts)
+func (_m *TenantSubscription) QueryPlan() *SubscriptionPlanQuery {
+	return NewTenantSubscriptionClient(_m.config).QueryPlan(_m)
 }
 
 // QueryProductSubscriptions queries the "product_subscriptions" edge of the TenantSubscription entity.
-func (ts *TenantSubscription) QueryProductSubscriptions() *ProductSubscriptionQuery {
-	return NewTenantSubscriptionClient(ts.config).QueryProductSubscriptions(ts)
+func (_m *TenantSubscription) QueryProductSubscriptions() *ProductSubscriptionQuery {
+	return NewTenantSubscriptionClient(_m.config).QueryProductSubscriptions(_m)
 }
 
 // Update returns a builder for updating this TenantSubscription.
 // Note that you need to call TenantSubscription.Unwrap() before calling this method if this TenantSubscription
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (ts *TenantSubscription) Update() *TenantSubscriptionUpdateOne {
-	return NewTenantSubscriptionClient(ts.config).UpdateOne(ts)
+func (_m *TenantSubscription) Update() *TenantSubscriptionUpdateOne {
+	return NewTenantSubscriptionClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the TenantSubscription entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (ts *TenantSubscription) Unwrap() *TenantSubscription {
-	_tx, ok := ts.config.driver.(*txDriver)
+func (_m *TenantSubscription) Unwrap() *TenantSubscription {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: TenantSubscription is not a transactional entity")
 	}
-	ts.config.driver = _tx.drv
-	return ts
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (ts *TenantSubscription) String() string {
+func (_m *TenantSubscription) String() string {
 	var builder strings.Builder
 	builder.WriteString("TenantSubscription(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", ts.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("tenant_id=")
-	builder.WriteString(fmt.Sprintf("%v", ts.TenantID))
+	builder.WriteString(fmt.Sprintf("%v", _m.TenantID))
 	builder.WriteString(", ")
 	builder.WriteString("plan_id=")
-	builder.WriteString(fmt.Sprintf("%v", ts.PlanID))
+	builder.WriteString(fmt.Sprintf("%v", _m.PlanID))
 	builder.WriteString(", ")
 	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", ts.Status))
+	builder.WriteString(fmt.Sprintf("%v", _m.Status))
 	builder.WriteString(", ")
-	if v := ts.TrialEndsAt; v != nil {
+	if v := _m.TrialEndsAt; v != nil {
 		builder.WriteString("trial_ends_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
 	builder.WriteString("current_period_start=")
-	builder.WriteString(ts.CurrentPeriodStart.Format(time.ANSIC))
+	builder.WriteString(_m.CurrentPeriodStart.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("current_period_end=")
-	builder.WriteString(ts.CurrentPeriodEnd.Format(time.ANSIC))
+	builder.WriteString(_m.CurrentPeriodEnd.Format(time.ANSIC))
 	builder.WriteString(", ")
-	if v := ts.CancelledAt; v != nil {
+	if v := _m.CancelledAt; v != nil {
 		builder.WriteString("cancelled_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
-	if v := ts.CancelReason; v != nil {
+	if v := _m.CancelReason; v != nil {
 		builder.WriteString("cancel_reason=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	if v := ts.BundleCode; v != nil {
+	builder.WriteString("billing_cycle=")
+	builder.WriteString(fmt.Sprintf("%v", _m.BillingCycle))
+	builder.WriteString(", ")
+	builder.WriteString("applied_discount=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AppliedDiscount))
+	builder.WriteString(", ")
+	if v := _m.BundleCode; v != nil {
 		builder.WriteString("bundle_code=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	if v := ts.PaymentMethodID; v != nil {
+	if v := _m.PaymentMethodID; v != nil {
 		builder.WriteString("payment_method_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
-	builder.WriteString(fmt.Sprintf("%v", ts.Metadata))
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(ts.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(ts.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

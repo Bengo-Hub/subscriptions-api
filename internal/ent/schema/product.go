@@ -47,12 +47,21 @@ func (Product) Fields() []ent.Field {
 		field.Float("monthly_price").
 			Default(0).
 			Comment("Standalone monthly price in KES (0 for platform products)"),
+		field.Float("yearly_price").
+			Default(0).
+			Comment("Standalone yearly price in KES"),
+		field.Float("onetime_price").
+			Default(80000).
+			Comment("Minimum 80k for one-time standalone purchase"),
 		field.Bool("included_in_bundle").
 			Default(true).
 			Comment("Whether this product is included in bundle subscriptions"),
 		field.Int("sort_order").
 			Default(0).
 			Comment("Display ordering"),
+		field.Bool("is_base_service").
+			Default(false).
+			Comment("Base services are core system features included by default in all plans"),
 		field.JSON("metadata", map[string]any{}).
 			Default(map[string]any{}),
 		field.Time("created_at").
@@ -78,5 +87,6 @@ func (Product) Indexes() []ent.Index {
 		index.Fields("category"),
 		index.Fields("status"),
 		index.Fields("is_platform"),
+		index.Fields("is_base_service"),
 	}
 }

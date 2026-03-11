@@ -19,12 +19,18 @@ type Config struct {
 	Events    EventsConfig
 	Telemetry TelemetryConfig
 	Security  SecurityConfig
+	Services  ServicesConfig
 }
 
 type AppConfig struct {
 	Name    string `envconfig:"APP_NAME" default:"subscription-service"`
 	Env     string `envconfig:"APP_ENV" default:"development"`
 	Version string `envconfig:"APP_VERSION" default:"0.1.0"`
+}
+
+type ServicesConfig struct {
+	AuthAPI     string `envconfig:"AUTH_API_URL" default:"https://sso.codevertexitsolutions.com"`
+	TreasuryAPI string `envconfig:"TREASURY_API_URL" default:"https://booksapi.codevertexitsolutions.com"`
 }
 
 type HTTPConfig struct {
@@ -37,7 +43,7 @@ type HTTPConfig struct {
 }
 
 type PostgresConfig struct {
-	URL             string        `envconfig:"POSTGRES_URL" default:"postgres://postgres:postgres@localhost:5432/subscription?sslmode=disable"`
+	URL             string        `envconfig:"POSTGRES_URL" default:"postgres://postgres:postgres@localhost:5432/subscriptions?sslmode=disable"`
 	MaxOpenConns    int           `envconfig:"POSTGRES_MAX_OPEN_CONNS" default:"20"`
 	MaxIdleConns    int           `envconfig:"POSTGRES_MAX_IDLE_CONNS" default:"10"`
 	ConnMaxLifetime time.Duration `envconfig:"POSTGRES_CONN_MAX_LIFETIME" default:"30m"`

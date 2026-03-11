@@ -81,6 +81,16 @@ func MonthlyPrice(v float64) predicate.Product {
 	return predicate.Product(sql.FieldEQ(FieldMonthlyPrice, v))
 }
 
+// YearlyPrice applies equality check predicate on the "yearly_price" field. It's identical to YearlyPriceEQ.
+func YearlyPrice(v float64) predicate.Product {
+	return predicate.Product(sql.FieldEQ(FieldYearlyPrice, v))
+}
+
+// OnetimePrice applies equality check predicate on the "onetime_price" field. It's identical to OnetimePriceEQ.
+func OnetimePrice(v float64) predicate.Product {
+	return predicate.Product(sql.FieldEQ(FieldOnetimePrice, v))
+}
+
 // IncludedInBundle applies equality check predicate on the "included_in_bundle" field. It's identical to IncludedInBundleEQ.
 func IncludedInBundle(v bool) predicate.Product {
 	return predicate.Product(sql.FieldEQ(FieldIncludedInBundle, v))
@@ -89,6 +99,11 @@ func IncludedInBundle(v bool) predicate.Product {
 // SortOrder applies equality check predicate on the "sort_order" field. It's identical to SortOrderEQ.
 func SortOrder(v int) predicate.Product {
 	return predicate.Product(sql.FieldEQ(FieldSortOrder, v))
+}
+
+// IsBaseService applies equality check predicate on the "is_base_service" field. It's identical to IsBaseServiceEQ.
+func IsBaseService(v bool) predicate.Product {
+	return predicate.Product(sql.FieldEQ(FieldIsBaseService, v))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
@@ -406,6 +421,86 @@ func MonthlyPriceLTE(v float64) predicate.Product {
 	return predicate.Product(sql.FieldLTE(FieldMonthlyPrice, v))
 }
 
+// YearlyPriceEQ applies the EQ predicate on the "yearly_price" field.
+func YearlyPriceEQ(v float64) predicate.Product {
+	return predicate.Product(sql.FieldEQ(FieldYearlyPrice, v))
+}
+
+// YearlyPriceNEQ applies the NEQ predicate on the "yearly_price" field.
+func YearlyPriceNEQ(v float64) predicate.Product {
+	return predicate.Product(sql.FieldNEQ(FieldYearlyPrice, v))
+}
+
+// YearlyPriceIn applies the In predicate on the "yearly_price" field.
+func YearlyPriceIn(vs ...float64) predicate.Product {
+	return predicate.Product(sql.FieldIn(FieldYearlyPrice, vs...))
+}
+
+// YearlyPriceNotIn applies the NotIn predicate on the "yearly_price" field.
+func YearlyPriceNotIn(vs ...float64) predicate.Product {
+	return predicate.Product(sql.FieldNotIn(FieldYearlyPrice, vs...))
+}
+
+// YearlyPriceGT applies the GT predicate on the "yearly_price" field.
+func YearlyPriceGT(v float64) predicate.Product {
+	return predicate.Product(sql.FieldGT(FieldYearlyPrice, v))
+}
+
+// YearlyPriceGTE applies the GTE predicate on the "yearly_price" field.
+func YearlyPriceGTE(v float64) predicate.Product {
+	return predicate.Product(sql.FieldGTE(FieldYearlyPrice, v))
+}
+
+// YearlyPriceLT applies the LT predicate on the "yearly_price" field.
+func YearlyPriceLT(v float64) predicate.Product {
+	return predicate.Product(sql.FieldLT(FieldYearlyPrice, v))
+}
+
+// YearlyPriceLTE applies the LTE predicate on the "yearly_price" field.
+func YearlyPriceLTE(v float64) predicate.Product {
+	return predicate.Product(sql.FieldLTE(FieldYearlyPrice, v))
+}
+
+// OnetimePriceEQ applies the EQ predicate on the "onetime_price" field.
+func OnetimePriceEQ(v float64) predicate.Product {
+	return predicate.Product(sql.FieldEQ(FieldOnetimePrice, v))
+}
+
+// OnetimePriceNEQ applies the NEQ predicate on the "onetime_price" field.
+func OnetimePriceNEQ(v float64) predicate.Product {
+	return predicate.Product(sql.FieldNEQ(FieldOnetimePrice, v))
+}
+
+// OnetimePriceIn applies the In predicate on the "onetime_price" field.
+func OnetimePriceIn(vs ...float64) predicate.Product {
+	return predicate.Product(sql.FieldIn(FieldOnetimePrice, vs...))
+}
+
+// OnetimePriceNotIn applies the NotIn predicate on the "onetime_price" field.
+func OnetimePriceNotIn(vs ...float64) predicate.Product {
+	return predicate.Product(sql.FieldNotIn(FieldOnetimePrice, vs...))
+}
+
+// OnetimePriceGT applies the GT predicate on the "onetime_price" field.
+func OnetimePriceGT(v float64) predicate.Product {
+	return predicate.Product(sql.FieldGT(FieldOnetimePrice, v))
+}
+
+// OnetimePriceGTE applies the GTE predicate on the "onetime_price" field.
+func OnetimePriceGTE(v float64) predicate.Product {
+	return predicate.Product(sql.FieldGTE(FieldOnetimePrice, v))
+}
+
+// OnetimePriceLT applies the LT predicate on the "onetime_price" field.
+func OnetimePriceLT(v float64) predicate.Product {
+	return predicate.Product(sql.FieldLT(FieldOnetimePrice, v))
+}
+
+// OnetimePriceLTE applies the LTE predicate on the "onetime_price" field.
+func OnetimePriceLTE(v float64) predicate.Product {
+	return predicate.Product(sql.FieldLTE(FieldOnetimePrice, v))
+}
+
 // IncludedInBundleEQ applies the EQ predicate on the "included_in_bundle" field.
 func IncludedInBundleEQ(v bool) predicate.Product {
 	return predicate.Product(sql.FieldEQ(FieldIncludedInBundle, v))
@@ -454,6 +549,16 @@ func SortOrderLT(v int) predicate.Product {
 // SortOrderLTE applies the LTE predicate on the "sort_order" field.
 func SortOrderLTE(v int) predicate.Product {
 	return predicate.Product(sql.FieldLTE(FieldSortOrder, v))
+}
+
+// IsBaseServiceEQ applies the EQ predicate on the "is_base_service" field.
+func IsBaseServiceEQ(v bool) predicate.Product {
+	return predicate.Product(sql.FieldEQ(FieldIsBaseService, v))
+}
+
+// IsBaseServiceNEQ applies the NEQ predicate on the "is_base_service" field.
+func IsBaseServiceNEQ(v bool) predicate.Product {
+	return predicate.Product(sql.FieldNEQ(FieldIsBaseService, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

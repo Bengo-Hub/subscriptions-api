@@ -27,151 +27,151 @@ type ProductSubscriptionCreate struct {
 }
 
 // SetTenantSubscriptionID sets the "tenant_subscription_id" field.
-func (psc *ProductSubscriptionCreate) SetTenantSubscriptionID(u uuid.UUID) *ProductSubscriptionCreate {
-	psc.mutation.SetTenantSubscriptionID(u)
-	return psc
+func (_c *ProductSubscriptionCreate) SetTenantSubscriptionID(v uuid.UUID) *ProductSubscriptionCreate {
+	_c.mutation.SetTenantSubscriptionID(v)
+	return _c
 }
 
 // SetProductCode sets the "product_code" field.
-func (psc *ProductSubscriptionCreate) SetProductCode(s string) *ProductSubscriptionCreate {
-	psc.mutation.SetProductCode(s)
-	return psc
+func (_c *ProductSubscriptionCreate) SetProductCode(v string) *ProductSubscriptionCreate {
+	_c.mutation.SetProductCode(v)
+	return _c
 }
 
 // SetProductID sets the "product_id" field.
-func (psc *ProductSubscriptionCreate) SetProductID(u uuid.UUID) *ProductSubscriptionCreate {
-	psc.mutation.SetProductID(u)
-	return psc
+func (_c *ProductSubscriptionCreate) SetProductID(v uuid.UUID) *ProductSubscriptionCreate {
+	_c.mutation.SetProductID(v)
+	return _c
 }
 
 // SetStatus sets the "status" field.
-func (psc *ProductSubscriptionCreate) SetStatus(pr productsubscription.Status) *ProductSubscriptionCreate {
-	psc.mutation.SetStatus(pr)
-	return psc
+func (_c *ProductSubscriptionCreate) SetStatus(v productsubscription.Status) *ProductSubscriptionCreate {
+	_c.mutation.SetStatus(v)
+	return _c
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (psc *ProductSubscriptionCreate) SetNillableStatus(pr *productsubscription.Status) *ProductSubscriptionCreate {
-	if pr != nil {
-		psc.SetStatus(*pr)
+func (_c *ProductSubscriptionCreate) SetNillableStatus(v *productsubscription.Status) *ProductSubscriptionCreate {
+	if v != nil {
+		_c.SetStatus(*v)
 	}
-	return psc
+	return _c
 }
 
 // SetTrialEndsAt sets the "trial_ends_at" field.
-func (psc *ProductSubscriptionCreate) SetTrialEndsAt(t time.Time) *ProductSubscriptionCreate {
-	psc.mutation.SetTrialEndsAt(t)
-	return psc
+func (_c *ProductSubscriptionCreate) SetTrialEndsAt(v time.Time) *ProductSubscriptionCreate {
+	_c.mutation.SetTrialEndsAt(v)
+	return _c
 }
 
 // SetNillableTrialEndsAt sets the "trial_ends_at" field if the given value is not nil.
-func (psc *ProductSubscriptionCreate) SetNillableTrialEndsAt(t *time.Time) *ProductSubscriptionCreate {
-	if t != nil {
-		psc.SetTrialEndsAt(*t)
+func (_c *ProductSubscriptionCreate) SetNillableTrialEndsAt(v *time.Time) *ProductSubscriptionCreate {
+	if v != nil {
+		_c.SetTrialEndsAt(*v)
 	}
-	return psc
+	return _c
 }
 
 // SetActivatedAt sets the "activated_at" field.
-func (psc *ProductSubscriptionCreate) SetActivatedAt(t time.Time) *ProductSubscriptionCreate {
-	psc.mutation.SetActivatedAt(t)
-	return psc
+func (_c *ProductSubscriptionCreate) SetActivatedAt(v time.Time) *ProductSubscriptionCreate {
+	_c.mutation.SetActivatedAt(v)
+	return _c
 }
 
 // SetNillableActivatedAt sets the "activated_at" field if the given value is not nil.
-func (psc *ProductSubscriptionCreate) SetNillableActivatedAt(t *time.Time) *ProductSubscriptionCreate {
-	if t != nil {
-		psc.SetActivatedAt(*t)
+func (_c *ProductSubscriptionCreate) SetNillableActivatedAt(v *time.Time) *ProductSubscriptionCreate {
+	if v != nil {
+		_c.SetActivatedAt(*v)
 	}
-	return psc
+	return _c
 }
 
 // SetDeactivatedAt sets the "deactivated_at" field.
-func (psc *ProductSubscriptionCreate) SetDeactivatedAt(t time.Time) *ProductSubscriptionCreate {
-	psc.mutation.SetDeactivatedAt(t)
-	return psc
+func (_c *ProductSubscriptionCreate) SetDeactivatedAt(v time.Time) *ProductSubscriptionCreate {
+	_c.mutation.SetDeactivatedAt(v)
+	return _c
 }
 
 // SetNillableDeactivatedAt sets the "deactivated_at" field if the given value is not nil.
-func (psc *ProductSubscriptionCreate) SetNillableDeactivatedAt(t *time.Time) *ProductSubscriptionCreate {
-	if t != nil {
-		psc.SetDeactivatedAt(*t)
+func (_c *ProductSubscriptionCreate) SetNillableDeactivatedAt(v *time.Time) *ProductSubscriptionCreate {
+	if v != nil {
+		_c.SetDeactivatedAt(*v)
 	}
-	return psc
+	return _c
 }
 
 // SetMetadata sets the "metadata" field.
-func (psc *ProductSubscriptionCreate) SetMetadata(m map[string]interface{}) *ProductSubscriptionCreate {
-	psc.mutation.SetMetadata(m)
-	return psc
+func (_c *ProductSubscriptionCreate) SetMetadata(v map[string]interface{}) *ProductSubscriptionCreate {
+	_c.mutation.SetMetadata(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (psc *ProductSubscriptionCreate) SetCreatedAt(t time.Time) *ProductSubscriptionCreate {
-	psc.mutation.SetCreatedAt(t)
-	return psc
+func (_c *ProductSubscriptionCreate) SetCreatedAt(v time.Time) *ProductSubscriptionCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (psc *ProductSubscriptionCreate) SetNillableCreatedAt(t *time.Time) *ProductSubscriptionCreate {
-	if t != nil {
-		psc.SetCreatedAt(*t)
+func (_c *ProductSubscriptionCreate) SetNillableCreatedAt(v *time.Time) *ProductSubscriptionCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return psc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (psc *ProductSubscriptionCreate) SetUpdatedAt(t time.Time) *ProductSubscriptionCreate {
-	psc.mutation.SetUpdatedAt(t)
-	return psc
+func (_c *ProductSubscriptionCreate) SetUpdatedAt(v time.Time) *ProductSubscriptionCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (psc *ProductSubscriptionCreate) SetNillableUpdatedAt(t *time.Time) *ProductSubscriptionCreate {
-	if t != nil {
-		psc.SetUpdatedAt(*t)
+func (_c *ProductSubscriptionCreate) SetNillableUpdatedAt(v *time.Time) *ProductSubscriptionCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return psc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (psc *ProductSubscriptionCreate) SetID(u uuid.UUID) *ProductSubscriptionCreate {
-	psc.mutation.SetID(u)
-	return psc
+func (_c *ProductSubscriptionCreate) SetID(v uuid.UUID) *ProductSubscriptionCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (psc *ProductSubscriptionCreate) SetNillableID(u *uuid.UUID) *ProductSubscriptionCreate {
-	if u != nil {
-		psc.SetID(*u)
+func (_c *ProductSubscriptionCreate) SetNillableID(v *uuid.UUID) *ProductSubscriptionCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return psc
+	return _c
 }
 
 // SetTenantSubscription sets the "tenant_subscription" edge to the TenantSubscription entity.
-func (psc *ProductSubscriptionCreate) SetTenantSubscription(t *TenantSubscription) *ProductSubscriptionCreate {
-	return psc.SetTenantSubscriptionID(t.ID)
+func (_c *ProductSubscriptionCreate) SetTenantSubscription(v *TenantSubscription) *ProductSubscriptionCreate {
+	return _c.SetTenantSubscriptionID(v.ID)
 }
 
 // SetProduct sets the "product" edge to the Product entity.
-func (psc *ProductSubscriptionCreate) SetProduct(p *Product) *ProductSubscriptionCreate {
-	return psc.SetProductID(p.ID)
+func (_c *ProductSubscriptionCreate) SetProduct(v *Product) *ProductSubscriptionCreate {
+	return _c.SetProductID(v.ID)
 }
 
 // Mutation returns the ProductSubscriptionMutation object of the builder.
-func (psc *ProductSubscriptionCreate) Mutation() *ProductSubscriptionMutation {
-	return psc.mutation
+func (_c *ProductSubscriptionCreate) Mutation() *ProductSubscriptionMutation {
+	return _c.mutation
 }
 
 // Save creates the ProductSubscription in the database.
-func (psc *ProductSubscriptionCreate) Save(ctx context.Context) (*ProductSubscription, error) {
-	psc.defaults()
-	return withHooks(ctx, psc.sqlSave, psc.mutation, psc.hooks)
+func (_c *ProductSubscriptionCreate) Save(ctx context.Context) (*ProductSubscription, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (psc *ProductSubscriptionCreate) SaveX(ctx context.Context) *ProductSubscription {
-	v, err := psc.Save(ctx)
+func (_c *ProductSubscriptionCreate) SaveX(ctx context.Context) *ProductSubscription {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -179,90 +179,90 @@ func (psc *ProductSubscriptionCreate) SaveX(ctx context.Context) *ProductSubscri
 }
 
 // Exec executes the query.
-func (psc *ProductSubscriptionCreate) Exec(ctx context.Context) error {
-	_, err := psc.Save(ctx)
+func (_c *ProductSubscriptionCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (psc *ProductSubscriptionCreate) ExecX(ctx context.Context) {
-	if err := psc.Exec(ctx); err != nil {
+func (_c *ProductSubscriptionCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (psc *ProductSubscriptionCreate) defaults() {
-	if _, ok := psc.mutation.Status(); !ok {
+func (_c *ProductSubscriptionCreate) defaults() {
+	if _, ok := _c.mutation.Status(); !ok {
 		v := productsubscription.DefaultStatus
-		psc.mutation.SetStatus(v)
+		_c.mutation.SetStatus(v)
 	}
-	if _, ok := psc.mutation.Metadata(); !ok {
+	if _, ok := _c.mutation.Metadata(); !ok {
 		v := productsubscription.DefaultMetadata
-		psc.mutation.SetMetadata(v)
+		_c.mutation.SetMetadata(v)
 	}
-	if _, ok := psc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := productsubscription.DefaultCreatedAt()
-		psc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := psc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := productsubscription.DefaultUpdatedAt()
-		psc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := psc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := productsubscription.DefaultID()
-		psc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (psc *ProductSubscriptionCreate) check() error {
-	if _, ok := psc.mutation.TenantSubscriptionID(); !ok {
+func (_c *ProductSubscriptionCreate) check() error {
+	if _, ok := _c.mutation.TenantSubscriptionID(); !ok {
 		return &ValidationError{Name: "tenant_subscription_id", err: errors.New(`ent: missing required field "ProductSubscription.tenant_subscription_id"`)}
 	}
-	if _, ok := psc.mutation.ProductCode(); !ok {
+	if _, ok := _c.mutation.ProductCode(); !ok {
 		return &ValidationError{Name: "product_code", err: errors.New(`ent: missing required field "ProductSubscription.product_code"`)}
 	}
-	if v, ok := psc.mutation.ProductCode(); ok {
+	if v, ok := _c.mutation.ProductCode(); ok {
 		if err := productsubscription.ProductCodeValidator(v); err != nil {
 			return &ValidationError{Name: "product_code", err: fmt.Errorf(`ent: validator failed for field "ProductSubscription.product_code": %w`, err)}
 		}
 	}
-	if _, ok := psc.mutation.ProductID(); !ok {
+	if _, ok := _c.mutation.ProductID(); !ok {
 		return &ValidationError{Name: "product_id", err: errors.New(`ent: missing required field "ProductSubscription.product_id"`)}
 	}
-	if _, ok := psc.mutation.Status(); !ok {
+	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "ProductSubscription.status"`)}
 	}
-	if v, ok := psc.mutation.Status(); ok {
+	if v, ok := _c.mutation.Status(); ok {
 		if err := productsubscription.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "ProductSubscription.status": %w`, err)}
 		}
 	}
-	if _, ok := psc.mutation.Metadata(); !ok {
+	if _, ok := _c.mutation.Metadata(); !ok {
 		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required field "ProductSubscription.metadata"`)}
 	}
-	if _, ok := psc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProductSubscription.created_at"`)}
 	}
-	if _, ok := psc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ProductSubscription.updated_at"`)}
 	}
-	if _, ok := psc.mutation.TenantSubscriptionID(); !ok {
+	if len(_c.mutation.TenantSubscriptionIDs()) == 0 {
 		return &ValidationError{Name: "tenant_subscription", err: errors.New(`ent: missing required edge "ProductSubscription.tenant_subscription"`)}
 	}
-	if _, ok := psc.mutation.ProductID(); !ok {
+	if len(_c.mutation.ProductIDs()) == 0 {
 		return &ValidationError{Name: "product", err: errors.New(`ent: missing required edge "ProductSubscription.product"`)}
 	}
 	return nil
 }
 
-func (psc *ProductSubscriptionCreate) sqlSave(ctx context.Context) (*ProductSubscription, error) {
-	if err := psc.check(); err != nil {
+func (_c *ProductSubscriptionCreate) sqlSave(ctx context.Context) (*ProductSubscription, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := psc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, psc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -275,54 +275,54 @@ func (psc *ProductSubscriptionCreate) sqlSave(ctx context.Context) (*ProductSubs
 			return nil, err
 		}
 	}
-	psc.mutation.id = &_node.ID
-	psc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (psc *ProductSubscriptionCreate) createSpec() (*ProductSubscription, *sqlgraph.CreateSpec) {
+func (_c *ProductSubscriptionCreate) createSpec() (*ProductSubscription, *sqlgraph.CreateSpec) {
 	var (
-		_node = &ProductSubscription{config: psc.config}
+		_node = &ProductSubscription{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(productsubscription.Table, sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = psc.conflict
-	if id, ok := psc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := psc.mutation.ProductCode(); ok {
+	if value, ok := _c.mutation.ProductCode(); ok {
 		_spec.SetField(productsubscription.FieldProductCode, field.TypeString, value)
 		_node.ProductCode = value
 	}
-	if value, ok := psc.mutation.Status(); ok {
+	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(productsubscription.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
 	}
-	if value, ok := psc.mutation.TrialEndsAt(); ok {
+	if value, ok := _c.mutation.TrialEndsAt(); ok {
 		_spec.SetField(productsubscription.FieldTrialEndsAt, field.TypeTime, value)
 		_node.TrialEndsAt = &value
 	}
-	if value, ok := psc.mutation.ActivatedAt(); ok {
+	if value, ok := _c.mutation.ActivatedAt(); ok {
 		_spec.SetField(productsubscription.FieldActivatedAt, field.TypeTime, value)
 		_node.ActivatedAt = &value
 	}
-	if value, ok := psc.mutation.DeactivatedAt(); ok {
+	if value, ok := _c.mutation.DeactivatedAt(); ok {
 		_spec.SetField(productsubscription.FieldDeactivatedAt, field.TypeTime, value)
 		_node.DeactivatedAt = &value
 	}
-	if value, ok := psc.mutation.Metadata(); ok {
+	if value, ok := _c.mutation.Metadata(); ok {
 		_spec.SetField(productsubscription.FieldMetadata, field.TypeJSON, value)
 		_node.Metadata = value
 	}
-	if value, ok := psc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(productsubscription.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := psc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(productsubscription.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if nodes := psc.mutation.TenantSubscriptionIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.TenantSubscriptionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -339,7 +339,7 @@ func (psc *ProductSubscriptionCreate) createSpec() (*ProductSubscription, *sqlgr
 		_node.TenantSubscriptionID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := psc.mutation.ProductIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ProductIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -375,10 +375,10 @@ func (psc *ProductSubscriptionCreate) createSpec() (*ProductSubscription, *sqlgr
 //			SetTenantSubscriptionID(v+v).
 //		}).
 //		Exec(ctx)
-func (psc *ProductSubscriptionCreate) OnConflict(opts ...sql.ConflictOption) *ProductSubscriptionUpsertOne {
-	psc.conflict = opts
+func (_c *ProductSubscriptionCreate) OnConflict(opts ...sql.ConflictOption) *ProductSubscriptionUpsertOne {
+	_c.conflict = opts
 	return &ProductSubscriptionUpsertOne{
-		create: psc,
+		create: _c,
 	}
 }
 
@@ -388,10 +388,10 @@ func (psc *ProductSubscriptionCreate) OnConflict(opts ...sql.ConflictOption) *Pr
 //	client.ProductSubscription.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (psc *ProductSubscriptionCreate) OnConflictColumns(columns ...string) *ProductSubscriptionUpsertOne {
-	psc.conflict = append(psc.conflict, sql.ConflictColumns(columns...))
+func (_c *ProductSubscriptionCreate) OnConflictColumns(columns ...string) *ProductSubscriptionUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &ProductSubscriptionUpsertOne{
-		create: psc,
+		create: _c,
 	}
 }
 
@@ -779,16 +779,16 @@ type ProductSubscriptionCreateBulk struct {
 }
 
 // Save creates the ProductSubscription entities in the database.
-func (pscb *ProductSubscriptionCreateBulk) Save(ctx context.Context) ([]*ProductSubscription, error) {
-	if pscb.err != nil {
-		return nil, pscb.err
+func (_c *ProductSubscriptionCreateBulk) Save(ctx context.Context) ([]*ProductSubscription, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(pscb.builders))
-	nodes := make([]*ProductSubscription, len(pscb.builders))
-	mutators := make([]Mutator, len(pscb.builders))
-	for i := range pscb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*ProductSubscription, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := pscb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ProductSubscriptionMutation)
@@ -802,12 +802,12 @@ func (pscb *ProductSubscriptionCreateBulk) Save(ctx context.Context) ([]*Product
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, pscb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = pscb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, pscb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -827,7 +827,7 @@ func (pscb *ProductSubscriptionCreateBulk) Save(ctx context.Context) ([]*Product
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, pscb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -835,8 +835,8 @@ func (pscb *ProductSubscriptionCreateBulk) Save(ctx context.Context) ([]*Product
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pscb *ProductSubscriptionCreateBulk) SaveX(ctx context.Context) []*ProductSubscription {
-	v, err := pscb.Save(ctx)
+func (_c *ProductSubscriptionCreateBulk) SaveX(ctx context.Context) []*ProductSubscription {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -844,14 +844,14 @@ func (pscb *ProductSubscriptionCreateBulk) SaveX(ctx context.Context) []*Product
 }
 
 // Exec executes the query.
-func (pscb *ProductSubscriptionCreateBulk) Exec(ctx context.Context) error {
-	_, err := pscb.Save(ctx)
+func (_c *ProductSubscriptionCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pscb *ProductSubscriptionCreateBulk) ExecX(ctx context.Context) {
-	if err := pscb.Exec(ctx); err != nil {
+func (_c *ProductSubscriptionCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -871,10 +871,10 @@ func (pscb *ProductSubscriptionCreateBulk) ExecX(ctx context.Context) {
 //			SetTenantSubscriptionID(v+v).
 //		}).
 //		Exec(ctx)
-func (pscb *ProductSubscriptionCreateBulk) OnConflict(opts ...sql.ConflictOption) *ProductSubscriptionUpsertBulk {
-	pscb.conflict = opts
+func (_c *ProductSubscriptionCreateBulk) OnConflict(opts ...sql.ConflictOption) *ProductSubscriptionUpsertBulk {
+	_c.conflict = opts
 	return &ProductSubscriptionUpsertBulk{
-		create: pscb,
+		create: _c,
 	}
 }
 
@@ -884,10 +884,10 @@ func (pscb *ProductSubscriptionCreateBulk) OnConflict(opts ...sql.ConflictOption
 //	client.ProductSubscription.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (pscb *ProductSubscriptionCreateBulk) OnConflictColumns(columns ...string) *ProductSubscriptionUpsertBulk {
-	pscb.conflict = append(pscb.conflict, sql.ConflictColumns(columns...))
+func (_c *ProductSubscriptionCreateBulk) OnConflictColumns(columns ...string) *ProductSubscriptionUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &ProductSubscriptionUpsertBulk{
-		create: pscb,
+		create: _c,
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/planpricinghistory"
@@ -27,297 +28,370 @@ type SubscriptionPlanUpdate struct {
 }
 
 // Where appends a list predicates to the SubscriptionPlanUpdate builder.
-func (spu *SubscriptionPlanUpdate) Where(ps ...predicate.SubscriptionPlan) *SubscriptionPlanUpdate {
-	spu.mutation.Where(ps...)
-	return spu
+func (_u *SubscriptionPlanUpdate) Where(ps ...predicate.SubscriptionPlan) *SubscriptionPlanUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetPlanCode sets the "plan_code" field.
-func (spu *SubscriptionPlanUpdate) SetPlanCode(s string) *SubscriptionPlanUpdate {
-	spu.mutation.SetPlanCode(s)
-	return spu
+func (_u *SubscriptionPlanUpdate) SetPlanCode(v string) *SubscriptionPlanUpdate {
+	_u.mutation.SetPlanCode(v)
+	return _u
 }
 
 // SetNillablePlanCode sets the "plan_code" field if the given value is not nil.
-func (spu *SubscriptionPlanUpdate) SetNillablePlanCode(s *string) *SubscriptionPlanUpdate {
-	if s != nil {
-		spu.SetPlanCode(*s)
+func (_u *SubscriptionPlanUpdate) SetNillablePlanCode(v *string) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetPlanCode(*v)
 	}
-	return spu
+	return _u
 }
 
 // SetName sets the "name" field.
-func (spu *SubscriptionPlanUpdate) SetName(s string) *SubscriptionPlanUpdate {
-	spu.mutation.SetName(s)
-	return spu
+func (_u *SubscriptionPlanUpdate) SetName(v string) *SubscriptionPlanUpdate {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (spu *SubscriptionPlanUpdate) SetNillableName(s *string) *SubscriptionPlanUpdate {
-	if s != nil {
-		spu.SetName(*s)
+func (_u *SubscriptionPlanUpdate) SetNillableName(v *string) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return spu
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (spu *SubscriptionPlanUpdate) SetDescription(s string) *SubscriptionPlanUpdate {
-	spu.mutation.SetDescription(s)
-	return spu
+func (_u *SubscriptionPlanUpdate) SetDescription(v string) *SubscriptionPlanUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (spu *SubscriptionPlanUpdate) SetNillableDescription(s *string) *SubscriptionPlanUpdate {
-	if s != nil {
-		spu.SetDescription(*s)
+func (_u *SubscriptionPlanUpdate) SetNillableDescription(v *string) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return spu
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (spu *SubscriptionPlanUpdate) ClearDescription() *SubscriptionPlanUpdate {
-	spu.mutation.ClearDescription()
-	return spu
+func (_u *SubscriptionPlanUpdate) ClearDescription() *SubscriptionPlanUpdate {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetBillingCycle sets the "billing_cycle" field.
-func (spu *SubscriptionPlanUpdate) SetBillingCycle(s string) *SubscriptionPlanUpdate {
-	spu.mutation.SetBillingCycle(s)
-	return spu
+func (_u *SubscriptionPlanUpdate) SetBillingCycle(v string) *SubscriptionPlanUpdate {
+	_u.mutation.SetBillingCycle(v)
+	return _u
 }
 
 // SetNillableBillingCycle sets the "billing_cycle" field if the given value is not nil.
-func (spu *SubscriptionPlanUpdate) SetNillableBillingCycle(s *string) *SubscriptionPlanUpdate {
-	if s != nil {
-		spu.SetBillingCycle(*s)
+func (_u *SubscriptionPlanUpdate) SetNillableBillingCycle(v *string) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetBillingCycle(*v)
 	}
-	return spu
+	return _u
 }
 
 // SetBasePrice sets the "base_price" field.
-func (spu *SubscriptionPlanUpdate) SetBasePrice(f float64) *SubscriptionPlanUpdate {
-	spu.mutation.ResetBasePrice()
-	spu.mutation.SetBasePrice(f)
-	return spu
+func (_u *SubscriptionPlanUpdate) SetBasePrice(v float64) *SubscriptionPlanUpdate {
+	_u.mutation.ResetBasePrice()
+	_u.mutation.SetBasePrice(v)
+	return _u
 }
 
 // SetNillableBasePrice sets the "base_price" field if the given value is not nil.
-func (spu *SubscriptionPlanUpdate) SetNillableBasePrice(f *float64) *SubscriptionPlanUpdate {
-	if f != nil {
-		spu.SetBasePrice(*f)
+func (_u *SubscriptionPlanUpdate) SetNillableBasePrice(v *float64) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetBasePrice(*v)
 	}
-	return spu
+	return _u
 }
 
-// AddBasePrice adds f to the "base_price" field.
-func (spu *SubscriptionPlanUpdate) AddBasePrice(f float64) *SubscriptionPlanUpdate {
-	spu.mutation.AddBasePrice(f)
-	return spu
+// AddBasePrice adds value to the "base_price" field.
+func (_u *SubscriptionPlanUpdate) AddBasePrice(v float64) *SubscriptionPlanUpdate {
+	_u.mutation.AddBasePrice(v)
+	return _u
+}
+
+// SetOnetimeAllProductsPrice sets the "onetime_all_products_price" field.
+func (_u *SubscriptionPlanUpdate) SetOnetimeAllProductsPrice(v float64) *SubscriptionPlanUpdate {
+	_u.mutation.ResetOnetimeAllProductsPrice()
+	_u.mutation.SetOnetimeAllProductsPrice(v)
+	return _u
+}
+
+// SetNillableOnetimeAllProductsPrice sets the "onetime_all_products_price" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillableOnetimeAllProductsPrice(v *float64) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetOnetimeAllProductsPrice(*v)
+	}
+	return _u
+}
+
+// AddOnetimeAllProductsPrice adds value to the "onetime_all_products_price" field.
+func (_u *SubscriptionPlanUpdate) AddOnetimeAllProductsPrice(v float64) *SubscriptionPlanUpdate {
+	_u.mutation.AddOnetimeAllProductsPrice(v)
+	return _u
+}
+
+// ClearOnetimeAllProductsPrice clears the value of the "onetime_all_products_price" field.
+func (_u *SubscriptionPlanUpdate) ClearOnetimeAllProductsPrice() *SubscriptionPlanUpdate {
+	_u.mutation.ClearOnetimeAllProductsPrice()
+	return _u
+}
+
+// SetUseSumBasedPricing sets the "use_sum_based_pricing" field.
+func (_u *SubscriptionPlanUpdate) SetUseSumBasedPricing(v bool) *SubscriptionPlanUpdate {
+	_u.mutation.SetUseSumBasedPricing(v)
+	return _u
+}
+
+// SetNillableUseSumBasedPricing sets the "use_sum_based_pricing" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillableUseSumBasedPricing(v *bool) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetUseSumBasedPricing(*v)
+	}
+	return _u
 }
 
 // SetCurrency sets the "currency" field.
-func (spu *SubscriptionPlanUpdate) SetCurrency(s string) *SubscriptionPlanUpdate {
-	spu.mutation.SetCurrency(s)
-	return spu
+func (_u *SubscriptionPlanUpdate) SetCurrency(v string) *SubscriptionPlanUpdate {
+	_u.mutation.SetCurrency(v)
+	return _u
 }
 
 // SetNillableCurrency sets the "currency" field if the given value is not nil.
-func (spu *SubscriptionPlanUpdate) SetNillableCurrency(s *string) *SubscriptionPlanUpdate {
-	if s != nil {
-		spu.SetCurrency(*s)
+func (_u *SubscriptionPlanUpdate) SetNillableCurrency(v *string) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetCurrency(*v)
 	}
-	return spu
+	return _u
 }
 
 // SetIsActive sets the "is_active" field.
-func (spu *SubscriptionPlanUpdate) SetIsActive(b bool) *SubscriptionPlanUpdate {
-	spu.mutation.SetIsActive(b)
-	return spu
+func (_u *SubscriptionPlanUpdate) SetIsActive(v bool) *SubscriptionPlanUpdate {
+	_u.mutation.SetIsActive(v)
+	return _u
 }
 
 // SetNillableIsActive sets the "is_active" field if the given value is not nil.
-func (spu *SubscriptionPlanUpdate) SetNillableIsActive(b *bool) *SubscriptionPlanUpdate {
-	if b != nil {
-		spu.SetIsActive(*b)
+func (_u *SubscriptionPlanUpdate) SetNillableIsActive(v *bool) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetIsActive(*v)
 	}
-	return spu
+	return _u
 }
 
 // SetIsPublic sets the "is_public" field.
-func (spu *SubscriptionPlanUpdate) SetIsPublic(b bool) *SubscriptionPlanUpdate {
-	spu.mutation.SetIsPublic(b)
-	return spu
+func (_u *SubscriptionPlanUpdate) SetIsPublic(v bool) *SubscriptionPlanUpdate {
+	_u.mutation.SetIsPublic(v)
+	return _u
 }
 
 // SetNillableIsPublic sets the "is_public" field if the given value is not nil.
-func (spu *SubscriptionPlanUpdate) SetNillableIsPublic(b *bool) *SubscriptionPlanUpdate {
-	if b != nil {
-		spu.SetIsPublic(*b)
+func (_u *SubscriptionPlanUpdate) SetNillableIsPublic(v *bool) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetIsPublic(*v)
 	}
-	return spu
+	return _u
 }
 
 // SetTierOrder sets the "tier_order" field.
-func (spu *SubscriptionPlanUpdate) SetTierOrder(i int) *SubscriptionPlanUpdate {
-	spu.mutation.ResetTierOrder()
-	spu.mutation.SetTierOrder(i)
-	return spu
+func (_u *SubscriptionPlanUpdate) SetTierOrder(v int) *SubscriptionPlanUpdate {
+	_u.mutation.ResetTierOrder()
+	_u.mutation.SetTierOrder(v)
+	return _u
 }
 
 // SetNillableTierOrder sets the "tier_order" field if the given value is not nil.
-func (spu *SubscriptionPlanUpdate) SetNillableTierOrder(i *int) *SubscriptionPlanUpdate {
-	if i != nil {
-		spu.SetTierOrder(*i)
+func (_u *SubscriptionPlanUpdate) SetNillableTierOrder(v *int) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetTierOrder(*v)
 	}
-	return spu
+	return _u
 }
 
-// AddTierOrder adds i to the "tier_order" field.
-func (spu *SubscriptionPlanUpdate) AddTierOrder(i int) *SubscriptionPlanUpdate {
-	spu.mutation.AddTierOrder(i)
-	return spu
+// AddTierOrder adds value to the "tier_order" field.
+func (_u *SubscriptionPlanUpdate) AddTierOrder(v int) *SubscriptionPlanUpdate {
+	_u.mutation.AddTierOrder(v)
+	return _u
 }
 
 // SetTierLimitsJSON sets the "tier_limits_json" field.
-func (spu *SubscriptionPlanUpdate) SetTierLimitsJSON(m map[string]interface{}) *SubscriptionPlanUpdate {
-	spu.mutation.SetTierLimitsJSON(m)
-	return spu
+func (_u *SubscriptionPlanUpdate) SetTierLimitsJSON(v map[string]interface{}) *SubscriptionPlanUpdate {
+	_u.mutation.SetTierLimitsJSON(v)
+	return _u
+}
+
+// SetPlanType sets the "plan_type" field.
+func (_u *SubscriptionPlanUpdate) SetPlanType(v subscriptionplan.PlanType) *SubscriptionPlanUpdate {
+	_u.mutation.SetPlanType(v)
+	return _u
+}
+
+// SetNillablePlanType sets the "plan_type" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillablePlanType(v *subscriptionplan.PlanType) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetPlanType(*v)
+	}
+	return _u
+}
+
+// SetDiscountRules sets the "discount_rules" field.
+func (_u *SubscriptionPlanUpdate) SetDiscountRules(v []map[string]interface{}) *SubscriptionPlanUpdate {
+	_u.mutation.SetDiscountRules(v)
+	return _u
+}
+
+// AppendDiscountRules appends value to the "discount_rules" field.
+func (_u *SubscriptionPlanUpdate) AppendDiscountRules(v []map[string]interface{}) *SubscriptionPlanUpdate {
+	_u.mutation.AppendDiscountRules(v)
+	return _u
+}
+
+// ClearDiscountRules clears the value of the "discount_rules" field.
+func (_u *SubscriptionPlanUpdate) ClearDiscountRules() *SubscriptionPlanUpdate {
+	_u.mutation.ClearDiscountRules()
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (spu *SubscriptionPlanUpdate) SetMetadata(m map[string]interface{}) *SubscriptionPlanUpdate {
-	spu.mutation.SetMetadata(m)
-	return spu
+func (_u *SubscriptionPlanUpdate) SetMetadata(v map[string]interface{}) *SubscriptionPlanUpdate {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (spu *SubscriptionPlanUpdate) SetUpdatedAt(t time.Time) *SubscriptionPlanUpdate {
-	spu.mutation.SetUpdatedAt(t)
-	return spu
+func (_u *SubscriptionPlanUpdate) SetUpdatedAt(v time.Time) *SubscriptionPlanUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // AddFeatureIDs adds the "features" edge to the PlanFeature entity by IDs.
-func (spu *SubscriptionPlanUpdate) AddFeatureIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
-	spu.mutation.AddFeatureIDs(ids...)
-	return spu
+func (_u *SubscriptionPlanUpdate) AddFeatureIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
+	_u.mutation.AddFeatureIDs(ids...)
+	return _u
 }
 
 // AddFeatures adds the "features" edges to the PlanFeature entity.
-func (spu *SubscriptionPlanUpdate) AddFeatures(p ...*PlanFeature) *SubscriptionPlanUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *SubscriptionPlanUpdate) AddFeatures(v ...*PlanFeature) *SubscriptionPlanUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return spu.AddFeatureIDs(ids...)
+	return _u.AddFeatureIDs(ids...)
 }
 
 // AddPricingHistoryIDs adds the "pricing_history" edge to the PlanPricingHistory entity by IDs.
-func (spu *SubscriptionPlanUpdate) AddPricingHistoryIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
-	spu.mutation.AddPricingHistoryIDs(ids...)
-	return spu
+func (_u *SubscriptionPlanUpdate) AddPricingHistoryIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
+	_u.mutation.AddPricingHistoryIDs(ids...)
+	return _u
 }
 
 // AddPricingHistory adds the "pricing_history" edges to the PlanPricingHistory entity.
-func (spu *SubscriptionPlanUpdate) AddPricingHistory(p ...*PlanPricingHistory) *SubscriptionPlanUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *SubscriptionPlanUpdate) AddPricingHistory(v ...*PlanPricingHistory) *SubscriptionPlanUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return spu.AddPricingHistoryIDs(ids...)
+	return _u.AddPricingHistoryIDs(ids...)
 }
 
 // AddSubscriptionIDs adds the "subscriptions" edge to the TenantSubscription entity by IDs.
-func (spu *SubscriptionPlanUpdate) AddSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
-	spu.mutation.AddSubscriptionIDs(ids...)
-	return spu
+func (_u *SubscriptionPlanUpdate) AddSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
+	_u.mutation.AddSubscriptionIDs(ids...)
+	return _u
 }
 
 // AddSubscriptions adds the "subscriptions" edges to the TenantSubscription entity.
-func (spu *SubscriptionPlanUpdate) AddSubscriptions(t ...*TenantSubscription) *SubscriptionPlanUpdate {
-	ids := make([]uuid.UUID, len(t))
-	for i := range t {
-		ids[i] = t[i].ID
+func (_u *SubscriptionPlanUpdate) AddSubscriptions(v ...*TenantSubscription) *SubscriptionPlanUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return spu.AddSubscriptionIDs(ids...)
+	return _u.AddSubscriptionIDs(ids...)
 }
 
 // Mutation returns the SubscriptionPlanMutation object of the builder.
-func (spu *SubscriptionPlanUpdate) Mutation() *SubscriptionPlanMutation {
-	return spu.mutation
+func (_u *SubscriptionPlanUpdate) Mutation() *SubscriptionPlanMutation {
+	return _u.mutation
 }
 
 // ClearFeatures clears all "features" edges to the PlanFeature entity.
-func (spu *SubscriptionPlanUpdate) ClearFeatures() *SubscriptionPlanUpdate {
-	spu.mutation.ClearFeatures()
-	return spu
+func (_u *SubscriptionPlanUpdate) ClearFeatures() *SubscriptionPlanUpdate {
+	_u.mutation.ClearFeatures()
+	return _u
 }
 
 // RemoveFeatureIDs removes the "features" edge to PlanFeature entities by IDs.
-func (spu *SubscriptionPlanUpdate) RemoveFeatureIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
-	spu.mutation.RemoveFeatureIDs(ids...)
-	return spu
+func (_u *SubscriptionPlanUpdate) RemoveFeatureIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
+	_u.mutation.RemoveFeatureIDs(ids...)
+	return _u
 }
 
 // RemoveFeatures removes "features" edges to PlanFeature entities.
-func (spu *SubscriptionPlanUpdate) RemoveFeatures(p ...*PlanFeature) *SubscriptionPlanUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *SubscriptionPlanUpdate) RemoveFeatures(v ...*PlanFeature) *SubscriptionPlanUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return spu.RemoveFeatureIDs(ids...)
+	return _u.RemoveFeatureIDs(ids...)
 }
 
 // ClearPricingHistory clears all "pricing_history" edges to the PlanPricingHistory entity.
-func (spu *SubscriptionPlanUpdate) ClearPricingHistory() *SubscriptionPlanUpdate {
-	spu.mutation.ClearPricingHistory()
-	return spu
+func (_u *SubscriptionPlanUpdate) ClearPricingHistory() *SubscriptionPlanUpdate {
+	_u.mutation.ClearPricingHistory()
+	return _u
 }
 
 // RemovePricingHistoryIDs removes the "pricing_history" edge to PlanPricingHistory entities by IDs.
-func (spu *SubscriptionPlanUpdate) RemovePricingHistoryIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
-	spu.mutation.RemovePricingHistoryIDs(ids...)
-	return spu
+func (_u *SubscriptionPlanUpdate) RemovePricingHistoryIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
+	_u.mutation.RemovePricingHistoryIDs(ids...)
+	return _u
 }
 
 // RemovePricingHistory removes "pricing_history" edges to PlanPricingHistory entities.
-func (spu *SubscriptionPlanUpdate) RemovePricingHistory(p ...*PlanPricingHistory) *SubscriptionPlanUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *SubscriptionPlanUpdate) RemovePricingHistory(v ...*PlanPricingHistory) *SubscriptionPlanUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return spu.RemovePricingHistoryIDs(ids...)
+	return _u.RemovePricingHistoryIDs(ids...)
 }
 
 // ClearSubscriptions clears all "subscriptions" edges to the TenantSubscription entity.
-func (spu *SubscriptionPlanUpdate) ClearSubscriptions() *SubscriptionPlanUpdate {
-	spu.mutation.ClearSubscriptions()
-	return spu
+func (_u *SubscriptionPlanUpdate) ClearSubscriptions() *SubscriptionPlanUpdate {
+	_u.mutation.ClearSubscriptions()
+	return _u
 }
 
 // RemoveSubscriptionIDs removes the "subscriptions" edge to TenantSubscription entities by IDs.
-func (spu *SubscriptionPlanUpdate) RemoveSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
-	spu.mutation.RemoveSubscriptionIDs(ids...)
-	return spu
+func (_u *SubscriptionPlanUpdate) RemoveSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
+	_u.mutation.RemoveSubscriptionIDs(ids...)
+	return _u
 }
 
 // RemoveSubscriptions removes "subscriptions" edges to TenantSubscription entities.
-func (spu *SubscriptionPlanUpdate) RemoveSubscriptions(t ...*TenantSubscription) *SubscriptionPlanUpdate {
-	ids := make([]uuid.UUID, len(t))
-	for i := range t {
-		ids[i] = t[i].ID
+func (_u *SubscriptionPlanUpdate) RemoveSubscriptions(v ...*TenantSubscription) *SubscriptionPlanUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return spu.RemoveSubscriptionIDs(ids...)
+	return _u.RemoveSubscriptionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (spu *SubscriptionPlanUpdate) Save(ctx context.Context) (int, error) {
-	spu.defaults()
-	return withHooks(ctx, spu.sqlSave, spu.mutation, spu.hooks)
+func (_u *SubscriptionPlanUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (spu *SubscriptionPlanUpdate) SaveX(ctx context.Context) int {
-	affected, err := spu.Save(ctx)
+func (_u *SubscriptionPlanUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -325,104 +399,135 @@ func (spu *SubscriptionPlanUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (spu *SubscriptionPlanUpdate) Exec(ctx context.Context) error {
-	_, err := spu.Save(ctx)
+func (_u *SubscriptionPlanUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (spu *SubscriptionPlanUpdate) ExecX(ctx context.Context) {
-	if err := spu.Exec(ctx); err != nil {
+func (_u *SubscriptionPlanUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (spu *SubscriptionPlanUpdate) defaults() {
-	if _, ok := spu.mutation.UpdatedAt(); !ok {
+func (_u *SubscriptionPlanUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := subscriptionplan.UpdateDefaultUpdatedAt()
-		spu.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (spu *SubscriptionPlanUpdate) check() error {
-	if v, ok := spu.mutation.PlanCode(); ok {
+func (_u *SubscriptionPlanUpdate) check() error {
+	if v, ok := _u.mutation.PlanCode(); ok {
 		if err := subscriptionplan.PlanCodeValidator(v); err != nil {
 			return &ValidationError{Name: "plan_code", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.plan_code": %w`, err)}
 		}
 	}
-	if v, ok := spu.mutation.Name(); ok {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := subscriptionplan.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.name": %w`, err)}
 		}
 	}
-	if v, ok := spu.mutation.BillingCycle(); ok {
+	if v, ok := _u.mutation.BillingCycle(); ok {
 		if err := subscriptionplan.BillingCycleValidator(v); err != nil {
 			return &ValidationError{Name: "billing_cycle", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.billing_cycle": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.PlanType(); ok {
+		if err := subscriptionplan.PlanTypeValidator(v); err != nil {
+			return &ValidationError{Name: "plan_type", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.plan_type": %w`, err)}
 		}
 	}
 	return nil
 }
 
-func (spu *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := spu.check(); err != nil {
-		return n, err
+func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(subscriptionplan.Table, subscriptionplan.Columns, sqlgraph.NewFieldSpec(subscriptionplan.FieldID, field.TypeUUID))
-	if ps := spu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := spu.mutation.PlanCode(); ok {
+	if value, ok := _u.mutation.PlanCode(); ok {
 		_spec.SetField(subscriptionplan.FieldPlanCode, field.TypeString, value)
 	}
-	if value, ok := spu.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(subscriptionplan.FieldName, field.TypeString, value)
 	}
-	if value, ok := spu.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(subscriptionplan.FieldDescription, field.TypeString, value)
 	}
-	if spu.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(subscriptionplan.FieldDescription, field.TypeString)
 	}
-	if value, ok := spu.mutation.BillingCycle(); ok {
+	if value, ok := _u.mutation.BillingCycle(); ok {
 		_spec.SetField(subscriptionplan.FieldBillingCycle, field.TypeString, value)
 	}
-	if value, ok := spu.mutation.BasePrice(); ok {
+	if value, ok := _u.mutation.BasePrice(); ok {
 		_spec.SetField(subscriptionplan.FieldBasePrice, field.TypeFloat64, value)
 	}
-	if value, ok := spu.mutation.AddedBasePrice(); ok {
+	if value, ok := _u.mutation.AddedBasePrice(); ok {
 		_spec.AddField(subscriptionplan.FieldBasePrice, field.TypeFloat64, value)
 	}
-	if value, ok := spu.mutation.Currency(); ok {
+	if value, ok := _u.mutation.OnetimeAllProductsPrice(); ok {
+		_spec.SetField(subscriptionplan.FieldOnetimeAllProductsPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedOnetimeAllProductsPrice(); ok {
+		_spec.AddField(subscriptionplan.FieldOnetimeAllProductsPrice, field.TypeFloat64, value)
+	}
+	if _u.mutation.OnetimeAllProductsPriceCleared() {
+		_spec.ClearField(subscriptionplan.FieldOnetimeAllProductsPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.UseSumBasedPricing(); ok {
+		_spec.SetField(subscriptionplan.FieldUseSumBasedPricing, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Currency(); ok {
 		_spec.SetField(subscriptionplan.FieldCurrency, field.TypeString, value)
 	}
-	if value, ok := spu.mutation.IsActive(); ok {
+	if value, ok := _u.mutation.IsActive(); ok {
 		_spec.SetField(subscriptionplan.FieldIsActive, field.TypeBool, value)
 	}
-	if value, ok := spu.mutation.IsPublic(); ok {
+	if value, ok := _u.mutation.IsPublic(); ok {
 		_spec.SetField(subscriptionplan.FieldIsPublic, field.TypeBool, value)
 	}
-	if value, ok := spu.mutation.TierOrder(); ok {
+	if value, ok := _u.mutation.TierOrder(); ok {
 		_spec.SetField(subscriptionplan.FieldTierOrder, field.TypeInt, value)
 	}
-	if value, ok := spu.mutation.AddedTierOrder(); ok {
+	if value, ok := _u.mutation.AddedTierOrder(); ok {
 		_spec.AddField(subscriptionplan.FieldTierOrder, field.TypeInt, value)
 	}
-	if value, ok := spu.mutation.TierLimitsJSON(); ok {
+	if value, ok := _u.mutation.TierLimitsJSON(); ok {
 		_spec.SetField(subscriptionplan.FieldTierLimitsJSON, field.TypeJSON, value)
 	}
-	if value, ok := spu.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.PlanType(); ok {
+		_spec.SetField(subscriptionplan.FieldPlanType, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.DiscountRules(); ok {
+		_spec.SetField(subscriptionplan.FieldDiscountRules, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedDiscountRules(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, subscriptionplan.FieldDiscountRules, value)
+		})
+	}
+	if _u.mutation.DiscountRulesCleared() {
+		_spec.ClearField(subscriptionplan.FieldDiscountRules, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(subscriptionplan.FieldMetadata, field.TypeJSON, value)
 	}
-	if value, ok := spu.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(subscriptionplan.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if spu.mutation.FeaturesCleared() {
+	if _u.mutation.FeaturesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -435,7 +540,7 @@ func (spu *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := spu.mutation.RemovedFeaturesIDs(); len(nodes) > 0 && !spu.mutation.FeaturesCleared() {
+	if nodes := _u.mutation.RemovedFeaturesIDs(); len(nodes) > 0 && !_u.mutation.FeaturesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -451,7 +556,7 @@ func (spu *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := spu.mutation.FeaturesIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.FeaturesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -467,7 +572,7 @@ func (spu *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if spu.mutation.PricingHistoryCleared() {
+	if _u.mutation.PricingHistoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -480,7 +585,7 @@ func (spu *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := spu.mutation.RemovedPricingHistoryIDs(); len(nodes) > 0 && !spu.mutation.PricingHistoryCleared() {
+	if nodes := _u.mutation.RemovedPricingHistoryIDs(); len(nodes) > 0 && !_u.mutation.PricingHistoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -496,7 +601,7 @@ func (spu *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := spu.mutation.PricingHistoryIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.PricingHistoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -512,7 +617,7 @@ func (spu *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if spu.mutation.SubscriptionsCleared() {
+	if _u.mutation.SubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -525,7 +630,7 @@ func (spu *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := spu.mutation.RemovedSubscriptionsIDs(); len(nodes) > 0 && !spu.mutation.SubscriptionsCleared() {
+	if nodes := _u.mutation.RemovedSubscriptionsIDs(); len(nodes) > 0 && !_u.mutation.SubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -541,7 +646,7 @@ func (spu *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := spu.mutation.SubscriptionsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.SubscriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -557,7 +662,7 @@ func (spu *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if n, err = sqlgraph.UpdateNodes(ctx, spu.driver, _spec); err != nil {
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{subscriptionplan.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -565,8 +670,8 @@ func (spu *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		return 0, err
 	}
-	spu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // SubscriptionPlanUpdateOne is the builder for updating a single SubscriptionPlan entity.
@@ -578,304 +683,377 @@ type SubscriptionPlanUpdateOne struct {
 }
 
 // SetPlanCode sets the "plan_code" field.
-func (spuo *SubscriptionPlanUpdateOne) SetPlanCode(s string) *SubscriptionPlanUpdateOne {
-	spuo.mutation.SetPlanCode(s)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) SetPlanCode(v string) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetPlanCode(v)
+	return _u
 }
 
 // SetNillablePlanCode sets the "plan_code" field if the given value is not nil.
-func (spuo *SubscriptionPlanUpdateOne) SetNillablePlanCode(s *string) *SubscriptionPlanUpdateOne {
-	if s != nil {
-		spuo.SetPlanCode(*s)
+func (_u *SubscriptionPlanUpdateOne) SetNillablePlanCode(v *string) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetPlanCode(*v)
 	}
-	return spuo
+	return _u
 }
 
 // SetName sets the "name" field.
-func (spuo *SubscriptionPlanUpdateOne) SetName(s string) *SubscriptionPlanUpdateOne {
-	spuo.mutation.SetName(s)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) SetName(v string) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetName(v)
+	return _u
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (spuo *SubscriptionPlanUpdateOne) SetNillableName(s *string) *SubscriptionPlanUpdateOne {
-	if s != nil {
-		spuo.SetName(*s)
+func (_u *SubscriptionPlanUpdateOne) SetNillableName(v *string) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetName(*v)
 	}
-	return spuo
+	return _u
 }
 
 // SetDescription sets the "description" field.
-func (spuo *SubscriptionPlanUpdateOne) SetDescription(s string) *SubscriptionPlanUpdateOne {
-	spuo.mutation.SetDescription(s)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) SetDescription(v string) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (spuo *SubscriptionPlanUpdateOne) SetNillableDescription(s *string) *SubscriptionPlanUpdateOne {
-	if s != nil {
-		spuo.SetDescription(*s)
+func (_u *SubscriptionPlanUpdateOne) SetNillableDescription(v *string) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
 	}
-	return spuo
+	return _u
 }
 
 // ClearDescription clears the value of the "description" field.
-func (spuo *SubscriptionPlanUpdateOne) ClearDescription() *SubscriptionPlanUpdateOne {
-	spuo.mutation.ClearDescription()
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) ClearDescription() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearDescription()
+	return _u
 }
 
 // SetBillingCycle sets the "billing_cycle" field.
-func (spuo *SubscriptionPlanUpdateOne) SetBillingCycle(s string) *SubscriptionPlanUpdateOne {
-	spuo.mutation.SetBillingCycle(s)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) SetBillingCycle(v string) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetBillingCycle(v)
+	return _u
 }
 
 // SetNillableBillingCycle sets the "billing_cycle" field if the given value is not nil.
-func (spuo *SubscriptionPlanUpdateOne) SetNillableBillingCycle(s *string) *SubscriptionPlanUpdateOne {
-	if s != nil {
-		spuo.SetBillingCycle(*s)
+func (_u *SubscriptionPlanUpdateOne) SetNillableBillingCycle(v *string) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetBillingCycle(*v)
 	}
-	return spuo
+	return _u
 }
 
 // SetBasePrice sets the "base_price" field.
-func (spuo *SubscriptionPlanUpdateOne) SetBasePrice(f float64) *SubscriptionPlanUpdateOne {
-	spuo.mutation.ResetBasePrice()
-	spuo.mutation.SetBasePrice(f)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) SetBasePrice(v float64) *SubscriptionPlanUpdateOne {
+	_u.mutation.ResetBasePrice()
+	_u.mutation.SetBasePrice(v)
+	return _u
 }
 
 // SetNillableBasePrice sets the "base_price" field if the given value is not nil.
-func (spuo *SubscriptionPlanUpdateOne) SetNillableBasePrice(f *float64) *SubscriptionPlanUpdateOne {
-	if f != nil {
-		spuo.SetBasePrice(*f)
+func (_u *SubscriptionPlanUpdateOne) SetNillableBasePrice(v *float64) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetBasePrice(*v)
 	}
-	return spuo
+	return _u
 }
 
-// AddBasePrice adds f to the "base_price" field.
-func (spuo *SubscriptionPlanUpdateOne) AddBasePrice(f float64) *SubscriptionPlanUpdateOne {
-	spuo.mutation.AddBasePrice(f)
-	return spuo
+// AddBasePrice adds value to the "base_price" field.
+func (_u *SubscriptionPlanUpdateOne) AddBasePrice(v float64) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddBasePrice(v)
+	return _u
+}
+
+// SetOnetimeAllProductsPrice sets the "onetime_all_products_price" field.
+func (_u *SubscriptionPlanUpdateOne) SetOnetimeAllProductsPrice(v float64) *SubscriptionPlanUpdateOne {
+	_u.mutation.ResetOnetimeAllProductsPrice()
+	_u.mutation.SetOnetimeAllProductsPrice(v)
+	return _u
+}
+
+// SetNillableOnetimeAllProductsPrice sets the "onetime_all_products_price" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillableOnetimeAllProductsPrice(v *float64) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetOnetimeAllProductsPrice(*v)
+	}
+	return _u
+}
+
+// AddOnetimeAllProductsPrice adds value to the "onetime_all_products_price" field.
+func (_u *SubscriptionPlanUpdateOne) AddOnetimeAllProductsPrice(v float64) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddOnetimeAllProductsPrice(v)
+	return _u
+}
+
+// ClearOnetimeAllProductsPrice clears the value of the "onetime_all_products_price" field.
+func (_u *SubscriptionPlanUpdateOne) ClearOnetimeAllProductsPrice() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearOnetimeAllProductsPrice()
+	return _u
+}
+
+// SetUseSumBasedPricing sets the "use_sum_based_pricing" field.
+func (_u *SubscriptionPlanUpdateOne) SetUseSumBasedPricing(v bool) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetUseSumBasedPricing(v)
+	return _u
+}
+
+// SetNillableUseSumBasedPricing sets the "use_sum_based_pricing" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillableUseSumBasedPricing(v *bool) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetUseSumBasedPricing(*v)
+	}
+	return _u
 }
 
 // SetCurrency sets the "currency" field.
-func (spuo *SubscriptionPlanUpdateOne) SetCurrency(s string) *SubscriptionPlanUpdateOne {
-	spuo.mutation.SetCurrency(s)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) SetCurrency(v string) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetCurrency(v)
+	return _u
 }
 
 // SetNillableCurrency sets the "currency" field if the given value is not nil.
-func (spuo *SubscriptionPlanUpdateOne) SetNillableCurrency(s *string) *SubscriptionPlanUpdateOne {
-	if s != nil {
-		spuo.SetCurrency(*s)
+func (_u *SubscriptionPlanUpdateOne) SetNillableCurrency(v *string) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetCurrency(*v)
 	}
-	return spuo
+	return _u
 }
 
 // SetIsActive sets the "is_active" field.
-func (spuo *SubscriptionPlanUpdateOne) SetIsActive(b bool) *SubscriptionPlanUpdateOne {
-	spuo.mutation.SetIsActive(b)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) SetIsActive(v bool) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetIsActive(v)
+	return _u
 }
 
 // SetNillableIsActive sets the "is_active" field if the given value is not nil.
-func (spuo *SubscriptionPlanUpdateOne) SetNillableIsActive(b *bool) *SubscriptionPlanUpdateOne {
-	if b != nil {
-		spuo.SetIsActive(*b)
+func (_u *SubscriptionPlanUpdateOne) SetNillableIsActive(v *bool) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetIsActive(*v)
 	}
-	return spuo
+	return _u
 }
 
 // SetIsPublic sets the "is_public" field.
-func (spuo *SubscriptionPlanUpdateOne) SetIsPublic(b bool) *SubscriptionPlanUpdateOne {
-	spuo.mutation.SetIsPublic(b)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) SetIsPublic(v bool) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetIsPublic(v)
+	return _u
 }
 
 // SetNillableIsPublic sets the "is_public" field if the given value is not nil.
-func (spuo *SubscriptionPlanUpdateOne) SetNillableIsPublic(b *bool) *SubscriptionPlanUpdateOne {
-	if b != nil {
-		spuo.SetIsPublic(*b)
+func (_u *SubscriptionPlanUpdateOne) SetNillableIsPublic(v *bool) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetIsPublic(*v)
 	}
-	return spuo
+	return _u
 }
 
 // SetTierOrder sets the "tier_order" field.
-func (spuo *SubscriptionPlanUpdateOne) SetTierOrder(i int) *SubscriptionPlanUpdateOne {
-	spuo.mutation.ResetTierOrder()
-	spuo.mutation.SetTierOrder(i)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) SetTierOrder(v int) *SubscriptionPlanUpdateOne {
+	_u.mutation.ResetTierOrder()
+	_u.mutation.SetTierOrder(v)
+	return _u
 }
 
 // SetNillableTierOrder sets the "tier_order" field if the given value is not nil.
-func (spuo *SubscriptionPlanUpdateOne) SetNillableTierOrder(i *int) *SubscriptionPlanUpdateOne {
-	if i != nil {
-		spuo.SetTierOrder(*i)
+func (_u *SubscriptionPlanUpdateOne) SetNillableTierOrder(v *int) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetTierOrder(*v)
 	}
-	return spuo
+	return _u
 }
 
-// AddTierOrder adds i to the "tier_order" field.
-func (spuo *SubscriptionPlanUpdateOne) AddTierOrder(i int) *SubscriptionPlanUpdateOne {
-	spuo.mutation.AddTierOrder(i)
-	return spuo
+// AddTierOrder adds value to the "tier_order" field.
+func (_u *SubscriptionPlanUpdateOne) AddTierOrder(v int) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddTierOrder(v)
+	return _u
 }
 
 // SetTierLimitsJSON sets the "tier_limits_json" field.
-func (spuo *SubscriptionPlanUpdateOne) SetTierLimitsJSON(m map[string]interface{}) *SubscriptionPlanUpdateOne {
-	spuo.mutation.SetTierLimitsJSON(m)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) SetTierLimitsJSON(v map[string]interface{}) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetTierLimitsJSON(v)
+	return _u
+}
+
+// SetPlanType sets the "plan_type" field.
+func (_u *SubscriptionPlanUpdateOne) SetPlanType(v subscriptionplan.PlanType) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetPlanType(v)
+	return _u
+}
+
+// SetNillablePlanType sets the "plan_type" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillablePlanType(v *subscriptionplan.PlanType) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetPlanType(*v)
+	}
+	return _u
+}
+
+// SetDiscountRules sets the "discount_rules" field.
+func (_u *SubscriptionPlanUpdateOne) SetDiscountRules(v []map[string]interface{}) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetDiscountRules(v)
+	return _u
+}
+
+// AppendDiscountRules appends value to the "discount_rules" field.
+func (_u *SubscriptionPlanUpdateOne) AppendDiscountRules(v []map[string]interface{}) *SubscriptionPlanUpdateOne {
+	_u.mutation.AppendDiscountRules(v)
+	return _u
+}
+
+// ClearDiscountRules clears the value of the "discount_rules" field.
+func (_u *SubscriptionPlanUpdateOne) ClearDiscountRules() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearDiscountRules()
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (spuo *SubscriptionPlanUpdateOne) SetMetadata(m map[string]interface{}) *SubscriptionPlanUpdateOne {
-	spuo.mutation.SetMetadata(m)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) SetMetadata(v map[string]interface{}) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (spuo *SubscriptionPlanUpdateOne) SetUpdatedAt(t time.Time) *SubscriptionPlanUpdateOne {
-	spuo.mutation.SetUpdatedAt(t)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) SetUpdatedAt(v time.Time) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // AddFeatureIDs adds the "features" edge to the PlanFeature entity by IDs.
-func (spuo *SubscriptionPlanUpdateOne) AddFeatureIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
-	spuo.mutation.AddFeatureIDs(ids...)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) AddFeatureIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddFeatureIDs(ids...)
+	return _u
 }
 
 // AddFeatures adds the "features" edges to the PlanFeature entity.
-func (spuo *SubscriptionPlanUpdateOne) AddFeatures(p ...*PlanFeature) *SubscriptionPlanUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *SubscriptionPlanUpdateOne) AddFeatures(v ...*PlanFeature) *SubscriptionPlanUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return spuo.AddFeatureIDs(ids...)
+	return _u.AddFeatureIDs(ids...)
 }
 
 // AddPricingHistoryIDs adds the "pricing_history" edge to the PlanPricingHistory entity by IDs.
-func (spuo *SubscriptionPlanUpdateOne) AddPricingHistoryIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
-	spuo.mutation.AddPricingHistoryIDs(ids...)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) AddPricingHistoryIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddPricingHistoryIDs(ids...)
+	return _u
 }
 
 // AddPricingHistory adds the "pricing_history" edges to the PlanPricingHistory entity.
-func (spuo *SubscriptionPlanUpdateOne) AddPricingHistory(p ...*PlanPricingHistory) *SubscriptionPlanUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *SubscriptionPlanUpdateOne) AddPricingHistory(v ...*PlanPricingHistory) *SubscriptionPlanUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return spuo.AddPricingHistoryIDs(ids...)
+	return _u.AddPricingHistoryIDs(ids...)
 }
 
 // AddSubscriptionIDs adds the "subscriptions" edge to the TenantSubscription entity by IDs.
-func (spuo *SubscriptionPlanUpdateOne) AddSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
-	spuo.mutation.AddSubscriptionIDs(ids...)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) AddSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddSubscriptionIDs(ids...)
+	return _u
 }
 
 // AddSubscriptions adds the "subscriptions" edges to the TenantSubscription entity.
-func (spuo *SubscriptionPlanUpdateOne) AddSubscriptions(t ...*TenantSubscription) *SubscriptionPlanUpdateOne {
-	ids := make([]uuid.UUID, len(t))
-	for i := range t {
-		ids[i] = t[i].ID
+func (_u *SubscriptionPlanUpdateOne) AddSubscriptions(v ...*TenantSubscription) *SubscriptionPlanUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return spuo.AddSubscriptionIDs(ids...)
+	return _u.AddSubscriptionIDs(ids...)
 }
 
 // Mutation returns the SubscriptionPlanMutation object of the builder.
-func (spuo *SubscriptionPlanUpdateOne) Mutation() *SubscriptionPlanMutation {
-	return spuo.mutation
+func (_u *SubscriptionPlanUpdateOne) Mutation() *SubscriptionPlanMutation {
+	return _u.mutation
 }
 
 // ClearFeatures clears all "features" edges to the PlanFeature entity.
-func (spuo *SubscriptionPlanUpdateOne) ClearFeatures() *SubscriptionPlanUpdateOne {
-	spuo.mutation.ClearFeatures()
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) ClearFeatures() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearFeatures()
+	return _u
 }
 
 // RemoveFeatureIDs removes the "features" edge to PlanFeature entities by IDs.
-func (spuo *SubscriptionPlanUpdateOne) RemoveFeatureIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
-	spuo.mutation.RemoveFeatureIDs(ids...)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) RemoveFeatureIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
+	_u.mutation.RemoveFeatureIDs(ids...)
+	return _u
 }
 
 // RemoveFeatures removes "features" edges to PlanFeature entities.
-func (spuo *SubscriptionPlanUpdateOne) RemoveFeatures(p ...*PlanFeature) *SubscriptionPlanUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *SubscriptionPlanUpdateOne) RemoveFeatures(v ...*PlanFeature) *SubscriptionPlanUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return spuo.RemoveFeatureIDs(ids...)
+	return _u.RemoveFeatureIDs(ids...)
 }
 
 // ClearPricingHistory clears all "pricing_history" edges to the PlanPricingHistory entity.
-func (spuo *SubscriptionPlanUpdateOne) ClearPricingHistory() *SubscriptionPlanUpdateOne {
-	spuo.mutation.ClearPricingHistory()
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) ClearPricingHistory() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearPricingHistory()
+	return _u
 }
 
 // RemovePricingHistoryIDs removes the "pricing_history" edge to PlanPricingHistory entities by IDs.
-func (spuo *SubscriptionPlanUpdateOne) RemovePricingHistoryIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
-	spuo.mutation.RemovePricingHistoryIDs(ids...)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) RemovePricingHistoryIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
+	_u.mutation.RemovePricingHistoryIDs(ids...)
+	return _u
 }
 
 // RemovePricingHistory removes "pricing_history" edges to PlanPricingHistory entities.
-func (spuo *SubscriptionPlanUpdateOne) RemovePricingHistory(p ...*PlanPricingHistory) *SubscriptionPlanUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_u *SubscriptionPlanUpdateOne) RemovePricingHistory(v ...*PlanPricingHistory) *SubscriptionPlanUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return spuo.RemovePricingHistoryIDs(ids...)
+	return _u.RemovePricingHistoryIDs(ids...)
 }
 
 // ClearSubscriptions clears all "subscriptions" edges to the TenantSubscription entity.
-func (spuo *SubscriptionPlanUpdateOne) ClearSubscriptions() *SubscriptionPlanUpdateOne {
-	spuo.mutation.ClearSubscriptions()
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) ClearSubscriptions() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearSubscriptions()
+	return _u
 }
 
 // RemoveSubscriptionIDs removes the "subscriptions" edge to TenantSubscription entities by IDs.
-func (spuo *SubscriptionPlanUpdateOne) RemoveSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
-	spuo.mutation.RemoveSubscriptionIDs(ids...)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) RemoveSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
+	_u.mutation.RemoveSubscriptionIDs(ids...)
+	return _u
 }
 
 // RemoveSubscriptions removes "subscriptions" edges to TenantSubscription entities.
-func (spuo *SubscriptionPlanUpdateOne) RemoveSubscriptions(t ...*TenantSubscription) *SubscriptionPlanUpdateOne {
-	ids := make([]uuid.UUID, len(t))
-	for i := range t {
-		ids[i] = t[i].ID
+func (_u *SubscriptionPlanUpdateOne) RemoveSubscriptions(v ...*TenantSubscription) *SubscriptionPlanUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return spuo.RemoveSubscriptionIDs(ids...)
+	return _u.RemoveSubscriptionIDs(ids...)
 }
 
 // Where appends a list predicates to the SubscriptionPlanUpdate builder.
-func (spuo *SubscriptionPlanUpdateOne) Where(ps ...predicate.SubscriptionPlan) *SubscriptionPlanUpdateOne {
-	spuo.mutation.Where(ps...)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) Where(ps ...predicate.SubscriptionPlan) *SubscriptionPlanUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (spuo *SubscriptionPlanUpdateOne) Select(field string, fields ...string) *SubscriptionPlanUpdateOne {
-	spuo.fields = append([]string{field}, fields...)
-	return spuo
+func (_u *SubscriptionPlanUpdateOne) Select(field string, fields ...string) *SubscriptionPlanUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated SubscriptionPlan entity.
-func (spuo *SubscriptionPlanUpdateOne) Save(ctx context.Context) (*SubscriptionPlan, error) {
-	spuo.defaults()
-	return withHooks(ctx, spuo.sqlSave, spuo.mutation, spuo.hooks)
+func (_u *SubscriptionPlanUpdateOne) Save(ctx context.Context) (*SubscriptionPlan, error) {
+	_u.defaults()
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (spuo *SubscriptionPlanUpdateOne) SaveX(ctx context.Context) *SubscriptionPlan {
-	node, err := spuo.Save(ctx)
+func (_u *SubscriptionPlanUpdateOne) SaveX(ctx context.Context) *SubscriptionPlan {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -883,57 +1061,62 @@ func (spuo *SubscriptionPlanUpdateOne) SaveX(ctx context.Context) *SubscriptionP
 }
 
 // Exec executes the query on the entity.
-func (spuo *SubscriptionPlanUpdateOne) Exec(ctx context.Context) error {
-	_, err := spuo.Save(ctx)
+func (_u *SubscriptionPlanUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (spuo *SubscriptionPlanUpdateOne) ExecX(ctx context.Context) {
-	if err := spuo.Exec(ctx); err != nil {
+func (_u *SubscriptionPlanUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (spuo *SubscriptionPlanUpdateOne) defaults() {
-	if _, ok := spuo.mutation.UpdatedAt(); !ok {
+func (_u *SubscriptionPlanUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
 		v := subscriptionplan.UpdateDefaultUpdatedAt()
-		spuo.mutation.SetUpdatedAt(v)
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (spuo *SubscriptionPlanUpdateOne) check() error {
-	if v, ok := spuo.mutation.PlanCode(); ok {
+func (_u *SubscriptionPlanUpdateOne) check() error {
+	if v, ok := _u.mutation.PlanCode(); ok {
 		if err := subscriptionplan.PlanCodeValidator(v); err != nil {
 			return &ValidationError{Name: "plan_code", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.plan_code": %w`, err)}
 		}
 	}
-	if v, ok := spuo.mutation.Name(); ok {
+	if v, ok := _u.mutation.Name(); ok {
 		if err := subscriptionplan.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.name": %w`, err)}
 		}
 	}
-	if v, ok := spuo.mutation.BillingCycle(); ok {
+	if v, ok := _u.mutation.BillingCycle(); ok {
 		if err := subscriptionplan.BillingCycleValidator(v); err != nil {
 			return &ValidationError{Name: "billing_cycle", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.billing_cycle": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.PlanType(); ok {
+		if err := subscriptionplan.PlanTypeValidator(v); err != nil {
+			return &ValidationError{Name: "plan_type", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.plan_type": %w`, err)}
 		}
 	}
 	return nil
 }
 
-func (spuo *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *SubscriptionPlan, err error) {
-	if err := spuo.check(); err != nil {
+func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *SubscriptionPlan, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(subscriptionplan.Table, subscriptionplan.Columns, sqlgraph.NewFieldSpec(subscriptionplan.FieldID, field.TypeUUID))
-	id, ok := spuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "SubscriptionPlan.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := spuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, subscriptionplan.FieldID)
 		for _, f := range fields {
@@ -945,59 +1128,85 @@ func (spuo *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subs
 			}
 		}
 	}
-	if ps := spuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := spuo.mutation.PlanCode(); ok {
+	if value, ok := _u.mutation.PlanCode(); ok {
 		_spec.SetField(subscriptionplan.FieldPlanCode, field.TypeString, value)
 	}
-	if value, ok := spuo.mutation.Name(); ok {
+	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(subscriptionplan.FieldName, field.TypeString, value)
 	}
-	if value, ok := spuo.mutation.Description(); ok {
+	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(subscriptionplan.FieldDescription, field.TypeString, value)
 	}
-	if spuo.mutation.DescriptionCleared() {
+	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(subscriptionplan.FieldDescription, field.TypeString)
 	}
-	if value, ok := spuo.mutation.BillingCycle(); ok {
+	if value, ok := _u.mutation.BillingCycle(); ok {
 		_spec.SetField(subscriptionplan.FieldBillingCycle, field.TypeString, value)
 	}
-	if value, ok := spuo.mutation.BasePrice(); ok {
+	if value, ok := _u.mutation.BasePrice(); ok {
 		_spec.SetField(subscriptionplan.FieldBasePrice, field.TypeFloat64, value)
 	}
-	if value, ok := spuo.mutation.AddedBasePrice(); ok {
+	if value, ok := _u.mutation.AddedBasePrice(); ok {
 		_spec.AddField(subscriptionplan.FieldBasePrice, field.TypeFloat64, value)
 	}
-	if value, ok := spuo.mutation.Currency(); ok {
+	if value, ok := _u.mutation.OnetimeAllProductsPrice(); ok {
+		_spec.SetField(subscriptionplan.FieldOnetimeAllProductsPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedOnetimeAllProductsPrice(); ok {
+		_spec.AddField(subscriptionplan.FieldOnetimeAllProductsPrice, field.TypeFloat64, value)
+	}
+	if _u.mutation.OnetimeAllProductsPriceCleared() {
+		_spec.ClearField(subscriptionplan.FieldOnetimeAllProductsPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.UseSumBasedPricing(); ok {
+		_spec.SetField(subscriptionplan.FieldUseSumBasedPricing, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Currency(); ok {
 		_spec.SetField(subscriptionplan.FieldCurrency, field.TypeString, value)
 	}
-	if value, ok := spuo.mutation.IsActive(); ok {
+	if value, ok := _u.mutation.IsActive(); ok {
 		_spec.SetField(subscriptionplan.FieldIsActive, field.TypeBool, value)
 	}
-	if value, ok := spuo.mutation.IsPublic(); ok {
+	if value, ok := _u.mutation.IsPublic(); ok {
 		_spec.SetField(subscriptionplan.FieldIsPublic, field.TypeBool, value)
 	}
-	if value, ok := spuo.mutation.TierOrder(); ok {
+	if value, ok := _u.mutation.TierOrder(); ok {
 		_spec.SetField(subscriptionplan.FieldTierOrder, field.TypeInt, value)
 	}
-	if value, ok := spuo.mutation.AddedTierOrder(); ok {
+	if value, ok := _u.mutation.AddedTierOrder(); ok {
 		_spec.AddField(subscriptionplan.FieldTierOrder, field.TypeInt, value)
 	}
-	if value, ok := spuo.mutation.TierLimitsJSON(); ok {
+	if value, ok := _u.mutation.TierLimitsJSON(); ok {
 		_spec.SetField(subscriptionplan.FieldTierLimitsJSON, field.TypeJSON, value)
 	}
-	if value, ok := spuo.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.PlanType(); ok {
+		_spec.SetField(subscriptionplan.FieldPlanType, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.DiscountRules(); ok {
+		_spec.SetField(subscriptionplan.FieldDiscountRules, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedDiscountRules(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, subscriptionplan.FieldDiscountRules, value)
+		})
+	}
+	if _u.mutation.DiscountRulesCleared() {
+		_spec.ClearField(subscriptionplan.FieldDiscountRules, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(subscriptionplan.FieldMetadata, field.TypeJSON, value)
 	}
-	if value, ok := spuo.mutation.UpdatedAt(); ok {
+	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(subscriptionplan.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if spuo.mutation.FeaturesCleared() {
+	if _u.mutation.FeaturesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1010,7 +1219,7 @@ func (spuo *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subs
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := spuo.mutation.RemovedFeaturesIDs(); len(nodes) > 0 && !spuo.mutation.FeaturesCleared() {
+	if nodes := _u.mutation.RemovedFeaturesIDs(); len(nodes) > 0 && !_u.mutation.FeaturesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1026,7 +1235,7 @@ func (spuo *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subs
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := spuo.mutation.FeaturesIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.FeaturesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1042,7 +1251,7 @@ func (spuo *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subs
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if spuo.mutation.PricingHistoryCleared() {
+	if _u.mutation.PricingHistoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1055,7 +1264,7 @@ func (spuo *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subs
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := spuo.mutation.RemovedPricingHistoryIDs(); len(nodes) > 0 && !spuo.mutation.PricingHistoryCleared() {
+	if nodes := _u.mutation.RemovedPricingHistoryIDs(); len(nodes) > 0 && !_u.mutation.PricingHistoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1071,7 +1280,7 @@ func (spuo *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subs
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := spuo.mutation.PricingHistoryIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.PricingHistoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1087,7 +1296,7 @@ func (spuo *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subs
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if spuo.mutation.SubscriptionsCleared() {
+	if _u.mutation.SubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1100,7 +1309,7 @@ func (spuo *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subs
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := spuo.mutation.RemovedSubscriptionsIDs(); len(nodes) > 0 && !spuo.mutation.SubscriptionsCleared() {
+	if nodes := _u.mutation.RemovedSubscriptionsIDs(); len(nodes) > 0 && !_u.mutation.SubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1116,7 +1325,7 @@ func (spuo *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subs
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := spuo.mutation.SubscriptionsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.SubscriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1132,10 +1341,10 @@ func (spuo *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subs
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &SubscriptionPlan{config: spuo.config}
+	_node = &SubscriptionPlan{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, spuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{subscriptionplan.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -1143,6 +1352,6 @@ func (spuo *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subs
 		}
 		return nil, err
 	}
-	spuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

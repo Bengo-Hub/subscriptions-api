@@ -76,6 +76,11 @@ func LimitValue(v int) predicate.PlanFeature {
 	return predicate.PlanFeature(sql.FieldEQ(FieldLimitValue, v))
 }
 
+// OverageUnitPrice applies equality check predicate on the "overage_unit_price" field. It's identical to OverageUnitPriceEQ.
+func OverageUnitPrice(v float64) predicate.PlanFeature {
+	return predicate.PlanFeature(sql.FieldEQ(FieldOverageUnitPrice, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.PlanFeature {
 	return predicate.PlanFeature(sql.FieldEQ(FieldCreatedAt, v))
@@ -224,6 +229,46 @@ func LimitValueIsNil() predicate.PlanFeature {
 // LimitValueNotNil applies the NotNil predicate on the "limit_value" field.
 func LimitValueNotNil() predicate.PlanFeature {
 	return predicate.PlanFeature(sql.FieldNotNull(FieldLimitValue))
+}
+
+// OverageUnitPriceEQ applies the EQ predicate on the "overage_unit_price" field.
+func OverageUnitPriceEQ(v float64) predicate.PlanFeature {
+	return predicate.PlanFeature(sql.FieldEQ(FieldOverageUnitPrice, v))
+}
+
+// OverageUnitPriceNEQ applies the NEQ predicate on the "overage_unit_price" field.
+func OverageUnitPriceNEQ(v float64) predicate.PlanFeature {
+	return predicate.PlanFeature(sql.FieldNEQ(FieldOverageUnitPrice, v))
+}
+
+// OverageUnitPriceIn applies the In predicate on the "overage_unit_price" field.
+func OverageUnitPriceIn(vs ...float64) predicate.PlanFeature {
+	return predicate.PlanFeature(sql.FieldIn(FieldOverageUnitPrice, vs...))
+}
+
+// OverageUnitPriceNotIn applies the NotIn predicate on the "overage_unit_price" field.
+func OverageUnitPriceNotIn(vs ...float64) predicate.PlanFeature {
+	return predicate.PlanFeature(sql.FieldNotIn(FieldOverageUnitPrice, vs...))
+}
+
+// OverageUnitPriceGT applies the GT predicate on the "overage_unit_price" field.
+func OverageUnitPriceGT(v float64) predicate.PlanFeature {
+	return predicate.PlanFeature(sql.FieldGT(FieldOverageUnitPrice, v))
+}
+
+// OverageUnitPriceGTE applies the GTE predicate on the "overage_unit_price" field.
+func OverageUnitPriceGTE(v float64) predicate.PlanFeature {
+	return predicate.PlanFeature(sql.FieldGTE(FieldOverageUnitPrice, v))
+}
+
+// OverageUnitPriceLT applies the LT predicate on the "overage_unit_price" field.
+func OverageUnitPriceLT(v float64) predicate.PlanFeature {
+	return predicate.PlanFeature(sql.FieldLT(FieldOverageUnitPrice, v))
+}
+
+// OverageUnitPriceLTE applies the LTE predicate on the "overage_unit_price" field.
+func OverageUnitPriceLTE(v float64) predicate.PlanFeature {
+	return predicate.PlanFeature(sql.FieldLTE(FieldOverageUnitPrice, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

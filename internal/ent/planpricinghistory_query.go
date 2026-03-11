@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -30,44 +31,44 @@ type PlanPricingHistoryQuery struct {
 }
 
 // Where adds a new predicate for the PlanPricingHistoryQuery builder.
-func (pphq *PlanPricingHistoryQuery) Where(ps ...predicate.PlanPricingHistory) *PlanPricingHistoryQuery {
-	pphq.predicates = append(pphq.predicates, ps...)
-	return pphq
+func (_q *PlanPricingHistoryQuery) Where(ps ...predicate.PlanPricingHistory) *PlanPricingHistoryQuery {
+	_q.predicates = append(_q.predicates, ps...)
+	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (pphq *PlanPricingHistoryQuery) Limit(limit int) *PlanPricingHistoryQuery {
-	pphq.ctx.Limit = &limit
-	return pphq
+func (_q *PlanPricingHistoryQuery) Limit(limit int) *PlanPricingHistoryQuery {
+	_q.ctx.Limit = &limit
+	return _q
 }
 
 // Offset to start from.
-func (pphq *PlanPricingHistoryQuery) Offset(offset int) *PlanPricingHistoryQuery {
-	pphq.ctx.Offset = &offset
-	return pphq
+func (_q *PlanPricingHistoryQuery) Offset(offset int) *PlanPricingHistoryQuery {
+	_q.ctx.Offset = &offset
+	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (pphq *PlanPricingHistoryQuery) Unique(unique bool) *PlanPricingHistoryQuery {
-	pphq.ctx.Unique = &unique
-	return pphq
+func (_q *PlanPricingHistoryQuery) Unique(unique bool) *PlanPricingHistoryQuery {
+	_q.ctx.Unique = &unique
+	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (pphq *PlanPricingHistoryQuery) Order(o ...planpricinghistory.OrderOption) *PlanPricingHistoryQuery {
-	pphq.order = append(pphq.order, o...)
-	return pphq
+func (_q *PlanPricingHistoryQuery) Order(o ...planpricinghistory.OrderOption) *PlanPricingHistoryQuery {
+	_q.order = append(_q.order, o...)
+	return _q
 }
 
 // QueryPlan chains the current query on the "plan" edge.
-func (pphq *PlanPricingHistoryQuery) QueryPlan() *SubscriptionPlanQuery {
-	query := (&SubscriptionPlanClient{config: pphq.config}).Query()
+func (_q *PlanPricingHistoryQuery) QueryPlan() *SubscriptionPlanQuery {
+	query := (&SubscriptionPlanClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pphq.prepareQuery(ctx); err != nil {
+		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := pphq.sqlQuery(ctx)
+		selector := _q.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -76,7 +77,7 @@ func (pphq *PlanPricingHistoryQuery) QueryPlan() *SubscriptionPlanQuery {
 			sqlgraph.To(subscriptionplan.Table, subscriptionplan.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, planpricinghistory.PlanTable, planpricinghistory.PlanColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(pphq.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -84,8 +85,8 @@ func (pphq *PlanPricingHistoryQuery) QueryPlan() *SubscriptionPlanQuery {
 
 // First returns the first PlanPricingHistory entity from the query.
 // Returns a *NotFoundError when no PlanPricingHistory was found.
-func (pphq *PlanPricingHistoryQuery) First(ctx context.Context) (*PlanPricingHistory, error) {
-	nodes, err := pphq.Limit(1).All(setContextOp(ctx, pphq.ctx, "First"))
+func (_q *PlanPricingHistoryQuery) First(ctx context.Context) (*PlanPricingHistory, error) {
+	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -96,8 +97,8 @@ func (pphq *PlanPricingHistoryQuery) First(ctx context.Context) (*PlanPricingHis
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (pphq *PlanPricingHistoryQuery) FirstX(ctx context.Context) *PlanPricingHistory {
-	node, err := pphq.First(ctx)
+func (_q *PlanPricingHistoryQuery) FirstX(ctx context.Context) *PlanPricingHistory {
+	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -106,9 +107,9 @@ func (pphq *PlanPricingHistoryQuery) FirstX(ctx context.Context) *PlanPricingHis
 
 // FirstID returns the first PlanPricingHistory ID from the query.
 // Returns a *NotFoundError when no PlanPricingHistory ID was found.
-func (pphq *PlanPricingHistoryQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *PlanPricingHistoryQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = pphq.Limit(1).IDs(setContextOp(ctx, pphq.ctx, "FirstID")); err != nil {
+	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -119,8 +120,8 @@ func (pphq *PlanPricingHistoryQuery) FirstID(ctx context.Context) (id uuid.UUID,
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (pphq *PlanPricingHistoryQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := pphq.FirstID(ctx)
+func (_q *PlanPricingHistoryQuery) FirstIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -130,8 +131,8 @@ func (pphq *PlanPricingHistoryQuery) FirstIDX(ctx context.Context) uuid.UUID {
 // Only returns a single PlanPricingHistory entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one PlanPricingHistory entity is found.
 // Returns a *NotFoundError when no PlanPricingHistory entities are found.
-func (pphq *PlanPricingHistoryQuery) Only(ctx context.Context) (*PlanPricingHistory, error) {
-	nodes, err := pphq.Limit(2).All(setContextOp(ctx, pphq.ctx, "Only"))
+func (_q *PlanPricingHistoryQuery) Only(ctx context.Context) (*PlanPricingHistory, error) {
+	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +147,8 @@ func (pphq *PlanPricingHistoryQuery) Only(ctx context.Context) (*PlanPricingHist
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (pphq *PlanPricingHistoryQuery) OnlyX(ctx context.Context) *PlanPricingHistory {
-	node, err := pphq.Only(ctx)
+func (_q *PlanPricingHistoryQuery) OnlyX(ctx context.Context) *PlanPricingHistory {
+	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -157,9 +158,9 @@ func (pphq *PlanPricingHistoryQuery) OnlyX(ctx context.Context) *PlanPricingHist
 // OnlyID is like Only, but returns the only PlanPricingHistory ID in the query.
 // Returns a *NotSingularError when more than one PlanPricingHistory ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (pphq *PlanPricingHistoryQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *PlanPricingHistoryQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = pphq.Limit(2).IDs(setContextOp(ctx, pphq.ctx, "OnlyID")); err != nil {
+	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -174,8 +175,8 @@ func (pphq *PlanPricingHistoryQuery) OnlyID(ctx context.Context) (id uuid.UUID, 
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (pphq *PlanPricingHistoryQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := pphq.OnlyID(ctx)
+func (_q *PlanPricingHistoryQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -183,18 +184,18 @@ func (pphq *PlanPricingHistoryQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 }
 
 // All executes the query and returns a list of PlanPricingHistories.
-func (pphq *PlanPricingHistoryQuery) All(ctx context.Context) ([]*PlanPricingHistory, error) {
-	ctx = setContextOp(ctx, pphq.ctx, "All")
-	if err := pphq.prepareQuery(ctx); err != nil {
+func (_q *PlanPricingHistoryQuery) All(ctx context.Context) ([]*PlanPricingHistory, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*PlanPricingHistory, *PlanPricingHistoryQuery]()
-	return withInterceptors[[]*PlanPricingHistory](ctx, pphq, qr, pphq.inters)
+	return withInterceptors[[]*PlanPricingHistory](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (pphq *PlanPricingHistoryQuery) AllX(ctx context.Context) []*PlanPricingHistory {
-	nodes, err := pphq.All(ctx)
+func (_q *PlanPricingHistoryQuery) AllX(ctx context.Context) []*PlanPricingHistory {
+	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -202,20 +203,20 @@ func (pphq *PlanPricingHistoryQuery) AllX(ctx context.Context) []*PlanPricingHis
 }
 
 // IDs executes the query and returns a list of PlanPricingHistory IDs.
-func (pphq *PlanPricingHistoryQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if pphq.ctx.Unique == nil && pphq.path != nil {
-		pphq.Unique(true)
+func (_q *PlanPricingHistoryQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if _q.ctx.Unique == nil && _q.path != nil {
+		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, pphq.ctx, "IDs")
-	if err = pphq.Select(planpricinghistory.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
+	if err = _q.Select(planpricinghistory.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (pphq *PlanPricingHistoryQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := pphq.IDs(ctx)
+func (_q *PlanPricingHistoryQuery) IDsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -223,17 +224,17 @@ func (pphq *PlanPricingHistoryQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (pphq *PlanPricingHistoryQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, pphq.ctx, "Count")
-	if err := pphq.prepareQuery(ctx); err != nil {
+func (_q *PlanPricingHistoryQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
+	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, pphq, querierCount[*PlanPricingHistoryQuery](), pphq.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*PlanPricingHistoryQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (pphq *PlanPricingHistoryQuery) CountX(ctx context.Context) int {
-	count, err := pphq.Count(ctx)
+func (_q *PlanPricingHistoryQuery) CountX(ctx context.Context) int {
+	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -241,9 +242,9 @@ func (pphq *PlanPricingHistoryQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (pphq *PlanPricingHistoryQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, pphq.ctx, "Exist")
-	switch _, err := pphq.FirstID(ctx); {
+func (_q *PlanPricingHistoryQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
+	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -254,8 +255,8 @@ func (pphq *PlanPricingHistoryQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (pphq *PlanPricingHistoryQuery) ExistX(ctx context.Context) bool {
-	exist, err := pphq.Exist(ctx)
+func (_q *PlanPricingHistoryQuery) ExistX(ctx context.Context) bool {
+	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -264,32 +265,32 @@ func (pphq *PlanPricingHistoryQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the PlanPricingHistoryQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (pphq *PlanPricingHistoryQuery) Clone() *PlanPricingHistoryQuery {
-	if pphq == nil {
+func (_q *PlanPricingHistoryQuery) Clone() *PlanPricingHistoryQuery {
+	if _q == nil {
 		return nil
 	}
 	return &PlanPricingHistoryQuery{
-		config:     pphq.config,
-		ctx:        pphq.ctx.Clone(),
-		order:      append([]planpricinghistory.OrderOption{}, pphq.order...),
-		inters:     append([]Interceptor{}, pphq.inters...),
-		predicates: append([]predicate.PlanPricingHistory{}, pphq.predicates...),
-		withPlan:   pphq.withPlan.Clone(),
+		config:     _q.config,
+		ctx:        _q.ctx.Clone(),
+		order:      append([]planpricinghistory.OrderOption{}, _q.order...),
+		inters:     append([]Interceptor{}, _q.inters...),
+		predicates: append([]predicate.PlanPricingHistory{}, _q.predicates...),
+		withPlan:   _q.withPlan.Clone(),
 		// clone intermediate query.
-		sql:  pphq.sql.Clone(),
-		path: pphq.path,
+		sql:  _q.sql.Clone(),
+		path: _q.path,
 	}
 }
 
 // WithPlan tells the query-builder to eager-load the nodes that are connected to
 // the "plan" edge. The optional arguments are used to configure the query builder of the edge.
-func (pphq *PlanPricingHistoryQuery) WithPlan(opts ...func(*SubscriptionPlanQuery)) *PlanPricingHistoryQuery {
-	query := (&SubscriptionPlanClient{config: pphq.config}).Query()
+func (_q *PlanPricingHistoryQuery) WithPlan(opts ...func(*SubscriptionPlanQuery)) *PlanPricingHistoryQuery {
+	query := (&SubscriptionPlanClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	pphq.withPlan = query
-	return pphq
+	_q.withPlan = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -306,10 +307,10 @@ func (pphq *PlanPricingHistoryQuery) WithPlan(opts ...func(*SubscriptionPlanQuer
 //		GroupBy(planpricinghistory.FieldPlanID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (pphq *PlanPricingHistoryQuery) GroupBy(field string, fields ...string) *PlanPricingHistoryGroupBy {
-	pphq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &PlanPricingHistoryGroupBy{build: pphq}
-	grbuild.flds = &pphq.ctx.Fields
+func (_q *PlanPricingHistoryQuery) GroupBy(field string, fields ...string) *PlanPricingHistoryGroupBy {
+	_q.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &PlanPricingHistoryGroupBy{build: _q}
+	grbuild.flds = &_q.ctx.Fields
 	grbuild.label = planpricinghistory.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -327,58 +328,58 @@ func (pphq *PlanPricingHistoryQuery) GroupBy(field string, fields ...string) *Pl
 //	client.PlanPricingHistory.Query().
 //		Select(planpricinghistory.FieldPlanID).
 //		Scan(ctx, &v)
-func (pphq *PlanPricingHistoryQuery) Select(fields ...string) *PlanPricingHistorySelect {
-	pphq.ctx.Fields = append(pphq.ctx.Fields, fields...)
-	sbuild := &PlanPricingHistorySelect{PlanPricingHistoryQuery: pphq}
+func (_q *PlanPricingHistoryQuery) Select(fields ...string) *PlanPricingHistorySelect {
+	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
+	sbuild := &PlanPricingHistorySelect{PlanPricingHistoryQuery: _q}
 	sbuild.label = planpricinghistory.Label
-	sbuild.flds, sbuild.scan = &pphq.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a PlanPricingHistorySelect configured with the given aggregations.
-func (pphq *PlanPricingHistoryQuery) Aggregate(fns ...AggregateFunc) *PlanPricingHistorySelect {
-	return pphq.Select().Aggregate(fns...)
+func (_q *PlanPricingHistoryQuery) Aggregate(fns ...AggregateFunc) *PlanPricingHistorySelect {
+	return _q.Select().Aggregate(fns...)
 }
 
-func (pphq *PlanPricingHistoryQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range pphq.inters {
+func (_q *PlanPricingHistoryQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, pphq); err != nil {
+			if err := trv.Traverse(ctx, _q); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range pphq.ctx.Fields {
+	for _, f := range _q.ctx.Fields {
 		if !planpricinghistory.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if pphq.path != nil {
-		prev, err := pphq.path(ctx)
+	if _q.path != nil {
+		prev, err := _q.path(ctx)
 		if err != nil {
 			return err
 		}
-		pphq.sql = prev
+		_q.sql = prev
 	}
 	return nil
 }
 
-func (pphq *PlanPricingHistoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PlanPricingHistory, error) {
+func (_q *PlanPricingHistoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PlanPricingHistory, error) {
 	var (
 		nodes       = []*PlanPricingHistory{}
-		_spec       = pphq.querySpec()
+		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			pphq.withPlan != nil,
+			_q.withPlan != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*PlanPricingHistory).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &PlanPricingHistory{config: pphq.config}
+		node := &PlanPricingHistory{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -386,14 +387,14 @@ func (pphq *PlanPricingHistoryQuery) sqlAll(ctx context.Context, hooks ...queryH
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, pphq.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := pphq.withPlan; query != nil {
-		if err := pphq.loadPlan(ctx, query, nodes, nil,
+	if query := _q.withPlan; query != nil {
+		if err := _q.loadPlan(ctx, query, nodes, nil,
 			func(n *PlanPricingHistory, e *SubscriptionPlan) { n.Edges.Plan = e }); err != nil {
 			return nil, err
 		}
@@ -401,7 +402,7 @@ func (pphq *PlanPricingHistoryQuery) sqlAll(ctx context.Context, hooks ...queryH
 	return nodes, nil
 }
 
-func (pphq *PlanPricingHistoryQuery) loadPlan(ctx context.Context, query *SubscriptionPlanQuery, nodes []*PlanPricingHistory, init func(*PlanPricingHistory), assign func(*PlanPricingHistory, *SubscriptionPlan)) error {
+func (_q *PlanPricingHistoryQuery) loadPlan(ctx context.Context, query *SubscriptionPlanQuery, nodes []*PlanPricingHistory, init func(*PlanPricingHistory), assign func(*PlanPricingHistory, *SubscriptionPlan)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*PlanPricingHistory)
 	for i := range nodes {
@@ -431,24 +432,24 @@ func (pphq *PlanPricingHistoryQuery) loadPlan(ctx context.Context, query *Subscr
 	return nil
 }
 
-func (pphq *PlanPricingHistoryQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := pphq.querySpec()
-	_spec.Node.Columns = pphq.ctx.Fields
-	if len(pphq.ctx.Fields) > 0 {
-		_spec.Unique = pphq.ctx.Unique != nil && *pphq.ctx.Unique
+func (_q *PlanPricingHistoryQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := _q.querySpec()
+	_spec.Node.Columns = _q.ctx.Fields
+	if len(_q.ctx.Fields) > 0 {
+		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, pphq.driver, _spec)
+	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (pphq *PlanPricingHistoryQuery) querySpec() *sqlgraph.QuerySpec {
+func (_q *PlanPricingHistoryQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(planpricinghistory.Table, planpricinghistory.Columns, sqlgraph.NewFieldSpec(planpricinghistory.FieldID, field.TypeUUID))
-	_spec.From = pphq.sql
-	if unique := pphq.ctx.Unique; unique != nil {
+	_spec.From = _q.sql
+	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if pphq.path != nil {
+	} else if _q.path != nil {
 		_spec.Unique = true
 	}
-	if fields := pphq.ctx.Fields; len(fields) > 0 {
+	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, planpricinghistory.FieldID)
 		for i := range fields {
@@ -456,24 +457,24 @@ func (pphq *PlanPricingHistoryQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if pphq.withPlan != nil {
+		if _q.withPlan != nil {
 			_spec.Node.AddColumnOnce(planpricinghistory.FieldPlanID)
 		}
 	}
-	if ps := pphq.predicates; len(ps) > 0 {
+	if ps := _q.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := pphq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := pphq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := pphq.order; len(ps) > 0 {
+	if ps := _q.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -483,33 +484,33 @@ func (pphq *PlanPricingHistoryQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (pphq *PlanPricingHistoryQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(pphq.driver.Dialect())
+func (_q *PlanPricingHistoryQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(_q.driver.Dialect())
 	t1 := builder.Table(planpricinghistory.Table)
-	columns := pphq.ctx.Fields
+	columns := _q.ctx.Fields
 	if len(columns) == 0 {
 		columns = planpricinghistory.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if pphq.sql != nil {
-		selector = pphq.sql
+	if _q.sql != nil {
+		selector = _q.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if pphq.ctx.Unique != nil && *pphq.ctx.Unique {
+	if _q.ctx.Unique != nil && *_q.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, p := range pphq.predicates {
+	for _, p := range _q.predicates {
 		p(selector)
 	}
-	for _, p := range pphq.order {
+	for _, p := range _q.order {
 		p(selector)
 	}
-	if offset := pphq.ctx.Offset; offset != nil {
+	if offset := _q.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := pphq.ctx.Limit; limit != nil {
+	if limit := _q.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -522,41 +523,41 @@ type PlanPricingHistoryGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (pphgb *PlanPricingHistoryGroupBy) Aggregate(fns ...AggregateFunc) *PlanPricingHistoryGroupBy {
-	pphgb.fns = append(pphgb.fns, fns...)
-	return pphgb
+func (_g *PlanPricingHistoryGroupBy) Aggregate(fns ...AggregateFunc) *PlanPricingHistoryGroupBy {
+	_g.fns = append(_g.fns, fns...)
+	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (pphgb *PlanPricingHistoryGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, pphgb.build.ctx, "GroupBy")
-	if err := pphgb.build.prepareQuery(ctx); err != nil {
+func (_g *PlanPricingHistoryGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
+	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*PlanPricingHistoryQuery, *PlanPricingHistoryGroupBy](ctx, pphgb.build, pphgb, pphgb.build.inters, v)
+	return scanWithInterceptors[*PlanPricingHistoryQuery, *PlanPricingHistoryGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (pphgb *PlanPricingHistoryGroupBy) sqlScan(ctx context.Context, root *PlanPricingHistoryQuery, v any) error {
+func (_g *PlanPricingHistoryGroupBy) sqlScan(ctx context.Context, root *PlanPricingHistoryQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(pphgb.fns))
-	for _, fn := range pphgb.fns {
+	aggregation := make([]string, 0, len(_g.fns))
+	for _, fn := range _g.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*pphgb.flds)+len(pphgb.fns))
-		for _, f := range *pphgb.flds {
+		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
+		for _, f := range *_g.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*pphgb.flds...)...)
+	selector.GroupBy(selector.Columns(*_g.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := pphgb.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -570,27 +571,27 @@ type PlanPricingHistorySelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (pphs *PlanPricingHistorySelect) Aggregate(fns ...AggregateFunc) *PlanPricingHistorySelect {
-	pphs.fns = append(pphs.fns, fns...)
-	return pphs
+func (_s *PlanPricingHistorySelect) Aggregate(fns ...AggregateFunc) *PlanPricingHistorySelect {
+	_s.fns = append(_s.fns, fns...)
+	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (pphs *PlanPricingHistorySelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, pphs.ctx, "Select")
-	if err := pphs.prepareQuery(ctx); err != nil {
+func (_s *PlanPricingHistorySelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
+	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*PlanPricingHistoryQuery, *PlanPricingHistorySelect](ctx, pphs.PlanPricingHistoryQuery, pphs, pphs.inters, v)
+	return scanWithInterceptors[*PlanPricingHistoryQuery, *PlanPricingHistorySelect](ctx, _s.PlanPricingHistoryQuery, _s, _s.inters, v)
 }
 
-func (pphs *PlanPricingHistorySelect) sqlScan(ctx context.Context, root *PlanPricingHistoryQuery, v any) error {
+func (_s *PlanPricingHistorySelect) sqlScan(ctx context.Context, root *PlanPricingHistoryQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(pphs.fns))
-	for _, fn := range pphs.fns {
+	aggregation := make([]string, 0, len(_s.fns))
+	for _, fn := range _s.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*pphs.selector.flds); {
+	switch n := len(*_s.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -598,7 +599,7 @@ func (pphs *PlanPricingHistorySelect) sqlScan(ctx context.Context, root *PlanPri
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := pphs.driver.Query(ctx, query, args, rows); err != nil {
+	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()

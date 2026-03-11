@@ -25,150 +25,150 @@ type PlanPricingHistoryUpdate struct {
 }
 
 // Where appends a list predicates to the PlanPricingHistoryUpdate builder.
-func (pphu *PlanPricingHistoryUpdate) Where(ps ...predicate.PlanPricingHistory) *PlanPricingHistoryUpdate {
-	pphu.mutation.Where(ps...)
-	return pphu
+func (_u *PlanPricingHistoryUpdate) Where(ps ...predicate.PlanPricingHistory) *PlanPricingHistoryUpdate {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // SetPlanID sets the "plan_id" field.
-func (pphu *PlanPricingHistoryUpdate) SetPlanID(u uuid.UUID) *PlanPricingHistoryUpdate {
-	pphu.mutation.SetPlanID(u)
-	return pphu
+func (_u *PlanPricingHistoryUpdate) SetPlanID(v uuid.UUID) *PlanPricingHistoryUpdate {
+	_u.mutation.SetPlanID(v)
+	return _u
 }
 
 // SetNillablePlanID sets the "plan_id" field if the given value is not nil.
-func (pphu *PlanPricingHistoryUpdate) SetNillablePlanID(u *uuid.UUID) *PlanPricingHistoryUpdate {
-	if u != nil {
-		pphu.SetPlanID(*u)
+func (_u *PlanPricingHistoryUpdate) SetNillablePlanID(v *uuid.UUID) *PlanPricingHistoryUpdate {
+	if v != nil {
+		_u.SetPlanID(*v)
 	}
-	return pphu
+	return _u
 }
 
 // SetBasePrice sets the "base_price" field.
-func (pphu *PlanPricingHistoryUpdate) SetBasePrice(f float64) *PlanPricingHistoryUpdate {
-	pphu.mutation.ResetBasePrice()
-	pphu.mutation.SetBasePrice(f)
-	return pphu
+func (_u *PlanPricingHistoryUpdate) SetBasePrice(v float64) *PlanPricingHistoryUpdate {
+	_u.mutation.ResetBasePrice()
+	_u.mutation.SetBasePrice(v)
+	return _u
 }
 
 // SetNillableBasePrice sets the "base_price" field if the given value is not nil.
-func (pphu *PlanPricingHistoryUpdate) SetNillableBasePrice(f *float64) *PlanPricingHistoryUpdate {
-	if f != nil {
-		pphu.SetBasePrice(*f)
+func (_u *PlanPricingHistoryUpdate) SetNillableBasePrice(v *float64) *PlanPricingHistoryUpdate {
+	if v != nil {
+		_u.SetBasePrice(*v)
 	}
-	return pphu
+	return _u
 }
 
-// AddBasePrice adds f to the "base_price" field.
-func (pphu *PlanPricingHistoryUpdate) AddBasePrice(f float64) *PlanPricingHistoryUpdate {
-	pphu.mutation.AddBasePrice(f)
-	return pphu
+// AddBasePrice adds value to the "base_price" field.
+func (_u *PlanPricingHistoryUpdate) AddBasePrice(v float64) *PlanPricingHistoryUpdate {
+	_u.mutation.AddBasePrice(v)
+	return _u
 }
 
 // SetEffectiveFrom sets the "effective_from" field.
-func (pphu *PlanPricingHistoryUpdate) SetEffectiveFrom(t time.Time) *PlanPricingHistoryUpdate {
-	pphu.mutation.SetEffectiveFrom(t)
-	return pphu
+func (_u *PlanPricingHistoryUpdate) SetEffectiveFrom(v time.Time) *PlanPricingHistoryUpdate {
+	_u.mutation.SetEffectiveFrom(v)
+	return _u
 }
 
 // SetNillableEffectiveFrom sets the "effective_from" field if the given value is not nil.
-func (pphu *PlanPricingHistoryUpdate) SetNillableEffectiveFrom(t *time.Time) *PlanPricingHistoryUpdate {
-	if t != nil {
-		pphu.SetEffectiveFrom(*t)
+func (_u *PlanPricingHistoryUpdate) SetNillableEffectiveFrom(v *time.Time) *PlanPricingHistoryUpdate {
+	if v != nil {
+		_u.SetEffectiveFrom(*v)
 	}
-	return pphu
+	return _u
 }
 
 // SetEffectiveTo sets the "effective_to" field.
-func (pphu *PlanPricingHistoryUpdate) SetEffectiveTo(t time.Time) *PlanPricingHistoryUpdate {
-	pphu.mutation.SetEffectiveTo(t)
-	return pphu
+func (_u *PlanPricingHistoryUpdate) SetEffectiveTo(v time.Time) *PlanPricingHistoryUpdate {
+	_u.mutation.SetEffectiveTo(v)
+	return _u
 }
 
 // SetNillableEffectiveTo sets the "effective_to" field if the given value is not nil.
-func (pphu *PlanPricingHistoryUpdate) SetNillableEffectiveTo(t *time.Time) *PlanPricingHistoryUpdate {
-	if t != nil {
-		pphu.SetEffectiveTo(*t)
+func (_u *PlanPricingHistoryUpdate) SetNillableEffectiveTo(v *time.Time) *PlanPricingHistoryUpdate {
+	if v != nil {
+		_u.SetEffectiveTo(*v)
 	}
-	return pphu
+	return _u
 }
 
 // ClearEffectiveTo clears the value of the "effective_to" field.
-func (pphu *PlanPricingHistoryUpdate) ClearEffectiveTo() *PlanPricingHistoryUpdate {
-	pphu.mutation.ClearEffectiveTo()
-	return pphu
+func (_u *PlanPricingHistoryUpdate) ClearEffectiveTo() *PlanPricingHistoryUpdate {
+	_u.mutation.ClearEffectiveTo()
+	return _u
 }
 
 // SetChangedBy sets the "changed_by" field.
-func (pphu *PlanPricingHistoryUpdate) SetChangedBy(u uuid.UUID) *PlanPricingHistoryUpdate {
-	pphu.mutation.SetChangedBy(u)
-	return pphu
+func (_u *PlanPricingHistoryUpdate) SetChangedBy(v uuid.UUID) *PlanPricingHistoryUpdate {
+	_u.mutation.SetChangedBy(v)
+	return _u
 }
 
 // SetNillableChangedBy sets the "changed_by" field if the given value is not nil.
-func (pphu *PlanPricingHistoryUpdate) SetNillableChangedBy(u *uuid.UUID) *PlanPricingHistoryUpdate {
-	if u != nil {
-		pphu.SetChangedBy(*u)
+func (_u *PlanPricingHistoryUpdate) SetNillableChangedBy(v *uuid.UUID) *PlanPricingHistoryUpdate {
+	if v != nil {
+		_u.SetChangedBy(*v)
 	}
-	return pphu
+	return _u
 }
 
 // ClearChangedBy clears the value of the "changed_by" field.
-func (pphu *PlanPricingHistoryUpdate) ClearChangedBy() *PlanPricingHistoryUpdate {
-	pphu.mutation.ClearChangedBy()
-	return pphu
+func (_u *PlanPricingHistoryUpdate) ClearChangedBy() *PlanPricingHistoryUpdate {
+	_u.mutation.ClearChangedBy()
+	return _u
 }
 
 // SetChangeReason sets the "change_reason" field.
-func (pphu *PlanPricingHistoryUpdate) SetChangeReason(s string) *PlanPricingHistoryUpdate {
-	pphu.mutation.SetChangeReason(s)
-	return pphu
+func (_u *PlanPricingHistoryUpdate) SetChangeReason(v string) *PlanPricingHistoryUpdate {
+	_u.mutation.SetChangeReason(v)
+	return _u
 }
 
 // SetNillableChangeReason sets the "change_reason" field if the given value is not nil.
-func (pphu *PlanPricingHistoryUpdate) SetNillableChangeReason(s *string) *PlanPricingHistoryUpdate {
-	if s != nil {
-		pphu.SetChangeReason(*s)
+func (_u *PlanPricingHistoryUpdate) SetNillableChangeReason(v *string) *PlanPricingHistoryUpdate {
+	if v != nil {
+		_u.SetChangeReason(*v)
 	}
-	return pphu
+	return _u
 }
 
 // ClearChangeReason clears the value of the "change_reason" field.
-func (pphu *PlanPricingHistoryUpdate) ClearChangeReason() *PlanPricingHistoryUpdate {
-	pphu.mutation.ClearChangeReason()
-	return pphu
+func (_u *PlanPricingHistoryUpdate) ClearChangeReason() *PlanPricingHistoryUpdate {
+	_u.mutation.ClearChangeReason()
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (pphu *PlanPricingHistoryUpdate) SetMetadata(m map[string]interface{}) *PlanPricingHistoryUpdate {
-	pphu.mutation.SetMetadata(m)
-	return pphu
+func (_u *PlanPricingHistoryUpdate) SetMetadata(v map[string]interface{}) *PlanPricingHistoryUpdate {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // SetPlan sets the "plan" edge to the SubscriptionPlan entity.
-func (pphu *PlanPricingHistoryUpdate) SetPlan(s *SubscriptionPlan) *PlanPricingHistoryUpdate {
-	return pphu.SetPlanID(s.ID)
+func (_u *PlanPricingHistoryUpdate) SetPlan(v *SubscriptionPlan) *PlanPricingHistoryUpdate {
+	return _u.SetPlanID(v.ID)
 }
 
 // Mutation returns the PlanPricingHistoryMutation object of the builder.
-func (pphu *PlanPricingHistoryUpdate) Mutation() *PlanPricingHistoryMutation {
-	return pphu.mutation
+func (_u *PlanPricingHistoryUpdate) Mutation() *PlanPricingHistoryMutation {
+	return _u.mutation
 }
 
 // ClearPlan clears the "plan" edge to the SubscriptionPlan entity.
-func (pphu *PlanPricingHistoryUpdate) ClearPlan() *PlanPricingHistoryUpdate {
-	pphu.mutation.ClearPlan()
-	return pphu
+func (_u *PlanPricingHistoryUpdate) ClearPlan() *PlanPricingHistoryUpdate {
+	_u.mutation.ClearPlan()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (pphu *PlanPricingHistoryUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, pphu.sqlSave, pphu.mutation, pphu.hooks)
+func (_u *PlanPricingHistoryUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pphu *PlanPricingHistoryUpdate) SaveX(ctx context.Context) int {
-	affected, err := pphu.Save(ctx)
+func (_u *PlanPricingHistoryUpdate) SaveX(ctx context.Context) int {
+	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -176,69 +176,69 @@ func (pphu *PlanPricingHistoryUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (pphu *PlanPricingHistoryUpdate) Exec(ctx context.Context) error {
-	_, err := pphu.Save(ctx)
+func (_u *PlanPricingHistoryUpdate) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pphu *PlanPricingHistoryUpdate) ExecX(ctx context.Context) {
-	if err := pphu.Exec(ctx); err != nil {
+func (_u *PlanPricingHistoryUpdate) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pphu *PlanPricingHistoryUpdate) check() error {
-	if _, ok := pphu.mutation.PlanID(); pphu.mutation.PlanCleared() && !ok {
+func (_u *PlanPricingHistoryUpdate) check() error {
+	if _u.mutation.PlanCleared() && len(_u.mutation.PlanIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "PlanPricingHistory.plan"`)
 	}
 	return nil
 }
 
-func (pphu *PlanPricingHistoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := pphu.check(); err != nil {
-		return n, err
+func (_u *PlanPricingHistoryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(planpricinghistory.Table, planpricinghistory.Columns, sqlgraph.NewFieldSpec(planpricinghistory.FieldID, field.TypeUUID))
-	if ps := pphu.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := pphu.mutation.BasePrice(); ok {
+	if value, ok := _u.mutation.BasePrice(); ok {
 		_spec.SetField(planpricinghistory.FieldBasePrice, field.TypeFloat64, value)
 	}
-	if value, ok := pphu.mutation.AddedBasePrice(); ok {
+	if value, ok := _u.mutation.AddedBasePrice(); ok {
 		_spec.AddField(planpricinghistory.FieldBasePrice, field.TypeFloat64, value)
 	}
-	if value, ok := pphu.mutation.EffectiveFrom(); ok {
+	if value, ok := _u.mutation.EffectiveFrom(); ok {
 		_spec.SetField(planpricinghistory.FieldEffectiveFrom, field.TypeTime, value)
 	}
-	if value, ok := pphu.mutation.EffectiveTo(); ok {
+	if value, ok := _u.mutation.EffectiveTo(); ok {
 		_spec.SetField(planpricinghistory.FieldEffectiveTo, field.TypeTime, value)
 	}
-	if pphu.mutation.EffectiveToCleared() {
+	if _u.mutation.EffectiveToCleared() {
 		_spec.ClearField(planpricinghistory.FieldEffectiveTo, field.TypeTime)
 	}
-	if value, ok := pphu.mutation.ChangedBy(); ok {
+	if value, ok := _u.mutation.ChangedBy(); ok {
 		_spec.SetField(planpricinghistory.FieldChangedBy, field.TypeUUID, value)
 	}
-	if pphu.mutation.ChangedByCleared() {
+	if _u.mutation.ChangedByCleared() {
 		_spec.ClearField(planpricinghistory.FieldChangedBy, field.TypeUUID)
 	}
-	if value, ok := pphu.mutation.ChangeReason(); ok {
+	if value, ok := _u.mutation.ChangeReason(); ok {
 		_spec.SetField(planpricinghistory.FieldChangeReason, field.TypeString, value)
 	}
-	if pphu.mutation.ChangeReasonCleared() {
+	if _u.mutation.ChangeReasonCleared() {
 		_spec.ClearField(planpricinghistory.FieldChangeReason, field.TypeString)
 	}
-	if value, ok := pphu.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(planpricinghistory.FieldMetadata, field.TypeJSON, value)
 	}
-	if pphu.mutation.PlanCleared() {
+	if _u.mutation.PlanCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -251,7 +251,7 @@ func (pphu *PlanPricingHistoryUpdate) sqlSave(ctx context.Context) (n int, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pphu.mutation.PlanIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.PlanIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -267,7 +267,7 @@ func (pphu *PlanPricingHistoryUpdate) sqlSave(ctx context.Context) (n int, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if n, err = sqlgraph.UpdateNodes(ctx, pphu.driver, _spec); err != nil {
+	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{planpricinghistory.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -275,8 +275,8 @@ func (pphu *PlanPricingHistoryUpdate) sqlSave(ctx context.Context) (n int, err e
 		}
 		return 0, err
 	}
-	pphu.mutation.done = true
-	return n, nil
+	_u.mutation.done = true
+	return _node, nil
 }
 
 // PlanPricingHistoryUpdateOne is the builder for updating a single PlanPricingHistory entity.
@@ -288,157 +288,157 @@ type PlanPricingHistoryUpdateOne struct {
 }
 
 // SetPlanID sets the "plan_id" field.
-func (pphuo *PlanPricingHistoryUpdateOne) SetPlanID(u uuid.UUID) *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.SetPlanID(u)
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) SetPlanID(v uuid.UUID) *PlanPricingHistoryUpdateOne {
+	_u.mutation.SetPlanID(v)
+	return _u
 }
 
 // SetNillablePlanID sets the "plan_id" field if the given value is not nil.
-func (pphuo *PlanPricingHistoryUpdateOne) SetNillablePlanID(u *uuid.UUID) *PlanPricingHistoryUpdateOne {
-	if u != nil {
-		pphuo.SetPlanID(*u)
+func (_u *PlanPricingHistoryUpdateOne) SetNillablePlanID(v *uuid.UUID) *PlanPricingHistoryUpdateOne {
+	if v != nil {
+		_u.SetPlanID(*v)
 	}
-	return pphuo
+	return _u
 }
 
 // SetBasePrice sets the "base_price" field.
-func (pphuo *PlanPricingHistoryUpdateOne) SetBasePrice(f float64) *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.ResetBasePrice()
-	pphuo.mutation.SetBasePrice(f)
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) SetBasePrice(v float64) *PlanPricingHistoryUpdateOne {
+	_u.mutation.ResetBasePrice()
+	_u.mutation.SetBasePrice(v)
+	return _u
 }
 
 // SetNillableBasePrice sets the "base_price" field if the given value is not nil.
-func (pphuo *PlanPricingHistoryUpdateOne) SetNillableBasePrice(f *float64) *PlanPricingHistoryUpdateOne {
-	if f != nil {
-		pphuo.SetBasePrice(*f)
+func (_u *PlanPricingHistoryUpdateOne) SetNillableBasePrice(v *float64) *PlanPricingHistoryUpdateOne {
+	if v != nil {
+		_u.SetBasePrice(*v)
 	}
-	return pphuo
+	return _u
 }
 
-// AddBasePrice adds f to the "base_price" field.
-func (pphuo *PlanPricingHistoryUpdateOne) AddBasePrice(f float64) *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.AddBasePrice(f)
-	return pphuo
+// AddBasePrice adds value to the "base_price" field.
+func (_u *PlanPricingHistoryUpdateOne) AddBasePrice(v float64) *PlanPricingHistoryUpdateOne {
+	_u.mutation.AddBasePrice(v)
+	return _u
 }
 
 // SetEffectiveFrom sets the "effective_from" field.
-func (pphuo *PlanPricingHistoryUpdateOne) SetEffectiveFrom(t time.Time) *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.SetEffectiveFrom(t)
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) SetEffectiveFrom(v time.Time) *PlanPricingHistoryUpdateOne {
+	_u.mutation.SetEffectiveFrom(v)
+	return _u
 }
 
 // SetNillableEffectiveFrom sets the "effective_from" field if the given value is not nil.
-func (pphuo *PlanPricingHistoryUpdateOne) SetNillableEffectiveFrom(t *time.Time) *PlanPricingHistoryUpdateOne {
-	if t != nil {
-		pphuo.SetEffectiveFrom(*t)
+func (_u *PlanPricingHistoryUpdateOne) SetNillableEffectiveFrom(v *time.Time) *PlanPricingHistoryUpdateOne {
+	if v != nil {
+		_u.SetEffectiveFrom(*v)
 	}
-	return pphuo
+	return _u
 }
 
 // SetEffectiveTo sets the "effective_to" field.
-func (pphuo *PlanPricingHistoryUpdateOne) SetEffectiveTo(t time.Time) *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.SetEffectiveTo(t)
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) SetEffectiveTo(v time.Time) *PlanPricingHistoryUpdateOne {
+	_u.mutation.SetEffectiveTo(v)
+	return _u
 }
 
 // SetNillableEffectiveTo sets the "effective_to" field if the given value is not nil.
-func (pphuo *PlanPricingHistoryUpdateOne) SetNillableEffectiveTo(t *time.Time) *PlanPricingHistoryUpdateOne {
-	if t != nil {
-		pphuo.SetEffectiveTo(*t)
+func (_u *PlanPricingHistoryUpdateOne) SetNillableEffectiveTo(v *time.Time) *PlanPricingHistoryUpdateOne {
+	if v != nil {
+		_u.SetEffectiveTo(*v)
 	}
-	return pphuo
+	return _u
 }
 
 // ClearEffectiveTo clears the value of the "effective_to" field.
-func (pphuo *PlanPricingHistoryUpdateOne) ClearEffectiveTo() *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.ClearEffectiveTo()
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) ClearEffectiveTo() *PlanPricingHistoryUpdateOne {
+	_u.mutation.ClearEffectiveTo()
+	return _u
 }
 
 // SetChangedBy sets the "changed_by" field.
-func (pphuo *PlanPricingHistoryUpdateOne) SetChangedBy(u uuid.UUID) *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.SetChangedBy(u)
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) SetChangedBy(v uuid.UUID) *PlanPricingHistoryUpdateOne {
+	_u.mutation.SetChangedBy(v)
+	return _u
 }
 
 // SetNillableChangedBy sets the "changed_by" field if the given value is not nil.
-func (pphuo *PlanPricingHistoryUpdateOne) SetNillableChangedBy(u *uuid.UUID) *PlanPricingHistoryUpdateOne {
-	if u != nil {
-		pphuo.SetChangedBy(*u)
+func (_u *PlanPricingHistoryUpdateOne) SetNillableChangedBy(v *uuid.UUID) *PlanPricingHistoryUpdateOne {
+	if v != nil {
+		_u.SetChangedBy(*v)
 	}
-	return pphuo
+	return _u
 }
 
 // ClearChangedBy clears the value of the "changed_by" field.
-func (pphuo *PlanPricingHistoryUpdateOne) ClearChangedBy() *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.ClearChangedBy()
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) ClearChangedBy() *PlanPricingHistoryUpdateOne {
+	_u.mutation.ClearChangedBy()
+	return _u
 }
 
 // SetChangeReason sets the "change_reason" field.
-func (pphuo *PlanPricingHistoryUpdateOne) SetChangeReason(s string) *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.SetChangeReason(s)
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) SetChangeReason(v string) *PlanPricingHistoryUpdateOne {
+	_u.mutation.SetChangeReason(v)
+	return _u
 }
 
 // SetNillableChangeReason sets the "change_reason" field if the given value is not nil.
-func (pphuo *PlanPricingHistoryUpdateOne) SetNillableChangeReason(s *string) *PlanPricingHistoryUpdateOne {
-	if s != nil {
-		pphuo.SetChangeReason(*s)
+func (_u *PlanPricingHistoryUpdateOne) SetNillableChangeReason(v *string) *PlanPricingHistoryUpdateOne {
+	if v != nil {
+		_u.SetChangeReason(*v)
 	}
-	return pphuo
+	return _u
 }
 
 // ClearChangeReason clears the value of the "change_reason" field.
-func (pphuo *PlanPricingHistoryUpdateOne) ClearChangeReason() *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.ClearChangeReason()
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) ClearChangeReason() *PlanPricingHistoryUpdateOne {
+	_u.mutation.ClearChangeReason()
+	return _u
 }
 
 // SetMetadata sets the "metadata" field.
-func (pphuo *PlanPricingHistoryUpdateOne) SetMetadata(m map[string]interface{}) *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.SetMetadata(m)
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) SetMetadata(v map[string]interface{}) *PlanPricingHistoryUpdateOne {
+	_u.mutation.SetMetadata(v)
+	return _u
 }
 
 // SetPlan sets the "plan" edge to the SubscriptionPlan entity.
-func (pphuo *PlanPricingHistoryUpdateOne) SetPlan(s *SubscriptionPlan) *PlanPricingHistoryUpdateOne {
-	return pphuo.SetPlanID(s.ID)
+func (_u *PlanPricingHistoryUpdateOne) SetPlan(v *SubscriptionPlan) *PlanPricingHistoryUpdateOne {
+	return _u.SetPlanID(v.ID)
 }
 
 // Mutation returns the PlanPricingHistoryMutation object of the builder.
-func (pphuo *PlanPricingHistoryUpdateOne) Mutation() *PlanPricingHistoryMutation {
-	return pphuo.mutation
+func (_u *PlanPricingHistoryUpdateOne) Mutation() *PlanPricingHistoryMutation {
+	return _u.mutation
 }
 
 // ClearPlan clears the "plan" edge to the SubscriptionPlan entity.
-func (pphuo *PlanPricingHistoryUpdateOne) ClearPlan() *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.ClearPlan()
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) ClearPlan() *PlanPricingHistoryUpdateOne {
+	_u.mutation.ClearPlan()
+	return _u
 }
 
 // Where appends a list predicates to the PlanPricingHistoryUpdate builder.
-func (pphuo *PlanPricingHistoryUpdateOne) Where(ps ...predicate.PlanPricingHistory) *PlanPricingHistoryUpdateOne {
-	pphuo.mutation.Where(ps...)
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) Where(ps ...predicate.PlanPricingHistory) *PlanPricingHistoryUpdateOne {
+	_u.mutation.Where(ps...)
+	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (pphuo *PlanPricingHistoryUpdateOne) Select(field string, fields ...string) *PlanPricingHistoryUpdateOne {
-	pphuo.fields = append([]string{field}, fields...)
-	return pphuo
+func (_u *PlanPricingHistoryUpdateOne) Select(field string, fields ...string) *PlanPricingHistoryUpdateOne {
+	_u.fields = append([]string{field}, fields...)
+	return _u
 }
 
 // Save executes the query and returns the updated PlanPricingHistory entity.
-func (pphuo *PlanPricingHistoryUpdateOne) Save(ctx context.Context) (*PlanPricingHistory, error) {
-	return withHooks(ctx, pphuo.sqlSave, pphuo.mutation, pphuo.hooks)
+func (_u *PlanPricingHistoryUpdateOne) Save(ctx context.Context) (*PlanPricingHistory, error) {
+	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pphuo *PlanPricingHistoryUpdateOne) SaveX(ctx context.Context) *PlanPricingHistory {
-	node, err := pphuo.Save(ctx)
+func (_u *PlanPricingHistoryUpdateOne) SaveX(ctx context.Context) *PlanPricingHistory {
+	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -446,37 +446,37 @@ func (pphuo *PlanPricingHistoryUpdateOne) SaveX(ctx context.Context) *PlanPricin
 }
 
 // Exec executes the query on the entity.
-func (pphuo *PlanPricingHistoryUpdateOne) Exec(ctx context.Context) error {
-	_, err := pphuo.Save(ctx)
+func (_u *PlanPricingHistoryUpdateOne) Exec(ctx context.Context) error {
+	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pphuo *PlanPricingHistoryUpdateOne) ExecX(ctx context.Context) {
-	if err := pphuo.Exec(ctx); err != nil {
+func (_u *PlanPricingHistoryUpdateOne) ExecX(ctx context.Context) {
+	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pphuo *PlanPricingHistoryUpdateOne) check() error {
-	if _, ok := pphuo.mutation.PlanID(); pphuo.mutation.PlanCleared() && !ok {
+func (_u *PlanPricingHistoryUpdateOne) check() error {
+	if _u.mutation.PlanCleared() && len(_u.mutation.PlanIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "PlanPricingHistory.plan"`)
 	}
 	return nil
 }
 
-func (pphuo *PlanPricingHistoryUpdateOne) sqlSave(ctx context.Context) (_node *PlanPricingHistory, err error) {
-	if err := pphuo.check(); err != nil {
+func (_u *PlanPricingHistoryUpdateOne) sqlSave(ctx context.Context) (_node *PlanPricingHistory, err error) {
+	if err := _u.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(planpricinghistory.Table, planpricinghistory.Columns, sqlgraph.NewFieldSpec(planpricinghistory.FieldID, field.TypeUUID))
-	id, ok := pphuo.mutation.ID()
+	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "PlanPricingHistory.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := pphuo.fields; len(fields) > 0 {
+	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, planpricinghistory.FieldID)
 		for _, f := range fields {
@@ -488,44 +488,44 @@ func (pphuo *PlanPricingHistoryUpdateOne) sqlSave(ctx context.Context) (_node *P
 			}
 		}
 	}
-	if ps := pphuo.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := pphuo.mutation.BasePrice(); ok {
+	if value, ok := _u.mutation.BasePrice(); ok {
 		_spec.SetField(planpricinghistory.FieldBasePrice, field.TypeFloat64, value)
 	}
-	if value, ok := pphuo.mutation.AddedBasePrice(); ok {
+	if value, ok := _u.mutation.AddedBasePrice(); ok {
 		_spec.AddField(planpricinghistory.FieldBasePrice, field.TypeFloat64, value)
 	}
-	if value, ok := pphuo.mutation.EffectiveFrom(); ok {
+	if value, ok := _u.mutation.EffectiveFrom(); ok {
 		_spec.SetField(planpricinghistory.FieldEffectiveFrom, field.TypeTime, value)
 	}
-	if value, ok := pphuo.mutation.EffectiveTo(); ok {
+	if value, ok := _u.mutation.EffectiveTo(); ok {
 		_spec.SetField(planpricinghistory.FieldEffectiveTo, field.TypeTime, value)
 	}
-	if pphuo.mutation.EffectiveToCleared() {
+	if _u.mutation.EffectiveToCleared() {
 		_spec.ClearField(planpricinghistory.FieldEffectiveTo, field.TypeTime)
 	}
-	if value, ok := pphuo.mutation.ChangedBy(); ok {
+	if value, ok := _u.mutation.ChangedBy(); ok {
 		_spec.SetField(planpricinghistory.FieldChangedBy, field.TypeUUID, value)
 	}
-	if pphuo.mutation.ChangedByCleared() {
+	if _u.mutation.ChangedByCleared() {
 		_spec.ClearField(planpricinghistory.FieldChangedBy, field.TypeUUID)
 	}
-	if value, ok := pphuo.mutation.ChangeReason(); ok {
+	if value, ok := _u.mutation.ChangeReason(); ok {
 		_spec.SetField(planpricinghistory.FieldChangeReason, field.TypeString, value)
 	}
-	if pphuo.mutation.ChangeReasonCleared() {
+	if _u.mutation.ChangeReasonCleared() {
 		_spec.ClearField(planpricinghistory.FieldChangeReason, field.TypeString)
 	}
-	if value, ok := pphuo.mutation.Metadata(); ok {
+	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(planpricinghistory.FieldMetadata, field.TypeJSON, value)
 	}
-	if pphuo.mutation.PlanCleared() {
+	if _u.mutation.PlanCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -538,7 +538,7 @@ func (pphuo *PlanPricingHistoryUpdateOne) sqlSave(ctx context.Context) (_node *P
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pphuo.mutation.PlanIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.PlanIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -554,10 +554,10 @@ func (pphuo *PlanPricingHistoryUpdateOne) sqlSave(ctx context.Context) (_node *P
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &PlanPricingHistory{config: pphuo.config}
+	_node = &PlanPricingHistory{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, pphuo.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{planpricinghistory.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -565,6 +565,6 @@ func (pphuo *PlanPricingHistoryUpdateOne) sqlSave(ctx context.Context) (_node *P
 		}
 		return nil, err
 	}
-	pphuo.mutation.done = true
+	_u.mutation.done = true
 	return _node, nil
 }

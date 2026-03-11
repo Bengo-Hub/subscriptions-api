@@ -32,10 +32,16 @@ const (
 	FieldIsPlatform = "is_platform"
 	// FieldMonthlyPrice holds the string denoting the monthly_price field in the database.
 	FieldMonthlyPrice = "monthly_price"
+	// FieldYearlyPrice holds the string denoting the yearly_price field in the database.
+	FieldYearlyPrice = "yearly_price"
+	// FieldOnetimePrice holds the string denoting the onetime_price field in the database.
+	FieldOnetimePrice = "onetime_price"
 	// FieldIncludedInBundle holds the string denoting the included_in_bundle field in the database.
 	FieldIncludedInBundle = "included_in_bundle"
 	// FieldSortOrder holds the string denoting the sort_order field in the database.
 	FieldSortOrder = "sort_order"
+	// FieldIsBaseService holds the string denoting the is_base_service field in the database.
+	FieldIsBaseService = "is_base_service"
 	// FieldMetadata holds the string denoting the metadata field in the database.
 	FieldMetadata = "metadata"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -66,8 +72,11 @@ var Columns = []string{
 	FieldDependencies,
 	FieldIsPlatform,
 	FieldMonthlyPrice,
+	FieldYearlyPrice,
+	FieldOnetimePrice,
 	FieldIncludedInBundle,
 	FieldSortOrder,
+	FieldIsBaseService,
 	FieldMetadata,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -92,10 +101,16 @@ var (
 	DefaultIsPlatform bool
 	// DefaultMonthlyPrice holds the default value on creation for the "monthly_price" field.
 	DefaultMonthlyPrice float64
+	// DefaultYearlyPrice holds the default value on creation for the "yearly_price" field.
+	DefaultYearlyPrice float64
+	// DefaultOnetimePrice holds the default value on creation for the "onetime_price" field.
+	DefaultOnetimePrice float64
 	// DefaultIncludedInBundle holds the default value on creation for the "included_in_bundle" field.
 	DefaultIncludedInBundle bool
 	// DefaultSortOrder holds the default value on creation for the "sort_order" field.
 	DefaultSortOrder int
+	// DefaultIsBaseService holds the default value on creation for the "is_base_service" field.
+	DefaultIsBaseService bool
 	// DefaultMetadata holds the default value on creation for the "metadata" field.
 	DefaultMetadata map[string]interface{}
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -202,6 +217,16 @@ func ByMonthlyPrice(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMonthlyPrice, opts...).ToFunc()
 }
 
+// ByYearlyPrice orders the results by the yearly_price field.
+func ByYearlyPrice(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldYearlyPrice, opts...).ToFunc()
+}
+
+// ByOnetimePrice orders the results by the onetime_price field.
+func ByOnetimePrice(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOnetimePrice, opts...).ToFunc()
+}
+
 // ByIncludedInBundle orders the results by the included_in_bundle field.
 func ByIncludedInBundle(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIncludedInBundle, opts...).ToFunc()
@@ -210,6 +235,11 @@ func ByIncludedInBundle(opts ...sql.OrderTermOption) OrderOption {
 // BySortOrder orders the results by the sort_order field.
 func BySortOrder(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSortOrder, opts...).ToFunc()
+}
+
+// ByIsBaseService orders the results by the is_base_service field.
+func ByIsBaseService(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsBaseService, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

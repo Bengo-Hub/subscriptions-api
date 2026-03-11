@@ -20,56 +20,56 @@ type PlanFeatureDelete struct {
 }
 
 // Where appends a list predicates to the PlanFeatureDelete builder.
-func (pfd *PlanFeatureDelete) Where(ps ...predicate.PlanFeature) *PlanFeatureDelete {
-	pfd.mutation.Where(ps...)
-	return pfd
+func (_d *PlanFeatureDelete) Where(ps ...predicate.PlanFeature) *PlanFeatureDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (pfd *PlanFeatureDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, pfd.sqlExec, pfd.mutation, pfd.hooks)
+func (_d *PlanFeatureDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pfd *PlanFeatureDelete) ExecX(ctx context.Context) int {
-	n, err := pfd.Exec(ctx)
+func (_d *PlanFeatureDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (pfd *PlanFeatureDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *PlanFeatureDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(planfeature.Table, sqlgraph.NewFieldSpec(planfeature.FieldID, field.TypeUUID))
-	if ps := pfd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, pfd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	pfd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // PlanFeatureDeleteOne is the builder for deleting a single PlanFeature entity.
 type PlanFeatureDeleteOne struct {
-	pfd *PlanFeatureDelete
+	_d *PlanFeatureDelete
 }
 
 // Where appends a list predicates to the PlanFeatureDelete builder.
-func (pfdo *PlanFeatureDeleteOne) Where(ps ...predicate.PlanFeature) *PlanFeatureDeleteOne {
-	pfdo.pfd.mutation.Where(ps...)
-	return pfdo
+func (_d *PlanFeatureDeleteOne) Where(ps ...predicate.PlanFeature) *PlanFeatureDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (pfdo *PlanFeatureDeleteOne) Exec(ctx context.Context) error {
-	n, err := pfdo.pfd.Exec(ctx)
+func (_d *PlanFeatureDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (pfdo *PlanFeatureDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pfdo *PlanFeatureDeleteOne) ExecX(ctx context.Context) {
-	if err := pfdo.Exec(ctx); err != nil {
+func (_d *PlanFeatureDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

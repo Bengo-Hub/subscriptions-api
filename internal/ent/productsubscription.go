@@ -102,7 +102,7 @@ func (*ProductSubscription) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the ProductSubscription fields.
-func (ps *ProductSubscription) assignValues(columns []string, values []any) error {
+func (_m *ProductSubscription) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -112,58 +112,58 @@ func (ps *ProductSubscription) assignValues(columns []string, values []any) erro
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				ps.ID = *value
+				_m.ID = *value
 			}
 		case productsubscription.FieldTenantSubscriptionID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_subscription_id", values[i])
 			} else if value != nil {
-				ps.TenantSubscriptionID = *value
+				_m.TenantSubscriptionID = *value
 			}
 		case productsubscription.FieldProductCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field product_code", values[i])
 			} else if value.Valid {
-				ps.ProductCode = value.String
+				_m.ProductCode = value.String
 			}
 		case productsubscription.FieldProductID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field product_id", values[i])
 			} else if value != nil {
-				ps.ProductID = *value
+				_m.ProductID = *value
 			}
 		case productsubscription.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
-				ps.Status = productsubscription.Status(value.String)
+				_m.Status = productsubscription.Status(value.String)
 			}
 		case productsubscription.FieldTrialEndsAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field trial_ends_at", values[i])
 			} else if value.Valid {
-				ps.TrialEndsAt = new(time.Time)
-				*ps.TrialEndsAt = value.Time
+				_m.TrialEndsAt = new(time.Time)
+				*_m.TrialEndsAt = value.Time
 			}
 		case productsubscription.FieldActivatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field activated_at", values[i])
 			} else if value.Valid {
-				ps.ActivatedAt = new(time.Time)
-				*ps.ActivatedAt = value.Time
+				_m.ActivatedAt = new(time.Time)
+				*_m.ActivatedAt = value.Time
 			}
 		case productsubscription.FieldDeactivatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deactivated_at", values[i])
 			} else if value.Valid {
-				ps.DeactivatedAt = new(time.Time)
-				*ps.DeactivatedAt = value.Time
+				_m.DeactivatedAt = new(time.Time)
+				*_m.DeactivatedAt = value.Time
 			}
 		case productsubscription.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &ps.Metadata); err != nil {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
 					return fmt.Errorf("unmarshal field metadata: %w", err)
 				}
 			}
@@ -171,16 +171,16 @@ func (ps *ProductSubscription) assignValues(columns []string, values []any) erro
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				ps.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case productsubscription.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				ps.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		default:
-			ps.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -188,78 +188,78 @@ func (ps *ProductSubscription) assignValues(columns []string, values []any) erro
 
 // Value returns the ent.Value that was dynamically selected and assigned to the ProductSubscription.
 // This includes values selected through modifiers, order, etc.
-func (ps *ProductSubscription) Value(name string) (ent.Value, error) {
-	return ps.selectValues.Get(name)
+func (_m *ProductSubscription) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryTenantSubscription queries the "tenant_subscription" edge of the ProductSubscription entity.
-func (ps *ProductSubscription) QueryTenantSubscription() *TenantSubscriptionQuery {
-	return NewProductSubscriptionClient(ps.config).QueryTenantSubscription(ps)
+func (_m *ProductSubscription) QueryTenantSubscription() *TenantSubscriptionQuery {
+	return NewProductSubscriptionClient(_m.config).QueryTenantSubscription(_m)
 }
 
 // QueryProduct queries the "product" edge of the ProductSubscription entity.
-func (ps *ProductSubscription) QueryProduct() *ProductQuery {
-	return NewProductSubscriptionClient(ps.config).QueryProduct(ps)
+func (_m *ProductSubscription) QueryProduct() *ProductQuery {
+	return NewProductSubscriptionClient(_m.config).QueryProduct(_m)
 }
 
 // Update returns a builder for updating this ProductSubscription.
 // Note that you need to call ProductSubscription.Unwrap() before calling this method if this ProductSubscription
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (ps *ProductSubscription) Update() *ProductSubscriptionUpdateOne {
-	return NewProductSubscriptionClient(ps.config).UpdateOne(ps)
+func (_m *ProductSubscription) Update() *ProductSubscriptionUpdateOne {
+	return NewProductSubscriptionClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the ProductSubscription entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (ps *ProductSubscription) Unwrap() *ProductSubscription {
-	_tx, ok := ps.config.driver.(*txDriver)
+func (_m *ProductSubscription) Unwrap() *ProductSubscription {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: ProductSubscription is not a transactional entity")
 	}
-	ps.config.driver = _tx.drv
-	return ps
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (ps *ProductSubscription) String() string {
+func (_m *ProductSubscription) String() string {
 	var builder strings.Builder
 	builder.WriteString("ProductSubscription(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", ps.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("tenant_subscription_id=")
-	builder.WriteString(fmt.Sprintf("%v", ps.TenantSubscriptionID))
+	builder.WriteString(fmt.Sprintf("%v", _m.TenantSubscriptionID))
 	builder.WriteString(", ")
 	builder.WriteString("product_code=")
-	builder.WriteString(ps.ProductCode)
+	builder.WriteString(_m.ProductCode)
 	builder.WriteString(", ")
 	builder.WriteString("product_id=")
-	builder.WriteString(fmt.Sprintf("%v", ps.ProductID))
+	builder.WriteString(fmt.Sprintf("%v", _m.ProductID))
 	builder.WriteString(", ")
 	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", ps.Status))
+	builder.WriteString(fmt.Sprintf("%v", _m.Status))
 	builder.WriteString(", ")
-	if v := ps.TrialEndsAt; v != nil {
+	if v := _m.TrialEndsAt; v != nil {
 		builder.WriteString("trial_ends_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
-	if v := ps.ActivatedAt; v != nil {
+	if v := _m.ActivatedAt; v != nil {
 		builder.WriteString("activated_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
-	if v := ps.DeactivatedAt; v != nil {
+	if v := _m.DeactivatedAt; v != nil {
 		builder.WriteString("deactivated_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
-	builder.WriteString(fmt.Sprintf("%v", ps.Metadata))
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(ps.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(ps.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

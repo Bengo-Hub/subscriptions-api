@@ -14,136 +14,149 @@ import (
 
 // PlanHandler handles subscription plan endpoints.
 type PlanHandler struct {
-	log        *zap.Logger
-	repository plans.Repository
+	log     *zap.Logger
+	service *plans.Service
 }
 
 // NewPlanHandler creates a new plan handler.
-func NewPlanHandler(log *zap.Logger, repo plans.Repository) *PlanHandler {
+func NewPlanHandler(log *zap.Logger, svc *plans.Service) *PlanHandler {
 	return &PlanHandler{
-		log:        log.Named("plan.handler"),
-		repository: repo,
+		log:     log.Named("plan.handler"),
+		service: svc,
 	}
 }
 
 // ListPlans returns all available subscription plans.
-// @Summary List subscription plans
-// @Description Get all available subscription plans, optionally filtered by active status
-// @Tags plans
-// @Accept json
-// @Produce json
-// @Param active query bool false "Filter by active status"
-// @Success 200 {object} listPlansResponse
-// @Failure 500 {object} errorResponse
-// @Router /api/v1/plans [get]
 func (h *PlanHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
 	activeOnly := false
 	if activeStr := r.URL.Query().Get("active"); activeStr != "" {
 		var err error
 		activeOnly, err = strconv.ParseBool(activeStr)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(errorResponse{Error: "invalid active parameter, must be true or false"})
+			h.respondWithError(w, http.StatusBadRequest, "invalid active parameter, must be true or false")
 			return
 		}
 	}
 
-	plansList, err := h.repository.ListPlans(r.Context(), activeOnly)
+	plansList, err := h.service.ListPlansWithPrices(r.Context(), activeOnly)
 	if err != nil {
 		h.log.Error("failed to list plans", zap.Error(err))
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(errorResponse{Error: "failed to retrieve plans"})
+		h.respondWithError(w, http.StatusInternalServerError, "failed to retrieve plans")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(listPlansResponse{
+	h.respondWithJSON(w, http.StatusOK, listPlansResponse{
 		Plans: plansList,
 		Count: len(plansList),
 	})
 }
 
 // GetPlan returns a specific plan by ID.
-// @Summary Get subscription plan by ID
-// @Description Get a specific subscription plan by its UUID
-// @Tags plans
-// @Accept json
-// @Produce json
-// @Param id path string true "Plan ID (UUID)"
-// @Success 200 {object} planResponse
-// @Failure 400 {object} errorResponse
-// @Failure 404 {object} errorResponse
-// @Failure 500 {object} errorResponse
-// @Router /api/v1/plans/{id} [get]
 func (h *PlanHandler) GetPlan(w http.ResponseWriter, r *http.Request) {
 	planIDStr := chi.URLParam(r, "id")
 	planID, err := uuid.Parse(planIDStr)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(errorResponse{Error: "invalid plan ID format"})
+		h.respondWithError(w, http.StatusBadRequest, "invalid plan ID format")
 		return
 	}
 
-	plan, err := h.repository.FindPlanByID(r.Context(), planID)
+	plan, err := h.service.GetPlanWithPrice(r.Context(), planID)
 	if err != nil {
 		h.log.Error("failed to get plan", zap.String("plan_id", planIDStr), zap.Error(err))
-		if err.Error() == "plans: plan not found" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(errorResponse{Error: "plan not found"})
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(errorResponse{Error: "failed to retrieve plan"})
+		h.respondWithError(w, http.StatusNotFound, "plan not found")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(planResponse{Plan: plan})
+	h.respondWithJSON(w, http.StatusOK, planResponse{Plan: plan})
 }
 
 // GetPlanByCode returns a specific plan by plan code.
-// @Summary Get subscription plan by code
-// @Description Get a specific subscription plan by its plan code (e.g., STARTER, GROWTH, PROFESSIONAL)
-// @Tags plans
-// @Accept json
-// @Produce json
-// @Param code path string true "Plan code"
-// @Success 200 {object} planResponse
-// @Failure 400 {object} errorResponse
-// @Failure 404 {object} errorResponse
-// @Failure 500 {object} errorResponse
-// @Router /api/v1/plans/code/{code} [get]
 func (h *PlanHandler) GetPlanByCode(w http.ResponseWriter, r *http.Request) {
 	planCode := chi.URLParam(r, "code")
 	if planCode == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(errorResponse{Error: "plan code is required"})
+		h.respondWithError(w, http.StatusBadRequest, "plan code is required")
 		return
 	}
 
-	plan, err := h.repository.FindPlanByCode(r.Context(), planCode)
+	plan, err := h.service.GetPlanByCodeWithPrice(r.Context(), planCode)
 	if err != nil {
 		h.log.Error("failed to get plan by code", zap.String("plan_code", planCode), zap.Error(err))
-		if err.Error() == "plans: plan not found" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(errorResponse{Error: "plan not found"})
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(errorResponse{Error: "failed to retrieve plan"})
+		h.respondWithError(w, http.StatusNotFound, "plan not found")
 		return
 	}
 
+	h.respondWithJSON(w, http.StatusOK, planResponse{Plan: plan})
+}
+
+// CreatePlan creates a new subscription plan.
+func (h *PlanHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
+	var plan plans.SubscriptionPlan
+	if err := json.NewDecoder(r.Body).Decode(&plan); err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if plan.ID == uuid.Nil {
+		plan.ID = uuid.New()
+	}
+
+	if err := h.service.CreatePlan(r.Context(), &plan); err != nil {
+		h.respondWithError(w, http.StatusInternalServerError, "failed to create plan")
+		return
+	}
+
+	h.respondWithJSON(w, http.StatusCreated, planResponse{Plan: &plan})
+}
+
+// UpdatePlan updates an existing subscription plan.
+func (h *PlanHandler) UpdatePlan(w http.ResponseWriter, r *http.Request) {
+	planIDStr := chi.URLParam(r, "id")
+	planID, err := uuid.Parse(planIDStr)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid plan ID format")
+		return
+	}
+
+	var plan plans.SubscriptionPlan
+	if err := json.NewDecoder(r.Body).Decode(&plan); err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	plan.ID = planID
+
+	if err := h.service.UpdatePlan(r.Context(), &plan); err != nil {
+		h.respondWithError(w, http.StatusInternalServerError, "failed to update plan")
+		return
+	}
+
+	h.respondWithJSON(w, http.StatusOK, planResponse{Plan: &plan})
+}
+
+// DeletePlan deletes a subscription plan.
+func (h *PlanHandler) DeletePlan(w http.ResponseWriter, r *http.Request) {
+	planIDStr := chi.URLParam(r, "id")
+	planID, err := uuid.Parse(planIDStr)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid plan ID format")
+		return
+	}
+
+	if err := h.service.DeletePlan(r.Context(), planID); err != nil {
+		h.respondWithError(w, http.StatusInternalServerError, "failed to delete plan")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *PlanHandler) respondWithError(w http.ResponseWriter, code int, message string) {
+	h.respondWithJSON(w, code, errorResponse{Error: message})
+}
+
+func (h *PlanHandler) respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(planResponse{Plan: plan})
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(payload)
 }
 
 // Response types

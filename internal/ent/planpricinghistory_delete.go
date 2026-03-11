@@ -20,56 +20,56 @@ type PlanPricingHistoryDelete struct {
 }
 
 // Where appends a list predicates to the PlanPricingHistoryDelete builder.
-func (pphd *PlanPricingHistoryDelete) Where(ps ...predicate.PlanPricingHistory) *PlanPricingHistoryDelete {
-	pphd.mutation.Where(ps...)
-	return pphd
+func (_d *PlanPricingHistoryDelete) Where(ps ...predicate.PlanPricingHistory) *PlanPricingHistoryDelete {
+	_d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (pphd *PlanPricingHistoryDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks(ctx, pphd.sqlExec, pphd.mutation, pphd.hooks)
+func (_d *PlanPricingHistoryDelete) Exec(ctx context.Context) (int, error) {
+	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pphd *PlanPricingHistoryDelete) ExecX(ctx context.Context) int {
-	n, err := pphd.Exec(ctx)
+func (_d *PlanPricingHistoryDelete) ExecX(ctx context.Context) int {
+	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return n
 }
 
-func (pphd *PlanPricingHistoryDelete) sqlExec(ctx context.Context) (int, error) {
+func (_d *PlanPricingHistoryDelete) sqlExec(ctx context.Context) (int, error) {
 	_spec := sqlgraph.NewDeleteSpec(planpricinghistory.Table, sqlgraph.NewFieldSpec(planpricinghistory.FieldID, field.TypeUUID))
-	if ps := pphd.mutation.predicates; len(ps) > 0 {
+	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	affected, err := sqlgraph.DeleteNodes(ctx, pphd.driver, _spec)
+	affected, err := sqlgraph.DeleteNodes(ctx, _d.driver, _spec)
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
-	pphd.mutation.done = true
+	_d.mutation.done = true
 	return affected, err
 }
 
 // PlanPricingHistoryDeleteOne is the builder for deleting a single PlanPricingHistory entity.
 type PlanPricingHistoryDeleteOne struct {
-	pphd *PlanPricingHistoryDelete
+	_d *PlanPricingHistoryDelete
 }
 
 // Where appends a list predicates to the PlanPricingHistoryDelete builder.
-func (pphdo *PlanPricingHistoryDeleteOne) Where(ps ...predicate.PlanPricingHistory) *PlanPricingHistoryDeleteOne {
-	pphdo.pphd.mutation.Where(ps...)
-	return pphdo
+func (_d *PlanPricingHistoryDeleteOne) Where(ps ...predicate.PlanPricingHistory) *PlanPricingHistoryDeleteOne {
+	_d._d.mutation.Where(ps...)
+	return _d
 }
 
 // Exec executes the deletion query.
-func (pphdo *PlanPricingHistoryDeleteOne) Exec(ctx context.Context) error {
-	n, err := pphdo.pphd.Exec(ctx)
+func (_d *PlanPricingHistoryDeleteOne) Exec(ctx context.Context) error {
+	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
@@ -81,8 +81,8 @@ func (pphdo *PlanPricingHistoryDeleteOne) Exec(ctx context.Context) error {
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pphdo *PlanPricingHistoryDeleteOne) ExecX(ctx context.Context) {
-	if err := pphdo.Exec(ctx); err != nil {
+func (_d *PlanPricingHistoryDeleteOne) ExecX(ctx context.Context) {
+	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

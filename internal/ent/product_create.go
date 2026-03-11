@@ -26,190 +26,232 @@ type ProductCreate struct {
 }
 
 // SetCode sets the "code" field.
-func (pc *ProductCreate) SetCode(s string) *ProductCreate {
-	pc.mutation.SetCode(s)
-	return pc
+func (_c *ProductCreate) SetCode(v string) *ProductCreate {
+	_c.mutation.SetCode(v)
+	return _c
 }
 
 // SetName sets the "name" field.
-func (pc *ProductCreate) SetName(s string) *ProductCreate {
-	pc.mutation.SetName(s)
-	return pc
+func (_c *ProductCreate) SetName(v string) *ProductCreate {
+	_c.mutation.SetName(v)
+	return _c
 }
 
 // SetDescription sets the "description" field.
-func (pc *ProductCreate) SetDescription(s string) *ProductCreate {
-	pc.mutation.SetDescription(s)
-	return pc
+func (_c *ProductCreate) SetDescription(v string) *ProductCreate {
+	_c.mutation.SetDescription(v)
+	return _c
 }
 
 // SetNillableDescription sets the "description" field if the given value is not nil.
-func (pc *ProductCreate) SetNillableDescription(s *string) *ProductCreate {
-	if s != nil {
-		pc.SetDescription(*s)
+func (_c *ProductCreate) SetNillableDescription(v *string) *ProductCreate {
+	if v != nil {
+		_c.SetDescription(*v)
 	}
-	return pc
+	return _c
 }
 
 // SetCategory sets the "category" field.
-func (pc *ProductCreate) SetCategory(pr product.Category) *ProductCreate {
-	pc.mutation.SetCategory(pr)
-	return pc
+func (_c *ProductCreate) SetCategory(v product.Category) *ProductCreate {
+	_c.mutation.SetCategory(v)
+	return _c
 }
 
 // SetStatus sets the "status" field.
-func (pc *ProductCreate) SetStatus(pr product.Status) *ProductCreate {
-	pc.mutation.SetStatus(pr)
-	return pc
+func (_c *ProductCreate) SetStatus(v product.Status) *ProductCreate {
+	_c.mutation.SetStatus(v)
+	return _c
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (pc *ProductCreate) SetNillableStatus(pr *product.Status) *ProductCreate {
-	if pr != nil {
-		pc.SetStatus(*pr)
+func (_c *ProductCreate) SetNillableStatus(v *product.Status) *ProductCreate {
+	if v != nil {
+		_c.SetStatus(*v)
 	}
-	return pc
+	return _c
 }
 
 // SetDependencies sets the "dependencies" field.
-func (pc *ProductCreate) SetDependencies(s []string) *ProductCreate {
-	pc.mutation.SetDependencies(s)
-	return pc
+func (_c *ProductCreate) SetDependencies(v []string) *ProductCreate {
+	_c.mutation.SetDependencies(v)
+	return _c
 }
 
 // SetIsPlatform sets the "is_platform" field.
-func (pc *ProductCreate) SetIsPlatform(b bool) *ProductCreate {
-	pc.mutation.SetIsPlatform(b)
-	return pc
+func (_c *ProductCreate) SetIsPlatform(v bool) *ProductCreate {
+	_c.mutation.SetIsPlatform(v)
+	return _c
 }
 
 // SetNillableIsPlatform sets the "is_platform" field if the given value is not nil.
-func (pc *ProductCreate) SetNillableIsPlatform(b *bool) *ProductCreate {
-	if b != nil {
-		pc.SetIsPlatform(*b)
+func (_c *ProductCreate) SetNillableIsPlatform(v *bool) *ProductCreate {
+	if v != nil {
+		_c.SetIsPlatform(*v)
 	}
-	return pc
+	return _c
 }
 
 // SetMonthlyPrice sets the "monthly_price" field.
-func (pc *ProductCreate) SetMonthlyPrice(f float64) *ProductCreate {
-	pc.mutation.SetMonthlyPrice(f)
-	return pc
+func (_c *ProductCreate) SetMonthlyPrice(v float64) *ProductCreate {
+	_c.mutation.SetMonthlyPrice(v)
+	return _c
 }
 
 // SetNillableMonthlyPrice sets the "monthly_price" field if the given value is not nil.
-func (pc *ProductCreate) SetNillableMonthlyPrice(f *float64) *ProductCreate {
-	if f != nil {
-		pc.SetMonthlyPrice(*f)
+func (_c *ProductCreate) SetNillableMonthlyPrice(v *float64) *ProductCreate {
+	if v != nil {
+		_c.SetMonthlyPrice(*v)
 	}
-	return pc
+	return _c
+}
+
+// SetYearlyPrice sets the "yearly_price" field.
+func (_c *ProductCreate) SetYearlyPrice(v float64) *ProductCreate {
+	_c.mutation.SetYearlyPrice(v)
+	return _c
+}
+
+// SetNillableYearlyPrice sets the "yearly_price" field if the given value is not nil.
+func (_c *ProductCreate) SetNillableYearlyPrice(v *float64) *ProductCreate {
+	if v != nil {
+		_c.SetYearlyPrice(*v)
+	}
+	return _c
+}
+
+// SetOnetimePrice sets the "onetime_price" field.
+func (_c *ProductCreate) SetOnetimePrice(v float64) *ProductCreate {
+	_c.mutation.SetOnetimePrice(v)
+	return _c
+}
+
+// SetNillableOnetimePrice sets the "onetime_price" field if the given value is not nil.
+func (_c *ProductCreate) SetNillableOnetimePrice(v *float64) *ProductCreate {
+	if v != nil {
+		_c.SetOnetimePrice(*v)
+	}
+	return _c
 }
 
 // SetIncludedInBundle sets the "included_in_bundle" field.
-func (pc *ProductCreate) SetIncludedInBundle(b bool) *ProductCreate {
-	pc.mutation.SetIncludedInBundle(b)
-	return pc
+func (_c *ProductCreate) SetIncludedInBundle(v bool) *ProductCreate {
+	_c.mutation.SetIncludedInBundle(v)
+	return _c
 }
 
 // SetNillableIncludedInBundle sets the "included_in_bundle" field if the given value is not nil.
-func (pc *ProductCreate) SetNillableIncludedInBundle(b *bool) *ProductCreate {
-	if b != nil {
-		pc.SetIncludedInBundle(*b)
+func (_c *ProductCreate) SetNillableIncludedInBundle(v *bool) *ProductCreate {
+	if v != nil {
+		_c.SetIncludedInBundle(*v)
 	}
-	return pc
+	return _c
 }
 
 // SetSortOrder sets the "sort_order" field.
-func (pc *ProductCreate) SetSortOrder(i int) *ProductCreate {
-	pc.mutation.SetSortOrder(i)
-	return pc
+func (_c *ProductCreate) SetSortOrder(v int) *ProductCreate {
+	_c.mutation.SetSortOrder(v)
+	return _c
 }
 
 // SetNillableSortOrder sets the "sort_order" field if the given value is not nil.
-func (pc *ProductCreate) SetNillableSortOrder(i *int) *ProductCreate {
-	if i != nil {
-		pc.SetSortOrder(*i)
+func (_c *ProductCreate) SetNillableSortOrder(v *int) *ProductCreate {
+	if v != nil {
+		_c.SetSortOrder(*v)
 	}
-	return pc
+	return _c
+}
+
+// SetIsBaseService sets the "is_base_service" field.
+func (_c *ProductCreate) SetIsBaseService(v bool) *ProductCreate {
+	_c.mutation.SetIsBaseService(v)
+	return _c
+}
+
+// SetNillableIsBaseService sets the "is_base_service" field if the given value is not nil.
+func (_c *ProductCreate) SetNillableIsBaseService(v *bool) *ProductCreate {
+	if v != nil {
+		_c.SetIsBaseService(*v)
+	}
+	return _c
 }
 
 // SetMetadata sets the "metadata" field.
-func (pc *ProductCreate) SetMetadata(m map[string]interface{}) *ProductCreate {
-	pc.mutation.SetMetadata(m)
-	return pc
+func (_c *ProductCreate) SetMetadata(v map[string]interface{}) *ProductCreate {
+	_c.mutation.SetMetadata(v)
+	return _c
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (pc *ProductCreate) SetCreatedAt(t time.Time) *ProductCreate {
-	pc.mutation.SetCreatedAt(t)
-	return pc
+func (_c *ProductCreate) SetCreatedAt(v time.Time) *ProductCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (pc *ProductCreate) SetNillableCreatedAt(t *time.Time) *ProductCreate {
-	if t != nil {
-		pc.SetCreatedAt(*t)
+func (_c *ProductCreate) SetNillableCreatedAt(v *time.Time) *ProductCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
 	}
-	return pc
+	return _c
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (pc *ProductCreate) SetUpdatedAt(t time.Time) *ProductCreate {
-	pc.mutation.SetUpdatedAt(t)
-	return pc
+func (_c *ProductCreate) SetUpdatedAt(v time.Time) *ProductCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (pc *ProductCreate) SetNillableUpdatedAt(t *time.Time) *ProductCreate {
-	if t != nil {
-		pc.SetUpdatedAt(*t)
+func (_c *ProductCreate) SetNillableUpdatedAt(v *time.Time) *ProductCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
-	return pc
+	return _c
 }
 
 // SetID sets the "id" field.
-func (pc *ProductCreate) SetID(u uuid.UUID) *ProductCreate {
-	pc.mutation.SetID(u)
-	return pc
+func (_c *ProductCreate) SetID(v uuid.UUID) *ProductCreate {
+	_c.mutation.SetID(v)
+	return _c
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pc *ProductCreate) SetNillableID(u *uuid.UUID) *ProductCreate {
-	if u != nil {
-		pc.SetID(*u)
+func (_c *ProductCreate) SetNillableID(v *uuid.UUID) *ProductCreate {
+	if v != nil {
+		_c.SetID(*v)
 	}
-	return pc
+	return _c
 }
 
 // AddProductSubscriptionIDs adds the "product_subscriptions" edge to the ProductSubscription entity by IDs.
-func (pc *ProductCreate) AddProductSubscriptionIDs(ids ...uuid.UUID) *ProductCreate {
-	pc.mutation.AddProductSubscriptionIDs(ids...)
-	return pc
+func (_c *ProductCreate) AddProductSubscriptionIDs(ids ...uuid.UUID) *ProductCreate {
+	_c.mutation.AddProductSubscriptionIDs(ids...)
+	return _c
 }
 
 // AddProductSubscriptions adds the "product_subscriptions" edges to the ProductSubscription entity.
-func (pc *ProductCreate) AddProductSubscriptions(p ...*ProductSubscription) *ProductCreate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+func (_c *ProductCreate) AddProductSubscriptions(v ...*ProductSubscription) *ProductCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pc.AddProductSubscriptionIDs(ids...)
+	return _c.AddProductSubscriptionIDs(ids...)
 }
 
 // Mutation returns the ProductMutation object of the builder.
-func (pc *ProductCreate) Mutation() *ProductMutation {
-	return pc.mutation
+func (_c *ProductCreate) Mutation() *ProductMutation {
+	return _c.mutation
 }
 
 // Save creates the Product in the database.
-func (pc *ProductCreate) Save(ctx context.Context) (*Product, error) {
-	pc.defaults()
-	return withHooks(ctx, pc.sqlSave, pc.mutation, pc.hooks)
+func (_c *ProductCreate) Save(ctx context.Context) (*Product, error) {
+	_c.defaults()
+	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (pc *ProductCreate) SaveX(ctx context.Context) *Product {
-	v, err := pc.Save(ctx)
+func (_c *ProductCreate) SaveX(ctx context.Context) *Product {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -217,122 +259,143 @@ func (pc *ProductCreate) SaveX(ctx context.Context) *Product {
 }
 
 // Exec executes the query.
-func (pc *ProductCreate) Exec(ctx context.Context) error {
-	_, err := pc.Save(ctx)
+func (_c *ProductCreate) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pc *ProductCreate) ExecX(ctx context.Context) {
-	if err := pc.Exec(ctx); err != nil {
+func (_c *ProductCreate) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (pc *ProductCreate) defaults() {
-	if _, ok := pc.mutation.Status(); !ok {
+func (_c *ProductCreate) defaults() {
+	if _, ok := _c.mutation.Status(); !ok {
 		v := product.DefaultStatus
-		pc.mutation.SetStatus(v)
+		_c.mutation.SetStatus(v)
 	}
-	if _, ok := pc.mutation.IsPlatform(); !ok {
+	if _, ok := _c.mutation.IsPlatform(); !ok {
 		v := product.DefaultIsPlatform
-		pc.mutation.SetIsPlatform(v)
+		_c.mutation.SetIsPlatform(v)
 	}
-	if _, ok := pc.mutation.MonthlyPrice(); !ok {
+	if _, ok := _c.mutation.MonthlyPrice(); !ok {
 		v := product.DefaultMonthlyPrice
-		pc.mutation.SetMonthlyPrice(v)
+		_c.mutation.SetMonthlyPrice(v)
 	}
-	if _, ok := pc.mutation.IncludedInBundle(); !ok {
+	if _, ok := _c.mutation.YearlyPrice(); !ok {
+		v := product.DefaultYearlyPrice
+		_c.mutation.SetYearlyPrice(v)
+	}
+	if _, ok := _c.mutation.OnetimePrice(); !ok {
+		v := product.DefaultOnetimePrice
+		_c.mutation.SetOnetimePrice(v)
+	}
+	if _, ok := _c.mutation.IncludedInBundle(); !ok {
 		v := product.DefaultIncludedInBundle
-		pc.mutation.SetIncludedInBundle(v)
+		_c.mutation.SetIncludedInBundle(v)
 	}
-	if _, ok := pc.mutation.SortOrder(); !ok {
+	if _, ok := _c.mutation.SortOrder(); !ok {
 		v := product.DefaultSortOrder
-		pc.mutation.SetSortOrder(v)
+		_c.mutation.SetSortOrder(v)
 	}
-	if _, ok := pc.mutation.Metadata(); !ok {
+	if _, ok := _c.mutation.IsBaseService(); !ok {
+		v := product.DefaultIsBaseService
+		_c.mutation.SetIsBaseService(v)
+	}
+	if _, ok := _c.mutation.Metadata(); !ok {
 		v := product.DefaultMetadata
-		pc.mutation.SetMetadata(v)
+		_c.mutation.SetMetadata(v)
 	}
-	if _, ok := pc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := product.DefaultCreatedAt()
-		pc.mutation.SetCreatedAt(v)
+		_c.mutation.SetCreatedAt(v)
 	}
-	if _, ok := pc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		v := product.DefaultUpdatedAt()
-		pc.mutation.SetUpdatedAt(v)
+		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := pc.mutation.ID(); !ok {
+	if _, ok := _c.mutation.ID(); !ok {
 		v := product.DefaultID()
-		pc.mutation.SetID(v)
+		_c.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (pc *ProductCreate) check() error {
-	if _, ok := pc.mutation.Code(); !ok {
+func (_c *ProductCreate) check() error {
+	if _, ok := _c.mutation.Code(); !ok {
 		return &ValidationError{Name: "code", err: errors.New(`ent: missing required field "Product.code"`)}
 	}
-	if v, ok := pc.mutation.Code(); ok {
+	if v, ok := _c.mutation.Code(); ok {
 		if err := product.CodeValidator(v); err != nil {
 			return &ValidationError{Name: "code", err: fmt.Errorf(`ent: validator failed for field "Product.code": %w`, err)}
 		}
 	}
-	if _, ok := pc.mutation.Name(); !ok {
+	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Product.name"`)}
 	}
-	if v, ok := pc.mutation.Name(); ok {
+	if v, ok := _c.mutation.Name(); ok {
 		if err := product.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Product.name": %w`, err)}
 		}
 	}
-	if _, ok := pc.mutation.Category(); !ok {
+	if _, ok := _c.mutation.Category(); !ok {
 		return &ValidationError{Name: "category", err: errors.New(`ent: missing required field "Product.category"`)}
 	}
-	if v, ok := pc.mutation.Category(); ok {
+	if v, ok := _c.mutation.Category(); ok {
 		if err := product.CategoryValidator(v); err != nil {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Product.category": %w`, err)}
 		}
 	}
-	if _, ok := pc.mutation.Status(); !ok {
+	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Product.status"`)}
 	}
-	if v, ok := pc.mutation.Status(); ok {
+	if v, ok := _c.mutation.Status(); ok {
 		if err := product.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Product.status": %w`, err)}
 		}
 	}
-	if _, ok := pc.mutation.IsPlatform(); !ok {
+	if _, ok := _c.mutation.IsPlatform(); !ok {
 		return &ValidationError{Name: "is_platform", err: errors.New(`ent: missing required field "Product.is_platform"`)}
 	}
-	if _, ok := pc.mutation.MonthlyPrice(); !ok {
+	if _, ok := _c.mutation.MonthlyPrice(); !ok {
 		return &ValidationError{Name: "monthly_price", err: errors.New(`ent: missing required field "Product.monthly_price"`)}
 	}
-	if _, ok := pc.mutation.IncludedInBundle(); !ok {
+	if _, ok := _c.mutation.YearlyPrice(); !ok {
+		return &ValidationError{Name: "yearly_price", err: errors.New(`ent: missing required field "Product.yearly_price"`)}
+	}
+	if _, ok := _c.mutation.OnetimePrice(); !ok {
+		return &ValidationError{Name: "onetime_price", err: errors.New(`ent: missing required field "Product.onetime_price"`)}
+	}
+	if _, ok := _c.mutation.IncludedInBundle(); !ok {
 		return &ValidationError{Name: "included_in_bundle", err: errors.New(`ent: missing required field "Product.included_in_bundle"`)}
 	}
-	if _, ok := pc.mutation.SortOrder(); !ok {
+	if _, ok := _c.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "Product.sort_order"`)}
 	}
-	if _, ok := pc.mutation.Metadata(); !ok {
+	if _, ok := _c.mutation.IsBaseService(); !ok {
+		return &ValidationError{Name: "is_base_service", err: errors.New(`ent: missing required field "Product.is_base_service"`)}
+	}
+	if _, ok := _c.mutation.Metadata(); !ok {
 		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required field "Product.metadata"`)}
 	}
-	if _, ok := pc.mutation.CreatedAt(); !ok {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Product.created_at"`)}
 	}
-	if _, ok := pc.mutation.UpdatedAt(); !ok {
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Product.updated_at"`)}
 	}
 	return nil
 }
 
-func (pc *ProductCreate) sqlSave(ctx context.Context) (*Product, error) {
-	if err := pc.check(); err != nil {
+func (_c *ProductCreate) sqlSave(ctx context.Context) (*Product, error) {
+	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := pc.createSpec()
-	if err := sqlgraph.CreateNode(ctx, pc.driver, _spec); err != nil {
+	_node, _spec := _c.createSpec()
+	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -345,74 +408,86 @@ func (pc *ProductCreate) sqlSave(ctx context.Context) (*Product, error) {
 			return nil, err
 		}
 	}
-	pc.mutation.id = &_node.ID
-	pc.mutation.done = true
+	_c.mutation.id = &_node.ID
+	_c.mutation.done = true
 	return _node, nil
 }
 
-func (pc *ProductCreate) createSpec() (*Product, *sqlgraph.CreateSpec) {
+func (_c *ProductCreate) createSpec() (*Product, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Product{config: pc.config}
+		_node = &Product{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(product.Table, sqlgraph.NewFieldSpec(product.FieldID, field.TypeUUID))
 	)
-	_spec.OnConflict = pc.conflict
-	if id, ok := pc.mutation.ID(); ok {
+	_spec.OnConflict = _c.conflict
+	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := pc.mutation.Code(); ok {
+	if value, ok := _c.mutation.Code(); ok {
 		_spec.SetField(product.FieldCode, field.TypeString, value)
 		_node.Code = value
 	}
-	if value, ok := pc.mutation.Name(); ok {
+	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(product.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := pc.mutation.Description(); ok {
+	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(product.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := pc.mutation.Category(); ok {
+	if value, ok := _c.mutation.Category(); ok {
 		_spec.SetField(product.FieldCategory, field.TypeEnum, value)
 		_node.Category = value
 	}
-	if value, ok := pc.mutation.Status(); ok {
+	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(product.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
 	}
-	if value, ok := pc.mutation.Dependencies(); ok {
+	if value, ok := _c.mutation.Dependencies(); ok {
 		_spec.SetField(product.FieldDependencies, field.TypeJSON, value)
 		_node.Dependencies = value
 	}
-	if value, ok := pc.mutation.IsPlatform(); ok {
+	if value, ok := _c.mutation.IsPlatform(); ok {
 		_spec.SetField(product.FieldIsPlatform, field.TypeBool, value)
 		_node.IsPlatform = value
 	}
-	if value, ok := pc.mutation.MonthlyPrice(); ok {
+	if value, ok := _c.mutation.MonthlyPrice(); ok {
 		_spec.SetField(product.FieldMonthlyPrice, field.TypeFloat64, value)
 		_node.MonthlyPrice = value
 	}
-	if value, ok := pc.mutation.IncludedInBundle(); ok {
+	if value, ok := _c.mutation.YearlyPrice(); ok {
+		_spec.SetField(product.FieldYearlyPrice, field.TypeFloat64, value)
+		_node.YearlyPrice = value
+	}
+	if value, ok := _c.mutation.OnetimePrice(); ok {
+		_spec.SetField(product.FieldOnetimePrice, field.TypeFloat64, value)
+		_node.OnetimePrice = value
+	}
+	if value, ok := _c.mutation.IncludedInBundle(); ok {
 		_spec.SetField(product.FieldIncludedInBundle, field.TypeBool, value)
 		_node.IncludedInBundle = value
 	}
-	if value, ok := pc.mutation.SortOrder(); ok {
+	if value, ok := _c.mutation.SortOrder(); ok {
 		_spec.SetField(product.FieldSortOrder, field.TypeInt, value)
 		_node.SortOrder = value
 	}
-	if value, ok := pc.mutation.Metadata(); ok {
+	if value, ok := _c.mutation.IsBaseService(); ok {
+		_spec.SetField(product.FieldIsBaseService, field.TypeBool, value)
+		_node.IsBaseService = value
+	}
+	if value, ok := _c.mutation.Metadata(); ok {
 		_spec.SetField(product.FieldMetadata, field.TypeJSON, value)
 		_node.Metadata = value
 	}
-	if value, ok := pc.mutation.CreatedAt(); ok {
+	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(product.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := pc.mutation.UpdatedAt(); ok {
+	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(product.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if nodes := pc.mutation.ProductSubscriptionsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.ProductSubscriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -447,10 +522,10 @@ func (pc *ProductCreate) createSpec() (*Product, *sqlgraph.CreateSpec) {
 //			SetCode(v+v).
 //		}).
 //		Exec(ctx)
-func (pc *ProductCreate) OnConflict(opts ...sql.ConflictOption) *ProductUpsertOne {
-	pc.conflict = opts
+func (_c *ProductCreate) OnConflict(opts ...sql.ConflictOption) *ProductUpsertOne {
+	_c.conflict = opts
 	return &ProductUpsertOne{
-		create: pc,
+		create: _c,
 	}
 }
 
@@ -460,10 +535,10 @@ func (pc *ProductCreate) OnConflict(opts ...sql.ConflictOption) *ProductUpsertOn
 //	client.Product.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (pc *ProductCreate) OnConflictColumns(columns ...string) *ProductUpsertOne {
-	pc.conflict = append(pc.conflict, sql.ConflictColumns(columns...))
+func (_c *ProductCreate) OnConflictColumns(columns ...string) *ProductUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &ProductUpsertOne{
-		create: pc,
+		create: _c,
 	}
 }
 
@@ -594,6 +669,42 @@ func (u *ProductUpsert) AddMonthlyPrice(v float64) *ProductUpsert {
 	return u
 }
 
+// SetYearlyPrice sets the "yearly_price" field.
+func (u *ProductUpsert) SetYearlyPrice(v float64) *ProductUpsert {
+	u.Set(product.FieldYearlyPrice, v)
+	return u
+}
+
+// UpdateYearlyPrice sets the "yearly_price" field to the value that was provided on create.
+func (u *ProductUpsert) UpdateYearlyPrice() *ProductUpsert {
+	u.SetExcluded(product.FieldYearlyPrice)
+	return u
+}
+
+// AddYearlyPrice adds v to the "yearly_price" field.
+func (u *ProductUpsert) AddYearlyPrice(v float64) *ProductUpsert {
+	u.Add(product.FieldYearlyPrice, v)
+	return u
+}
+
+// SetOnetimePrice sets the "onetime_price" field.
+func (u *ProductUpsert) SetOnetimePrice(v float64) *ProductUpsert {
+	u.Set(product.FieldOnetimePrice, v)
+	return u
+}
+
+// UpdateOnetimePrice sets the "onetime_price" field to the value that was provided on create.
+func (u *ProductUpsert) UpdateOnetimePrice() *ProductUpsert {
+	u.SetExcluded(product.FieldOnetimePrice)
+	return u
+}
+
+// AddOnetimePrice adds v to the "onetime_price" field.
+func (u *ProductUpsert) AddOnetimePrice(v float64) *ProductUpsert {
+	u.Add(product.FieldOnetimePrice, v)
+	return u
+}
+
 // SetIncludedInBundle sets the "included_in_bundle" field.
 func (u *ProductUpsert) SetIncludedInBundle(v bool) *ProductUpsert {
 	u.Set(product.FieldIncludedInBundle, v)
@@ -621,6 +732,18 @@ func (u *ProductUpsert) UpdateSortOrder() *ProductUpsert {
 // AddSortOrder adds v to the "sort_order" field.
 func (u *ProductUpsert) AddSortOrder(v int) *ProductUpsert {
 	u.Add(product.FieldSortOrder, v)
+	return u
+}
+
+// SetIsBaseService sets the "is_base_service" field.
+func (u *ProductUpsert) SetIsBaseService(v bool) *ProductUpsert {
+	u.Set(product.FieldIsBaseService, v)
+	return u
+}
+
+// UpdateIsBaseService sets the "is_base_service" field to the value that was provided on create.
+func (u *ProductUpsert) UpdateIsBaseService() *ProductUpsert {
+	u.SetExcluded(product.FieldIsBaseService)
 	return u
 }
 
@@ -832,6 +955,48 @@ func (u *ProductUpsertOne) UpdateMonthlyPrice() *ProductUpsertOne {
 	})
 }
 
+// SetYearlyPrice sets the "yearly_price" field.
+func (u *ProductUpsertOne) SetYearlyPrice(v float64) *ProductUpsertOne {
+	return u.Update(func(s *ProductUpsert) {
+		s.SetYearlyPrice(v)
+	})
+}
+
+// AddYearlyPrice adds v to the "yearly_price" field.
+func (u *ProductUpsertOne) AddYearlyPrice(v float64) *ProductUpsertOne {
+	return u.Update(func(s *ProductUpsert) {
+		s.AddYearlyPrice(v)
+	})
+}
+
+// UpdateYearlyPrice sets the "yearly_price" field to the value that was provided on create.
+func (u *ProductUpsertOne) UpdateYearlyPrice() *ProductUpsertOne {
+	return u.Update(func(s *ProductUpsert) {
+		s.UpdateYearlyPrice()
+	})
+}
+
+// SetOnetimePrice sets the "onetime_price" field.
+func (u *ProductUpsertOne) SetOnetimePrice(v float64) *ProductUpsertOne {
+	return u.Update(func(s *ProductUpsert) {
+		s.SetOnetimePrice(v)
+	})
+}
+
+// AddOnetimePrice adds v to the "onetime_price" field.
+func (u *ProductUpsertOne) AddOnetimePrice(v float64) *ProductUpsertOne {
+	return u.Update(func(s *ProductUpsert) {
+		s.AddOnetimePrice(v)
+	})
+}
+
+// UpdateOnetimePrice sets the "onetime_price" field to the value that was provided on create.
+func (u *ProductUpsertOne) UpdateOnetimePrice() *ProductUpsertOne {
+	return u.Update(func(s *ProductUpsert) {
+		s.UpdateOnetimePrice()
+	})
+}
+
 // SetIncludedInBundle sets the "included_in_bundle" field.
 func (u *ProductUpsertOne) SetIncludedInBundle(v bool) *ProductUpsertOne {
 	return u.Update(func(s *ProductUpsert) {
@@ -864,6 +1029,20 @@ func (u *ProductUpsertOne) AddSortOrder(v int) *ProductUpsertOne {
 func (u *ProductUpsertOne) UpdateSortOrder() *ProductUpsertOne {
 	return u.Update(func(s *ProductUpsert) {
 		s.UpdateSortOrder()
+	})
+}
+
+// SetIsBaseService sets the "is_base_service" field.
+func (u *ProductUpsertOne) SetIsBaseService(v bool) *ProductUpsertOne {
+	return u.Update(func(s *ProductUpsert) {
+		s.SetIsBaseService(v)
+	})
+}
+
+// UpdateIsBaseService sets the "is_base_service" field to the value that was provided on create.
+func (u *ProductUpsertOne) UpdateIsBaseService() *ProductUpsertOne {
+	return u.Update(func(s *ProductUpsert) {
+		s.UpdateIsBaseService()
 	})
 }
 
@@ -942,16 +1121,16 @@ type ProductCreateBulk struct {
 }
 
 // Save creates the Product entities in the database.
-func (pcb *ProductCreateBulk) Save(ctx context.Context) ([]*Product, error) {
-	if pcb.err != nil {
-		return nil, pcb.err
+func (_c *ProductCreateBulk) Save(ctx context.Context) ([]*Product, error) {
+	if _c.err != nil {
+		return nil, _c.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(pcb.builders))
-	nodes := make([]*Product, len(pcb.builders))
-	mutators := make([]Mutator, len(pcb.builders))
-	for i := range pcb.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
+	nodes := make([]*Product, len(_c.builders))
+	mutators := make([]Mutator, len(_c.builders))
+	for i := range _c.builders {
 		func(i int, root context.Context) {
-			builder := pcb.builders[i]
+			builder := _c.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ProductMutation)
@@ -965,12 +1144,12 @@ func (pcb *ProductCreateBulk) Save(ctx context.Context) ([]*Product, error) {
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, pcb.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
-					spec.OnConflict = pcb.conflict
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, pcb.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -990,7 +1169,7 @@ func (pcb *ProductCreateBulk) Save(ctx context.Context) ([]*Product, error) {
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, pcb.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -998,8 +1177,8 @@ func (pcb *ProductCreateBulk) Save(ctx context.Context) ([]*Product, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (pcb *ProductCreateBulk) SaveX(ctx context.Context) []*Product {
-	v, err := pcb.Save(ctx)
+func (_c *ProductCreateBulk) SaveX(ctx context.Context) []*Product {
+	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -1007,14 +1186,14 @@ func (pcb *ProductCreateBulk) SaveX(ctx context.Context) []*Product {
 }
 
 // Exec executes the query.
-func (pcb *ProductCreateBulk) Exec(ctx context.Context) error {
-	_, err := pcb.Save(ctx)
+func (_c *ProductCreateBulk) Exec(ctx context.Context) error {
+	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (pcb *ProductCreateBulk) ExecX(ctx context.Context) {
-	if err := pcb.Exec(ctx); err != nil {
+func (_c *ProductCreateBulk) ExecX(ctx context.Context) {
+	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -1034,10 +1213,10 @@ func (pcb *ProductCreateBulk) ExecX(ctx context.Context) {
 //			SetCode(v+v).
 //		}).
 //		Exec(ctx)
-func (pcb *ProductCreateBulk) OnConflict(opts ...sql.ConflictOption) *ProductUpsertBulk {
-	pcb.conflict = opts
+func (_c *ProductCreateBulk) OnConflict(opts ...sql.ConflictOption) *ProductUpsertBulk {
+	_c.conflict = opts
 	return &ProductUpsertBulk{
-		create: pcb,
+		create: _c,
 	}
 }
 
@@ -1047,10 +1226,10 @@ func (pcb *ProductCreateBulk) OnConflict(opts ...sql.ConflictOption) *ProductUps
 //	client.Product.Create().
 //		OnConflict(sql.ConflictColumns(columns...)).
 //		Exec(ctx)
-func (pcb *ProductCreateBulk) OnConflictColumns(columns ...string) *ProductUpsertBulk {
-	pcb.conflict = append(pcb.conflict, sql.ConflictColumns(columns...))
+func (_c *ProductCreateBulk) OnConflictColumns(columns ...string) *ProductUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
 	return &ProductUpsertBulk{
-		create: pcb,
+		create: _c,
 	}
 }
 
@@ -1246,6 +1425,48 @@ func (u *ProductUpsertBulk) UpdateMonthlyPrice() *ProductUpsertBulk {
 	})
 }
 
+// SetYearlyPrice sets the "yearly_price" field.
+func (u *ProductUpsertBulk) SetYearlyPrice(v float64) *ProductUpsertBulk {
+	return u.Update(func(s *ProductUpsert) {
+		s.SetYearlyPrice(v)
+	})
+}
+
+// AddYearlyPrice adds v to the "yearly_price" field.
+func (u *ProductUpsertBulk) AddYearlyPrice(v float64) *ProductUpsertBulk {
+	return u.Update(func(s *ProductUpsert) {
+		s.AddYearlyPrice(v)
+	})
+}
+
+// UpdateYearlyPrice sets the "yearly_price" field to the value that was provided on create.
+func (u *ProductUpsertBulk) UpdateYearlyPrice() *ProductUpsertBulk {
+	return u.Update(func(s *ProductUpsert) {
+		s.UpdateYearlyPrice()
+	})
+}
+
+// SetOnetimePrice sets the "onetime_price" field.
+func (u *ProductUpsertBulk) SetOnetimePrice(v float64) *ProductUpsertBulk {
+	return u.Update(func(s *ProductUpsert) {
+		s.SetOnetimePrice(v)
+	})
+}
+
+// AddOnetimePrice adds v to the "onetime_price" field.
+func (u *ProductUpsertBulk) AddOnetimePrice(v float64) *ProductUpsertBulk {
+	return u.Update(func(s *ProductUpsert) {
+		s.AddOnetimePrice(v)
+	})
+}
+
+// UpdateOnetimePrice sets the "onetime_price" field to the value that was provided on create.
+func (u *ProductUpsertBulk) UpdateOnetimePrice() *ProductUpsertBulk {
+	return u.Update(func(s *ProductUpsert) {
+		s.UpdateOnetimePrice()
+	})
+}
+
 // SetIncludedInBundle sets the "included_in_bundle" field.
 func (u *ProductUpsertBulk) SetIncludedInBundle(v bool) *ProductUpsertBulk {
 	return u.Update(func(s *ProductUpsert) {
@@ -1278,6 +1499,20 @@ func (u *ProductUpsertBulk) AddSortOrder(v int) *ProductUpsertBulk {
 func (u *ProductUpsertBulk) UpdateSortOrder() *ProductUpsertBulk {
 	return u.Update(func(s *ProductUpsert) {
 		s.UpdateSortOrder()
+	})
+}
+
+// SetIsBaseService sets the "is_base_service" field.
+func (u *ProductUpsertBulk) SetIsBaseService(v bool) *ProductUpsertBulk {
+	return u.Update(func(s *ProductUpsert) {
+		s.SetIsBaseService(v)
+	})
+}
+
+// UpdateIsBaseService sets the "is_base_service" field to the value that was provided on create.
+func (u *ProductUpsertBulk) UpdateIsBaseService() *ProductUpsertBulk {
+	return u.Update(func(s *ProductUpsert) {
+		s.UpdateIsBaseService()
 	})
 }
 

@@ -35,10 +35,16 @@ type Product struct {
 	IsPlatform bool `json:"is_platform,omitempty"`
 	// Standalone monthly price in KES (0 for platform products)
 	MonthlyPrice float64 `json:"monthly_price,omitempty"`
+	// Standalone yearly price in KES
+	YearlyPrice float64 `json:"yearly_price,omitempty"`
+	// Minimum 80k for one-time standalone purchase
+	OnetimePrice float64 `json:"onetime_price,omitempty"`
 	// Whether this product is included in bundle subscriptions
 	IncludedInBundle bool `json:"included_in_bundle,omitempty"`
 	// Display ordering
 	SortOrder int `json:"sort_order,omitempty"`
+	// Base services are core system features included by default in all plans
+	IsBaseService bool `json:"is_base_service,omitempty"`
 	// Metadata holds the value of the "metadata" field.
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -76,9 +82,9 @@ func (*Product) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case product.FieldDependencies, product.FieldMetadata:
 			values[i] = new([]byte)
-		case product.FieldIsPlatform, product.FieldIncludedInBundle:
+		case product.FieldIsPlatform, product.FieldIncludedInBundle, product.FieldIsBaseService:
 			values[i] = new(sql.NullBool)
-		case product.FieldMonthlyPrice:
+		case product.FieldMonthlyPrice, product.FieldYearlyPrice, product.FieldOnetimePrice:
 			values[i] = new(sql.NullFloat64)
 		case product.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
@@ -97,7 +103,7 @@ func (*Product) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Product fields.
-func (pr *Product) assignValues(columns []string, values []any) error {
+func (_m *Product) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -107,43 +113,43 @@ func (pr *Product) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				pr.ID = *value
+				_m.ID = *value
 			}
 		case product.FieldCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field code", values[i])
 			} else if value.Valid {
-				pr.Code = value.String
+				_m.Code = value.String
 			}
 		case product.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				pr.Name = value.String
+				_m.Name = value.String
 			}
 		case product.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				pr.Description = value.String
+				_m.Description = value.String
 			}
 		case product.FieldCategory:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field category", values[i])
 			} else if value.Valid {
-				pr.Category = product.Category(value.String)
+				_m.Category = product.Category(value.String)
 			}
 		case product.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
-				pr.Status = product.Status(value.String)
+				_m.Status = product.Status(value.String)
 			}
 		case product.FieldDependencies:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field dependencies", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &pr.Dependencies); err != nil {
+				if err := json.Unmarshal(*value, &_m.Dependencies); err != nil {
 					return fmt.Errorf("unmarshal field dependencies: %w", err)
 				}
 			}
@@ -151,31 +157,49 @@ func (pr *Product) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field is_platform", values[i])
 			} else if value.Valid {
-				pr.IsPlatform = value.Bool
+				_m.IsPlatform = value.Bool
 			}
 		case product.FieldMonthlyPrice:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field monthly_price", values[i])
 			} else if value.Valid {
-				pr.MonthlyPrice = value.Float64
+				_m.MonthlyPrice = value.Float64
+			}
+		case product.FieldYearlyPrice:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field yearly_price", values[i])
+			} else if value.Valid {
+				_m.YearlyPrice = value.Float64
+			}
+		case product.FieldOnetimePrice:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field onetime_price", values[i])
+			} else if value.Valid {
+				_m.OnetimePrice = value.Float64
 			}
 		case product.FieldIncludedInBundle:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field included_in_bundle", values[i])
 			} else if value.Valid {
-				pr.IncludedInBundle = value.Bool
+				_m.IncludedInBundle = value.Bool
 			}
 		case product.FieldSortOrder:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field sort_order", values[i])
 			} else if value.Valid {
-				pr.SortOrder = int(value.Int64)
+				_m.SortOrder = int(value.Int64)
+			}
+		case product.FieldIsBaseService:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_base_service", values[i])
+			} else if value.Valid {
+				_m.IsBaseService = value.Bool
 			}
 		case product.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &pr.Metadata); err != nil {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
 					return fmt.Errorf("unmarshal field metadata: %w", err)
 				}
 			}
@@ -183,16 +207,16 @@ func (pr *Product) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				pr.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case product.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				pr.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		default:
-			pr.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -200,76 +224,85 @@ func (pr *Product) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Product.
 // This includes values selected through modifiers, order, etc.
-func (pr *Product) Value(name string) (ent.Value, error) {
-	return pr.selectValues.Get(name)
+func (_m *Product) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryProductSubscriptions queries the "product_subscriptions" edge of the Product entity.
-func (pr *Product) QueryProductSubscriptions() *ProductSubscriptionQuery {
-	return NewProductClient(pr.config).QueryProductSubscriptions(pr)
+func (_m *Product) QueryProductSubscriptions() *ProductSubscriptionQuery {
+	return NewProductClient(_m.config).QueryProductSubscriptions(_m)
 }
 
 // Update returns a builder for updating this Product.
 // Note that you need to call Product.Unwrap() before calling this method if this Product
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (pr *Product) Update() *ProductUpdateOne {
-	return NewProductClient(pr.config).UpdateOne(pr)
+func (_m *Product) Update() *ProductUpdateOne {
+	return NewProductClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the Product entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (pr *Product) Unwrap() *Product {
-	_tx, ok := pr.config.driver.(*txDriver)
+func (_m *Product) Unwrap() *Product {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: Product is not a transactional entity")
 	}
-	pr.config.driver = _tx.drv
-	return pr
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (pr *Product) String() string {
+func (_m *Product) String() string {
 	var builder strings.Builder
 	builder.WriteString("Product(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", pr.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("code=")
-	builder.WriteString(pr.Code)
+	builder.WriteString(_m.Code)
 	builder.WriteString(", ")
 	builder.WriteString("name=")
-	builder.WriteString(pr.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(pr.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("category=")
-	builder.WriteString(fmt.Sprintf("%v", pr.Category))
+	builder.WriteString(fmt.Sprintf("%v", _m.Category))
 	builder.WriteString(", ")
 	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", pr.Status))
+	builder.WriteString(fmt.Sprintf("%v", _m.Status))
 	builder.WriteString(", ")
 	builder.WriteString("dependencies=")
-	builder.WriteString(fmt.Sprintf("%v", pr.Dependencies))
+	builder.WriteString(fmt.Sprintf("%v", _m.Dependencies))
 	builder.WriteString(", ")
 	builder.WriteString("is_platform=")
-	builder.WriteString(fmt.Sprintf("%v", pr.IsPlatform))
+	builder.WriteString(fmt.Sprintf("%v", _m.IsPlatform))
 	builder.WriteString(", ")
 	builder.WriteString("monthly_price=")
-	builder.WriteString(fmt.Sprintf("%v", pr.MonthlyPrice))
+	builder.WriteString(fmt.Sprintf("%v", _m.MonthlyPrice))
+	builder.WriteString(", ")
+	builder.WriteString("yearly_price=")
+	builder.WriteString(fmt.Sprintf("%v", _m.YearlyPrice))
+	builder.WriteString(", ")
+	builder.WriteString("onetime_price=")
+	builder.WriteString(fmt.Sprintf("%v", _m.OnetimePrice))
 	builder.WriteString(", ")
 	builder.WriteString("included_in_bundle=")
-	builder.WriteString(fmt.Sprintf("%v", pr.IncludedInBundle))
+	builder.WriteString(fmt.Sprintf("%v", _m.IncludedInBundle))
 	builder.WriteString(", ")
 	builder.WriteString("sort_order=")
-	builder.WriteString(fmt.Sprintf("%v", pr.SortOrder))
+	builder.WriteString(fmt.Sprintf("%v", _m.SortOrder))
+	builder.WriteString(", ")
+	builder.WriteString("is_base_service=")
+	builder.WriteString(fmt.Sprintf("%v", _m.IsBaseService))
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
-	builder.WriteString(fmt.Sprintf("%v", pr.Metadata))
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(pr.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(pr.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

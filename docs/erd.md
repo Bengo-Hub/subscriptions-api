@@ -23,13 +23,15 @@ The subscription service manages all subscription and licensing operations, prov
 | `plan_code` | VARCHAR(50) | NOT NULL, UNIQUE | Plan code (STARTER, GROWTH, PROFESSIONAL, CUSTOM) |
 | `name` | VARCHAR(255) | NOT NULL | Display name |
 | `description` | TEXT | | Plan description |
-| `billing_cycle` | VARCHAR(20) | NOT NULL, CHECK | MONTHLY, QUARTERLY, ANNUAL |
+| `billing_cycle` | VARCHAR(20) | NOT NULL, CHECK | MONTHLY, QUARTERLY, ANNUAL, ONE_TIME |
+| `plan_type` | VARCHAR(50) | NOT NULL | TIERED, STANDALONE_SERVICE, BUNDLE, CUSTOM |
 | `base_price` | NUMERIC(18,2) | NOT NULL | Base subscription price |
 | `currency` | VARCHAR(3) | NOT NULL, DEFAULT 'KES' | ISO currency code |
 | `is_active` | BOOLEAN | DEFAULT true | Active status |
 | `is_public` | BOOLEAN | DEFAULT true | Publicly available |
 | `tier_order` | INTEGER | NOT NULL | Display order (1=Starter, 2=Growth, 3=Professional) |
 | `tier_limits_json` | JSONB | | Tier limits (max_admins, max_riders, max_orders_per_day, api_calls_per_month) |
+| `discount_rules` | JSONB | | Rules for dynamic discounting (e.g. yearly, loyal) |
 | `metadata` | JSONB | | Additional plan metadata |
 | `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Creation timestamp |
 | `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Last update timestamp |
@@ -51,7 +53,7 @@ The subscription service manages all subscription and licensing operations, prov
 - `idx_subscription_plans_tier_order` ON `tier_order`
 
 **Constraints**:
-- CHECK: `billing_cycle IN ('MONTHLY', 'QUARTERLY', 'ANNUAL')`
+- CHECK: `billing_cycle IN ('MONTHLY', 'QUARTERLY', 'ANNUAL', 'ONE_TIME')`
 - CHECK: `tier_order > 0`
 
 ### plan_features
@@ -119,13 +121,15 @@ The subscription service manages all subscription and licensing operations, prov
 | `tenant_id` | UUID | NOT NULL, FK → tenants | Tenant identifier (from auth-service) |
 | `plan_id` | UUID | NOT NULL, FK → subscription_plans(id) | Current subscription plan |
 | `status` | VARCHAR(20) | NOT NULL, CHECK | TRIAL, ACTIVE, CANCELLED, PAUSED, EXPIRED |
-| `billing_cycle` | VARCHAR(20) | NOT NULL, CHECK | MONTHLY, QUARTERLY, ANNUAL |
+| `billing_cycle` | VARCHAR(20) | NOT NULL, CHECK | MONTHLY, QUARTERLY, ANNUAL, ONE_TIME |
+| `applied_discount` | NUMERIC(18,2)| DEFAULT 0 | Discount applied to this subscription based on rules |
 | `current_period_start` | DATE | NOT NULL | Current billing period start |
 | `current_period_end` | DATE | NOT NULL | Current billing period end |
 | `trial_start` | DATE | | Trial period start date |
 | `trial_end` | DATE | | Trial period end date |
 | `cancelled_at` | TIMESTAMPTZ | | Cancellation timestamp |
 | `cancel_reason` | TEXT | | Cancellation reason |
+| `bundle_code` | VARCHAR(50) | | Code of the bundle this subscription belongs to if any |
 | `paused_at` | TIMESTAMPTZ | | Pause timestamp |
 | `pause_reason` | TEXT | | Pause reason |
 | `next_plan_id` | UUID | FK → subscription_plans(id) | Scheduled plan for next period (upgrades/downgrades) |
@@ -148,7 +152,7 @@ The subscription service manages all subscription and licensing operations, prov
 
 **Constraints**:
 - CHECK: `status IN ('TRIAL', 'ACTIVE', 'CANCELLED', 'PAUSED', 'EXPIRED')`
-- CHECK: `billing_cycle IN ('MONTHLY', 'QUARTERLY', 'ANNUAL')`
+- CHECK: `billing_cycle IN ('MONTHLY', 'QUARTERLY', 'ANNUAL', 'ONE_TIME')`
 - CHECK: `current_period_end > current_period_start`
 - CHECK: `trial_end IS NULL OR trial_end >= trial_start`
 

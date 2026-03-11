@@ -29,6 +29,10 @@ type SubscriptionPlan struct {
 	BillingCycle string `json:"billing_cycle,omitempty"`
 	// Base subscription price
 	BasePrice float64 `json:"base_price,omitempty"`
+	// Applicable for ONE_TIME custom plans. If set, this overrides product-summation.
+	OnetimeAllProductsPrice *float64 `json:"onetime_all_products_price,omitempty"`
+	// If true, plan price is calculated as sum of individual products (standard for Custom/One-time)
+	UseSumBasedPricing bool `json:"use_sum_based_pricing,omitempty"`
 	// ISO currency code
 	Currency string `json:"currency,omitempty"`
 	// IsActive holds the value of the "is_active" field.
@@ -39,6 +43,10 @@ type SubscriptionPlan struct {
 	TierOrder int `json:"tier_order,omitempty"`
 	// Tier limits (max_admins, max_riders, max_orders_per_day, etc.)
 	TierLimitsJSON map[string]interface{} `json:"tier_limits_json,omitempty"`
+	// Type: TIERED (Urban Cafe), STANDALONE_SERVICE, BUNDLE, CUSTOM
+	PlanType subscriptionplan.PlanType `json:"plan_type,omitempty"`
+	// Dynamic discounting rules. Types: YEARLY (percentage), LOYALTY (percentage/min_months), NEW_CUSTOMER (trial_days/percentage).
+	DiscountRules []map[string]interface{} `json:"discount_rules,omitempty"`
 	// Metadata holds the value of the "metadata" field.
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -96,15 +104,15 @@ func (*SubscriptionPlan) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case subscriptionplan.FieldTierLimitsJSON, subscriptionplan.FieldMetadata:
+		case subscriptionplan.FieldTierLimitsJSON, subscriptionplan.FieldDiscountRules, subscriptionplan.FieldMetadata:
 			values[i] = new([]byte)
-		case subscriptionplan.FieldIsActive, subscriptionplan.FieldIsPublic:
+		case subscriptionplan.FieldUseSumBasedPricing, subscriptionplan.FieldIsActive, subscriptionplan.FieldIsPublic:
 			values[i] = new(sql.NullBool)
-		case subscriptionplan.FieldBasePrice:
+		case subscriptionplan.FieldBasePrice, subscriptionplan.FieldOnetimeAllProductsPrice:
 			values[i] = new(sql.NullFloat64)
 		case subscriptionplan.FieldTierOrder:
 			values[i] = new(sql.NullInt64)
-		case subscriptionplan.FieldPlanCode, subscriptionplan.FieldName, subscriptionplan.FieldDescription, subscriptionplan.FieldBillingCycle, subscriptionplan.FieldCurrency:
+		case subscriptionplan.FieldPlanCode, subscriptionplan.FieldName, subscriptionplan.FieldDescription, subscriptionplan.FieldBillingCycle, subscriptionplan.FieldCurrency, subscriptionplan.FieldPlanType:
 			values[i] = new(sql.NullString)
 		case subscriptionplan.FieldCreatedAt, subscriptionplan.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -119,7 +127,7 @@ func (*SubscriptionPlan) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the SubscriptionPlan fields.
-func (sp *SubscriptionPlan) assignValues(columns []string, values []any) error {
+func (_m *SubscriptionPlan) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -129,75 +137,102 @@ func (sp *SubscriptionPlan) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				sp.ID = *value
+				_m.ID = *value
 			}
 		case subscriptionplan.FieldPlanCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field plan_code", values[i])
 			} else if value.Valid {
-				sp.PlanCode = value.String
+				_m.PlanCode = value.String
 			}
 		case subscriptionplan.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				sp.Name = value.String
+				_m.Name = value.String
 			}
 		case subscriptionplan.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				sp.Description = value.String
+				_m.Description = value.String
 			}
 		case subscriptionplan.FieldBillingCycle:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field billing_cycle", values[i])
 			} else if value.Valid {
-				sp.BillingCycle = value.String
+				_m.BillingCycle = value.String
 			}
 		case subscriptionplan.FieldBasePrice:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field base_price", values[i])
 			} else if value.Valid {
-				sp.BasePrice = value.Float64
+				_m.BasePrice = value.Float64
+			}
+		case subscriptionplan.FieldOnetimeAllProductsPrice:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field onetime_all_products_price", values[i])
+			} else if value.Valid {
+				_m.OnetimeAllProductsPrice = new(float64)
+				*_m.OnetimeAllProductsPrice = value.Float64
+			}
+		case subscriptionplan.FieldUseSumBasedPricing:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field use_sum_based_pricing", values[i])
+			} else if value.Valid {
+				_m.UseSumBasedPricing = value.Bool
 			}
 		case subscriptionplan.FieldCurrency:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field currency", values[i])
 			} else if value.Valid {
-				sp.Currency = value.String
+				_m.Currency = value.String
 			}
 		case subscriptionplan.FieldIsActive:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field is_active", values[i])
 			} else if value.Valid {
-				sp.IsActive = value.Bool
+				_m.IsActive = value.Bool
 			}
 		case subscriptionplan.FieldIsPublic:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field is_public", values[i])
 			} else if value.Valid {
-				sp.IsPublic = value.Bool
+				_m.IsPublic = value.Bool
 			}
 		case subscriptionplan.FieldTierOrder:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field tier_order", values[i])
 			} else if value.Valid {
-				sp.TierOrder = int(value.Int64)
+				_m.TierOrder = int(value.Int64)
 			}
 		case subscriptionplan.FieldTierLimitsJSON:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field tier_limits_json", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &sp.TierLimitsJSON); err != nil {
+				if err := json.Unmarshal(*value, &_m.TierLimitsJSON); err != nil {
 					return fmt.Errorf("unmarshal field tier_limits_json: %w", err)
+				}
+			}
+		case subscriptionplan.FieldPlanType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field plan_type", values[i])
+			} else if value.Valid {
+				_m.PlanType = subscriptionplan.PlanType(value.String)
+			}
+		case subscriptionplan.FieldDiscountRules:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field discount_rules", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.DiscountRules); err != nil {
+					return fmt.Errorf("unmarshal field discount_rules: %w", err)
 				}
 			}
 		case subscriptionplan.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &sp.Metadata); err != nil {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
 					return fmt.Errorf("unmarshal field metadata: %w", err)
 				}
 			}
@@ -205,16 +240,16 @@ func (sp *SubscriptionPlan) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				sp.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case subscriptionplan.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				sp.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		default:
-			sp.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -222,86 +257,100 @@ func (sp *SubscriptionPlan) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the SubscriptionPlan.
 // This includes values selected through modifiers, order, etc.
-func (sp *SubscriptionPlan) Value(name string) (ent.Value, error) {
-	return sp.selectValues.Get(name)
+func (_m *SubscriptionPlan) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
 }
 
 // QueryFeatures queries the "features" edge of the SubscriptionPlan entity.
-func (sp *SubscriptionPlan) QueryFeatures() *PlanFeatureQuery {
-	return NewSubscriptionPlanClient(sp.config).QueryFeatures(sp)
+func (_m *SubscriptionPlan) QueryFeatures() *PlanFeatureQuery {
+	return NewSubscriptionPlanClient(_m.config).QueryFeatures(_m)
 }
 
 // QueryPricingHistory queries the "pricing_history" edge of the SubscriptionPlan entity.
-func (sp *SubscriptionPlan) QueryPricingHistory() *PlanPricingHistoryQuery {
-	return NewSubscriptionPlanClient(sp.config).QueryPricingHistory(sp)
+func (_m *SubscriptionPlan) QueryPricingHistory() *PlanPricingHistoryQuery {
+	return NewSubscriptionPlanClient(_m.config).QueryPricingHistory(_m)
 }
 
 // QuerySubscriptions queries the "subscriptions" edge of the SubscriptionPlan entity.
-func (sp *SubscriptionPlan) QuerySubscriptions() *TenantSubscriptionQuery {
-	return NewSubscriptionPlanClient(sp.config).QuerySubscriptions(sp)
+func (_m *SubscriptionPlan) QuerySubscriptions() *TenantSubscriptionQuery {
+	return NewSubscriptionPlanClient(_m.config).QuerySubscriptions(_m)
 }
 
 // Update returns a builder for updating this SubscriptionPlan.
 // Note that you need to call SubscriptionPlan.Unwrap() before calling this method if this SubscriptionPlan
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (sp *SubscriptionPlan) Update() *SubscriptionPlanUpdateOne {
-	return NewSubscriptionPlanClient(sp.config).UpdateOne(sp)
+func (_m *SubscriptionPlan) Update() *SubscriptionPlanUpdateOne {
+	return NewSubscriptionPlanClient(_m.config).UpdateOne(_m)
 }
 
 // Unwrap unwraps the SubscriptionPlan entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (sp *SubscriptionPlan) Unwrap() *SubscriptionPlan {
-	_tx, ok := sp.config.driver.(*txDriver)
+func (_m *SubscriptionPlan) Unwrap() *SubscriptionPlan {
+	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
 		panic("ent: SubscriptionPlan is not a transactional entity")
 	}
-	sp.config.driver = _tx.drv
-	return sp
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (sp *SubscriptionPlan) String() string {
+func (_m *SubscriptionPlan) String() string {
 	var builder strings.Builder
 	builder.WriteString("SubscriptionPlan(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", sp.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("plan_code=")
-	builder.WriteString(sp.PlanCode)
+	builder.WriteString(_m.PlanCode)
 	builder.WriteString(", ")
 	builder.WriteString("name=")
-	builder.WriteString(sp.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
-	builder.WriteString(sp.Description)
+	builder.WriteString(_m.Description)
 	builder.WriteString(", ")
 	builder.WriteString("billing_cycle=")
-	builder.WriteString(sp.BillingCycle)
+	builder.WriteString(_m.BillingCycle)
 	builder.WriteString(", ")
 	builder.WriteString("base_price=")
-	builder.WriteString(fmt.Sprintf("%v", sp.BasePrice))
+	builder.WriteString(fmt.Sprintf("%v", _m.BasePrice))
+	builder.WriteString(", ")
+	if v := _m.OnetimeAllProductsPrice; v != nil {
+		builder.WriteString("onetime_all_products_price=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("use_sum_based_pricing=")
+	builder.WriteString(fmt.Sprintf("%v", _m.UseSumBasedPricing))
 	builder.WriteString(", ")
 	builder.WriteString("currency=")
-	builder.WriteString(sp.Currency)
+	builder.WriteString(_m.Currency)
 	builder.WriteString(", ")
 	builder.WriteString("is_active=")
-	builder.WriteString(fmt.Sprintf("%v", sp.IsActive))
+	builder.WriteString(fmt.Sprintf("%v", _m.IsActive))
 	builder.WriteString(", ")
 	builder.WriteString("is_public=")
-	builder.WriteString(fmt.Sprintf("%v", sp.IsPublic))
+	builder.WriteString(fmt.Sprintf("%v", _m.IsPublic))
 	builder.WriteString(", ")
 	builder.WriteString("tier_order=")
-	builder.WriteString(fmt.Sprintf("%v", sp.TierOrder))
+	builder.WriteString(fmt.Sprintf("%v", _m.TierOrder))
 	builder.WriteString(", ")
 	builder.WriteString("tier_limits_json=")
-	builder.WriteString(fmt.Sprintf("%v", sp.TierLimitsJSON))
+	builder.WriteString(fmt.Sprintf("%v", _m.TierLimitsJSON))
+	builder.WriteString(", ")
+	builder.WriteString("plan_type=")
+	builder.WriteString(fmt.Sprintf("%v", _m.PlanType))
+	builder.WriteString(", ")
+	builder.WriteString("discount_rules=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DiscountRules))
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
-	builder.WriteString(fmt.Sprintf("%v", sp.Metadata))
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(sp.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(sp.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

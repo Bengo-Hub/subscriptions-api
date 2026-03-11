@@ -1,108 +1,100 @@
 package router
 
 import (
-	"context"
-	"net/http"
-	"time"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"go.uber.org/zap"
 
-	httpware "github.com/Bengo-Hub/httpware"
+	"github.com/bengobox/subscription-service/internal/http/handlers"
 	authclient "github.com/Bengo-Hub/shared-auth-client"
-	handlers "github.com/bengobox/subscription-service/internal/http/handlers"
+	httpware "github.com/Bengo-Hub/httpware"
+	"context"
+	"net/http"
 )
 
-func New(log *zap.Logger, health *handlers.HealthHandler, planHandler *handlers.PlanHandler, subscriptionHandler *handlers.SubscriptionHandler, addonHandler *handlers.AddonHandler, apiKey string, authMiddleware *authclient.AuthMiddleware, allowedOrigins []string) http.Handler {
+// New creates and configures a new chi router.
+func New(
+	log *zap.Logger,
+	healthHandler *handlers.HealthHandler,
+	planHandler *handlers.PlanHandler,
+	subscriptionHandler *handlers.SubscriptionHandler,
+	addonHandler *handlers.AddonHandler,
+	apiKey string,
+	authMiddleware *authclient.AuthMiddleware,
+	allowedOrigins []string,
+) *chi.Mux {
 	r := chi.NewRouter()
 
+	// Standard middleware
+	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(httpware.RequestID)
-	r.Use(httpware.Logging(log))
-	r.Use(httpware.Recover(log))
-	r.Use(middleware.Timeout(30 * time.Second))
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	// CORS
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   allowedOrigins,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type", "X-Tenant-ID", "X-Request-ID", "X-API-Key"},
-		ExposedHeaders:   []string{"Link", "X-Request-ID"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-API-Key", "X-Tenant-ID", "X-Tenant-Slug"},
+		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/v1/docs/", http.StatusMovedPermanently)
-	})
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Get("/health", healthHandler.Health)
 
-	r.Route("/api/v1", func(api chi.Router) {
-		api.Get("/healthz", health.Liveness)
-		api.Get("/readyz", health.Readiness)
-		api.Get("/metrics", health.Metrics)
+		// Public routes
+		r.Get("/plans", planHandler.ListPlans)
+		r.Get("/plans/{id}", planHandler.GetPlan)
+		r.Get("/plans/code/{code}", planHandler.GetPlanByCode)
 
-		// Apply auth middleware if configured, otherwise allow API key
-		if authMiddleware != nil {
-			api.Use(authMiddleware.RequireAuth)
-		} else if apiKey != "" {
-			api.Use(func(next http.Handler) http.Handler {
-				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.Header.Get("X-API-Key") != apiKey {
-						http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
-						return
+		// Protected routes
+		r.Group(func(r chi.Router) {
+			if authMiddleware != nil {
+				r.Use(authMiddleware.RequireAuth)
+			}
+
+			// Tenant context (optional for bypass)
+			r.Use(httpware.TenantV2(httpware.TenantConfig{
+				ClaimsExtractor: func(ctx context.Context) (tenantID, tenantSlug string, isPlatformOwner bool, ok bool) {
+					claims, found := authclient.ClaimsFromContext(ctx)
+					if !found {
+						return "", "", false, false
 					}
-					next.ServeHTTP(w, r)
-				})
+					// Slug-based platform owner check
+					isPO := claims.GetTenantSlug() == "codevertex"
+					return claims.TenantID, claims.GetTenantSlug(), isPO, true
+				},
+				URLParamFunc: chi.URLParam,
+				Required:     false,
+			}))
+
+			// Tenant-scoped subscription management
+			r.Route("/subscription", func(r chi.Router) {
+				r.Get("/", subscriptionHandler.Get)
+				r.Post("/", subscriptionHandler.Create)
+				r.Put("/plan", subscriptionHandler.ChangePlan)
+				r.Post("/initiate", subscriptionHandler.Initiate)
 			})
-		}
 
-		// Plan routes
-		if planHandler != nil {
-			api.Route("/plans", func(plans chi.Router) {
-				plans.Get("/", planHandler.ListPlans)
-				plans.Get("/code/{code}", planHandler.GetPlanByCode)
-				plans.Get("/{id}", planHandler.GetPlan)
+			// Admin routes for plans
+			r.Route("/admin/plans", func(r chi.Router) {
+				r.Post("/", planHandler.CreatePlan)
+				r.Put("/{id}", planHandler.UpdatePlan)
+				r.Delete("/{id}", planHandler.DeletePlan)
 			})
-		}
 
-		// Tenant subscription routes
-		if subscriptionHandler != nil {
-			api.Route("/tenants", func(tenants chi.Router) {
-				tenants.Route("/{tenant_id}", func(tenant chi.Router) {
-					tenant.Use(httpware.TenantV2(httpware.TenantConfig{
-						ClaimsExtractor: func(ctx context.Context) (tenantID, tenantSlug string, isPlatformOwner bool, ok bool) {
-							claims, found := authclient.ClaimsFromContext(ctx)
-							if !found {
-								return "", "", false, false
-							}
-							return claims.TenantID, claims.GetTenantSlug(), claims.IsPlatformOwner, true
-						},
-						URLParamFunc: chi.URLParam,
-						Required:     true,
-					}))
-
-					// Read-only
-					tenant.Get("/subscription", subscriptionHandler.GetTenantSubscription)
-					tenant.Get("/features/{feature_code}/check", subscriptionHandler.CheckFeature)
-
-					// Lifecycle
-					tenant.Post("/subscription", subscriptionHandler.CreateSubscription)
-					tenant.Put("/subscription/plan", subscriptionHandler.ChangePlan)
-					tenant.Post("/subscription/cancel", subscriptionHandler.CancelSubscription)
-					tenant.Post("/subscription/renew", subscriptionHandler.RenewSubscription)
-
-					// Product subscriptions
-					tenant.Get("/products", subscriptionHandler.ListProducts)
-					tenant.Post("/products/{code}/activate", subscriptionHandler.ActivateProduct)
-					tenant.Post("/products/{code}/deactivate", subscriptionHandler.DeactivateProduct)
-
-					// Add-on subscriptions
-					if addonHandler != nil {
-						addonHandler.RegisterAddonRoutes(tenant)
-					}
-				})
+			// Admin list all subscriptions
+			r.Get("/admin/subscriptions", func(w http.ResponseWriter, r *http.Request) {
+				if !httpware.IsPlatformOwner(r.Context()) {
+					http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+					return
+				}
+				// Implement list all logic if needed
 			})
-		}
+		})
 	})
 
 	return r
