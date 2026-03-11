@@ -15,7 +15,7 @@ warn()    { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error()   { echo -e "${RED}[ERROR]${NC} $1"; }
 
 APP_NAME=${APP_NAME:-"subscription-api"}
-NAMESPACE=${NAMESPACE:-"subscriptions"}
+NAMESPACE=${NAMESPACE:-"subscription"}
 ENV_SECRET_NAME=${ENV_SECRET_NAME:-"subscription-api-secrets"}
 DEPLOY=${DEPLOY:-true}
 SETUP_DATABASES=${SETUP_DATABASES:-true}
@@ -160,8 +160,11 @@ fi
 
 TOKEN="${GH_PAT:-${GIT_SECRET:-${GITHUB_TOKEN:-}}}"
 
-# Source centralized Helm values update script
-source "${HOME}/devops-k8s/scripts/helm/update-values.sh" 2>/dev/null || {
+# Source centralized Helm values update script (prefer DEVOPS_DIR from clone)
+if [[ ! -d "$DEVOPS_DIR" || ! -f "$DEVOPS_DIR/scripts/helm/update-values.sh" ]]; then
+  [[ ! -d "$DEVOPS_DIR" ]] && DEVOPS_DIR="$HOME/devops-k8s"
+fi
+source "${DEVOPS_DIR}/scripts/helm/update-values.sh" 2>/dev/null || {
   warn "Centralized helm update script not available"
 }
 
