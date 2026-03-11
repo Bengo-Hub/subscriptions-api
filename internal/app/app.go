@@ -1,6 +1,5 @@
 package app
 
-
 import (
 	"context"
 	"crypto/tls"
@@ -13,17 +12,17 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/schema"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
-	"entgo.io/ent/dialect/sql/schema"
 
 	authclient "github.com/Bengo-Hub/shared-auth-client"
 	eventslib "github.com/Bengo-Hub/shared-events"
 	serviceclient "github.com/Bengo-Hub/shared-service-client"
-	
+
 	"github.com/bengobox/subscription-service/internal/config"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/migrate"
@@ -40,13 +39,13 @@ import (
 )
 
 type App struct {
-	cfg            *config.Config
-	log            *zap.Logger
-	httpServer     *http.Server
-	db             *pgxpool.Pool
-	cache          *redis.Client
-	events         *nats.Conn
-	orm            *ent.Client
+	cfg             *config.Config
+	log             *zap.Logger
+	httpServer      *http.Server
+	db              *pgxpool.Pool
+	cache           *redis.Client
+	events          *nats.Conn
+	orm             *ent.Client
 	outboxPublisher *eventslib.Publisher
 }
 
@@ -87,7 +86,7 @@ func New(ctx context.Context) (*App, error) {
 	drv := entsql.OpenDB(dialect.Postgres, sqlDB)
 	ormClient := ent.NewClient(ent.Driver(drv))
 	if cfg.Postgres.RunMigrations {
-		if err := ormClient.Schema.Create(ctx, 
+		if err := ormClient.Schema.Create(ctx,
 			schema.WithDir(migrate.Dir),
 		); err != nil {
 			return nil, fmt.Errorf("ent schema create: %w", err)
@@ -183,7 +182,7 @@ func New(ctx context.Context) (*App, error) {
 	subscriptionHandler := handlers.NewSubscriptionHandler(log, ormClient, subscriptionSvc)
 	addonHandler := handlers.NewAddonHandler(log, ormClient)
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins)
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),
@@ -195,13 +194,13 @@ func New(ctx context.Context) (*App, error) {
 	}
 
 	return &App{
-		cfg:            cfg,
-		log:            log,
-		httpServer:     httpServer,
-		db:             dbPool,
-		cache:          redisClient,
-		events:         natsConn,
-		orm:            ormClient,
+		cfg:             cfg,
+		log:             log,
+		httpServer:      httpServer,
+		db:              dbPool,
+		cache:           redisClient,
+		events:          natsConn,
+		orm:             ormClient,
 		outboxPublisher: outboxPublisher,
 	}, nil
 }

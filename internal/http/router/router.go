@@ -1,16 +1,18 @@
 package router
 
 import (
+	"context"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"go.uber.org/zap"
 
-	"github.com/bengobox/subscription-service/internal/http/handlers"
-	authclient "github.com/Bengo-Hub/shared-auth-client"
 	httpware "github.com/Bengo-Hub/httpware"
-	"context"
-	"net/http"
+	authclient "github.com/Bengo-Hub/shared-auth-client"
+	"github.com/bengobox/subscription-service/internal/http/handlers"
+	"github.com/bengobox/subscription-service/internal/modules/tenant"
 )
 
 // New creates and configures a new chi router.
@@ -23,6 +25,7 @@ func New(
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
+	tenantSyncer *tenant.Syncer,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -70,6 +73,21 @@ func New(
 				URLParamFunc: chi.URLParam,
 				Required:     false,
 			}))
+
+			// JIT tenant sync: ensure tenant exists in local DB when slug is in context (avoids "tenant not found" after SSO)
+			if tenantSyncer != nil {
+				r.Use(func(next http.Handler) http.Handler {
+					return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						slug := httpware.GetTenantSlug(r.Context())
+						if slug != "" {
+							if _, err := tenantSyncer.SyncTenant(r.Context(), slug); err != nil {
+								log.Warn("tenant sync failed during request", zap.String("tenant_slug", slug), zap.Error(err))
+							}
+						}
+						next.ServeHTTP(w, r)
+					})
+				})
+			}
 
 			// Tenant-scoped subscription management
 			r.Route("/subscription", func(r chi.Router) {

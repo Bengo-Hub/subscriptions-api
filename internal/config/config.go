@@ -8,7 +8,8 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-const namespace = "SUBSCRIPTION"
+// Empty namespace so common env keys match all Go backends: POSTGRES_URL, REDIS_ADDR, REDIS_PASSWORD (no service prefix).
+const namespace = ""
 
 // Config captures environment configuration for the Subscription service.
 type Config struct {
