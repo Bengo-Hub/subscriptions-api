@@ -139,11 +139,11 @@ jobs:
           echo "SETUP_DATABASES=true" >> $GITHUB_ENV
           echo "DB_TYPES=postgres,redis" >> $GITHUB_ENV
           echo "NAMESPACE=subscriptions" >> $GITHUB_ENV
-          echo "ENV_SECRET_NAME=subscription-api-secrets" >> $GITHUB_ENV
+          echo "ENV_SECRET_NAME=subscriptions-api-secrets" >> $GITHUB_ENV
           echo "REGISTRY_SERVER=docker.io" >> $GITHUB_ENV
           echo "REGISTRY_NAMESPACE=codevertex" >> $GITHUB_ENV
-          echo "VALUES_FILE_PATH=apps/subscription-api/values.yaml" >> $GITHUB_ENV
-          echo "APP_NAME=subscription-api" >> $GITHUB_ENV
+          echo "VALUES_FILE_PATH=apps/subscriptions-api/values.yaml" >> $GITHUB_ENV
+          echo "APP_NAME=subscriptions-api" >> $GITHUB_ENV
 
       - name: Verify secrets
         if: needs.sync-secrets.outputs.result != 'synced'
@@ -196,12 +196,12 @@ jobs:
           SETUP_DATABASES: true
           DB_TYPES: postgres,redis
           NAMESPACE: subscriptions
-          ENV_SECRET_NAME: subscription-api-secrets
+          ENV_SECRET_NAME: subscriptions-api-secrets
           REGISTRY_SERVER: docker.io
           REGISTRY_NAMESPACE: codevertex
-          VALUES_FILE_PATH: apps/subscription-api/values.yaml
-          APP_NAME: subscription-api
-          GIT_USER: ${{ secrets.GIT_USER || 'Subscriptions Bot' }}
+          VALUES_FILE_PATH: apps/subscriptions-api/values.yaml
+          APP_NAME: subscriptions-api
+          GIT_USER: ${{ secrets.GIT_USER || 'Subscriptions API Bot' }}
           GIT_EMAIL: ${{ secrets.GIT_EMAIL || 'dev@bengobox.com' }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
@@ -218,7 +218,7 @@ jobs:
           REGISTRY_NAMESPACE: codevertex
         run: |
           set -e
-          IMAGE_REPO="${REGISTRY_SERVER}/${REGISTRY_NAMESPACE}/subscription-api"
+          IMAGE_REPO="${REGISTRY_SERVER}/${REGISTRY_NAMESPACE}/subscriptions-api"
           SHORT_SHA=${GITHUB_SHA::8}
           echo "Tagging ${IMAGE_REPO}:${SHORT_SHA} as :latest"
           echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY_SERVER" -u "$REGISTRY_USERNAME" --password-stdin
@@ -230,7 +230,8 @@ jobs:
         if: success() && needs.sync-secrets.outputs.result != 'synced'
         env:
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG }}
-          APP_NAME: subscription-api
+          NAMESPACE: subscriptions
+          APP_NAME: subscriptions-api
         run: |
           if [ -z "${KUBE_CONFIG_B64}" ]; then
             echo "⏭️ Skipping ArgoCD check - no KUBE_CONFIG available"

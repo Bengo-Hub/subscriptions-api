@@ -14,9 +14,9 @@ success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error()   { echo -e "${RED}[ERROR]${NC} $1"; }
 
-APP_NAME=${APP_NAME:-"subscription-api"}
-NAMESPACE=${NAMESPACE:-"subscription"}
-ENV_SECRET_NAME=${ENV_SECRET_NAME:-"subscription-api-secrets"}
+APP_NAME=${APP_NAME:-"subscriptions-api"}
+NAMESPACE=${NAMESPACE:-"subscriptions"}
+ENV_SECRET_NAME=${ENV_SECRET_NAME:-"subscriptions-api-secrets"}
 DEPLOY=${DEPLOY:-true}
 SETUP_DATABASES=${SETUP_DATABASES:-true}
 DB_TYPES=${DB_TYPES:-postgres,redis}
@@ -32,7 +32,7 @@ DEVOPS_DIR=${DEVOPS_DIR:-"$HOME/devops-k8s"}
 VALUES_FILE_PATH=${VALUES_FILE_PATH:-"apps/${APP_NAME}/values.yaml"}
 
 GIT_EMAIL=${GIT_EMAIL:-"dev@bengobox.com"}
-GIT_USER=${GIT_USER:-"Subscriptions Bot"}
+GIT_USER=${GIT_USER:-"Subscriptions API Bot"}
 TRIVY_ECODE=${TRIVY_ECODE:-0}
 
 if [[ -z ${GITHUB_SHA:-} ]]; then
