@@ -771,13 +771,13 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.Syncer) error {
 	// Tenant definitions with slug → plan mapping.
 	// UUIDs are resolved at runtime from auth-api (see resolveTenantID above).
+	// Platform owner slug (codevertex) is excluded — no tenant subscription; see TRINITY-AUTHORIZATION-PATTERN.md.
 	tenantDefs := []struct {
 		slug string
 		name string
 		plan string
 	}{
 		{"urban-loft", "Urban Loft Cafe", "GROWTH"},
-		{"codevertex", "CodeVertex", "PROFESSIONAL"},
 		{"mss", "Masterspace Solutions", "GROWTH"},
 		{"kura", "Kenya Urban Roads Authority", "STARTER"},
 		{"ultichange", "UltiChange", "STARTER"},
