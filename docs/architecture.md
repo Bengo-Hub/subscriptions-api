@@ -203,7 +203,7 @@ Plus add-on routes registered by `AddonHandler`.
 | ORM | Ent |
 | Database | PostgreSQL 16+ (pgxpool) |
 | Cache | Redis 7+ |
-| Events | NATS JetStream |
+| Events | NATS JetStream (`EVENTS_NATS_URL`) |
 | Auth | shared-auth-client (JWKS + API key) |
 | Logging | zap (structured) |
 | Container | Multi-stage Docker build |
