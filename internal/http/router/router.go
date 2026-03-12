@@ -47,6 +47,7 @@ func New(
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", healthHandler.Health)
+		r.Get("/healthz", healthHandler.Health) // readiness/liveness probe path used by Helm
 
 		// Public routes
 		r.Get("/plans", planHandler.ListPlans)

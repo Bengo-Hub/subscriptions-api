@@ -83,7 +83,7 @@ func (s *Syncer) SyncTenant(ctx context.Context, slug string) (uuid.UUID, error)
 		return uuid.Nil, fmt.Errorf("tenant.Syncer: invalid UUID %q: %w", remote.ID, err)
 	}
 
-	// Use Ent Upsert
+	// Use Ent Upsert with explicit conflict target (required by PostgreSQL 15+)
 	err = s.client.Tenant.Create().
 		SetID(realID).
 		SetName(remote.Name).
@@ -102,7 +102,7 @@ func (s *Syncer) SyncTenant(ctx context.Context, slug string) (uuid.UUID, error)
 		SetSubscriptionStatus(remote.SubscriptionStatus).
 		SetTierLimits(remote.TierLimits).
 		SetMetadata(remote.Metadata).
-		OnConflict().
+		OnConflictColumns(enttenant.FieldSlug).
 		UpdateNewValues().
 		Exec(ctx)
 
