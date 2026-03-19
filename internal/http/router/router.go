@@ -100,6 +100,10 @@ func New(
 				r.Post("/initiate", subscriptionHandler.Initiate)
 			})
 
+			// S2S subscription lookup by tenant ID — used by auth-api for JWT enrichment.
+			// Accessible via platform API key (service-to-service) or platform owner JWT.
+			r.Get("/tenants/{tenant_id}/subscription", subscriptionHandler.GetByTenantID)
+
 			// Feature gate checks — used by all microservices for Trinity Authorization
 			if featureHandler != nil {
 				r.Route("/features", func(r chi.Router) {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	httpware "github.com/Bengo-Hub/httpware"
@@ -147,6 +148,32 @@ func (h *SubscriptionHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.respondWithJSON(w, http.StatusOK, result)
+}
+
+// GetByTenantID returns subscription data for a specific tenant by ID.
+// This is a S2S endpoint — intended for service-to-service calls (e.g. auth-api JWT enrichment).
+// Requires API key auth (platform service key).
+func (h *SubscriptionHandler) GetByTenantID(w http.ResponseWriter, r *http.Request) {
+	tenantIDStr := chi.URLParam(r, "tenant_id")
+	if tenantIDStr == "" {
+		h.respondWithError(w, http.StatusBadRequest, "tenant_id required")
+		return
+	}
+
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid tenant_id")
+		return
+	}
+
+	sub, err := h.service.GetSubscriptionResult(r.Context(), tenantID)
+	if err != nil {
+		h.log.Debug("subscription not found for tenant", zap.String("tenant_id", tenantIDStr), zap.Error(err))
+		h.respondWithError(w, http.StatusNotFound, "subscription not found")
+		return
+	}
+
+	h.respondWithJSON(w, http.StatusOK, sub)
 }
 
 func (h *SubscriptionHandler) respondWithError(w http.ResponseWriter, code int, message string) {
