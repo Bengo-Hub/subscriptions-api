@@ -28,6 +28,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/migrate"
 	handlers "github.com/bengobox/subscription-service/internal/http/handlers"
 	router "github.com/bengobox/subscription-service/internal/http/router"
+	"github.com/bengobox/subscription-service/internal/modules/consumers"
 	"github.com/bengobox/subscription-service/internal/modules/outbox"
 	"github.com/bengobox/subscription-service/internal/modules/plans"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
@@ -47,6 +48,7 @@ type App struct {
 	events          *nats.Conn
 	orm             *ent.Client
 	outboxPublisher *eventslib.Publisher
+	tenantConsumer  *consumers.TenantCreatedConsumer
 }
 
 func New(ctx context.Context) (*App, error) {
@@ -182,7 +184,13 @@ func New(ctx context.Context) (*App, error) {
 	subscriptionHandler := handlers.NewSubscriptionHandler(log, ormClient, subscriptionSvc)
 	addonHandler := handlers.NewAddonHandler(log, ormClient)
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
+	// Feature gate handler with Redis caching
+	featureHandler := handlers.NewFeatureHandler(log, subscriptionSvc, redisClient)
+
+	// Usage tracking handler (raw SQL — requires UsageEvent Ent schema codegen to create table)
+	usageHandler := handlers.NewUsageHandler(log, dbPool)
+
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),
@@ -202,6 +210,7 @@ func New(ctx context.Context) (*App, error) {
 		events:          natsConn,
 		orm:             ormClient,
 		outboxPublisher: outboxPublisher,
+		tenantConsumer:  consumers.NewTenantCreatedConsumer(log, subscriptionSvc),
 	}, nil
 }
 
@@ -214,6 +223,21 @@ func (a *App) Run(ctx context.Context) error {
 			}
 		}()
 		a.log.Info("outbox publisher started")
+	}
+
+	// Start auth.tenant.created consumer for auto-provisioning new tenants
+	if a.tenantConsumer != nil && a.events != nil {
+		js, err := a.events.JetStream()
+		if err != nil {
+			a.log.Warn("jetstream unavailable, tenant consumer not started", zap.Error(err))
+		} else {
+			go func() {
+				if err := a.tenantConsumer.Start(ctx, js); err != nil {
+					a.log.Error("tenant consumer stopped", zap.Error(err))
+				}
+			}()
+			a.log.Info("tenant.created consumer started")
+		}
 	}
 
 	errCh := make(chan error, 1)

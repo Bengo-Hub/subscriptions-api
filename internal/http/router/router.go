@@ -22,6 +22,8 @@ func New(
 	planHandler *handlers.PlanHandler,
 	subscriptionHandler *handlers.SubscriptionHandler,
 	addonHandler *handlers.AddonHandler,
+	featureHandler *handlers.FeatureHandler,
+	usageHandler *handlers.UsageHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -98,8 +100,33 @@ func New(
 				r.Post("/initiate", subscriptionHandler.Initiate)
 			})
 
-			// Admin routes for plans
+			// Feature gate checks — used by all microservices for Trinity Authorization
+			if featureHandler != nil {
+				r.Route("/features", func(r chi.Router) {
+					r.Get("/", featureHandler.GetEntitlements)
+					r.Get("/{code}/check", featureHandler.CheckFeature)
+				})
+			}
+
+			// Usage reporting — called by microservices to track consumption
+			if usageHandler != nil {
+				r.Route("/usage", func(r chi.Router) {
+					r.Post("/report", usageHandler.ReportUsage)
+					r.Get("/", usageHandler.GetUsageSummary)
+				})
+			}
+
+			// Admin routes for plans (platform admin only)
 			r.Route("/admin/plans", func(r chi.Router) {
+				r.Use(func(next http.Handler) http.Handler {
+					return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if !httpware.IsPlatformOwner(r.Context()) {
+							http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+							return
+						}
+						next.ServeHTTP(w, r)
+					})
+				})
 				r.Post("/", planHandler.CreatePlan)
 				r.Put("/{id}", planHandler.UpdatePlan)
 				r.Delete("/{id}", planHandler.DeletePlan)
@@ -111,7 +138,9 @@ func New(
 					http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
 					return
 				}
-				// Implement list all logic if needed
+				// TODO: implement list all subscriptions
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"subscriptions":[]}`))
 			})
 		})
 	})

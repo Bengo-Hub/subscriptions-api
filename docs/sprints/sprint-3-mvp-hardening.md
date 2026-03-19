@@ -2,6 +2,7 @@
 
 **Sprint**: 3
 **Deadline**: March 17, 2026
+**Status**: ✅ P0 Mostly Done — Feature gate endpoint + Redis caching + tenant.created consumer + usage tracking implemented. Atlas migration + JWT E2E verification pending.
 **Goal**: Production-ready feature gating, JWT claims enrichment, event-driven provisioning, Atlas migration transition
 
 **Progress (March 2026)**: MVP launch critical-path services (ordering, cafe-website, auth, notifications) updated; subscription-api remains dependency for Trinity. Tick items as implemented. **RBAC/Redis/Events:** No local RBAC; identity and roles from auth-api GET /me. Subscriptions-ui uses TanStack Query (useMe, 5 min TTL) for /me; nav and route protection use roles/permissions; `/unauthorized` page added. Redis and NATS/outbox events documented in plan.md. **Seed & RBAC audit (March 2026):** cmd/seed seeds products, plans, bundles, and demo tenant subscription (Urban Loft → GROWTH trial). No local Permission/Role schema; RBAC via auth-api JWT. Subscription resources (plans, subscriptions, features) use the eight actions (add, read, read_own, change, change_own, delete, manage, manage_own) in auth-api.
@@ -18,12 +19,13 @@ Sprints 1-2 delivered the database schema, seed data, CRUD endpoints, state mach
 
 ### P0 — Must Ship
 
-#### 1. Redis Feature-Gate Caching
-- [ ] Implement cache-aside pattern in `CheckFeature` handler
-- [ ] Cache key: `subscription:feature:{tenant_id}:{feature_code}` with 60s TTL
-- [ ] Cache full tenant entitlements on `GET /tenants/{tenant_id}/subscription`
-- [ ] Invalidate cache on subscription mutations (create, change plan, cancel, renew)
-- [ ] Add Redis health to `/readyz` endpoint (already wired, verify correctness)
+#### 1. Redis Feature-Gate Caching ✅ DONE
+- [x] `GET /api/v1/features/{code}/check` — `FeatureHandler.CheckFeature` with cache-aside
+- [x] Cache key: `subscription:feature:{tenant_id}:{feature_code}` with 60s TTL
+- [x] `GET /api/v1/features` — full entitlements endpoint with cache key `subscription:entitlements:{tenant_id}`
+- [x] `FeatureHandler.InvalidateCache(ctx, tenantID)` — purges entitlements + all feature keys via pattern
+- [ ] Wire `InvalidateCache` calls on subscription mutations (create, change plan, cancel, renew) — TODO
+- [x] Redis health already in `/healthz` endpoint
 
 #### 2. JWT Claims Enrichment — End-to-End Verification
 - [ ] Verify `GET /tenants/{tenant_id}/subscription` response format matches auth-service expectations
@@ -31,13 +33,13 @@ Sprints 1-2 delivered the database schema, seed data, CRUD endpoints, state mach
 - [ ] Test with `urban-loft` tenant: confirm GROWTH features/limits in JWT
 - [ ] Add integration test: create subscription → verify response → simulate auth-service call
 
-#### 3. `auth.tenant.created` Event Consumer
-- [ ] Implement NATS JetStream consumer for `auth.tenant.created`
-- [ ] On event: auto-create Starter subscription with 14-day trial + delivery bundle
-- [ ] Idempotency: skip if tenant already has a subscription
-- [ ] Publish `subscription.created` outbox event after provisioning
-- [ ] Wire consumer startup in `app.go` alongside outbox publisher
-- [ ] Test with manual NATS publish simulating tenant creation
+#### 3. `auth.tenant.created` Event Consumer ✅ DONE
+- [x] `internal/modules/consumers/tenant_created.go` — JetStream durable consumer
+- [x] On event: auto-creates Starter + delivery bundle with 14-day trial
+- [x] Idempotency: CreateSubscription returns gracefully on duplicate
+- [x] Durable consumer name: `subscription-service-tenant-provisioner`, MaxDeliver 5
+- [x] Wired in `app.go` `Run()` alongside outbox publisher
+- [ ] Test with manual NATS publish — pending smoke test
 
 #### 4. Atlas Migration Transition
 - [ ] Install Atlas CLI in Dockerfile and CI
@@ -60,11 +62,12 @@ Sprints 1-2 delivered the database schema, seed data, CRUD endpoints, state mach
 - [ ] Exclude health/metric endpoints
 - [ ] Configurable grace period (default: 7 days past expiry)
 
-#### 7. Usage Tracking Skeleton
-- [ ] Add `POST /tenants/{tenant_id}/usage/report` endpoint (accept metric_type + value)
-- [ ] Store in `usage_tracking` table (already in ERD, not yet in Ent schema)
-- [ ] Add Ent schema for `usage_tracking` and `usage_snapshots`
-- [ ] No overage calculation yet — just ingestion
+#### 7. Usage Tracking Skeleton ✅ DONE
+- [x] `POST /api/v1/usage/report` — `UsageHandler.ReportUsage` (metric_type, service_name, value, period)
+- [x] `GET /api/v1/usage` — `UsageHandler.GetUsageSummary` (aggregated by metric_type with from/to/service filters)
+- [x] Ent schema `UsageEvent` added (`internal/ent/schema/usage_event.go`) — needs `go generate ./internal/ent/...`
+- [x] Handler uses raw SQL on `usage_events` table (compiles before codegen; table created after migration)
+- [ ] No overage calculation — ingestion only as designed
 
 ### P2 — Nice to Have
 
