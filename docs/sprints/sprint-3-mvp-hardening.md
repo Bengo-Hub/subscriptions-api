@@ -1,7 +1,7 @@
 # Sprint 3: MVP Hardening
 
 **Sprint**: 3
-**Deadline**: March 17, 2026
+**Deadline**: March 27, 2026
 **Status**: ✅ P0 Mostly Done — Feature gate endpoint + Redis caching + tenant.created consumer + usage tracking implemented. Atlas migration + JWT E2E verification pending.
 **Goal**: Production-ready feature gating, JWT claims enrichment, event-driven provisioning, Atlas migration transition
 
@@ -11,7 +11,7 @@
 
 ## Context
 
-Sprints 1-2 delivered the database schema, seed data, CRUD endpoints, state machine, and outbox pattern. Sprint 3 hardens the service for the BengoBox MVP launch (March 17). The subscription-api is a critical-path dependency — every other service relies on it for Trinity Authorization (RBAC + Licensing + Resources).
+Sprints 1-2 delivered the database schema, seed data, CRUD endpoints, state machine, and outbox pattern. Sprint 3 hardens the service for the BengoBox MVP launch (March 27). The subscription-api is a critical-path dependency — every other service relies on it for Trinity Authorization (RBAC + Licensing + Resources).
 
 ---
 
