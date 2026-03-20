@@ -221,7 +221,7 @@ POST /tenants/{tenant_id}/products/{code}/deactivate
 | `treasury` | Payments & Invoicing | Product |
 | `pos` | Point of Sale | Add-On |
 | `storefront` | Website & Storefront | Add-On |
-| `google_maps` | Google Maps Integration | Add-On |
+| `self_hosted_maps` | Self-Hosted Maps (Valhalla + TileServer) | Add-On |
 | `paystack_gateway` | Paystack Payment Gateway | Add-On |
 | `sms_credits` | SMS Credit Pack | Add-On |
 | `premium_support` | Premium Support | Add-On |
