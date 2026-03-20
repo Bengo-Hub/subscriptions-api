@@ -357,11 +357,18 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			price:        2500.0,
 			tierOrder:    1,
 			tierLimits: map[string]any{
-				"max_admins":          2,
-				"max_riders":          5,
-				"max_orders_per_day":  300,
-				"max_outlets":         1,
-				"api_calls_per_month": 10000,
+				"max_admins":                    2,
+				"max_riders":                    5,
+				"max_orders_per_day":            300,
+				"max_outlets":                   1,
+				"api_calls_per_month":           10000,
+				"live_tracking_requests_per_day": 500,
+				"live_tracking_duration_minutes": 30,
+				"routing_requests_per_day":       100,
+				"map_loads_per_day":              200,
+				"email_notifications_per_day":    50,
+				"sms_notifications_per_day":      20,
+				"webhook_calls_per_day":          100,
 				// Overage rates
 				"overage_rider_price_per_month":      250.0,
 				"overage_orders_price_per_100_month": 375.0,
@@ -393,6 +400,13 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"max_orders_per_day":                 1000,
 				"max_outlets":                        3,
 				"api_calls_per_month":                50000,
+				"live_tracking_requests_per_day":     5000,
+				"live_tracking_duration_minutes":     120,
+				"routing_requests_per_day":           1000,
+				"map_loads_per_day":                  2000,
+				"email_notifications_per_day":        500,
+				"sms_notifications_per_day":          200,
+				"webhook_calls_per_day":              1000,
 				"overage_rider_price_per_month":      250.0,
 				"overage_orders_price_per_100_month": 375.0,
 			},
@@ -429,6 +443,13 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"max_orders_per_day":                 2500,
 				"max_outlets":                        -1, // Unlimited
 				"api_calls_per_month":                200000,
+				"live_tracking_requests_per_day":     -1, // Unlimited
+				"live_tracking_duration_minutes":     -1, // Unlimited
+				"routing_requests_per_day":           10000,
+				"map_loads_per_day":                  -1, // Unlimited
+				"email_notifications_per_day":        5000,
+				"sms_notifications_per_day":          2000,
+				"webhook_calls_per_day":              10000,
 				"overage_rider_price_per_month":      250.0,
 				"overage_orders_price_per_100_month": 375.0,
 			},
@@ -466,7 +487,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			description:  "Perfect for small cafes and pilot operations. Save with annual billing.",
 			billingCycle: "ANNUAL",
 			planType:     subscriptionplan.PlanTypeTIERED,
-			price:        27500.0, // 11 months for price of 10 (KES 2,500 × 11) - Wait, inception says 27,500/year (11 months)
+			price:        27500.0,
 			tierOrder:    1,
 			tierLimits: map[string]any{
 				"max_admins":                         2,
@@ -474,6 +495,13 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"max_orders_per_day":                 300,
 				"max_outlets":                        1,
 				"api_calls_per_month":                10000,
+				"live_tracking_requests_per_day":     500,
+				"live_tracking_duration_minutes":     30,
+				"routing_requests_per_day":           100,
+				"map_loads_per_day":                  200,
+				"email_notifications_per_day":        50,
+				"sms_notifications_per_day":          20,
+				"webhook_calls_per_day":              100,
 				"overage_rider_price_per_month":      250.0,
 				"overage_orders_price_per_100_month": 375.0,
 			},
@@ -496,7 +524,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			description:  "Ideal for growing cafes with multiple outlets. Save with annual billing.",
 			billingCycle: "ANNUAL",
 			planType:     subscriptionplan.PlanTypeTIERED,
-			price:        66000.0, // KES 6,000 × 11
+			price:        66000.0,
 			tierOrder:    2,
 			tierLimits: map[string]any{
 				"max_admins":                         3,
@@ -504,6 +532,13 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"max_orders_per_day":                 1000,
 				"max_outlets":                        3,
 				"api_calls_per_month":                50000,
+				"live_tracking_requests_per_day":     5000,
+				"live_tracking_duration_minutes":     120,
+				"routing_requests_per_day":           1000,
+				"map_loads_per_day":                  2000,
+				"email_notifications_per_day":        500,
+				"sms_notifications_per_day":          200,
+				"webhook_calls_per_day":              1000,
 				"overage_rider_price_per_month":      250.0,
 				"overage_orders_price_per_100_month": 375.0,
 			},
@@ -532,7 +567,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			description:  "For multi-branch cafes and chains. Save with annual billing.",
 			billingCycle: "ANNUAL",
 			planType:     subscriptionplan.PlanTypeTIERED,
-			price:        137500.0, // KES 12,500 × 11
+			price:        137500.0,
 			tierOrder:    3,
 			tierLimits: map[string]any{
 				"max_admins":                         -1,
@@ -540,6 +575,13 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"max_orders_per_day":                 2500,
 				"max_outlets":                        -1,
 				"api_calls_per_month":                200000,
+				"live_tracking_requests_per_day":     -1,
+				"live_tracking_duration_minutes":     -1,
+				"routing_requests_per_day":           10000,
+				"map_loads_per_day":                  -1,
+				"email_notifications_per_day":        5000,
+				"sms_notifications_per_day":          2000,
+				"webhook_calls_per_day":              10000,
 				"overage_rider_price_per_month":      250.0,
 				"overage_orders_price_per_100_month": 375.0,
 			},
@@ -626,7 +668,23 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 	return nil
 }
 
+// featureDef supports both boolean features and rate-limited features with limits.
+type featureDef struct {
+	code             string
+	limitValue       int     // 0 = unlimited (boolean feature), >0 = rate limit
+	overageUnitPrice float64 // price per unit above limit (0 = no overage)
+}
+
 func seedPlanFeatures(ctx context.Context, tx *ent.Tx, planID uuid.UUID, featureCodes []string) error {
+	// Convert string slice to featureDefs (backward compatible)
+	defs := make([]featureDef, len(featureCodes))
+	for i, code := range featureCodes {
+		defs[i] = featureDef{code: code}
+	}
+	return seedPlanFeaturesWithLimits(ctx, tx, planID, defs)
+}
+
+func seedPlanFeaturesWithLimits(ctx context.Context, tx *ent.Tx, planID uuid.UUID, features []featureDef) error {
 	// Delete existing features for this plan to allow re-seeding
 	existingFeatures, err := tx.PlanFeature.Query().
 		Where(planfeature.PlanIDEQ(planID)).
@@ -641,14 +699,17 @@ func seedPlanFeatures(ctx context.Context, tx *ent.Tx, planID uuid.UUID, feature
 		}
 	}
 
-	for _, code := range featureCodes {
-		_, err := tx.PlanFeature.Create().
+	for _, f := range features {
+		builder := tx.PlanFeature.Create().
 			SetPlanID(planID).
-			SetFeatureCode(code).
+			SetFeatureCode(f.code).
 			SetIsIncluded(true).
-			Save(ctx)
-		if err != nil {
-			return fmt.Errorf("create feature %s: %w", code, err)
+			SetOverageUnitPrice(f.overageUnitPrice)
+		if f.limitValue > 0 {
+			builder.SetLimitValue(f.limitValue)
+		}
+		if _, err := builder.Save(ctx); err != nil {
+			return fmt.Errorf("create feature %s: %w", f.code, err)
 		}
 	}
 
