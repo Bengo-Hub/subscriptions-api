@@ -15,6 +15,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/planpricinghistory"
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
+	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
@@ -315,6 +316,21 @@ func (_u *SubscriptionPlanUpdate) AddSubscriptions(v ...*TenantSubscription) *Su
 	return _u.AddSubscriptionIDs(ids...)
 }
 
+// AddOverrideProductSubscriptionIDs adds the "override_product_subscriptions" edge to the ProductSubscription entity by IDs.
+func (_u *SubscriptionPlanUpdate) AddOverrideProductSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
+	_u.mutation.AddOverrideProductSubscriptionIDs(ids...)
+	return _u
+}
+
+// AddOverrideProductSubscriptions adds the "override_product_subscriptions" edges to the ProductSubscription entity.
+func (_u *SubscriptionPlanUpdate) AddOverrideProductSubscriptions(v ...*ProductSubscription) *SubscriptionPlanUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOverrideProductSubscriptionIDs(ids...)
+}
+
 // Mutation returns the SubscriptionPlanMutation object of the builder.
 func (_u *SubscriptionPlanUpdate) Mutation() *SubscriptionPlanMutation {
 	return _u.mutation
@@ -381,6 +397,27 @@ func (_u *SubscriptionPlanUpdate) RemoveSubscriptions(v ...*TenantSubscription) 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubscriptionIDs(ids...)
+}
+
+// ClearOverrideProductSubscriptions clears all "override_product_subscriptions" edges to the ProductSubscription entity.
+func (_u *SubscriptionPlanUpdate) ClearOverrideProductSubscriptions() *SubscriptionPlanUpdate {
+	_u.mutation.ClearOverrideProductSubscriptions()
+	return _u
+}
+
+// RemoveOverrideProductSubscriptionIDs removes the "override_product_subscriptions" edge to ProductSubscription entities by IDs.
+func (_u *SubscriptionPlanUpdate) RemoveOverrideProductSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
+	_u.mutation.RemoveOverrideProductSubscriptionIDs(ids...)
+	return _u
+}
+
+// RemoveOverrideProductSubscriptions removes "override_product_subscriptions" edges to ProductSubscription entities.
+func (_u *SubscriptionPlanUpdate) RemoveOverrideProductSubscriptions(v ...*ProductSubscription) *SubscriptionPlanUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOverrideProductSubscriptionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -655,6 +692,51 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tenantsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OverrideProductSubscriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.OverrideProductSubscriptionsTable,
+			Columns: []string{subscriptionplan.OverrideProductSubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOverrideProductSubscriptionsIDs(); len(nodes) > 0 && !_u.mutation.OverrideProductSubscriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.OverrideProductSubscriptionsTable,
+			Columns: []string{subscriptionplan.OverrideProductSubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OverrideProductSubscriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.OverrideProductSubscriptionsTable,
+			Columns: []string{subscriptionplan.OverrideProductSubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -964,6 +1046,21 @@ func (_u *SubscriptionPlanUpdateOne) AddSubscriptions(v ...*TenantSubscription) 
 	return _u.AddSubscriptionIDs(ids...)
 }
 
+// AddOverrideProductSubscriptionIDs adds the "override_product_subscriptions" edge to the ProductSubscription entity by IDs.
+func (_u *SubscriptionPlanUpdateOne) AddOverrideProductSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddOverrideProductSubscriptionIDs(ids...)
+	return _u
+}
+
+// AddOverrideProductSubscriptions adds the "override_product_subscriptions" edges to the ProductSubscription entity.
+func (_u *SubscriptionPlanUpdateOne) AddOverrideProductSubscriptions(v ...*ProductSubscription) *SubscriptionPlanUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOverrideProductSubscriptionIDs(ids...)
+}
+
 // Mutation returns the SubscriptionPlanMutation object of the builder.
 func (_u *SubscriptionPlanUpdateOne) Mutation() *SubscriptionPlanMutation {
 	return _u.mutation
@@ -1030,6 +1127,27 @@ func (_u *SubscriptionPlanUpdateOne) RemoveSubscriptions(v ...*TenantSubscriptio
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubscriptionIDs(ids...)
+}
+
+// ClearOverrideProductSubscriptions clears all "override_product_subscriptions" edges to the ProductSubscription entity.
+func (_u *SubscriptionPlanUpdateOne) ClearOverrideProductSubscriptions() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearOverrideProductSubscriptions()
+	return _u
+}
+
+// RemoveOverrideProductSubscriptionIDs removes the "override_product_subscriptions" edge to ProductSubscription entities by IDs.
+func (_u *SubscriptionPlanUpdateOne) RemoveOverrideProductSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
+	_u.mutation.RemoveOverrideProductSubscriptionIDs(ids...)
+	return _u
+}
+
+// RemoveOverrideProductSubscriptions removes "override_product_subscriptions" edges to ProductSubscription entities.
+func (_u *SubscriptionPlanUpdateOne) RemoveOverrideProductSubscriptions(v ...*ProductSubscription) *SubscriptionPlanUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOverrideProductSubscriptionIDs(ids...)
 }
 
 // Where appends a list predicates to the SubscriptionPlanUpdate builder.
@@ -1334,6 +1452,51 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tenantsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OverrideProductSubscriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.OverrideProductSubscriptionsTable,
+			Columns: []string{subscriptionplan.OverrideProductSubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOverrideProductSubscriptionsIDs(); len(nodes) > 0 && !_u.mutation.OverrideProductSubscriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.OverrideProductSubscriptionsTable,
+			Columns: []string{subscriptionplan.OverrideProductSubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OverrideProductSubscriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.OverrideProductSubscriptionsTable,
+			Columns: []string{subscriptionplan.OverrideProductSubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

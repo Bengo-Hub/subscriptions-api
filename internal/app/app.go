@@ -190,7 +190,14 @@ func New(ctx context.Context) (*App, error) {
 	// Usage tracking handler (raw SQL — requires UsageEvent Ent schema codegen to create table)
 	usageHandler := handlers.NewUsageHandler(log, dbPool)
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
+	// Service charge plan handler
+	serviceChargeHandler := handlers.NewServiceChargeHandler(log, ormClient)
+
+	// Billing and platform admin handlers
+	billingHandler := handlers.NewBillingHandler(log, ormClient)
+	platformHandler := handlers.NewPlatformHandler(log, ormClient)
+
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),

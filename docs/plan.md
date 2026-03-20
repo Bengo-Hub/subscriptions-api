@@ -4,8 +4,11 @@
 
 **System Purpose**: Centralized subscription and licensing management platform for the entire BengoBox ecosystem, providing multi-tenant SaaS capabilities with tiered pricing, feature gating, usage tracking, and automated billing integration.
 
+**March 20, 2026 update**: Added **ServiceChargePlan** entity and per-service subscription flexibility. Service charge plans allow the platform to charge a commission (percentage, fixed, or tiered) per transaction processed through a service instead of (or in addition to) flat subscription fees. Each `ProductSubscription` can now reference a `ServiceChargePlan` and/or an `override_plan_id` for per-service plan flexibility — enabling the same tenant to have different subscription tiers and service charge rates per service. 6 service charge plans seeded: ordering (5%/3%), logistics (7%), POS (2%), TruLoad (10%), and a universal flat fee. Treasury-api updated to accept service charge fields on payment intents and accumulate them during payout settlement.
+
 **Key Capabilities**:
-- **Subscription types**: **Product** (a-la-carte), **Tiered Bundles** (Starter, Growth, Prof), and **One-time** (summation of product onetime fees).
+- **Subscription types**: **Product** (a-la-carte), **Tiered Bundles** (Starter, Growth, Prof), **One-time** (summation of product onetime fees), and **Service Charge** (commission-based per transaction).
+- **Per-service flexibility**: Different services accessed by the same tenant can have different subscription plans and service charge rates.
 - **Core System Features**: SSO, Notifications (Email), Subscription Service, and Payment Gateways are **included by default** in all plans/tiers and not sold as individual products.
 - **Credit-Based Notifications**: SMS and WhatsApp require tenants to purchase credits at platform-set rates. Email remains free.
 - Subscription plan management (Starter, Growth, Professional tiers)

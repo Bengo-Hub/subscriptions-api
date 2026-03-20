@@ -30,6 +30,10 @@ const (
 	FieldActivatedAt = "activated_at"
 	// FieldDeactivatedAt holds the string denoting the deactivated_at field in the database.
 	FieldDeactivatedAt = "deactivated_at"
+	// FieldServiceChargePlanID holds the string denoting the service_charge_plan_id field in the database.
+	FieldServiceChargePlanID = "service_charge_plan_id"
+	// FieldOverridePlanID holds the string denoting the override_plan_id field in the database.
+	FieldOverridePlanID = "override_plan_id"
 	// FieldMetadata holds the string denoting the metadata field in the database.
 	FieldMetadata = "metadata"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -40,6 +44,10 @@ const (
 	EdgeTenantSubscription = "tenant_subscription"
 	// EdgeProduct holds the string denoting the product edge name in mutations.
 	EdgeProduct = "product"
+	// EdgeServiceChargePlan holds the string denoting the service_charge_plan edge name in mutations.
+	EdgeServiceChargePlan = "service_charge_plan"
+	// EdgeOverridePlan holds the string denoting the override_plan edge name in mutations.
+	EdgeOverridePlan = "override_plan"
 	// Table holds the table name of the productsubscription in the database.
 	Table = "product_subscriptions"
 	// TenantSubscriptionTable is the table that holds the tenant_subscription relation/edge.
@@ -56,6 +64,20 @@ const (
 	ProductInverseTable = "products"
 	// ProductColumn is the table column denoting the product relation/edge.
 	ProductColumn = "product_id"
+	// ServiceChargePlanTable is the table that holds the service_charge_plan relation/edge.
+	ServiceChargePlanTable = "product_subscriptions"
+	// ServiceChargePlanInverseTable is the table name for the ServiceChargePlan entity.
+	// It exists in this package in order to avoid circular dependency with the "servicechargeplan" package.
+	ServiceChargePlanInverseTable = "service_charge_plans"
+	// ServiceChargePlanColumn is the table column denoting the service_charge_plan relation/edge.
+	ServiceChargePlanColumn = "service_charge_plan_id"
+	// OverridePlanTable is the table that holds the override_plan relation/edge.
+	OverridePlanTable = "product_subscriptions"
+	// OverridePlanInverseTable is the table name for the SubscriptionPlan entity.
+	// It exists in this package in order to avoid circular dependency with the "subscriptionplan" package.
+	OverridePlanInverseTable = "subscription_plans"
+	// OverridePlanColumn is the table column denoting the override_plan relation/edge.
+	OverridePlanColumn = "override_plan_id"
 )
 
 // Columns holds all SQL columns for productsubscription fields.
@@ -68,6 +90,8 @@ var Columns = []string{
 	FieldTrialEndsAt,
 	FieldActivatedAt,
 	FieldDeactivatedAt,
+	FieldServiceChargePlanID,
+	FieldOverridePlanID,
 	FieldMetadata,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -170,6 +194,16 @@ func ByDeactivatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeactivatedAt, opts...).ToFunc()
 }
 
+// ByServiceChargePlanID orders the results by the service_charge_plan_id field.
+func ByServiceChargePlanID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldServiceChargePlanID, opts...).ToFunc()
+}
+
+// ByOverridePlanID orders the results by the override_plan_id field.
+func ByOverridePlanID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOverridePlanID, opts...).ToFunc()
+}
+
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
@@ -193,6 +227,20 @@ func ByProductField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newProductStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByServiceChargePlanField orders the results by service_charge_plan field.
+func ByServiceChargePlanField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newServiceChargePlanStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByOverridePlanField orders the results by override_plan field.
+func ByOverridePlanField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOverridePlanStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newTenantSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -205,5 +253,19 @@ func newProductStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ProductInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, ProductTable, ProductColumn),
+	)
+}
+func newServiceChargePlanStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ServiceChargePlanInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, ServiceChargePlanTable, ServiceChargePlanColumn),
+	)
+}
+func newOverridePlanStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OverridePlanInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, OverridePlanTable, OverridePlanColumn),
 	)
 }

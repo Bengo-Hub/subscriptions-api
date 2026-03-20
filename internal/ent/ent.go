@@ -18,9 +18,11 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/planpricinghistory"
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
+	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/ent/usageevent"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -87,9 +89,11 @@ func checkColumn(t, c string) error {
 			planpricinghistory.Table:  planpricinghistory.ValidColumn,
 			product.Table:             product.ValidColumn,
 			productsubscription.Table: productsubscription.ValidColumn,
+			servicechargeplan.Table:   servicechargeplan.ValidColumn,
 			subscriptionplan.Table:    subscriptionplan.ValidColumn,
 			tenant.Table:              tenant.ValidColumn,
 			tenantsubscription.Table:  tenantsubscription.ValidColumn,
+			usageevent.Table:          usageevent.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

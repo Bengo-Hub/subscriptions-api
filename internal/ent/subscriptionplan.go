@@ -67,9 +67,11 @@ type SubscriptionPlanEdges struct {
 	PricingHistory []*PlanPricingHistory `json:"pricing_history,omitempty"`
 	// Subscriptions holds the value of the subscriptions edge.
 	Subscriptions []*TenantSubscription `json:"subscriptions,omitempty"`
+	// OverrideProductSubscriptions holds the value of the override_product_subscriptions edge.
+	OverrideProductSubscriptions []*ProductSubscription `json:"override_product_subscriptions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // FeaturesOrErr returns the Features value or an error if the edge
@@ -97,6 +99,15 @@ func (e SubscriptionPlanEdges) SubscriptionsOrErr() ([]*TenantSubscription, erro
 		return e.Subscriptions, nil
 	}
 	return nil, &NotLoadedError{edge: "subscriptions"}
+}
+
+// OverrideProductSubscriptionsOrErr returns the OverrideProductSubscriptions value or an error if the edge
+// was not loaded in eager-loading.
+func (e SubscriptionPlanEdges) OverrideProductSubscriptionsOrErr() ([]*ProductSubscription, error) {
+	if e.loadedTypes[3] {
+		return e.OverrideProductSubscriptions, nil
+	}
+	return nil, &NotLoadedError{edge: "override_product_subscriptions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -274,6 +285,11 @@ func (_m *SubscriptionPlan) QueryPricingHistory() *PlanPricingHistoryQuery {
 // QuerySubscriptions queries the "subscriptions" edge of the SubscriptionPlan entity.
 func (_m *SubscriptionPlan) QuerySubscriptions() *TenantSubscriptionQuery {
 	return NewSubscriptionPlanClient(_m.config).QuerySubscriptions(_m)
+}
+
+// QueryOverrideProductSubscriptions queries the "override_product_subscriptions" edge of the SubscriptionPlan entity.
+func (_m *SubscriptionPlan) QueryOverrideProductSubscriptions() *ProductSubscriptionQuery {
+	return NewSubscriptionPlanClient(_m.config).QueryOverrideProductSubscriptions(_m)
 }
 
 // Update returns a builder for updating this SubscriptionPlan.

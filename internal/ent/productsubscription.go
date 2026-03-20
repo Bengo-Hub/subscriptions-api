@@ -12,6 +12,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
+	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -35,6 +37,10 @@ type ProductSubscription struct {
 	ActivatedAt *time.Time `json:"activated_at,omitempty"`
 	// When this product was deactivated
 	DeactivatedAt *time.Time `json:"deactivated_at,omitempty"`
+	// Optional FK to service_charge_plans; if set, this product uses service-charge billing instead of flat subscription pricing
+	ServiceChargePlanID *uuid.UUID `json:"service_charge_plan_id,omitempty"`
+	// Optional FK to subscription_plans; if set, this product uses a different plan than the tenant's main plan
+	OverridePlanID *uuid.UUID `json:"override_plan_id,omitempty"`
 	// Metadata holds the value of the "metadata" field.
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -53,9 +59,13 @@ type ProductSubscriptionEdges struct {
 	TenantSubscription *TenantSubscription `json:"tenant_subscription,omitempty"`
 	// Product holds the value of the product edge.
 	Product *Product `json:"product,omitempty"`
+	// ServiceChargePlan holds the value of the service_charge_plan edge.
+	ServiceChargePlan *ServiceChargePlan `json:"service_charge_plan,omitempty"`
+	// OverridePlan holds the value of the override_plan edge.
+	OverridePlan *SubscriptionPlan `json:"override_plan,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [4]bool
 }
 
 // TenantSubscriptionOrErr returns the TenantSubscription value or an error if the edge
@@ -80,11 +90,35 @@ func (e ProductSubscriptionEdges) ProductOrErr() (*Product, error) {
 	return nil, &NotLoadedError{edge: "product"}
 }
 
+// ServiceChargePlanOrErr returns the ServiceChargePlan value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ProductSubscriptionEdges) ServiceChargePlanOrErr() (*ServiceChargePlan, error) {
+	if e.ServiceChargePlan != nil {
+		return e.ServiceChargePlan, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: servicechargeplan.Label}
+	}
+	return nil, &NotLoadedError{edge: "service_charge_plan"}
+}
+
+// OverridePlanOrErr returns the OverridePlan value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ProductSubscriptionEdges) OverridePlanOrErr() (*SubscriptionPlan, error) {
+	if e.OverridePlan != nil {
+		return e.OverridePlan, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: subscriptionplan.Label}
+	}
+	return nil, &NotLoadedError{edge: "override_plan"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*ProductSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case productsubscription.FieldServiceChargePlanID, productsubscription.FieldOverridePlanID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case productsubscription.FieldMetadata:
 			values[i] = new([]byte)
 		case productsubscription.FieldProductCode, productsubscription.FieldStatus:
@@ -159,6 +193,20 @@ func (_m *ProductSubscription) assignValues(columns []string, values []any) erro
 				_m.DeactivatedAt = new(time.Time)
 				*_m.DeactivatedAt = value.Time
 			}
+		case productsubscription.FieldServiceChargePlanID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field service_charge_plan_id", values[i])
+			} else if value.Valid {
+				_m.ServiceChargePlanID = new(uuid.UUID)
+				*_m.ServiceChargePlanID = *value.S.(*uuid.UUID)
+			}
+		case productsubscription.FieldOverridePlanID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field override_plan_id", values[i])
+			} else if value.Valid {
+				_m.OverridePlanID = new(uuid.UUID)
+				*_m.OverridePlanID = *value.S.(*uuid.UUID)
+			}
 		case productsubscription.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
@@ -200,6 +248,16 @@ func (_m *ProductSubscription) QueryTenantSubscription() *TenantSubscriptionQuer
 // QueryProduct queries the "product" edge of the ProductSubscription entity.
 func (_m *ProductSubscription) QueryProduct() *ProductQuery {
 	return NewProductSubscriptionClient(_m.config).QueryProduct(_m)
+}
+
+// QueryServiceChargePlan queries the "service_charge_plan" edge of the ProductSubscription entity.
+func (_m *ProductSubscription) QueryServiceChargePlan() *ServiceChargePlanQuery {
+	return NewProductSubscriptionClient(_m.config).QueryServiceChargePlan(_m)
+}
+
+// QueryOverridePlan queries the "override_plan" edge of the ProductSubscription entity.
+func (_m *ProductSubscription) QueryOverridePlan() *SubscriptionPlanQuery {
+	return NewProductSubscriptionClient(_m.config).QueryOverridePlan(_m)
 }
 
 // Update returns a builder for updating this ProductSubscription.
@@ -250,6 +308,16 @@ func (_m *ProductSubscription) String() string {
 	if v := _m.DeactivatedAt; v != nil {
 		builder.WriteString("deactivated_at=")
 		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.ServiceChargePlanID; v != nil {
+		builder.WriteString("service_charge_plan_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.OverridePlanID; v != nil {
+		builder.WriteString("override_plan_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")

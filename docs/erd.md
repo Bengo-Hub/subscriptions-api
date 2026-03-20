@@ -672,4 +672,34 @@ VALUES ('PROFESSIONAL', 'Professional (Scale)', 'MONTHLY', 12500.00, 'KES', 3,
 
 ---
 
+## Service Charge Plans (Added March 2026)
+
+| Table | Key Columns | Purpose |
+|-------|-------------|---------|
+| `service_charge_plans` | `id`, `code` (unique), `name`, `description`, `charge_type` (PERCENTAGE/FIXED_PER_TRANSACTION/TIERED), `charge_value`, `currency`, `min_charge`, `max_charge`, `tier_rules` (JSONB), `applicable_services` (JSONB string array), `is_active`, `is_default`, `metadata`, `created_at`, `updated_at` | Defines commission-based pricing models. When a tenant's product subscription references a service charge plan, the platform takes a percentage or fixed fee per transaction. Applied during treasury-api payout settlement. |
+
+### Per-Service Subscription Flexibility
+
+`product_subscriptions` now includes:
+- `service_charge_plan_id` (FK → `service_charge_plans`) — optional; when set, the product uses commission-based billing
+- `override_plan_id` (FK → `subscription_plans`) — optional; when set, the product uses a different tier than the tenant's main plan
+
+This enables scenarios like:
+- Tenant A on STARTER plan for ordering, but PROFESSIONAL for logistics
+- Tenant B using 5% service charge for ordering (no flat subscription)
+- TruLoad service using 10% per-transaction commission
+
+### Seeded Service Charge Plans
+
+| Code | Type | Value | Services | Default |
+|------|------|-------|----------|---------|
+| SC_ORDERING_5PCT | PERCENTAGE | 5% (min KES 50, cap KES 5,000) | ordering | Yes |
+| SC_ORDERING_3PCT | PERCENTAGE | 3% (min KES 50, cap KES 5,000) | ordering | No |
+| SC_LOGISTICS_7PCT | PERCENTAGE | 7% | logistics | Yes |
+| SC_POS_2PCT | PERCENTAGE | 2% (cap KES 2,000) | pos | Yes |
+| SC_UNIVERSAL_FLAT_50 | FIXED_PER_TRANSACTION | KES 50 | any | No |
+| SC_TRULOAD_10PCT | PERCENTAGE | 10% | truload | Yes |
+
+---
+
 Regenerate this ERD whenever Ent schemas evolve. Always run `go generate ./internal/ent` before committing schema changes and update integration docs accordingly.

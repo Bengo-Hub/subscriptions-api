@@ -81,6 +81,18 @@ func (f ProductSubscriptionFunc) Mutate(ctx context.Context, m ent.Mutation) (en
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProductSubscriptionMutation", m)
 }
 
+// The ServiceChargePlanFunc type is an adapter to allow the use of ordinary
+// function as ServiceChargePlan mutator.
+type ServiceChargePlanFunc func(context.Context, *ent.ServiceChargePlanMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ServiceChargePlanFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ServiceChargePlanMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ServiceChargePlanMutation", m)
+}
+
 // The SubscriptionPlanFunc type is an adapter to allow the use of ordinary
 // function as SubscriptionPlan mutator.
 type SubscriptionPlanFunc func(context.Context, *ent.SubscriptionPlanMutation) (ent.Value, error)
@@ -115,6 +127,18 @@ func (f TenantSubscriptionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TenantSubscriptionMutation", m)
+}
+
+// The UsageEventFunc type is an adapter to allow the use of ordinary
+// function as UsageEvent mutator.
+type UsageEventFunc func(context.Context, *ent.UsageEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f UsageEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.UsageEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UsageEventMutation", m)
 }
 
 // Condition is a hook condition function.

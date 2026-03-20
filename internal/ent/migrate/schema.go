@@ -241,6 +241,8 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "product_id", Type: field.TypeUUID},
+		{Name: "service_charge_plan_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "override_plan_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "tenant_subscription_id", Type: field.TypeUUID},
 	}
 	// ProductSubscriptionsTable holds the schema information for the "product_subscriptions" table.
@@ -256,8 +258,20 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 			{
-				Symbol:     "product_subscriptions_tenant_subscriptions_product_subscriptions",
+				Symbol:     "product_subscriptions_service_charge_plans_product_subscriptions",
 				Columns:    []*schema.Column{ProductSubscriptionsColumns[10]},
+				RefColumns: []*schema.Column{ServiceChargePlansColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "product_subscriptions_subscription_plans_override_product_subscriptions",
+				Columns:    []*schema.Column{ProductSubscriptionsColumns[11]},
+				RefColumns: []*schema.Column{SubscriptionPlansColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "product_subscriptions_tenant_subscriptions_product_subscriptions",
+				Columns:    []*schema.Column{ProductSubscriptionsColumns[12]},
 				RefColumns: []*schema.Column{TenantSubscriptionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -266,7 +280,7 @@ var (
 			{
 				Name:    "productsubscription_tenant_subscription_id",
 				Unique:  false,
-				Columns: []*schema.Column{ProductSubscriptionsColumns[10]},
+				Columns: []*schema.Column{ProductSubscriptionsColumns[12]},
 			},
 			{
 				Name:    "productsubscription_product_code",
@@ -281,7 +295,49 @@ var (
 			{
 				Name:    "productsubscription_tenant_subscription_id_product_code",
 				Unique:  true,
-				Columns: []*schema.Column{ProductSubscriptionsColumns[10], ProductSubscriptionsColumns[1]},
+				Columns: []*schema.Column{ProductSubscriptionsColumns[12], ProductSubscriptionsColumns[1]},
+			},
+		},
+	}
+	// ServiceChargePlansColumns holds the columns for the "service_charge_plans" table.
+	ServiceChargePlansColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "code", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "charge_type", Type: field.TypeEnum, Enums: []string{"PERCENTAGE", "FIXED_PER_TRANSACTION", "TIERED"}, Default: "PERCENTAGE"},
+		{Name: "charge_value", Type: field.TypeFloat64, Default: 0},
+		{Name: "currency", Type: field.TypeString, Default: "KES"},
+		{Name: "min_charge", Type: field.TypeFloat64, Nullable: true},
+		{Name: "max_charge", Type: field.TypeFloat64, Nullable: true},
+		{Name: "tier_rules", Type: field.TypeJSON, Nullable: true},
+		{Name: "applicable_services", Type: field.TypeJSON, Nullable: true},
+		{Name: "is_active", Type: field.TypeBool, Default: true},
+		{Name: "is_default", Type: field.TypeBool, Default: false},
+		{Name: "metadata", Type: field.TypeJSON},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// ServiceChargePlansTable holds the schema information for the "service_charge_plans" table.
+	ServiceChargePlansTable = &schema.Table{
+		Name:       "service_charge_plans",
+		Columns:    ServiceChargePlansColumns,
+		PrimaryKey: []*schema.Column{ServiceChargePlansColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "servicechargeplan_code",
+				Unique:  false,
+				Columns: []*schema.Column{ServiceChargePlansColumns[1]},
+			},
+			{
+				Name:    "servicechargeplan_is_active",
+				Unique:  false,
+				Columns: []*schema.Column{ServiceChargePlansColumns[11]},
+			},
+			{
+				Name:    "servicechargeplan_charge_type",
+				Unique:  false,
+				Columns: []*schema.Column{ServiceChargePlansColumns[4]},
 			},
 		},
 	}
@@ -427,6 +483,51 @@ var (
 			},
 		},
 	}
+	// UsageEventsColumns holds the columns for the "usage_events" table.
+	UsageEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "metric_type", Type: field.TypeString, Size: 64},
+		{Name: "service_name", Type: field.TypeString, Size: 64},
+		{Name: "value", Type: field.TypeFloat64},
+		{Name: "period_start", Type: field.TypeTime, Nullable: true},
+		{Name: "period_end", Type: field.TypeTime, Nullable: true},
+		{Name: "metadata", Type: field.TypeJSON},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// UsageEventsTable holds the schema information for the "usage_events" table.
+	UsageEventsTable = &schema.Table{
+		Name:       "usage_events",
+		Columns:    UsageEventsColumns,
+		PrimaryKey: []*schema.Column{UsageEventsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "usageevent_tenant_id",
+				Unique:  false,
+				Columns: []*schema.Column{UsageEventsColumns[1]},
+			},
+			{
+				Name:    "usageevent_tenant_id_metric_type",
+				Unique:  false,
+				Columns: []*schema.Column{UsageEventsColumns[1], UsageEventsColumns[2]},
+			},
+			{
+				Name:    "usageevent_service_name",
+				Unique:  false,
+				Columns: []*schema.Column{UsageEventsColumns[3]},
+			},
+			{
+				Name:    "usageevent_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UsageEventsColumns[8]},
+			},
+			{
+				Name:    "usageevent_tenant_id_service_name_metric_type",
+				Unique:  false,
+				Columns: []*schema.Column{UsageEventsColumns[1], UsageEventsColumns[3], UsageEventsColumns[2]},
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		BundlesTable,
@@ -435,9 +536,11 @@ var (
 		PlanPricingHistoriesTable,
 		ProductsTable,
 		ProductSubscriptionsTable,
+		ServiceChargePlansTable,
 		SubscriptionPlansTable,
 		TenantsTable,
 		TenantSubscriptionsTable,
+		UsageEventsTable,
 	}
 )
 
@@ -445,7 +548,9 @@ func init() {
 	PlanFeaturesTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
 	PlanPricingHistoriesTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
 	ProductSubscriptionsTable.ForeignKeys[0].RefTable = ProductsTable
-	ProductSubscriptionsTable.ForeignKeys[1].RefTable = TenantSubscriptionsTable
+	ProductSubscriptionsTable.ForeignKeys[1].RefTable = ServiceChargePlansTable
+	ProductSubscriptionsTable.ForeignKeys[2].RefTable = SubscriptionPlansTable
+	ProductSubscriptionsTable.ForeignKeys[3].RefTable = TenantSubscriptionsTable
 	TenantSubscriptionsTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
 	TenantSubscriptionsTable.ForeignKeys[1].RefTable = TenantsTable
 }

@@ -14,6 +14,8 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
+	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -147,6 +149,46 @@ func (_u *ProductSubscriptionUpdate) ClearDeactivatedAt() *ProductSubscriptionUp
 	return _u
 }
 
+// SetServiceChargePlanID sets the "service_charge_plan_id" field.
+func (_u *ProductSubscriptionUpdate) SetServiceChargePlanID(v uuid.UUID) *ProductSubscriptionUpdate {
+	_u.mutation.SetServiceChargePlanID(v)
+	return _u
+}
+
+// SetNillableServiceChargePlanID sets the "service_charge_plan_id" field if the given value is not nil.
+func (_u *ProductSubscriptionUpdate) SetNillableServiceChargePlanID(v *uuid.UUID) *ProductSubscriptionUpdate {
+	if v != nil {
+		_u.SetServiceChargePlanID(*v)
+	}
+	return _u
+}
+
+// ClearServiceChargePlanID clears the value of the "service_charge_plan_id" field.
+func (_u *ProductSubscriptionUpdate) ClearServiceChargePlanID() *ProductSubscriptionUpdate {
+	_u.mutation.ClearServiceChargePlanID()
+	return _u
+}
+
+// SetOverridePlanID sets the "override_plan_id" field.
+func (_u *ProductSubscriptionUpdate) SetOverridePlanID(v uuid.UUID) *ProductSubscriptionUpdate {
+	_u.mutation.SetOverridePlanID(v)
+	return _u
+}
+
+// SetNillableOverridePlanID sets the "override_plan_id" field if the given value is not nil.
+func (_u *ProductSubscriptionUpdate) SetNillableOverridePlanID(v *uuid.UUID) *ProductSubscriptionUpdate {
+	if v != nil {
+		_u.SetOverridePlanID(*v)
+	}
+	return _u
+}
+
+// ClearOverridePlanID clears the value of the "override_plan_id" field.
+func (_u *ProductSubscriptionUpdate) ClearOverridePlanID() *ProductSubscriptionUpdate {
+	_u.mutation.ClearOverridePlanID()
+	return _u
+}
+
 // SetMetadata sets the "metadata" field.
 func (_u *ProductSubscriptionUpdate) SetMetadata(v map[string]interface{}) *ProductSubscriptionUpdate {
 	_u.mutation.SetMetadata(v)
@@ -169,6 +211,16 @@ func (_u *ProductSubscriptionUpdate) SetProduct(v *Product) *ProductSubscription
 	return _u.SetProductID(v.ID)
 }
 
+// SetServiceChargePlan sets the "service_charge_plan" edge to the ServiceChargePlan entity.
+func (_u *ProductSubscriptionUpdate) SetServiceChargePlan(v *ServiceChargePlan) *ProductSubscriptionUpdate {
+	return _u.SetServiceChargePlanID(v.ID)
+}
+
+// SetOverridePlan sets the "override_plan" edge to the SubscriptionPlan entity.
+func (_u *ProductSubscriptionUpdate) SetOverridePlan(v *SubscriptionPlan) *ProductSubscriptionUpdate {
+	return _u.SetOverridePlanID(v.ID)
+}
+
 // Mutation returns the ProductSubscriptionMutation object of the builder.
 func (_u *ProductSubscriptionUpdate) Mutation() *ProductSubscriptionMutation {
 	return _u.mutation
@@ -183,6 +235,18 @@ func (_u *ProductSubscriptionUpdate) ClearTenantSubscription() *ProductSubscript
 // ClearProduct clears the "product" edge to the Product entity.
 func (_u *ProductSubscriptionUpdate) ClearProduct() *ProductSubscriptionUpdate {
 	_u.mutation.ClearProduct()
+	return _u
+}
+
+// ClearServiceChargePlan clears the "service_charge_plan" edge to the ServiceChargePlan entity.
+func (_u *ProductSubscriptionUpdate) ClearServiceChargePlan() *ProductSubscriptionUpdate {
+	_u.mutation.ClearServiceChargePlan()
+	return _u
+}
+
+// ClearOverridePlan clears the "override_plan" edge to the SubscriptionPlan entity.
+func (_u *ProductSubscriptionUpdate) ClearOverridePlan() *ProductSubscriptionUpdate {
+	_u.mutation.ClearOverridePlan()
 	return _u
 }
 
@@ -343,6 +407,64 @@ func (_u *ProductSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.ServiceChargePlanCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   productsubscription.ServiceChargePlanTable,
+			Columns: []string{productsubscription.ServiceChargePlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(servicechargeplan.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ServiceChargePlanIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   productsubscription.ServiceChargePlanTable,
+			Columns: []string{productsubscription.ServiceChargePlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(servicechargeplan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OverridePlanCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   productsubscription.OverridePlanTable,
+			Columns: []string{productsubscription.OverridePlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionplan.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OverridePlanIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   productsubscription.OverridePlanTable,
+			Columns: []string{productsubscription.OverridePlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionplan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{productsubscription.Label}
@@ -479,6 +601,46 @@ func (_u *ProductSubscriptionUpdateOne) ClearDeactivatedAt() *ProductSubscriptio
 	return _u
 }
 
+// SetServiceChargePlanID sets the "service_charge_plan_id" field.
+func (_u *ProductSubscriptionUpdateOne) SetServiceChargePlanID(v uuid.UUID) *ProductSubscriptionUpdateOne {
+	_u.mutation.SetServiceChargePlanID(v)
+	return _u
+}
+
+// SetNillableServiceChargePlanID sets the "service_charge_plan_id" field if the given value is not nil.
+func (_u *ProductSubscriptionUpdateOne) SetNillableServiceChargePlanID(v *uuid.UUID) *ProductSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetServiceChargePlanID(*v)
+	}
+	return _u
+}
+
+// ClearServiceChargePlanID clears the value of the "service_charge_plan_id" field.
+func (_u *ProductSubscriptionUpdateOne) ClearServiceChargePlanID() *ProductSubscriptionUpdateOne {
+	_u.mutation.ClearServiceChargePlanID()
+	return _u
+}
+
+// SetOverridePlanID sets the "override_plan_id" field.
+func (_u *ProductSubscriptionUpdateOne) SetOverridePlanID(v uuid.UUID) *ProductSubscriptionUpdateOne {
+	_u.mutation.SetOverridePlanID(v)
+	return _u
+}
+
+// SetNillableOverridePlanID sets the "override_plan_id" field if the given value is not nil.
+func (_u *ProductSubscriptionUpdateOne) SetNillableOverridePlanID(v *uuid.UUID) *ProductSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetOverridePlanID(*v)
+	}
+	return _u
+}
+
+// ClearOverridePlanID clears the value of the "override_plan_id" field.
+func (_u *ProductSubscriptionUpdateOne) ClearOverridePlanID() *ProductSubscriptionUpdateOne {
+	_u.mutation.ClearOverridePlanID()
+	return _u
+}
+
 // SetMetadata sets the "metadata" field.
 func (_u *ProductSubscriptionUpdateOne) SetMetadata(v map[string]interface{}) *ProductSubscriptionUpdateOne {
 	_u.mutation.SetMetadata(v)
@@ -501,6 +663,16 @@ func (_u *ProductSubscriptionUpdateOne) SetProduct(v *Product) *ProductSubscript
 	return _u.SetProductID(v.ID)
 }
 
+// SetServiceChargePlan sets the "service_charge_plan" edge to the ServiceChargePlan entity.
+func (_u *ProductSubscriptionUpdateOne) SetServiceChargePlan(v *ServiceChargePlan) *ProductSubscriptionUpdateOne {
+	return _u.SetServiceChargePlanID(v.ID)
+}
+
+// SetOverridePlan sets the "override_plan" edge to the SubscriptionPlan entity.
+func (_u *ProductSubscriptionUpdateOne) SetOverridePlan(v *SubscriptionPlan) *ProductSubscriptionUpdateOne {
+	return _u.SetOverridePlanID(v.ID)
+}
+
 // Mutation returns the ProductSubscriptionMutation object of the builder.
 func (_u *ProductSubscriptionUpdateOne) Mutation() *ProductSubscriptionMutation {
 	return _u.mutation
@@ -515,6 +687,18 @@ func (_u *ProductSubscriptionUpdateOne) ClearTenantSubscription() *ProductSubscr
 // ClearProduct clears the "product" edge to the Product entity.
 func (_u *ProductSubscriptionUpdateOne) ClearProduct() *ProductSubscriptionUpdateOne {
 	_u.mutation.ClearProduct()
+	return _u
+}
+
+// ClearServiceChargePlan clears the "service_charge_plan" edge to the ServiceChargePlan entity.
+func (_u *ProductSubscriptionUpdateOne) ClearServiceChargePlan() *ProductSubscriptionUpdateOne {
+	_u.mutation.ClearServiceChargePlan()
+	return _u
+}
+
+// ClearOverridePlan clears the "override_plan" edge to the SubscriptionPlan entity.
+func (_u *ProductSubscriptionUpdateOne) ClearOverridePlan() *ProductSubscriptionUpdateOne {
+	_u.mutation.ClearOverridePlan()
 	return _u
 }
 
@@ -698,6 +882,64 @@ func (_u *ProductSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Pro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ServiceChargePlanCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   productsubscription.ServiceChargePlanTable,
+			Columns: []string{productsubscription.ServiceChargePlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(servicechargeplan.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ServiceChargePlanIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   productsubscription.ServiceChargePlanTable,
+			Columns: []string{productsubscription.ServiceChargePlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(servicechargeplan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OverridePlanCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   productsubscription.OverridePlanTable,
+			Columns: []string{productsubscription.OverridePlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionplan.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OverridePlanIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   productsubscription.OverridePlanTable,
+			Columns: []string{productsubscription.OverridePlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionplan.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -24,12 +24,16 @@ type Tx struct {
 	Product *ProductClient
 	// ProductSubscription is the client for interacting with the ProductSubscription builders.
 	ProductSubscription *ProductSubscriptionClient
+	// ServiceChargePlan is the client for interacting with the ServiceChargePlan builders.
+	ServiceChargePlan *ServiceChargePlanClient
 	// SubscriptionPlan is the client for interacting with the SubscriptionPlan builders.
 	SubscriptionPlan *SubscriptionPlanClient
 	// Tenant is the client for interacting with the Tenant builders.
 	Tenant *TenantClient
 	// TenantSubscription is the client for interacting with the TenantSubscription builders.
 	TenantSubscription *TenantSubscriptionClient
+	// UsageEvent is the client for interacting with the UsageEvent builders.
+	UsageEvent *UsageEventClient
 
 	// lazily loaded.
 	client     *Client
@@ -167,9 +171,11 @@ func (tx *Tx) init() {
 	tx.PlanPricingHistory = NewPlanPricingHistoryClient(tx.config)
 	tx.Product = NewProductClient(tx.config)
 	tx.ProductSubscription = NewProductSubscriptionClient(tx.config)
+	tx.ServiceChargePlan = NewServiceChargePlanClient(tx.config)
 	tx.SubscriptionPlan = NewSubscriptionPlanClient(tx.config)
 	tx.Tenant = NewTenantClient(tx.config)
 	tx.TenantSubscription = NewTenantSubscriptionClient(tx.config)
+	tx.UsageEvent = NewUsageEventClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

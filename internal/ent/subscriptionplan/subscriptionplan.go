@@ -56,6 +56,8 @@ const (
 	EdgePricingHistory = "pricing_history"
 	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
 	EdgeSubscriptions = "subscriptions"
+	// EdgeOverrideProductSubscriptions holds the string denoting the override_product_subscriptions edge name in mutations.
+	EdgeOverrideProductSubscriptions = "override_product_subscriptions"
 	// Table holds the table name of the subscriptionplan in the database.
 	Table = "subscription_plans"
 	// FeaturesTable is the table that holds the features relation/edge.
@@ -79,6 +81,13 @@ const (
 	SubscriptionsInverseTable = "tenant_subscriptions"
 	// SubscriptionsColumn is the table column denoting the subscriptions relation/edge.
 	SubscriptionsColumn = "plan_id"
+	// OverrideProductSubscriptionsTable is the table that holds the override_product_subscriptions relation/edge.
+	OverrideProductSubscriptionsTable = "product_subscriptions"
+	// OverrideProductSubscriptionsInverseTable is the table name for the ProductSubscription entity.
+	// It exists in this package in order to avoid circular dependency with the "productsubscription" package.
+	OverrideProductSubscriptionsInverseTable = "product_subscriptions"
+	// OverrideProductSubscriptionsColumn is the table column denoting the override_product_subscriptions relation/edge.
+	OverrideProductSubscriptionsColumn = "override_plan_id"
 )
 
 // Columns holds all SQL columns for subscriptionplan fields.
@@ -293,6 +302,20 @@ func BySubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newSubscriptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByOverrideProductSubscriptionsCount orders the results by override_product_subscriptions count.
+func ByOverrideProductSubscriptionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOverrideProductSubscriptionsStep(), opts...)
+	}
+}
+
+// ByOverrideProductSubscriptions orders the results by override_product_subscriptions terms.
+func ByOverrideProductSubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOverrideProductSubscriptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newFeaturesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -312,5 +335,12 @@ func newSubscriptionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SubscriptionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionsTable, SubscriptionsColumn),
+	)
+}
+func newOverrideProductSubscriptionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OverrideProductSubscriptionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OverrideProductSubscriptionsTable, OverrideProductSubscriptionsColumn),
 	)
 }

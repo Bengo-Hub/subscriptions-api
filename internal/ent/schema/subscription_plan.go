@@ -80,6 +80,7 @@ func (SubscriptionPlan) Edges() []ent.Edge {
 		edge.To("features", PlanFeature.Type),
 		edge.To("pricing_history", PlanPricingHistory.Type),
 		edge.To("subscriptions", TenantSubscription.Type),
+		edge.To("override_product_subscriptions", ProductSubscription.Type),
 	}
 }
 

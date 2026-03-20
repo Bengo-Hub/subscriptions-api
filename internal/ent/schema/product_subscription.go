@@ -44,6 +44,14 @@ func (ProductSubscription) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("When this product was deactivated"),
+		field.UUID("service_charge_plan_id", uuid.UUID{}).
+			Optional().
+			Nillable().
+			Comment("Optional FK to service_charge_plans; if set, this product uses service-charge billing instead of flat subscription pricing"),
+		field.UUID("override_plan_id", uuid.UUID{}).
+			Optional().
+			Nillable().
+			Comment("Optional FK to subscription_plans; if set, this product uses a different plan than the tenant's main plan"),
 		field.JSON("metadata", map[string]any{}).
 			Default(map[string]any{}),
 		field.Time("created_at").
@@ -67,6 +75,14 @@ func (ProductSubscription) Edges() []ent.Edge {
 			Ref("product_subscriptions").
 			Field("product_id").
 			Required().
+			Unique(),
+		edge.From("service_charge_plan", ServiceChargePlan.Type).
+			Ref("product_subscriptions").
+			Field("service_charge_plan_id").
+			Unique(),
+		edge.From("override_plan", SubscriptionPlan.Type).
+			Ref("override_product_subscriptions").
+			Field("override_plan_id").
 			Unique(),
 	}
 }

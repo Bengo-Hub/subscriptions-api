@@ -12,9 +12,11 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/schema"
+	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/ent/usageevent"
 	"github.com/google/uuid"
 )
 
@@ -195,15 +197,15 @@ func init() {
 	// productsubscription.ProductCodeValidator is a validator for the "product_code" field. It is called by the builders before save.
 	productsubscription.ProductCodeValidator = productsubscriptionDescProductCode.Validators[0].(func(string) error)
 	// productsubscriptionDescMetadata is the schema descriptor for metadata field.
-	productsubscriptionDescMetadata := productsubscriptionFields[8].Descriptor()
+	productsubscriptionDescMetadata := productsubscriptionFields[10].Descriptor()
 	// productsubscription.DefaultMetadata holds the default value on creation for the metadata field.
 	productsubscription.DefaultMetadata = productsubscriptionDescMetadata.Default.(map[string]interface{})
 	// productsubscriptionDescCreatedAt is the schema descriptor for created_at field.
-	productsubscriptionDescCreatedAt := productsubscriptionFields[9].Descriptor()
+	productsubscriptionDescCreatedAt := productsubscriptionFields[11].Descriptor()
 	// productsubscription.DefaultCreatedAt holds the default value on creation for the created_at field.
 	productsubscription.DefaultCreatedAt = productsubscriptionDescCreatedAt.Default.(func() time.Time)
 	// productsubscriptionDescUpdatedAt is the schema descriptor for updated_at field.
-	productsubscriptionDescUpdatedAt := productsubscriptionFields[10].Descriptor()
+	productsubscriptionDescUpdatedAt := productsubscriptionFields[12].Descriptor()
 	// productsubscription.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	productsubscription.DefaultUpdatedAt = productsubscriptionDescUpdatedAt.Default.(func() time.Time)
 	// productsubscription.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -212,6 +214,50 @@ func init() {
 	productsubscriptionDescID := productsubscriptionFields[0].Descriptor()
 	// productsubscription.DefaultID holds the default value on creation for the id field.
 	productsubscription.DefaultID = productsubscriptionDescID.Default.(func() uuid.UUID)
+	servicechargeplanFields := schema.ServiceChargePlan{}.Fields()
+	_ = servicechargeplanFields
+	// servicechargeplanDescCode is the schema descriptor for code field.
+	servicechargeplanDescCode := servicechargeplanFields[1].Descriptor()
+	// servicechargeplan.CodeValidator is a validator for the "code" field. It is called by the builders before save.
+	servicechargeplan.CodeValidator = servicechargeplanDescCode.Validators[0].(func(string) error)
+	// servicechargeplanDescName is the schema descriptor for name field.
+	servicechargeplanDescName := servicechargeplanFields[2].Descriptor()
+	// servicechargeplan.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	servicechargeplan.NameValidator = servicechargeplanDescName.Validators[0].(func(string) error)
+	// servicechargeplanDescChargeValue is the schema descriptor for charge_value field.
+	servicechargeplanDescChargeValue := servicechargeplanFields[5].Descriptor()
+	// servicechargeplan.DefaultChargeValue holds the default value on creation for the charge_value field.
+	servicechargeplan.DefaultChargeValue = servicechargeplanDescChargeValue.Default.(float64)
+	// servicechargeplanDescCurrency is the schema descriptor for currency field.
+	servicechargeplanDescCurrency := servicechargeplanFields[6].Descriptor()
+	// servicechargeplan.DefaultCurrency holds the default value on creation for the currency field.
+	servicechargeplan.DefaultCurrency = servicechargeplanDescCurrency.Default.(string)
+	// servicechargeplanDescIsActive is the schema descriptor for is_active field.
+	servicechargeplanDescIsActive := servicechargeplanFields[11].Descriptor()
+	// servicechargeplan.DefaultIsActive holds the default value on creation for the is_active field.
+	servicechargeplan.DefaultIsActive = servicechargeplanDescIsActive.Default.(bool)
+	// servicechargeplanDescIsDefault is the schema descriptor for is_default field.
+	servicechargeplanDescIsDefault := servicechargeplanFields[12].Descriptor()
+	// servicechargeplan.DefaultIsDefault holds the default value on creation for the is_default field.
+	servicechargeplan.DefaultIsDefault = servicechargeplanDescIsDefault.Default.(bool)
+	// servicechargeplanDescMetadata is the schema descriptor for metadata field.
+	servicechargeplanDescMetadata := servicechargeplanFields[13].Descriptor()
+	// servicechargeplan.DefaultMetadata holds the default value on creation for the metadata field.
+	servicechargeplan.DefaultMetadata = servicechargeplanDescMetadata.Default.(map[string]interface{})
+	// servicechargeplanDescCreatedAt is the schema descriptor for created_at field.
+	servicechargeplanDescCreatedAt := servicechargeplanFields[14].Descriptor()
+	// servicechargeplan.DefaultCreatedAt holds the default value on creation for the created_at field.
+	servicechargeplan.DefaultCreatedAt = servicechargeplanDescCreatedAt.Default.(func() time.Time)
+	// servicechargeplanDescUpdatedAt is the schema descriptor for updated_at field.
+	servicechargeplanDescUpdatedAt := servicechargeplanFields[15].Descriptor()
+	// servicechargeplan.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	servicechargeplan.DefaultUpdatedAt = servicechargeplanDescUpdatedAt.Default.(func() time.Time)
+	// servicechargeplan.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	servicechargeplan.UpdateDefaultUpdatedAt = servicechargeplanDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// servicechargeplanDescID is the schema descriptor for id field.
+	servicechargeplanDescID := servicechargeplanFields[0].Descriptor()
+	// servicechargeplan.DefaultID holds the default value on creation for the id field.
+	servicechargeplan.DefaultID = servicechargeplanDescID.Default.(func() uuid.UUID)
 	subscriptionplanFields := schema.SubscriptionPlan{}.Fields()
 	_ = subscriptionplanFields
 	// subscriptionplanDescPlanCode is the schema descriptor for plan_code field.
@@ -334,4 +380,54 @@ func init() {
 	tenantsubscriptionDescID := tenantsubscriptionFields[0].Descriptor()
 	// tenantsubscription.DefaultID holds the default value on creation for the id field.
 	tenantsubscription.DefaultID = tenantsubscriptionDescID.Default.(func() uuid.UUID)
+	usageeventFields := schema.UsageEvent{}.Fields()
+	_ = usageeventFields
+	// usageeventDescMetricType is the schema descriptor for metric_type field.
+	usageeventDescMetricType := usageeventFields[2].Descriptor()
+	// usageevent.MetricTypeValidator is a validator for the "metric_type" field. It is called by the builders before save.
+	usageevent.MetricTypeValidator = func() func(string) error {
+		validators := usageeventDescMetricType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(metric_type string) error {
+			for _, fn := range fns {
+				if err := fn(metric_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// usageeventDescServiceName is the schema descriptor for service_name field.
+	usageeventDescServiceName := usageeventFields[3].Descriptor()
+	// usageevent.ServiceNameValidator is a validator for the "service_name" field. It is called by the builders before save.
+	usageevent.ServiceNameValidator = func() func(string) error {
+		validators := usageeventDescServiceName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(service_name string) error {
+			for _, fn := range fns {
+				if err := fn(service_name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// usageeventDescMetadata is the schema descriptor for metadata field.
+	usageeventDescMetadata := usageeventFields[7].Descriptor()
+	// usageevent.DefaultMetadata holds the default value on creation for the metadata field.
+	usageevent.DefaultMetadata = usageeventDescMetadata.Default.(map[string]interface{})
+	// usageeventDescCreatedAt is the schema descriptor for created_at field.
+	usageeventDescCreatedAt := usageeventFields[8].Descriptor()
+	// usageevent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	usageevent.DefaultCreatedAt = usageeventDescCreatedAt.Default.(func() time.Time)
+	// usageeventDescID is the schema descriptor for id field.
+	usageeventDescID := usageeventFields[0].Descriptor()
+	// usageevent.DefaultID holds the default value on creation for the id field.
+	usageevent.DefaultID = usageeventDescID.Default.(func() uuid.UUID)
 }

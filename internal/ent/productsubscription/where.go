@@ -86,6 +86,16 @@ func DeactivatedAt(v time.Time) predicate.ProductSubscription {
 	return predicate.ProductSubscription(sql.FieldEQ(FieldDeactivatedAt, v))
 }
 
+// ServiceChargePlanID applies equality check predicate on the "service_charge_plan_id" field. It's identical to ServiceChargePlanIDEQ.
+func ServiceChargePlanID(v uuid.UUID) predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldEQ(FieldServiceChargePlanID, v))
+}
+
+// OverridePlanID applies equality check predicate on the "override_plan_id" field. It's identical to OverridePlanIDEQ.
+func OverridePlanID(v uuid.UUID) predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldEQ(FieldOverridePlanID, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.ProductSubscription {
 	return predicate.ProductSubscription(sql.FieldEQ(FieldCreatedAt, v))
@@ -371,6 +381,66 @@ func DeactivatedAtNotNil() predicate.ProductSubscription {
 	return predicate.ProductSubscription(sql.FieldNotNull(FieldDeactivatedAt))
 }
 
+// ServiceChargePlanIDEQ applies the EQ predicate on the "service_charge_plan_id" field.
+func ServiceChargePlanIDEQ(v uuid.UUID) predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldEQ(FieldServiceChargePlanID, v))
+}
+
+// ServiceChargePlanIDNEQ applies the NEQ predicate on the "service_charge_plan_id" field.
+func ServiceChargePlanIDNEQ(v uuid.UUID) predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldNEQ(FieldServiceChargePlanID, v))
+}
+
+// ServiceChargePlanIDIn applies the In predicate on the "service_charge_plan_id" field.
+func ServiceChargePlanIDIn(vs ...uuid.UUID) predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldIn(FieldServiceChargePlanID, vs...))
+}
+
+// ServiceChargePlanIDNotIn applies the NotIn predicate on the "service_charge_plan_id" field.
+func ServiceChargePlanIDNotIn(vs ...uuid.UUID) predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldNotIn(FieldServiceChargePlanID, vs...))
+}
+
+// ServiceChargePlanIDIsNil applies the IsNil predicate on the "service_charge_plan_id" field.
+func ServiceChargePlanIDIsNil() predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldIsNull(FieldServiceChargePlanID))
+}
+
+// ServiceChargePlanIDNotNil applies the NotNil predicate on the "service_charge_plan_id" field.
+func ServiceChargePlanIDNotNil() predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldNotNull(FieldServiceChargePlanID))
+}
+
+// OverridePlanIDEQ applies the EQ predicate on the "override_plan_id" field.
+func OverridePlanIDEQ(v uuid.UUID) predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldEQ(FieldOverridePlanID, v))
+}
+
+// OverridePlanIDNEQ applies the NEQ predicate on the "override_plan_id" field.
+func OverridePlanIDNEQ(v uuid.UUID) predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldNEQ(FieldOverridePlanID, v))
+}
+
+// OverridePlanIDIn applies the In predicate on the "override_plan_id" field.
+func OverridePlanIDIn(vs ...uuid.UUID) predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldIn(FieldOverridePlanID, vs...))
+}
+
+// OverridePlanIDNotIn applies the NotIn predicate on the "override_plan_id" field.
+func OverridePlanIDNotIn(vs ...uuid.UUID) predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldNotIn(FieldOverridePlanID, vs...))
+}
+
+// OverridePlanIDIsNil applies the IsNil predicate on the "override_plan_id" field.
+func OverridePlanIDIsNil() predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldIsNull(FieldOverridePlanID))
+}
+
+// OverridePlanIDNotNil applies the NotNil predicate on the "override_plan_id" field.
+func OverridePlanIDNotNil() predicate.ProductSubscription {
+	return predicate.ProductSubscription(sql.FieldNotNull(FieldOverridePlanID))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.ProductSubscription {
 	return predicate.ProductSubscription(sql.FieldEQ(FieldCreatedAt, v))
@@ -489,6 +559,52 @@ func HasProduct() predicate.ProductSubscription {
 func HasProductWith(preds ...predicate.Product) predicate.ProductSubscription {
 	return predicate.ProductSubscription(func(s *sql.Selector) {
 		step := newProductStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasServiceChargePlan applies the HasEdge predicate on the "service_charge_plan" edge.
+func HasServiceChargePlan() predicate.ProductSubscription {
+	return predicate.ProductSubscription(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, ServiceChargePlanTable, ServiceChargePlanColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasServiceChargePlanWith applies the HasEdge predicate on the "service_charge_plan" edge with a given conditions (other predicates).
+func HasServiceChargePlanWith(preds ...predicate.ServiceChargePlan) predicate.ProductSubscription {
+	return predicate.ProductSubscription(func(s *sql.Selector) {
+		step := newServiceChargePlanStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasOverridePlan applies the HasEdge predicate on the "override_plan" edge.
+func HasOverridePlan() predicate.ProductSubscription {
+	return predicate.ProductSubscription(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, OverridePlanTable, OverridePlanColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOverridePlanWith applies the HasEdge predicate on the "override_plan" edge with a given conditions (other predicates).
+func HasOverridePlanWith(preds ...predicate.SubscriptionPlan) predicate.ProductSubscription {
+	return predicate.ProductSubscription(func(s *sql.Selector) {
+		step := newOverridePlanStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/planpricinghistory"
+	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
@@ -266,6 +267,21 @@ func (_c *SubscriptionPlanCreate) AddSubscriptions(v ...*TenantSubscription) *Su
 		ids[i] = v[i].ID
 	}
 	return _c.AddSubscriptionIDs(ids...)
+}
+
+// AddOverrideProductSubscriptionIDs adds the "override_product_subscriptions" edge to the ProductSubscription entity by IDs.
+func (_c *SubscriptionPlanCreate) AddOverrideProductSubscriptionIDs(ids ...uuid.UUID) *SubscriptionPlanCreate {
+	_c.mutation.AddOverrideProductSubscriptionIDs(ids...)
+	return _c
+}
+
+// AddOverrideProductSubscriptions adds the "override_product_subscriptions" edges to the ProductSubscription entity.
+func (_c *SubscriptionPlanCreate) AddOverrideProductSubscriptions(v ...*ProductSubscription) *SubscriptionPlanCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddOverrideProductSubscriptionIDs(ids...)
 }
 
 // Mutation returns the SubscriptionPlanMutation object of the builder.
@@ -562,6 +578,22 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tenantsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.OverrideProductSubscriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.OverrideProductSubscriptionsTable,
+			Columns: []string{subscriptionplan.OverrideProductSubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

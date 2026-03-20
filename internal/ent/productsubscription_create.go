@@ -14,6 +14,8 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
+	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -100,6 +102,34 @@ func (_c *ProductSubscriptionCreate) SetNillableDeactivatedAt(v *time.Time) *Pro
 	return _c
 }
 
+// SetServiceChargePlanID sets the "service_charge_plan_id" field.
+func (_c *ProductSubscriptionCreate) SetServiceChargePlanID(v uuid.UUID) *ProductSubscriptionCreate {
+	_c.mutation.SetServiceChargePlanID(v)
+	return _c
+}
+
+// SetNillableServiceChargePlanID sets the "service_charge_plan_id" field if the given value is not nil.
+func (_c *ProductSubscriptionCreate) SetNillableServiceChargePlanID(v *uuid.UUID) *ProductSubscriptionCreate {
+	if v != nil {
+		_c.SetServiceChargePlanID(*v)
+	}
+	return _c
+}
+
+// SetOverridePlanID sets the "override_plan_id" field.
+func (_c *ProductSubscriptionCreate) SetOverridePlanID(v uuid.UUID) *ProductSubscriptionCreate {
+	_c.mutation.SetOverridePlanID(v)
+	return _c
+}
+
+// SetNillableOverridePlanID sets the "override_plan_id" field if the given value is not nil.
+func (_c *ProductSubscriptionCreate) SetNillableOverridePlanID(v *uuid.UUID) *ProductSubscriptionCreate {
+	if v != nil {
+		_c.SetOverridePlanID(*v)
+	}
+	return _c
+}
+
 // SetMetadata sets the "metadata" field.
 func (_c *ProductSubscriptionCreate) SetMetadata(v map[string]interface{}) *ProductSubscriptionCreate {
 	_c.mutation.SetMetadata(v)
@@ -156,6 +186,16 @@ func (_c *ProductSubscriptionCreate) SetTenantSubscription(v *TenantSubscription
 // SetProduct sets the "product" edge to the Product entity.
 func (_c *ProductSubscriptionCreate) SetProduct(v *Product) *ProductSubscriptionCreate {
 	return _c.SetProductID(v.ID)
+}
+
+// SetServiceChargePlan sets the "service_charge_plan" edge to the ServiceChargePlan entity.
+func (_c *ProductSubscriptionCreate) SetServiceChargePlan(v *ServiceChargePlan) *ProductSubscriptionCreate {
+	return _c.SetServiceChargePlanID(v.ID)
+}
+
+// SetOverridePlan sets the "override_plan" edge to the SubscriptionPlan entity.
+func (_c *ProductSubscriptionCreate) SetOverridePlan(v *SubscriptionPlan) *ProductSubscriptionCreate {
+	return _c.SetOverridePlanID(v.ID)
 }
 
 // Mutation returns the ProductSubscriptionMutation object of the builder.
@@ -356,6 +396,40 @@ func (_c *ProductSubscriptionCreate) createSpec() (*ProductSubscription, *sqlgra
 		_node.ProductID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := _c.mutation.ServiceChargePlanIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   productsubscription.ServiceChargePlanTable,
+			Columns: []string{productsubscription.ServiceChargePlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(servicechargeplan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.ServiceChargePlanID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.OverridePlanIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   productsubscription.OverridePlanTable,
+			Columns: []string{productsubscription.OverridePlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionplan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.OverridePlanID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -507,6 +581,42 @@ func (u *ProductSubscriptionUpsert) UpdateDeactivatedAt() *ProductSubscriptionUp
 // ClearDeactivatedAt clears the value of the "deactivated_at" field.
 func (u *ProductSubscriptionUpsert) ClearDeactivatedAt() *ProductSubscriptionUpsert {
 	u.SetNull(productsubscription.FieldDeactivatedAt)
+	return u
+}
+
+// SetServiceChargePlanID sets the "service_charge_plan_id" field.
+func (u *ProductSubscriptionUpsert) SetServiceChargePlanID(v uuid.UUID) *ProductSubscriptionUpsert {
+	u.Set(productsubscription.FieldServiceChargePlanID, v)
+	return u
+}
+
+// UpdateServiceChargePlanID sets the "service_charge_plan_id" field to the value that was provided on create.
+func (u *ProductSubscriptionUpsert) UpdateServiceChargePlanID() *ProductSubscriptionUpsert {
+	u.SetExcluded(productsubscription.FieldServiceChargePlanID)
+	return u
+}
+
+// ClearServiceChargePlanID clears the value of the "service_charge_plan_id" field.
+func (u *ProductSubscriptionUpsert) ClearServiceChargePlanID() *ProductSubscriptionUpsert {
+	u.SetNull(productsubscription.FieldServiceChargePlanID)
+	return u
+}
+
+// SetOverridePlanID sets the "override_plan_id" field.
+func (u *ProductSubscriptionUpsert) SetOverridePlanID(v uuid.UUID) *ProductSubscriptionUpsert {
+	u.Set(productsubscription.FieldOverridePlanID, v)
+	return u
+}
+
+// UpdateOverridePlanID sets the "override_plan_id" field to the value that was provided on create.
+func (u *ProductSubscriptionUpsert) UpdateOverridePlanID() *ProductSubscriptionUpsert {
+	u.SetExcluded(productsubscription.FieldOverridePlanID)
+	return u
+}
+
+// ClearOverridePlanID clears the value of the "override_plan_id" field.
+func (u *ProductSubscriptionUpsert) ClearOverridePlanID() *ProductSubscriptionUpsert {
+	u.SetNull(productsubscription.FieldOverridePlanID)
 	return u
 }
 
@@ -701,6 +811,48 @@ func (u *ProductSubscriptionUpsertOne) UpdateDeactivatedAt() *ProductSubscriptio
 func (u *ProductSubscriptionUpsertOne) ClearDeactivatedAt() *ProductSubscriptionUpsertOne {
 	return u.Update(func(s *ProductSubscriptionUpsert) {
 		s.ClearDeactivatedAt()
+	})
+}
+
+// SetServiceChargePlanID sets the "service_charge_plan_id" field.
+func (u *ProductSubscriptionUpsertOne) SetServiceChargePlanID(v uuid.UUID) *ProductSubscriptionUpsertOne {
+	return u.Update(func(s *ProductSubscriptionUpsert) {
+		s.SetServiceChargePlanID(v)
+	})
+}
+
+// UpdateServiceChargePlanID sets the "service_charge_plan_id" field to the value that was provided on create.
+func (u *ProductSubscriptionUpsertOne) UpdateServiceChargePlanID() *ProductSubscriptionUpsertOne {
+	return u.Update(func(s *ProductSubscriptionUpsert) {
+		s.UpdateServiceChargePlanID()
+	})
+}
+
+// ClearServiceChargePlanID clears the value of the "service_charge_plan_id" field.
+func (u *ProductSubscriptionUpsertOne) ClearServiceChargePlanID() *ProductSubscriptionUpsertOne {
+	return u.Update(func(s *ProductSubscriptionUpsert) {
+		s.ClearServiceChargePlanID()
+	})
+}
+
+// SetOverridePlanID sets the "override_plan_id" field.
+func (u *ProductSubscriptionUpsertOne) SetOverridePlanID(v uuid.UUID) *ProductSubscriptionUpsertOne {
+	return u.Update(func(s *ProductSubscriptionUpsert) {
+		s.SetOverridePlanID(v)
+	})
+}
+
+// UpdateOverridePlanID sets the "override_plan_id" field to the value that was provided on create.
+func (u *ProductSubscriptionUpsertOne) UpdateOverridePlanID() *ProductSubscriptionUpsertOne {
+	return u.Update(func(s *ProductSubscriptionUpsert) {
+		s.UpdateOverridePlanID()
+	})
+}
+
+// ClearOverridePlanID clears the value of the "override_plan_id" field.
+func (u *ProductSubscriptionUpsertOne) ClearOverridePlanID() *ProductSubscriptionUpsertOne {
+	return u.Update(func(s *ProductSubscriptionUpsert) {
+		s.ClearOverridePlanID()
 	})
 }
 
@@ -1066,6 +1218,48 @@ func (u *ProductSubscriptionUpsertBulk) UpdateDeactivatedAt() *ProductSubscripti
 func (u *ProductSubscriptionUpsertBulk) ClearDeactivatedAt() *ProductSubscriptionUpsertBulk {
 	return u.Update(func(s *ProductSubscriptionUpsert) {
 		s.ClearDeactivatedAt()
+	})
+}
+
+// SetServiceChargePlanID sets the "service_charge_plan_id" field.
+func (u *ProductSubscriptionUpsertBulk) SetServiceChargePlanID(v uuid.UUID) *ProductSubscriptionUpsertBulk {
+	return u.Update(func(s *ProductSubscriptionUpsert) {
+		s.SetServiceChargePlanID(v)
+	})
+}
+
+// UpdateServiceChargePlanID sets the "service_charge_plan_id" field to the value that was provided on create.
+func (u *ProductSubscriptionUpsertBulk) UpdateServiceChargePlanID() *ProductSubscriptionUpsertBulk {
+	return u.Update(func(s *ProductSubscriptionUpsert) {
+		s.UpdateServiceChargePlanID()
+	})
+}
+
+// ClearServiceChargePlanID clears the value of the "service_charge_plan_id" field.
+func (u *ProductSubscriptionUpsertBulk) ClearServiceChargePlanID() *ProductSubscriptionUpsertBulk {
+	return u.Update(func(s *ProductSubscriptionUpsert) {
+		s.ClearServiceChargePlanID()
+	})
+}
+
+// SetOverridePlanID sets the "override_plan_id" field.
+func (u *ProductSubscriptionUpsertBulk) SetOverridePlanID(v uuid.UUID) *ProductSubscriptionUpsertBulk {
+	return u.Update(func(s *ProductSubscriptionUpsert) {
+		s.SetOverridePlanID(v)
+	})
+}
+
+// UpdateOverridePlanID sets the "override_plan_id" field to the value that was provided on create.
+func (u *ProductSubscriptionUpsertBulk) UpdateOverridePlanID() *ProductSubscriptionUpsertBulk {
+	return u.Update(func(s *ProductSubscriptionUpsert) {
+		s.UpdateOverridePlanID()
+	})
+}
+
+// ClearOverridePlanID clears the value of the "override_plan_id" field.
+func (u *ProductSubscriptionUpsertBulk) ClearOverridePlanID() *ProductSubscriptionUpsertBulk {
+	return u.Update(func(s *ProductSubscriptionUpsert) {
+		s.ClearOverridePlanID()
 	})
 }
 

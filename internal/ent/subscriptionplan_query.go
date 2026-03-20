@@ -15,6 +15,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/planpricinghistory"
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
+	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
@@ -23,13 +24,14 @@ import (
 // SubscriptionPlanQuery is the builder for querying SubscriptionPlan entities.
 type SubscriptionPlanQuery struct {
 	config
-	ctx                *QueryContext
-	order              []subscriptionplan.OrderOption
-	inters             []Interceptor
-	predicates         []predicate.SubscriptionPlan
-	withFeatures       *PlanFeatureQuery
-	withPricingHistory *PlanPricingHistoryQuery
-	withSubscriptions  *TenantSubscriptionQuery
+	ctx                              *QueryContext
+	order                            []subscriptionplan.OrderOption
+	inters                           []Interceptor
+	predicates                       []predicate.SubscriptionPlan
+	withFeatures                     *PlanFeatureQuery
+	withPricingHistory               *PlanPricingHistoryQuery
+	withSubscriptions                *TenantSubscriptionQuery
+	withOverrideProductSubscriptions *ProductSubscriptionQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -125,6 +127,28 @@ func (_q *SubscriptionPlanQuery) QuerySubscriptions() *TenantSubscriptionQuery {
 			sqlgraph.From(subscriptionplan.Table, subscriptionplan.FieldID, selector),
 			sqlgraph.To(tenantsubscription.Table, tenantsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionplan.SubscriptionsTable, subscriptionplan.SubscriptionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOverrideProductSubscriptions chains the current query on the "override_product_subscriptions" edge.
+func (_q *SubscriptionPlanQuery) QueryOverrideProductSubscriptions() *ProductSubscriptionQuery {
+	query := (&ProductSubscriptionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionplan.Table, subscriptionplan.FieldID, selector),
+			sqlgraph.To(productsubscription.Table, productsubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionplan.OverrideProductSubscriptionsTable, subscriptionplan.OverrideProductSubscriptionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -319,14 +343,15 @@ func (_q *SubscriptionPlanQuery) Clone() *SubscriptionPlanQuery {
 		return nil
 	}
 	return &SubscriptionPlanQuery{
-		config:             _q.config,
-		ctx:                _q.ctx.Clone(),
-		order:              append([]subscriptionplan.OrderOption{}, _q.order...),
-		inters:             append([]Interceptor{}, _q.inters...),
-		predicates:         append([]predicate.SubscriptionPlan{}, _q.predicates...),
-		withFeatures:       _q.withFeatures.Clone(),
-		withPricingHistory: _q.withPricingHistory.Clone(),
-		withSubscriptions:  _q.withSubscriptions.Clone(),
+		config:                           _q.config,
+		ctx:                              _q.ctx.Clone(),
+		order:                            append([]subscriptionplan.OrderOption{}, _q.order...),
+		inters:                           append([]Interceptor{}, _q.inters...),
+		predicates:                       append([]predicate.SubscriptionPlan{}, _q.predicates...),
+		withFeatures:                     _q.withFeatures.Clone(),
+		withPricingHistory:               _q.withPricingHistory.Clone(),
+		withSubscriptions:                _q.withSubscriptions.Clone(),
+		withOverrideProductSubscriptions: _q.withOverrideProductSubscriptions.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -363,6 +388,17 @@ func (_q *SubscriptionPlanQuery) WithSubscriptions(opts ...func(*TenantSubscript
 		opt(query)
 	}
 	_q.withSubscriptions = query
+	return _q
+}
+
+// WithOverrideProductSubscriptions tells the query-builder to eager-load the nodes that are connected to
+// the "override_product_subscriptions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *SubscriptionPlanQuery) WithOverrideProductSubscriptions(opts ...func(*ProductSubscriptionQuery)) *SubscriptionPlanQuery {
+	query := (&ProductSubscriptionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withOverrideProductSubscriptions = query
 	return _q
 }
 
@@ -444,10 +480,11 @@ func (_q *SubscriptionPlanQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	var (
 		nodes       = []*SubscriptionPlan{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			_q.withFeatures != nil,
 			_q.withPricingHistory != nil,
 			_q.withSubscriptions != nil,
+			_q.withOverrideProductSubscriptions != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -489,6 +526,15 @@ func (_q *SubscriptionPlanQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			func(n *SubscriptionPlan) { n.Edges.Subscriptions = []*TenantSubscription{} },
 			func(n *SubscriptionPlan, e *TenantSubscription) {
 				n.Edges.Subscriptions = append(n.Edges.Subscriptions, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withOverrideProductSubscriptions; query != nil {
+		if err := _q.loadOverrideProductSubscriptions(ctx, query, nodes,
+			func(n *SubscriptionPlan) { n.Edges.OverrideProductSubscriptions = []*ProductSubscription{} },
+			func(n *SubscriptionPlan, e *ProductSubscription) {
+				n.Edges.OverrideProductSubscriptions = append(n.Edges.OverrideProductSubscriptions, e)
 			}); err != nil {
 			return nil, err
 		}
@@ -581,6 +627,39 @@ func (_q *SubscriptionPlanQuery) loadSubscriptions(ctx context.Context, query *T
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "plan_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *SubscriptionPlanQuery) loadOverrideProductSubscriptions(ctx context.Context, query *ProductSubscriptionQuery, nodes []*SubscriptionPlan, init func(*SubscriptionPlan), assign func(*SubscriptionPlan, *ProductSubscription)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*SubscriptionPlan)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(productsubscription.FieldOverridePlanID)
+	}
+	query.Where(predicate.ProductSubscription(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(subscriptionplan.OverrideProductSubscriptionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.OverridePlanID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "override_plan_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "override_plan_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

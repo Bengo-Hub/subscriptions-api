@@ -14,6 +14,8 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
+	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -27,6 +29,8 @@ type ProductSubscriptionQuery struct {
 	predicates             []predicate.ProductSubscription
 	withTenantSubscription *TenantSubscriptionQuery
 	withProduct            *ProductQuery
+	withServiceChargePlan  *ServiceChargePlanQuery
+	withOverridePlan       *SubscriptionPlanQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -100,6 +104,50 @@ func (_q *ProductSubscriptionQuery) QueryProduct() *ProductQuery {
 			sqlgraph.From(productsubscription.Table, productsubscription.FieldID, selector),
 			sqlgraph.To(product.Table, product.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, productsubscription.ProductTable, productsubscription.ProductColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryServiceChargePlan chains the current query on the "service_charge_plan" edge.
+func (_q *ProductSubscriptionQuery) QueryServiceChargePlan() *ServiceChargePlanQuery {
+	query := (&ServiceChargePlanClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(productsubscription.Table, productsubscription.FieldID, selector),
+			sqlgraph.To(servicechargeplan.Table, servicechargeplan.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, productsubscription.ServiceChargePlanTable, productsubscription.ServiceChargePlanColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOverridePlan chains the current query on the "override_plan" edge.
+func (_q *ProductSubscriptionQuery) QueryOverridePlan() *SubscriptionPlanQuery {
+	query := (&SubscriptionPlanClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(productsubscription.Table, productsubscription.FieldID, selector),
+			sqlgraph.To(subscriptionplan.Table, subscriptionplan.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, productsubscription.OverridePlanTable, productsubscription.OverridePlanColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -301,6 +349,8 @@ func (_q *ProductSubscriptionQuery) Clone() *ProductSubscriptionQuery {
 		predicates:             append([]predicate.ProductSubscription{}, _q.predicates...),
 		withTenantSubscription: _q.withTenantSubscription.Clone(),
 		withProduct:            _q.withProduct.Clone(),
+		withServiceChargePlan:  _q.withServiceChargePlan.Clone(),
+		withOverridePlan:       _q.withOverridePlan.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -326,6 +376,28 @@ func (_q *ProductSubscriptionQuery) WithProduct(opts ...func(*ProductQuery)) *Pr
 		opt(query)
 	}
 	_q.withProduct = query
+	return _q
+}
+
+// WithServiceChargePlan tells the query-builder to eager-load the nodes that are connected to
+// the "service_charge_plan" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ProductSubscriptionQuery) WithServiceChargePlan(opts ...func(*ServiceChargePlanQuery)) *ProductSubscriptionQuery {
+	query := (&ServiceChargePlanClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withServiceChargePlan = query
+	return _q
+}
+
+// WithOverridePlan tells the query-builder to eager-load the nodes that are connected to
+// the "override_plan" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ProductSubscriptionQuery) WithOverridePlan(opts ...func(*SubscriptionPlanQuery)) *ProductSubscriptionQuery {
+	query := (&SubscriptionPlanClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withOverridePlan = query
 	return _q
 }
 
@@ -407,9 +479,11 @@ func (_q *ProductSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHo
 	var (
 		nodes       = []*ProductSubscription{}
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [4]bool{
 			_q.withTenantSubscription != nil,
 			_q.withProduct != nil,
+			_q.withServiceChargePlan != nil,
+			_q.withOverridePlan != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -439,6 +513,18 @@ func (_q *ProductSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHo
 	if query := _q.withProduct; query != nil {
 		if err := _q.loadProduct(ctx, query, nodes, nil,
 			func(n *ProductSubscription, e *Product) { n.Edges.Product = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withServiceChargePlan; query != nil {
+		if err := _q.loadServiceChargePlan(ctx, query, nodes, nil,
+			func(n *ProductSubscription, e *ServiceChargePlan) { n.Edges.ServiceChargePlan = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withOverridePlan; query != nil {
+		if err := _q.loadOverridePlan(ctx, query, nodes, nil,
+			func(n *ProductSubscription, e *SubscriptionPlan) { n.Edges.OverridePlan = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -503,6 +589,70 @@ func (_q *ProductSubscriptionQuery) loadProduct(ctx context.Context, query *Prod
 	}
 	return nil
 }
+func (_q *ProductSubscriptionQuery) loadServiceChargePlan(ctx context.Context, query *ServiceChargePlanQuery, nodes []*ProductSubscription, init func(*ProductSubscription), assign func(*ProductSubscription, *ServiceChargePlan)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*ProductSubscription)
+	for i := range nodes {
+		if nodes[i].ServiceChargePlanID == nil {
+			continue
+		}
+		fk := *nodes[i].ServiceChargePlanID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(servicechargeplan.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "service_charge_plan_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *ProductSubscriptionQuery) loadOverridePlan(ctx context.Context, query *SubscriptionPlanQuery, nodes []*ProductSubscription, init func(*ProductSubscription), assign func(*ProductSubscription, *SubscriptionPlan)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*ProductSubscription)
+	for i := range nodes {
+		if nodes[i].OverridePlanID == nil {
+			continue
+		}
+		fk := *nodes[i].OverridePlanID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(subscriptionplan.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "override_plan_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (_q *ProductSubscriptionQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -534,6 +684,12 @@ func (_q *ProductSubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withProduct != nil {
 			_spec.Node.AddColumnOnce(productsubscription.FieldProductID)
+		}
+		if _q.withServiceChargePlan != nil {
+			_spec.Node.AddColumnOnce(productsubscription.FieldServiceChargePlanID)
+		}
+		if _q.withOverridePlan != nil {
+			_spec.Node.AddColumnOnce(productsubscription.FieldOverridePlanID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

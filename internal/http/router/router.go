@@ -24,6 +24,9 @@ func New(
 	addonHandler *handlers.AddonHandler,
 	featureHandler *handlers.FeatureHandler,
 	usageHandler *handlers.UsageHandler,
+	serviceChargeHandler *handlers.ServiceChargeHandler,
+	billingHandler *handlers.BillingHandler,
+	platformHandler *handlers.PlatformHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -98,7 +101,14 @@ func New(
 				r.Post("/", subscriptionHandler.Create)
 				r.Put("/plan", subscriptionHandler.ChangePlan)
 				r.Post("/initiate", subscriptionHandler.Initiate)
+				r.Get("/settings", subscriptionHandler.GetSettings)
+				r.Put("/settings", subscriptionHandler.UpdateSettings)
 			})
+
+			// Billing
+			if billingHandler != nil {
+				r.Get("/billing", billingHandler.GetBilling)
+			}
 
 			// S2S subscription lookup by tenant ID — used by auth-api for JWT enrichment.
 			// Accessible via platform API key (service-to-service) or platform owner JWT.
@@ -117,7 +127,17 @@ func New(
 				r.Route("/usage", func(r chi.Router) {
 					r.Post("/report", usageHandler.ReportUsage)
 					r.Get("/", usageHandler.GetUsageSummary)
+					r.Get("/summary", usageHandler.GetUsageSummary) // alias for frontend
 				})
+			}
+
+			// Service charge plans
+			if serviceChargeHandler != nil {
+				r.Route("/service-charges", func(r chi.Router) {
+					r.Get("/plans", serviceChargeHandler.ListServiceChargePlans)
+					r.Get("/plans/{code}", serviceChargeHandler.GetServiceChargePlan)
+				})
+				r.Get("/tenants/{tenantID}/service-charges", serviceChargeHandler.GetTenantServiceCharges)
 			}
 
 			// Admin routes for plans (platform admin only)
@@ -136,16 +156,28 @@ func New(
 				r.Delete("/{id}", planHandler.DeletePlan)
 			})
 
-			// Admin list all subscriptions
-			r.Get("/admin/subscriptions", func(w http.ResponseWriter, r *http.Request) {
-				if !httpware.IsPlatformOwner(r.Context()) {
-					http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
-					return
-				}
-				// TODO: implement list all subscriptions
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(`{"subscriptions":[]}`))
-			})
+			// Admin list all subscriptions and platform stats
+			if platformHandler != nil {
+				r.Route("/admin", func(adminRouter chi.Router) {
+					adminRouter.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							if !httpware.IsPlatformOwner(r.Context()) {
+								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+								return
+							}
+							next.ServeHTTP(w, r)
+						})
+					})
+					adminRouter.Get("/subscriptions", platformHandler.ListAllSubscriptions)
+				})
+				r.Get("/platform/stats", func(w http.ResponseWriter, r *http.Request) {
+					if !httpware.IsPlatformOwner(r.Context()) {
+						http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+						return
+					}
+					platformHandler.GetPlatformStats(w, r)
+				})
+			}
 		})
 	})
 

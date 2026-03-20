@@ -24,6 +24,9 @@ type Product func(*sql.Selector)
 // ProductSubscription is the predicate function for productsubscription builders.
 type ProductSubscription func(*sql.Selector)
 
+// ServiceChargePlan is the predicate function for servicechargeplan builders.
+type ServiceChargePlan func(*sql.Selector)
+
 // SubscriptionPlan is the predicate function for subscriptionplan builders.
 type SubscriptionPlan func(*sql.Selector)
 
@@ -32,3 +35,6 @@ type Tenant func(*sql.Selector)
 
 // TenantSubscription is the predicate function for tenantsubscription builders.
 type TenantSubscription func(*sql.Selector)
+
+// UsageEvent is the predicate function for usageevent builders.
+type UsageEvent func(*sql.Selector)
