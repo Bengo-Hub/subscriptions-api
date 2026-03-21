@@ -19,6 +19,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
+	sharedcache "github.com/Bengo-Hub/cache"
 	authclient "github.com/Bengo-Hub/shared-auth-client"
 	eventslib "github.com/Bengo-Hub/shared-events"
 	serviceclient "github.com/Bengo-Hub/shared-service-client"
@@ -151,11 +152,15 @@ func New(ctx context.Context) (*App, error) {
 		}
 	}
 
+	// Initialize cache helper for read-heavy queries
+	cacheAside := sharedcache.New(redisClient, log)
+
 	// Initialize plans module (repository and handler)
 	var planHandler *handlers.PlanHandler
 	if ormClient != nil {
 		planRepo := plans.NewEntRepository(ormClient)
 		planService := plans.NewService(log, planRepo)
+		planService.SetCache(cacheAside)
 		planHandler = handlers.NewPlanHandler(log, planService)
 	}
 

@@ -2,15 +2,18 @@ package plans
 
 import (
 	"context"
+	"fmt"
 
+	sharedcache "github.com/Bengo-Hub/cache"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 // Service handles business logic for subscription plans.
 type Service struct {
-	log  *zap.Logger
-	repo Repository
+	log   *zap.Logger
+	repo  Repository
+	cache *sharedcache.Aside
 }
 
 // NewService creates a new plans service.
@@ -19,6 +22,11 @@ func NewService(log *zap.Logger, repo Repository) *Service {
 		log:  log.Named("plans.service"),
 		repo: repo,
 	}
+}
+
+// SetCache injects the cache helper (optional; caching is skipped if nil).
+func (s *Service) SetCache(c *sharedcache.Aside) {
+	s.cache = c
 }
 
 // GetPlanWithPrice retrieves a plan and calculates its dynamic price if necessary.
@@ -41,23 +49,27 @@ func (s *Service) GetPlanByCodeWithPrice(ctx context.Context, code string) (*Sub
 	return s.calculatePrice(ctx, plan)
 }
 
-// ListPlansWithPrices retrieves all plans with their calculated prices.
+// ListPlansWithPrices retrieves all plans with their calculated prices (cached 1 min).
 func (s *Service) ListPlansWithPrices(ctx context.Context, activeOnly bool) ([]*SubscriptionPlan, error) {
-	plans, err := s.repo.ListPlans(ctx, activeOnly)
-	if err != nil {
-		return nil, err
-	}
-
-	for i, plan := range plans {
-		calculated, err := s.calculatePrice(ctx, plan)
+	key := sharedcache.Key("sub", "plans", fmt.Sprintf("active=%v", activeOnly))
+	fetch := func(ctx context.Context) ([]*SubscriptionPlan, error) {
+		plans, err := s.repo.ListPlans(ctx, activeOnly)
 		if err != nil {
-			s.log.Error("failed to calculate price for plan", zap.String("plan_code", plan.PlanCode), zap.Error(err))
-			continue
+			return nil, err
 		}
-		plans[i] = calculated
-	}
 
-	return plans, nil
+		for i, plan := range plans {
+			calculated, err := s.calculatePrice(ctx, plan)
+			if err != nil {
+				s.log.Error("failed to calculate price for plan", zap.String("plan_code", plan.PlanCode), zap.Error(err))
+				continue
+			}
+			plans[i] = calculated
+		}
+
+		return plans, nil
+	}
+	return sharedcache.GetOrSet(ctx, s.cache, key, sharedcache.TTLModerate, fetch)
 }
 
 // calculatePrice performs the SUM-based logic if use_sum_based_pricing is true.
