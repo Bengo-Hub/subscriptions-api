@@ -24,16 +24,30 @@ type Tx struct {
 	Product *ProductClient
 	// ProductSubscription is the client for interacting with the ProductSubscription builders.
 	ProductSubscription *ProductSubscriptionClient
+	// RateLimitConfig is the client for interacting with the RateLimitConfig builders.
+	RateLimitConfig *RateLimitConfigClient
+	// RolePermission is the client for interacting with the RolePermission builders.
+	RolePermission *RolePermissionClient
 	// ServiceChargePlan is the client for interacting with the ServiceChargePlan builders.
 	ServiceChargePlan *ServiceChargePlanClient
+	// ServiceConfig is the client for interacting with the ServiceConfig builders.
+	ServiceConfig *ServiceConfigClient
 	// SubscriptionPlan is the client for interacting with the SubscriptionPlan builders.
 	SubscriptionPlan *SubscriptionPlanClient
+	// SubscriptionsPermission is the client for interacting with the SubscriptionsPermission builders.
+	SubscriptionsPermission *SubscriptionsPermissionClient
+	// SubscriptionsRole is the client for interacting with the SubscriptionsRole builders.
+	SubscriptionsRole *SubscriptionsRoleClient
+	// SubscriptionsUser is the client for interacting with the SubscriptionsUser builders.
+	SubscriptionsUser *SubscriptionsUserClient
 	// Tenant is the client for interacting with the Tenant builders.
 	Tenant *TenantClient
 	// TenantSubscription is the client for interacting with the TenantSubscription builders.
 	TenantSubscription *TenantSubscriptionClient
 	// UsageEvent is the client for interacting with the UsageEvent builders.
 	UsageEvent *UsageEventClient
+	// UserRoleAssignment is the client for interacting with the UserRoleAssignment builders.
+	UserRoleAssignment *UserRoleAssignmentClient
 
 	// lazily loaded.
 	client     *Client
@@ -171,11 +185,18 @@ func (tx *Tx) init() {
 	tx.PlanPricingHistory = NewPlanPricingHistoryClient(tx.config)
 	tx.Product = NewProductClient(tx.config)
 	tx.ProductSubscription = NewProductSubscriptionClient(tx.config)
+	tx.RateLimitConfig = NewRateLimitConfigClient(tx.config)
+	tx.RolePermission = NewRolePermissionClient(tx.config)
 	tx.ServiceChargePlan = NewServiceChargePlanClient(tx.config)
+	tx.ServiceConfig = NewServiceConfigClient(tx.config)
 	tx.SubscriptionPlan = NewSubscriptionPlanClient(tx.config)
+	tx.SubscriptionsPermission = NewSubscriptionsPermissionClient(tx.config)
+	tx.SubscriptionsRole = NewSubscriptionsRoleClient(tx.config)
+	tx.SubscriptionsUser = NewSubscriptionsUserClient(tx.config)
 	tx.Tenant = NewTenantClient(tx.config)
 	tx.TenantSubscription = NewTenantSubscriptionClient(tx.config)
 	tx.UsageEvent = NewUsageEventClient(tx.config)
+	tx.UserRoleAssignment = NewUserRoleAssignmentClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

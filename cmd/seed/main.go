@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"entgo.io/ent/dialect"
@@ -93,6 +94,21 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 	syncer := tenant.NewSyncer(tx.Client(), cfg.Services.AuthAPI)
 	if err := seedAllTenantSubscriptions(ctx, tx, syncer); err != nil {
 		return fmt.Errorf("seed tenant subscriptions: %w", err)
+	}
+
+	// 5. Seed RBAC permissions
+	if err := seedRBACPermissions(ctx, tx); err != nil {
+		return fmt.Errorf("seed rbac permissions: %w", err)
+	}
+
+	// 6. Seed rate limit configs
+	if err := seedRateLimitConfigs(ctx, tx); err != nil {
+		return fmt.Errorf("seed rate limit configs: %w", err)
+	}
+
+	// 7. Seed service configs
+	if err := seedServiceConfigs(ctx, tx); err != nil {
+		return fmt.Errorf("seed service configs: %w", err)
 	}
 
 	return nil
@@ -1106,5 +1122,316 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 	}
 
 	log.Println("  ✓ Service charge plans seeded")
+	return nil
+}
+
+// ── RBAC Permissions ────────────────────────────────────────────────────────
+
+func seedRBACPermissions(ctx context.Context, tx *ent.Tx) error {
+	type permDef struct {
+		code   string
+		name   string
+		module string
+		action string
+	}
+
+	modules := []string{"plans", "features", "bundles", "pricing", "subscriptions", "usage", "billing", "config", "users"}
+	actions := []string{"add", "view", "view_own", "change", "change_own", "delete", "delete_own", "manage", "manage_own"}
+
+	var perms []permDef
+	for _, mod := range modules {
+		for _, act := range actions {
+			code := fmt.Sprintf("subscriptions.%s.%s", mod, act)
+			name := fmt.Sprintf("%s %s", capitalise(act), capitalise(mod))
+			perms = append(perms, permDef{
+				code:   code,
+				name:   name,
+				module: mod,
+				action: act,
+			})
+		}
+	}
+
+	for _, p := range perms {
+		permID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(p.code))
+		_, err := tx.SubscriptionsPermission.Create().
+			SetID(permID).
+			SetPermissionCode(p.code).
+			SetName(p.name).
+			SetModule(p.module).
+			SetAction(p.action).
+			SetResource(p.module).
+			Save(ctx)
+		if err != nil {
+			// Skip if already exists (upsert not needed for seed)
+			if ent.IsConstraintError(err) {
+				continue
+			}
+			return fmt.Errorf("create permission %s: %w", p.code, err)
+		}
+	}
+
+	// Seed system roles per existing tenant
+	// NOTE: Roles are tenant-scoped. We seed them for ALL tenants in the database.
+	tenants, err := tx.Tenant.Query().All(ctx)
+	if err != nil {
+		return fmt.Errorf("list tenants for role seeding: %w", err)
+	}
+
+	type roleDef struct {
+		code        string
+		name        string
+		description string
+		permModules []string // modules this role gets ALL actions for
+	}
+
+	roles := []roleDef{
+		{
+			code:        "subscriptions_admin",
+			name:        "Subscriptions Admin",
+			description: "Full access to all subscriptions management features",
+			permModules: modules, // all modules
+		},
+		{
+			code:        "billing_manager",
+			name:        "Billing Manager",
+			description: "Manage billing, subscriptions, and pricing",
+			permModules: []string{"subscriptions", "billing", "pricing", "usage"},
+		},
+		{
+			code:        "viewer",
+			name:        "Viewer",
+			description: "Read-only access to subscriptions data",
+			permModules: nil, // will assign view + view_own only
+		},
+	}
+
+	for _, t := range tenants {
+		for _, rd := range roles {
+			roleID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(fmt.Sprintf("%s:%s", t.ID, rd.code)))
+			_, err := tx.SubscriptionsRole.Create().
+				SetID(roleID).
+				SetTenantID(t.ID).
+				SetRoleCode(rd.code).
+				SetName(rd.name).
+				SetDescription(rd.description).
+				SetIsSystemRole(true).
+				Save(ctx)
+			if err != nil {
+				if ent.IsConstraintError(err) {
+					continue
+				}
+				return fmt.Errorf("create role %s for tenant %s: %w", rd.code, t.Slug, err)
+			}
+
+			// Assign permissions to role
+			if rd.code == "viewer" {
+				// Viewer gets only view and view_own for all modules
+				for _, mod := range modules {
+					for _, act := range []string{"view", "view_own"} {
+						code := fmt.Sprintf("subscriptions.%s.%s", mod, act)
+						permID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(code))
+						_, err := tx.RolePermission.Create().
+							SetRoleID(roleID).
+							SetPermissionID(permID).
+							Save(ctx)
+						if err != nil && !ent.IsConstraintError(err) {
+							return fmt.Errorf("assign permission %s to role %s: %w", code, rd.code, err)
+						}
+					}
+				}
+			} else {
+				// Admin and billing_manager get all actions for their modules
+				for _, mod := range rd.permModules {
+					for _, act := range actions {
+						code := fmt.Sprintf("subscriptions.%s.%s", mod, act)
+						permID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(code))
+						_, err := tx.RolePermission.Create().
+							SetRoleID(roleID).
+							SetPermissionID(permID).
+							Save(ctx)
+						if err != nil && !ent.IsConstraintError(err) {
+							return fmt.Errorf("assign permission %s to role %s: %w", code, rd.code, err)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	log.Println("  ✓ RBAC permissions and roles seeded")
+	return nil
+}
+
+func capitalise(s string) string {
+	if s == "" {
+		return s
+	}
+	// Replace underscores with spaces and capitalise first letter
+	s = strings.ReplaceAll(s, "_", " ")
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+// ── Rate Limit Configs ──────────────────────────────────────────────────────
+
+func seedRateLimitConfigs(ctx context.Context, tx *ent.Tx) error {
+	type rlDef struct {
+		serviceName       string
+		keyType           string
+		endpointPattern   string
+		requestsPerWindow int
+		windowSeconds     int
+		burstMultiplier   float64
+		description       string
+	}
+
+	configs := []rlDef{
+		{
+			serviceName:       "subscriptions-api",
+			keyType:           "ip",
+			endpointPattern:   "*",
+			requestsPerWindow: 120,
+			windowSeconds:     60,
+			burstMultiplier:   2.0,
+			description:       "Default IP-based rate limit for subscriptions-api",
+		},
+		{
+			serviceName:       "subscriptions-api",
+			keyType:           "tenant",
+			endpointPattern:   "*",
+			requestsPerWindow: 300,
+			windowSeconds:     60,
+			burstMultiplier:   1.5,
+			description:       "Default tenant-based rate limit for subscriptions-api",
+		},
+		{
+			serviceName:       "subscriptions-api",
+			keyType:           "user",
+			endpointPattern:   "*",
+			requestsPerWindow: 60,
+			windowSeconds:     60,
+			burstMultiplier:   1.5,
+			description:       "Default user-based rate limit for subscriptions-api",
+		},
+		{
+			serviceName:       "subscriptions-api",
+			keyType:           "endpoint",
+			endpointPattern:   "/api/v1/subscription",
+			requestsPerWindow: 30,
+			windowSeconds:     60,
+			burstMultiplier:   1.0,
+			description:       "Rate limit for subscription creation/modification",
+		},
+		{
+			serviceName:       "subscriptions-api",
+			keyType:           "endpoint",
+			endpointPattern:   "/api/v1/usage/report",
+			requestsPerWindow: 600,
+			windowSeconds:     60,
+			burstMultiplier:   3.0,
+			description:       "Higher limit for usage reporting (called by other microservices)",
+		},
+	}
+
+	for _, c := range configs {
+		id := uuid.NewSHA1(uuid.NameSpaceOID, []byte(fmt.Sprintf("rl:%s:%s:%s", c.serviceName, c.keyType, c.endpointPattern)))
+		_, err := tx.RateLimitConfig.Create().
+			SetID(id).
+			SetServiceName(c.serviceName).
+			SetKeyType(c.keyType).
+			SetEndpointPattern(c.endpointPattern).
+			SetRequestsPerWindow(c.requestsPerWindow).
+			SetWindowSeconds(c.windowSeconds).
+			SetBurstMultiplier(c.burstMultiplier).
+			SetIsActive(true).
+			SetDescription(c.description).
+			Save(ctx)
+		if err != nil {
+			if ent.IsConstraintError(err) {
+				continue
+			}
+			return fmt.Errorf("create rate limit config %s/%s/%s: %w", c.serviceName, c.keyType, c.endpointPattern, err)
+		}
+	}
+
+	log.Println("  ✓ Rate limit configs seeded")
+	return nil
+}
+
+// ── Service Configs ─────────────────────────────────────────────────────────
+
+func seedServiceConfigs(ctx context.Context, tx *ent.Tx) error {
+	type scDef struct {
+		configKey   string
+		configValue string
+		configType  string
+		description string
+		isSecret    bool
+	}
+
+	configs := []scDef{
+		{
+			configKey:   "subscriptions.trial_days",
+			configValue: "14",
+			configType:  "int",
+			description: "Default number of trial days for new subscriptions",
+		},
+		{
+			configKey:   "subscriptions.max_plans_per_tenant",
+			configValue: "1",
+			configType:  "int",
+			description: "Maximum active subscription plans per tenant",
+		},
+		{
+			configKey:   "subscriptions.grace_period_days",
+			configValue: "7",
+			configType:  "int",
+			description: "Days after expiration before access is revoked",
+		},
+		{
+			configKey:   "subscriptions.auto_renew_default",
+			configValue: "true",
+			configType:  "bool",
+			description: "Whether new subscriptions auto-renew by default",
+		},
+		{
+			configKey:   "subscriptions.usage_reporting_interval_seconds",
+			configValue: "300",
+			configType:  "int",
+			description: "Minimum interval between usage reports from the same service",
+		},
+		{
+			configKey:   "subscriptions.feature_cache_ttl_seconds",
+			configValue: "60",
+			configType:  "int",
+			description: "TTL for feature entitlement cache in Redis",
+		},
+		{
+			configKey:   "subscriptions.rbac_enabled",
+			configValue: "true",
+			configType:  "bool",
+			description: "Whether RBAC enforcement is active",
+		},
+	}
+
+	for _, c := range configs {
+		id := uuid.NewSHA1(uuid.NameSpaceOID, []byte(fmt.Sprintf("sc::%s", c.configKey)))
+		_, err := tx.ServiceConfig.Create().
+			SetID(id).
+			SetConfigKey(c.configKey).
+			SetConfigValue(c.configValue).
+			SetConfigType(c.configType).
+			SetDescription(c.description).
+			SetIsSecret(c.isSecret).
+			Save(ctx)
+		if err != nil {
+			if ent.IsConstraintError(err) {
+				continue
+			}
+			return fmt.Errorf("create service config %s: %w", c.configKey, err)
+		}
+	}
+
+	log.Println("  ✓ Service configs seeded")
 	return nil
 }

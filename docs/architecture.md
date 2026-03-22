@@ -32,6 +32,7 @@ subscriptions-api/
 │   │   └── router/router.go   # chi router with auth middleware
 │   ├── modules/
 │   │   ├── plans/             # Plan catalog repository
+│   │   ├── rbac/              # RBAC: roles, permissions, user-role assignments
 │   │   ├── subscriptions/     # Subscription lifecycle service + state machine
 │   │   └── outbox/            # Outbox event repository
 │   ├── platform/

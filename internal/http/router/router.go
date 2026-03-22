@@ -27,6 +27,7 @@ func New(
 	serviceChargeHandler *handlers.ServiceChargeHandler,
 	billingHandler *handlers.BillingHandler,
 	platformHandler *handlers.PlatformHandler,
+	rbacHandler *handlers.RBACHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -138,6 +139,11 @@ func New(
 					r.Get("/plans/{code}", serviceChargeHandler.GetServiceChargePlan)
 				})
 				r.Get("/tenants/{tenantID}/service-charges", serviceChargeHandler.GetTenantServiceCharges)
+			}
+
+			// RBAC routes
+			if rbacHandler != nil {
+				rbacHandler.RegisterRoutes(r)
 			}
 
 			// Admin routes for plans (platform admin only)

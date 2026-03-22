@@ -18,11 +18,18 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/planpricinghistory"
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
+	"github.com/bengobox/subscription-service/internal/ent/ratelimitconfig"
+	"github.com/bengobox/subscription-service/internal/ent/rolepermission"
 	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
+	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionspermission"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionsuser"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/usageevent"
+	"github.com/bengobox/subscription-service/internal/ent/userroleassignment"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -83,17 +90,24 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			bundle.Table:              bundle.ValidColumn,
-			outboxevent.Table:         outboxevent.ValidColumn,
-			planfeature.Table:         planfeature.ValidColumn,
-			planpricinghistory.Table:  planpricinghistory.ValidColumn,
-			product.Table:             product.ValidColumn,
-			productsubscription.Table: productsubscription.ValidColumn,
-			servicechargeplan.Table:   servicechargeplan.ValidColumn,
-			subscriptionplan.Table:    subscriptionplan.ValidColumn,
-			tenant.Table:              tenant.ValidColumn,
-			tenantsubscription.Table:  tenantsubscription.ValidColumn,
-			usageevent.Table:          usageevent.ValidColumn,
+			bundle.Table:                  bundle.ValidColumn,
+			outboxevent.Table:             outboxevent.ValidColumn,
+			planfeature.Table:             planfeature.ValidColumn,
+			planpricinghistory.Table:      planpricinghistory.ValidColumn,
+			product.Table:                 product.ValidColumn,
+			productsubscription.Table:     productsubscription.ValidColumn,
+			ratelimitconfig.Table:         ratelimitconfig.ValidColumn,
+			rolepermission.Table:          rolepermission.ValidColumn,
+			servicechargeplan.Table:       servicechargeplan.ValidColumn,
+			serviceconfig.Table:           serviceconfig.ValidColumn,
+			subscriptionplan.Table:        subscriptionplan.ValidColumn,
+			subscriptionspermission.Table: subscriptionspermission.ValidColumn,
+			subscriptionsrole.Table:       subscriptionsrole.ValidColumn,
+			subscriptionsuser.Table:       subscriptionsuser.ValidColumn,
+			tenant.Table:                  tenant.ValidColumn,
+			tenantsubscription.Table:      tenantsubscription.ValidColumn,
+			usageevent.Table:              usageevent.ValidColumn,
+			userroleassignment.Table:      userroleassignment.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

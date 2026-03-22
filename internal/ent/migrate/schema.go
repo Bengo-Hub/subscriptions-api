@@ -299,6 +299,86 @@ var (
 			},
 		},
 	}
+	// RateLimitConfigsColumns holds the columns for the "rate_limit_configs" table.
+	RateLimitConfigsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "service_name", Type: field.TypeString},
+		{Name: "key_type", Type: field.TypeString},
+		{Name: "endpoint_pattern", Type: field.TypeString, Default: "*"},
+		{Name: "requests_per_window", Type: field.TypeInt, Default: 60},
+		{Name: "window_seconds", Type: field.TypeInt, Default: 60},
+		{Name: "burst_multiplier", Type: field.TypeFloat64, Default: 1.5},
+		{Name: "is_active", Type: field.TypeBool, Default: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// RateLimitConfigsTable holds the schema information for the "rate_limit_configs" table.
+	RateLimitConfigsTable = &schema.Table{
+		Name:       "rate_limit_configs",
+		Columns:    RateLimitConfigsColumns,
+		PrimaryKey: []*schema.Column{RateLimitConfigsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "ratelimitconfig_service_name_key_type_endpoint_pattern",
+				Unique:  true,
+				Columns: []*schema.Column{RateLimitConfigsColumns[1], RateLimitConfigsColumns[2], RateLimitConfigsColumns[3]},
+			},
+			{
+				Name:    "ratelimitconfig_service_name",
+				Unique:  false,
+				Columns: []*schema.Column{RateLimitConfigsColumns[1]},
+			},
+			{
+				Name:    "ratelimitconfig_is_active",
+				Unique:  false,
+				Columns: []*schema.Column{RateLimitConfigsColumns[7]},
+			},
+		},
+	}
+	// RolePermissionsColumns holds the columns for the "role_permissions" table.
+	RolePermissionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "role_id", Type: field.TypeUUID},
+		{Name: "permission_id", Type: field.TypeUUID},
+	}
+	// RolePermissionsTable holds the schema information for the "role_permissions" table.
+	RolePermissionsTable = &schema.Table{
+		Name:       "role_permissions",
+		Columns:    RolePermissionsColumns,
+		PrimaryKey: []*schema.Column{RolePermissionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "role_permissions_subscriptions_roles_role",
+				Columns:    []*schema.Column{RolePermissionsColumns[1]},
+				RefColumns: []*schema.Column{SubscriptionsRolesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "role_permissions_subscriptions_permissions_permission",
+				Columns:    []*schema.Column{RolePermissionsColumns[2]},
+				RefColumns: []*schema.Column{SubscriptionsPermissionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rolepermission_role_id_permission_id",
+				Unique:  true,
+				Columns: []*schema.Column{RolePermissionsColumns[1], RolePermissionsColumns[2]},
+			},
+			{
+				Name:    "rolepermission_role_id",
+				Unique:  false,
+				Columns: []*schema.Column{RolePermissionsColumns[1]},
+			},
+			{
+				Name:    "rolepermission_permission_id",
+				Unique:  false,
+				Columns: []*schema.Column{RolePermissionsColumns[2]},
+			},
+		},
+	}
 	// ServiceChargePlansColumns holds the columns for the "service_charge_plans" table.
 	ServiceChargePlansColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -338,6 +418,36 @@ var (
 				Name:    "servicechargeplan_charge_type",
 				Unique:  false,
 				Columns: []*schema.Column{ServiceChargePlansColumns[4]},
+			},
+		},
+	}
+	// ServiceConfigsColumns holds the columns for the "service_configs" table.
+	ServiceConfigsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "config_key", Type: field.TypeString},
+		{Name: "config_value", Type: field.TypeString, Size: 2147483647},
+		{Name: "config_type", Type: field.TypeString, Default: "string"},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "is_secret", Type: field.TypeBool, Default: false},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// ServiceConfigsTable holds the schema information for the "service_configs" table.
+	ServiceConfigsTable = &schema.Table{
+		Name:       "service_configs",
+		Columns:    ServiceConfigsColumns,
+		PrimaryKey: []*schema.Column{ServiceConfigsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "serviceconfig_tenant_id_config_key",
+				Unique:  true,
+				Columns: []*schema.Column{ServiceConfigsColumns[1], ServiceConfigsColumns[2]},
+			},
+			{
+				Name:    "serviceconfig_config_key",
+				Unique:  false,
+				Columns: []*schema.Column{ServiceConfigsColumns[2]},
 			},
 		},
 	}
@@ -382,6 +492,124 @@ var (
 				Name:    "subscriptionplan_tier_order",
 				Unique:  false,
 				Columns: []*schema.Column{SubscriptionPlansColumns[11]},
+			},
+		},
+	}
+	// SubscriptionsPermissionsColumns holds the columns for the "subscriptions_permissions" table.
+	SubscriptionsPermissionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "permission_code", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "module", Type: field.TypeString},
+		{Name: "action", Type: field.TypeString},
+		{Name: "resource", Type: field.TypeString, Nullable: true},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// SubscriptionsPermissionsTable holds the schema information for the "subscriptions_permissions" table.
+	SubscriptionsPermissionsTable = &schema.Table{
+		Name:       "subscriptions_permissions",
+		Columns:    SubscriptionsPermissionsColumns,
+		PrimaryKey: []*schema.Column{SubscriptionsPermissionsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "subscriptionspermission_permission_code",
+				Unique:  true,
+				Columns: []*schema.Column{SubscriptionsPermissionsColumns[1]},
+			},
+			{
+				Name:    "subscriptionspermission_module",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionsPermissionsColumns[3]},
+			},
+			{
+				Name:    "subscriptionspermission_action",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionsPermissionsColumns[4]},
+			},
+			{
+				Name:    "subscriptionspermission_module_action",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionsPermissionsColumns[3], SubscriptionsPermissionsColumns[4]},
+			},
+		},
+	}
+	// SubscriptionsRolesColumns holds the columns for the "subscriptions_roles" table.
+	SubscriptionsRolesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "role_code", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "is_system_role", Type: field.TypeBool, Default: false},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// SubscriptionsRolesTable holds the schema information for the "subscriptions_roles" table.
+	SubscriptionsRolesTable = &schema.Table{
+		Name:       "subscriptions_roles",
+		Columns:    SubscriptionsRolesColumns,
+		PrimaryKey: []*schema.Column{SubscriptionsRolesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "subscriptionsrole_tenant_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionsRolesColumns[1]},
+			},
+			{
+				Name:    "subscriptionsrole_tenant_id_role_code",
+				Unique:  true,
+				Columns: []*schema.Column{SubscriptionsRolesColumns[1], SubscriptionsRolesColumns[2]},
+			},
+			{
+				Name:    "subscriptionsrole_is_system_role",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionsRolesColumns[5]},
+			},
+		},
+	}
+	// SubscriptionsUsersColumns holds the columns for the "subscriptions_users" table.
+	SubscriptionsUsersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "auth_service_user_id", Type: field.TypeUUID, Unique: true},
+		{Name: "email", Type: field.TypeString},
+		{Name: "status", Type: field.TypeString, Default: "active"},
+		{Name: "sync_status", Type: field.TypeString, Default: "synced"},
+		{Name: "last_sync_at", Type: field.TypeTime, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// SubscriptionsUsersTable holds the schema information for the "subscriptions_users" table.
+	SubscriptionsUsersTable = &schema.Table{
+		Name:       "subscriptions_users",
+		Columns:    SubscriptionsUsersColumns,
+		PrimaryKey: []*schema.Column{SubscriptionsUsersColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "subscriptionsuser_tenant_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionsUsersColumns[1]},
+			},
+			{
+				Name:    "subscriptionsuser_auth_service_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{SubscriptionsUsersColumns[2]},
+			},
+			{
+				Name:    "subscriptionsuser_tenant_id_auth_service_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{SubscriptionsUsersColumns[1], SubscriptionsUsersColumns[2]},
+			},
+			{
+				Name:    "subscriptionsuser_status",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionsUsersColumns[4]},
+			},
+			{
+				Name:    "subscriptionsuser_sync_status",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionsUsersColumns[5]},
 			},
 		},
 	}
@@ -528,6 +756,70 @@ var (
 			},
 		},
 	}
+	// UserRoleAssignmentsColumns holds the columns for the "user_role_assignments" table.
+	UserRoleAssignmentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "assigned_by", Type: field.TypeUUID},
+		{Name: "assigned_at", Type: field.TypeTime},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "subscriptions_role_user_assignments", Type: field.TypeUUID, Nullable: true},
+		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "role_id", Type: field.TypeUUID},
+	}
+	// UserRoleAssignmentsTable holds the schema information for the "user_role_assignments" table.
+	UserRoleAssignmentsTable = &schema.Table{
+		Name:       "user_role_assignments",
+		Columns:    UserRoleAssignmentsColumns,
+		PrimaryKey: []*schema.Column{UserRoleAssignmentsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "user_role_assignments_subscriptions_roles_user_assignments",
+				Columns:    []*schema.Column{UserRoleAssignmentsColumns[5]},
+				RefColumns: []*schema.Column{SubscriptionsRolesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "user_role_assignments_subscriptions_users_user",
+				Columns:    []*schema.Column{UserRoleAssignmentsColumns[6]},
+				RefColumns: []*schema.Column{SubscriptionsUsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "user_role_assignments_subscriptions_roles_role",
+				Columns:    []*schema.Column{UserRoleAssignmentsColumns[7]},
+				RefColumns: []*schema.Column{SubscriptionsRolesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "userroleassignment_tenant_id_user_id_role_id",
+				Unique:  true,
+				Columns: []*schema.Column{UserRoleAssignmentsColumns[1], UserRoleAssignmentsColumns[6], UserRoleAssignmentsColumns[7]},
+			},
+			{
+				Name:    "userroleassignment_tenant_id",
+				Unique:  false,
+				Columns: []*schema.Column{UserRoleAssignmentsColumns[1]},
+			},
+			{
+				Name:    "userroleassignment_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{UserRoleAssignmentsColumns[6]},
+			},
+			{
+				Name:    "userroleassignment_role_id",
+				Unique:  false,
+				Columns: []*schema.Column{UserRoleAssignmentsColumns[7]},
+			},
+			{
+				Name:    "userroleassignment_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{UserRoleAssignmentsColumns[4]},
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		BundlesTable,
@@ -536,11 +828,18 @@ var (
 		PlanPricingHistoriesTable,
 		ProductsTable,
 		ProductSubscriptionsTable,
+		RateLimitConfigsTable,
+		RolePermissionsTable,
 		ServiceChargePlansTable,
+		ServiceConfigsTable,
 		SubscriptionPlansTable,
+		SubscriptionsPermissionsTable,
+		SubscriptionsRolesTable,
+		SubscriptionsUsersTable,
 		TenantsTable,
 		TenantSubscriptionsTable,
 		UsageEventsTable,
+		UserRoleAssignmentsTable,
 	}
 )
 
@@ -551,6 +850,11 @@ func init() {
 	ProductSubscriptionsTable.ForeignKeys[1].RefTable = ServiceChargePlansTable
 	ProductSubscriptionsTable.ForeignKeys[2].RefTable = SubscriptionPlansTable
 	ProductSubscriptionsTable.ForeignKeys[3].RefTable = TenantSubscriptionsTable
+	RolePermissionsTable.ForeignKeys[0].RefTable = SubscriptionsRolesTable
+	RolePermissionsTable.ForeignKeys[1].RefTable = SubscriptionsPermissionsTable
 	TenantSubscriptionsTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
 	TenantSubscriptionsTable.ForeignKeys[1].RefTable = TenantsTable
+	UserRoleAssignmentsTable.ForeignKeys[0].RefTable = SubscriptionsRolesTable
+	UserRoleAssignmentsTable.ForeignKeys[1].RefTable = SubscriptionsUsersTable
+	UserRoleAssignmentsTable.ForeignKeys[2].RefTable = SubscriptionsRolesTable
 }

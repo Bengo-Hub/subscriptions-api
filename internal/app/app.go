@@ -32,6 +32,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/modules/consumers"
 	"github.com/bengobox/subscription-service/internal/modules/outbox"
 	"github.com/bengobox/subscription-service/internal/modules/plans"
+	"github.com/bengobox/subscription-service/internal/modules/rbac"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/bengobox/subscription-service/internal/modules/tenant"
 	"github.com/bengobox/subscription-service/internal/platform/cache"
@@ -202,7 +203,12 @@ func New(ctx context.Context) (*App, error) {
 	billingHandler := handlers.NewBillingHandler(log, ormClient)
 	platformHandler := handlers.NewPlatformHandler(log, ormClient)
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
+	// RBAC module
+	rbacRepo := rbac.NewEntRepository(ormClient)
+	rbacService := rbac.NewService(rbacRepo, log, tenantSyncer)
+	rbacHandler := handlers.NewRBACHandler(log, rbacService, rbacRepo)
+
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),

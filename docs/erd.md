@@ -702,4 +702,132 @@ This enables scenarios like:
 
 ---
 
+## RBAC & Platform Configuration
+
+### subscriptions_permissions
+
+**Purpose**: Granular permission definitions for the subscriptions service.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY | Permission identifier |
+| `permission_code` | VARCHAR | NOT NULL, UNIQUE | Permission code: `subscriptions.plans.view`, etc. |
+| `name` | VARCHAR | NOT NULL | Display name |
+| `module` | VARCHAR | NOT NULL | Module: plans, features, bundles, pricing, subscriptions, usage, billing, config, users |
+| `action` | VARCHAR | NOT NULL | Action: add, view, view_own, change, change_own, delete, delete_own, manage, manage_own |
+| `resource` | VARCHAR | | Resource target |
+| `description` | TEXT | | Human-readable description |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Creation timestamp |
+
+**Indexes**: `permission_code` (unique), `module`, `action`, `(module, action)`.
+
+### subscriptions_roles
+
+**Purpose**: Role definitions scoped per tenant.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY | Role identifier |
+| `tenant_id` | UUID | NOT NULL | Tenant identifier |
+| `role_code` | VARCHAR | NOT NULL | Role code: subscriptions_admin, billing_manager, viewer |
+| `name` | VARCHAR | NOT NULL | Display name |
+| `description` | TEXT | | Human-readable description |
+| `is_system_role` | BOOLEAN | DEFAULT false | System roles cannot be deleted |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Last update timestamp |
+
+**Indexes**: `tenant_id`, `(tenant_id, role_code)` (unique), `is_system_role`.
+
+### role_permissions
+
+**Purpose**: Junction table linking roles to permissions.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `role_id` | UUID | NOT NULL, FK | Role identifier |
+| `permission_id` | UUID | NOT NULL, FK | Permission identifier |
+
+**Indexes**: `(role_id, permission_id)` (unique), `role_id`, `permission_id`.
+
+### subscriptions_users
+
+**Purpose**: Local user reference synced from auth-service (JIT provisioned).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY | User identifier |
+| `tenant_id` | UUID | NOT NULL | Tenant identifier |
+| `auth_service_user_id` | UUID | NOT NULL, UNIQUE | Reference to auth-service user |
+| `email` | VARCHAR | NOT NULL | Denormalized email |
+| `status` | VARCHAR | DEFAULT 'active' | Status: active, inactive, suspended |
+| `sync_status` | VARCHAR | DEFAULT 'synced' | Sync status: synced, pending, failed |
+| `last_sync_at` | TIMESTAMPTZ | | Last successful sync |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Last update timestamp |
+
+**Indexes**: `tenant_id`, `auth_service_user_id` (unique), `(tenant_id, auth_service_user_id)` (unique), `status`, `sync_status`.
+
+### user_role_assignments
+
+**Purpose**: Maps users to roles within a tenant.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY | Assignment identifier |
+| `tenant_id` | UUID | NOT NULL | Tenant identifier |
+| `user_id` | UUID | NOT NULL, FK | User identifier (subscriptions_users) |
+| `role_id` | UUID | NOT NULL, FK | Role identifier |
+| `assigned_by` | UUID | NOT NULL | User who assigned the role |
+| `assigned_at` | TIMESTAMPTZ | DEFAULT NOW() | Assignment timestamp |
+| `expires_at` | TIMESTAMPTZ | | Optional expiration |
+
+**Indexes**: `(tenant_id, user_id, role_id)` (unique), `tenant_id`, `user_id`, `role_id`, `expires_at`.
+
+### rate_limit_configs
+
+**Purpose**: Database-driven rate limiting configuration.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY | Config identifier |
+| `service_name` | VARCHAR | NOT NULL | Service identifier (subscriptions-api) |
+| `key_type` | VARCHAR | NOT NULL | Rate limit key: ip, tenant, user, endpoint, global |
+| `endpoint_pattern` | VARCHAR | DEFAULT '*' | Endpoint pattern to match |
+| `requests_per_window` | INTEGER | DEFAULT 60 | Max requests per window |
+| `window_seconds` | INTEGER | DEFAULT 60 | Time window in seconds |
+| `burst_multiplier` | FLOAT | DEFAULT 1.5 | Burst spike multiplier |
+| `is_active` | BOOLEAN | DEFAULT true | Active flag |
+| `description` | VARCHAR | | Description |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Last update timestamp |
+
+**Indexes**: `(service_name, key_type, endpoint_pattern)` (unique), `service_name`, `is_active`.
+
+### service_configs
+
+**Purpose**: Key-value service configuration; platform-level defaults and tenant-specific overrides.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY | Config identifier |
+| `tenant_id` | UUID | NULLABLE | Nil = platform default; set = tenant override |
+| `config_key` | VARCHAR | NOT NULL | Configuration key |
+| `config_value` | TEXT | NOT NULL | Configuration value (JSON string) |
+| `config_type` | VARCHAR | DEFAULT 'string' | Value type: string, int, bool, json, float |
+| `description` | VARCHAR | | Description |
+| `is_secret` | BOOLEAN | DEFAULT false | Masked in API responses if true |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Last update timestamp |
+
+**Indexes**: `(tenant_id, config_key)` (unique), `config_key`.
+
+### RBAC Design Notes
+
+- **Plans, features, bundles** are PLATFORM-LEVEL entities (no tenant_id). Permissions for managing these require `is_platform_owner`.
+- **Only tenant_subscription** is tenant-scoped.
+- System roles (`subscriptions_admin`, `billing_manager`, `viewer`) are seeded per tenant and cannot be deleted.
+- Permissions follow the format `subscriptions.{module}.{action}`.
+
+---
+
 Regenerate this ERD whenever Ent schemas evolve. Always run `go generate ./internal/ent` before committing schema changes and update integration docs accordingly.

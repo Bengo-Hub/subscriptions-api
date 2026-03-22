@@ -24,11 +24,29 @@ type Product func(*sql.Selector)
 // ProductSubscription is the predicate function for productsubscription builders.
 type ProductSubscription func(*sql.Selector)
 
+// RateLimitConfig is the predicate function for ratelimitconfig builders.
+type RateLimitConfig func(*sql.Selector)
+
+// RolePermission is the predicate function for rolepermission builders.
+type RolePermission func(*sql.Selector)
+
 // ServiceChargePlan is the predicate function for servicechargeplan builders.
 type ServiceChargePlan func(*sql.Selector)
 
+// ServiceConfig is the predicate function for serviceconfig builders.
+type ServiceConfig func(*sql.Selector)
+
 // SubscriptionPlan is the predicate function for subscriptionplan builders.
 type SubscriptionPlan func(*sql.Selector)
+
+// SubscriptionsPermission is the predicate function for subscriptionspermission builders.
+type SubscriptionsPermission func(*sql.Selector)
+
+// SubscriptionsRole is the predicate function for subscriptionsrole builders.
+type SubscriptionsRole func(*sql.Selector)
+
+// SubscriptionsUser is the predicate function for subscriptionsuser builders.
+type SubscriptionsUser func(*sql.Selector)
 
 // Tenant is the predicate function for tenant builders.
 type Tenant func(*sql.Selector)
@@ -38,3 +56,6 @@ type TenantSubscription func(*sql.Selector)
 
 // UsageEvent is the predicate function for usageevent builders.
 type UsageEvent func(*sql.Selector)
+
+// UserRoleAssignment is the predicate function for userroleassignment builders.
+type UserRoleAssignment func(*sql.Selector)
