@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	httpware "github.com/Bengo-Hub/httpware"
 )
 
 // BillingHandler handles billing-related endpoints.
@@ -28,7 +27,7 @@ func NewBillingHandler(log *zap.Logger, client *ent.Client) *BillingHandler {
 // GetBilling returns billing information for the tenant.
 func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	tenantIDStr := httpware.GetTenantID(ctx)
+	tenantIDStr := resolveTenantID(r)
 	if tenantIDStr == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 		return

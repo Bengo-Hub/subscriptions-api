@@ -30,15 +30,7 @@ func NewSubscriptionHandler(log *zap.Logger, client *ent.Client, svc *subscripti
 // Get returns the current tenant's subscription.
 func (h *SubscriptionHandler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	tenantIDStr := httpware.GetTenantID(ctx)
-
-	// Platform owners can override via query param
-	if httpware.IsPlatformOwner(ctx) {
-		if q := r.URL.Query().Get("tenantId"); q != "" {
-			tenantIDStr = q
-		}
-	}
-
+	tenantIDStr := resolveTenantID(r)
 	if tenantIDStr == "" {
 		h.respondWithError(w, http.StatusBadRequest, "tenant_id required")
 		return

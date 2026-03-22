@@ -12,7 +12,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
-	httpware "github.com/Bengo-Hub/httpware"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 )
 
@@ -53,7 +52,7 @@ func (h *FeatureHandler) CheckFeature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tenantIDStr := httpware.GetTenantID(ctx)
+	tenantIDStr := resolveTenantID(r)
 	if tenantIDStr == "" {
 		http.Error(w, `{"error":"tenant_id required"}`, http.StatusBadRequest)
 		return
@@ -123,7 +122,7 @@ func (h *FeatureHandler) CheckFeature(w http.ResponseWriter, r *http.Request) {
 // GET /api/v1/features
 func (h *FeatureHandler) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	tenantIDStr := httpware.GetTenantID(ctx)
+	tenantIDStr := resolveTenantID(r)
 	if tenantIDStr == "" {
 		http.Error(w, `{"error":"tenant_id required"}`, http.StatusBadRequest)
 		return

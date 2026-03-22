@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 
-	httpware "github.com/Bengo-Hub/httpware"
 )
 
 // UsageHandler accepts usage metric reports from microservices.
@@ -42,7 +41,7 @@ type reportUsageRequest struct {
 func (h *UsageHandler) ReportUsage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	tenantIDStr := httpware.GetTenantID(ctx)
+	tenantIDStr := resolveTenantID(r)
 	if tenantIDStr == "" {
 		http.Error(w, `{"error":"tenant_id required"}`, http.StatusBadRequest)
 		return
@@ -101,7 +100,7 @@ func (h *UsageHandler) ReportUsage(w http.ResponseWriter, r *http.Request) {
 // GET /api/v1/usage?from=&to=&service=
 func (h *UsageHandler) GetUsageSummary(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	tenantIDStr := httpware.GetTenantID(ctx)
+	tenantIDStr := resolveTenantID(r)
 	if tenantIDStr == "" {
 		http.Error(w, `{"error":"tenant_id required"}`, http.StatusBadRequest)
 		return
