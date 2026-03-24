@@ -1,4 +1,5 @@
-h1:wOVYt5DZRVolJ4dHj1HUoMMsqMU5HXLdEAfJu9/1c7U=
+h1:G3LL11fRqXNK2EU5zPZ9Rb6ulpWeoCdBJDj1O26/Zd8=
 20260311014015_initial_schema_v3.sql h1:R/oJ+OKFJOqXXwALIht3GiwudlgIBhftlKYX/25Wqy8=
 20260320031754_add_service_charge_plan_and_per_service_overrides.sql h1:wZ7KKK7UG8v1MIGTS+E9YCd90AgoV2Ot/coMCgG4Pes=
 20260322100158_add_rbac_rate_limit_service_config.sql h1:OujNi4BaOL1hr7g5UtSgNSabahv1KL5m8HfY3rQP3ew=
+20260324063800_reduce_tenant_schema.sql h1:htvYillMLyXMi+gmI6NChlztJTNDcGhos5aYOaE3QS4=
