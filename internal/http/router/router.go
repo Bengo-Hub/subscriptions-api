@@ -115,6 +115,9 @@ func New(
 			// Accessible via platform API key (service-to-service) or platform owner JWT.
 			r.Get("/tenants/{tenant_id}/subscription", subscriptionHandler.GetByTenantID)
 
+			// S2S expiring subscriptions — used by notifications-api for scheduled expiry warnings.
+			r.Get("/subscriptions/expiring", subscriptionHandler.ListExpiring)
+
 			// Feature gate checks — used by all microservices for Trinity Authorization
 			if featureHandler != nil {
 				r.Route("/features", func(r chi.Router) {

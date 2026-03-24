@@ -285,9 +285,13 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, "created", map[string]any{
 		"tenant_id":   sub.TenantID.String(),
 		"plan_code":   plan.PlanCode,
+		"plan_name":   plan.Name,
 		"status":      string(status),
 		"bundle_code": in.BundleCode,
 		"trial_days":  in.TrialDays,
+		"notification": map[string]any{
+			"target": "tenant_admin",
+		},
 	})
 
 	if err = tx.Commit(); err != nil {
@@ -361,10 +365,14 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 	}
 
 	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, direction, map[string]any{
-		"tenant_id":     sub.TenantID.String(),
-		"new_plan_code": newPlan.PlanCode,
-		"old_plan_id":   oldPlanID.String(),
-		"direction":     direction,
+		"tenant_id":      sub.TenantID.String(),
+		"new_plan_code":  newPlan.PlanCode,
+		"new_plan_name":  newPlan.Name,
+		"old_plan_id":    oldPlanID.String(),
+		"direction":      direction,
+		"notification": map[string]any{
+			"target": "tenant_admin",
+		},
 	})
 
 	if err = tx.Commit(); err != nil {
@@ -412,6 +420,9 @@ func (s *Service) CancelSubscription(ctx context.Context, in CancelInput) (*Subs
 	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, "cancelled", map[string]any{
 		"tenant_id": sub.TenantID.String(),
 		"reason":    in.Reason,
+		"notification": map[string]any{
+			"target": "tenant_admin",
+		},
 	})
 
 	if err = tx.Commit(); err != nil {
@@ -481,6 +492,9 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 
 	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, "renewed", map[string]any{
 		"tenant_id": sub.TenantID.String(),
+		"notification": map[string]any{
+			"target": "tenant_admin",
+		},
 	})
 
 	if err = tx.Commit(); err != nil {
@@ -588,6 +602,49 @@ func (s *Service) ListSubscriptions(ctx context.Context) ([]*SubscriptionResult,
 	results := make([]*SubscriptionResult, len(subs))
 	for i, sub := range subs {
 		results[i] = s.buildResult(sub, sub.Edges.Plan)
+	}
+	return results, nil
+}
+
+// ExpiringSubscription represents a subscription nearing expiry.
+type ExpiringSubscription struct {
+	TenantID         uuid.UUID `json:"tenant_id"`
+	PlanCode         string    `json:"plan_code"`
+	PlanName         string    `json:"plan_name"`
+	CurrentPeriodEnd time.Time `json:"current_period_end"`
+	DaysRemaining    int       `json:"days_remaining"`
+}
+
+// ListExpiring returns ACTIVE subscriptions expiring within the given number of days.
+func (s *Service) ListExpiring(ctx context.Context, days int) ([]ExpiringSubscription, error) {
+	now := time.Now().UTC()
+	deadline := now.AddDate(0, 0, days)
+
+	subs, err := s.client.TenantSubscription.Query().
+		Where(
+			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
+			tenantsubscription.CurrentPeriodEndGTE(now),
+			tenantsubscription.CurrentPeriodEndLTE(deadline),
+		).
+		WithPlan().
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list expiring subscriptions: %w", err)
+	}
+
+	results := make([]ExpiringSubscription, 0, len(subs))
+	for _, sub := range subs {
+		daysLeft := int(sub.CurrentPeriodEnd.Sub(now).Hours() / 24)
+		es := ExpiringSubscription{
+			TenantID:         sub.TenantID,
+			CurrentPeriodEnd: sub.CurrentPeriodEnd,
+			DaysRemaining:    daysLeft,
+		}
+		if sub.Edges.Plan != nil {
+			es.PlanCode = sub.Edges.Plan.PlanCode
+			es.PlanName = sub.Edges.Plan.Name
+		}
+		results = append(results, es)
 	}
 	return results, nil
 }

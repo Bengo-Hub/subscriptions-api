@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
@@ -256,6 +257,28 @@ func (h *SubscriptionHandler) UpdateSettings(w http.ResponseWriter, r *http.Requ
 	}
 
 	h.respondWithJSON(w, http.StatusOK, map[string]string{"status": "updated"})
+}
+
+// ListExpiring returns active subscriptions expiring within the given number of days.
+// S2S endpoint for notifications-api scheduled expiry warnings.
+// GET /api/v1/subscriptions/expiring?days=7
+func (h *SubscriptionHandler) ListExpiring(w http.ResponseWriter, r *http.Request) {
+	daysStr := r.URL.Query().Get("days")
+	days := 7 // default
+	if daysStr != "" {
+		if d, err := strconv.Atoi(daysStr); err == nil && d > 0 {
+			days = d
+		}
+	}
+
+	results, err := h.service.ListExpiring(r.Context(), days)
+	if err != nil {
+		h.log.Error("failed to list expiring subscriptions", zap.Error(err))
+		h.respondWithError(w, http.StatusInternalServerError, "failed to list expiring subscriptions")
+		return
+	}
+
+	h.respondWithJSON(w, http.StatusOK, results)
 }
 
 func (h *SubscriptionHandler) respondWithError(w http.ResponseWriter, code int, message string) {
