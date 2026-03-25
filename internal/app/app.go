@@ -165,6 +165,15 @@ func New(ctx context.Context) (*App, error) {
 		planHandler = handlers.NewPlanHandler(log, planService)
 	}
 
+	// Ensure JetStream stream for subscription events
+	if natsConn != nil {
+		if err := events.EnsureStream(ctx, natsConn, cfg.Events); err != nil {
+			log.Warn("failed to ensure subscription JetStream stream (non-fatal)", zap.Error(err))
+		} else {
+			log.Info("subscription JetStream stream ensured", zap.String("stream", cfg.Events.StreamName))
+		}
+	}
+
 	// Initialize outbox publisher
 	var outboxPublisher *eventslib.Publisher
 	if natsConn != nil && dbPool != nil {
