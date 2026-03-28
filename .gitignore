@@ -29,3 +29,11 @@ debug/
 # TLS certificates (mkcert generated)
 config/certs/*.pem
 config/certs/*.key
+# Security hardening
+.env.*
+!.env.example
+!example.env
+*.pem
+*-key.pem
+KubeSecrets/
+kubeSecrets/
