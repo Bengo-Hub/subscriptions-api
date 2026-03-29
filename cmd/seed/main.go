@@ -22,6 +22,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/schema"
 	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionspermission"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/tenant"
 )
@@ -1154,19 +1155,17 @@ func seedRBACPermissions(ctx context.Context, tx *ent.Tx) error {
 
 	for _, p := range perms {
 		permID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(p.code))
-		_, err := tx.SubscriptionsPermission.Create().
+		err := tx.SubscriptionsPermission.Create().
 			SetID(permID).
 			SetPermissionCode(p.code).
 			SetName(p.name).
 			SetModule(p.module).
 			SetAction(p.action).
 			SetResource(p.module).
-			Save(ctx)
-		if err != nil {
-			// Skip if already exists (upsert not needed for seed)
-			if ent.IsConstraintError(err) {
-				continue
-			}
+			OnConflictColumns(subscriptionspermission.FieldPermissionCode).
+			DoNothing().
+			Exec(ctx)
+		if err != nil && !ent.IsNotSingular(err) {
 			return fmt.Errorf("create permission %s: %w", p.code, err)
 		}
 	}
@@ -1209,51 +1208,49 @@ func seedRBACPermissions(ctx context.Context, tx *ent.Tx) error {
 	for _, t := range tenants {
 		for _, rd := range roles {
 			roleID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(fmt.Sprintf("%s:%s", t.ID, rd.code)))
-			_, err := tx.SubscriptionsRole.Create().
+			err := tx.SubscriptionsRole.Create().
 				SetID(roleID).
 				SetTenantID(t.ID).
 				SetRoleCode(rd.code).
 				SetName(rd.name).
 				SetDescription(rd.description).
 				SetIsSystemRole(true).
-				Save(ctx)
-			if err != nil {
-				if ent.IsConstraintError(err) {
-					continue
-				}
+				OnConflict(
+					entsql.ConflictColumns("tenant_id", "role_code"),
+				).
+				DoNothing().
+				Exec(ctx)
+			if err != nil && !ent.IsNotSingular(err) {
 				return fmt.Errorf("create role %s for tenant %s: %w", rd.code, t.Slug, err)
 			}
 
 			// Assign permissions to role
+			var permCodes []string
 			if rd.code == "viewer" {
-				// Viewer gets only view and view_own for all modules
 				for _, mod := range modules {
 					for _, act := range []string{"view", "view_own"} {
-						code := fmt.Sprintf("subscriptions.%s.%s", mod, act)
-						permID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(code))
-						_, err := tx.RolePermission.Create().
-							SetRoleID(roleID).
-							SetPermissionID(permID).
-							Save(ctx)
-						if err != nil && !ent.IsConstraintError(err) {
-							return fmt.Errorf("assign permission %s to role %s: %w", code, rd.code, err)
-						}
+						permCodes = append(permCodes, fmt.Sprintf("subscriptions.%s.%s", mod, act))
 					}
 				}
 			} else {
-				// Admin and billing_manager get all actions for their modules
 				for _, mod := range rd.permModules {
 					for _, act := range actions {
-						code := fmt.Sprintf("subscriptions.%s.%s", mod, act)
-						permID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(code))
-						_, err := tx.RolePermission.Create().
-							SetRoleID(roleID).
-							SetPermissionID(permID).
-							Save(ctx)
-						if err != nil && !ent.IsConstraintError(err) {
-							return fmt.Errorf("assign permission %s to role %s: %w", code, rd.code, err)
-						}
+						permCodes = append(permCodes, fmt.Sprintf("subscriptions.%s.%s", mod, act))
 					}
+				}
+			}
+			for _, code := range permCodes {
+				permID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(code))
+				err := tx.RolePermission.Create().
+					SetRoleID(roleID).
+					SetPermissionID(permID).
+					OnConflict(
+						entsql.ConflictColumns("role_id", "permission_id"),
+					).
+					DoNothing().
+					Exec(ctx)
+				if err != nil && !ent.IsNotSingular(err) {
+					return fmt.Errorf("assign permission %s to role %s: %w", code, rd.code, err)
 				}
 			}
 		}
