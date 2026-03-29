@@ -17,7 +17,9 @@ WORKDIR /app
 COPY --from=builder /bin/subscription-api /usr/local/bin/subscription-api
 COPY --from=builder /bin/subscription-seed /usr/local/bin/seed
 COPY internal/ent/migrate/migrations ./internal/ent/migrate/migrations
+COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 USER app
 EXPOSE 4005
 ENV PORT=4005
-ENTRYPOINT ["/usr/local/bin/subscription-api"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
