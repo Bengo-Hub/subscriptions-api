@@ -51,6 +51,17 @@ func New(
 		MaxAge:           300,
 	}))
 
+	// Root redirect to Swagger UI docs
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/v1/docs/", http.StatusFound)
+	})
+	r.Get("/healthz", healthHandler.Health)
+	r.Get("/readyz", healthHandler.Health)
+
+	// Swagger docs (outside /api/v1 — no auth required)
+	r.Get("/v1/docs/*", handlers.SwaggerUI)
+	r.Get("/api/v1/openapi.json", handlers.OpenAPIJSON)
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", healthHandler.Health)
 		r.Get("/healthz", healthHandler.Health) // readiness/liveness probe path used by Helm

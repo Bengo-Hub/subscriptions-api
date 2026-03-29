@@ -28,7 +28,17 @@ func NewSubscriptionHandler(log *zap.Logger, client *ent.Client, svc *subscripti
 	}
 }
 
-// Get returns the current tenant's subscription.
+// Get godoc
+// @Summary Get current subscription
+// @Description Returns the current tenant's subscription with plan details
+// @Tags Subscriptions
+// @Produce json
+// @Security BearerAuth
+// @Param X-Tenant-ID header string false "Tenant UUID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /subscription [get]
 func (h *SubscriptionHandler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenantIDStr := resolveTenantID(r)
@@ -53,7 +63,17 @@ func (h *SubscriptionHandler) Get(w http.ResponseWriter, r *http.Request) {
 	h.respondWithJSON(w, http.StatusOK, sub)
 }
 
-// Create provisions a new subscription.
+// Create godoc
+// @Summary Create subscription
+// @Description Provisions a new subscription for the tenant (starts trial if applicable)
+// @Tags Subscriptions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /subscription [post]
 func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var in subscriptions.CreateInput
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
@@ -85,6 +105,16 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 // ChangePlan upgrades or downgrades the subscription.
+// ChangePlan godoc
+// @Summary Change subscription plan
+// @Description Upgrades or downgrades the tenant's subscription plan
+// @Tags Subscriptions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Router /subscription/plan [put]
 func (h *SubscriptionHandler) ChangePlan(w http.ResponseWriter, r *http.Request) {
 	var in subscriptions.ChangePlanInput
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
@@ -115,6 +145,16 @@ func (h *SubscriptionHandler) ChangePlan(w http.ResponseWriter, r *http.Request)
 }
 
 // Initiate starts the checkout flow for a subscription.
+// Initiate godoc
+// @Summary Initiate subscription
+// @Description Starts the subscription provisioning process for a new tenant
+// @Tags Subscriptions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Router /subscription/initiate [post]
 func (h *SubscriptionHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 	var in subscriptions.InitiateSubscriptionInput
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
@@ -147,6 +187,18 @@ func (h *SubscriptionHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 // GetByTenantID returns subscription data for a specific tenant by ID.
 // This is a S2S endpoint — intended for service-to-service calls (e.g. auth-api JWT enrichment).
 // Requires API key auth (platform service key).
+// GetByTenantID godoc
+// @Summary Get subscription by tenant ID (S2S)
+// @Description Returns a tenant's subscription by tenant UUID. Used by auth-api for JWT enrichment.
+// @Tags Subscriptions
+// @Produce json
+// @Security BearerAuth
+// @Security ApiKeyAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /tenants/{tenant_id}/subscription [get]
 func (h *SubscriptionHandler) GetByTenantID(w http.ResponseWriter, r *http.Request) {
 	tenantIDStr := chi.URLParam(r, "tenant_id")
 	if tenantIDStr == "" {
@@ -171,6 +223,14 @@ func (h *SubscriptionHandler) GetByTenantID(w http.ResponseWriter, r *http.Reque
 }
 
 // GetSettings returns subscription settings (auto-renew, notification preferences).
+// GetSettings godoc
+// @Summary Get subscription settings
+// @Description Returns the current tenant's subscription settings (auto-renew, payment method, etc.)
+// @Tags Subscriptions
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Router /subscription/settings [get]
 func (h *SubscriptionHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenantIDStr := httpware.GetTenantID(ctx)
@@ -210,6 +270,16 @@ func (h *SubscriptionHandler) GetSettings(w http.ResponseWriter, r *http.Request
 }
 
 // UpdateSettings updates subscription settings.
+// UpdateSettings godoc
+// @Summary Update subscription settings
+// @Description Updates the current tenant's subscription settings
+// @Tags Subscriptions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Router /subscription/settings [put]
 func (h *SubscriptionHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenantIDStr := httpware.GetTenantID(ctx)
@@ -262,6 +332,16 @@ func (h *SubscriptionHandler) UpdateSettings(w http.ResponseWriter, r *http.Requ
 // ListExpiring returns active subscriptions expiring within the given number of days.
 // S2S endpoint for notifications-api scheduled expiry warnings.
 // GET /api/v1/subscriptions/expiring?days=7
+// ListExpiring godoc
+// @Summary List expiring subscriptions (S2S)
+// @Description Returns subscriptions expiring within the specified number of days. Used by notifications-api.
+// @Tags Subscriptions
+// @Produce json
+// @Security BearerAuth
+// @Security ApiKeyAuth
+// @Param days query int false "Days until expiry (default 7)"
+// @Success 200 {object} map[string]interface{}
+// @Router /subscriptions/expiring [get]
 func (h *SubscriptionHandler) ListExpiring(w http.ResponseWriter, r *http.Request) {
 	daysStr := r.URL.Query().Get("days")
 	days := 7 // default

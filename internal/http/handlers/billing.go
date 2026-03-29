@@ -24,7 +24,14 @@ func NewBillingHandler(log *zap.Logger, client *ent.Client) *BillingHandler {
 	}
 }
 
-// GetBilling returns billing information for the tenant.
+// GetBilling godoc
+// @Summary Get billing information
+// @Description Returns billing details and payment history for the tenant's subscription
+// @Tags Billing
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Router /billing [get]
 func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenantIDStr := resolveTenantID(r)

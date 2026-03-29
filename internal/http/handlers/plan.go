@@ -26,7 +26,15 @@ func NewPlanHandler(log *zap.Logger, svc *plans.Service) *PlanHandler {
 	}
 }
 
-// ListPlans returns all available subscription plans.
+// ListPlans godoc
+// @Summary List subscription plans
+// @Description Returns all available subscription plans with pricing
+// @Tags Plans
+// @Produce json
+// @Param active query bool false "Filter by active status"
+// @Success 200 {object} listPlansResponse
+// @Failure 500 {object} errorResponse
+// @Router /plans [get]
 func (h *PlanHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
 	activeOnly := false
 	if activeStr := r.URL.Query().Get("active"); activeStr != "" {
@@ -51,7 +59,16 @@ func (h *PlanHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetPlan returns a specific plan by ID.
+// GetPlan godoc
+// @Summary Get plan by ID
+// @Description Returns a specific subscription plan by UUID
+// @Tags Plans
+// @Produce json
+// @Param id path string true "Plan UUID"
+// @Success 200 {object} planResponse
+// @Failure 400 {object} errorResponse
+// @Failure 404 {object} errorResponse
+// @Router /plans/{id} [get]
 func (h *PlanHandler) GetPlan(w http.ResponseWriter, r *http.Request) {
 	planIDStr := chi.URLParam(r, "id")
 	planID, err := uuid.Parse(planIDStr)
@@ -70,7 +87,16 @@ func (h *PlanHandler) GetPlan(w http.ResponseWriter, r *http.Request) {
 	h.respondWithJSON(w, http.StatusOK, planResponse{Plan: plan})
 }
 
-// GetPlanByCode returns a specific plan by plan code.
+// GetPlanByCode godoc
+// @Summary Get plan by code
+// @Description Returns a specific subscription plan by plan code (e.g. STARTER, GROWTH, PROFESSIONAL)
+// @Tags Plans
+// @Produce json
+// @Param code path string true "Plan code"
+// @Success 200 {object} planResponse
+// @Failure 400 {object} errorResponse
+// @Failure 404 {object} errorResponse
+// @Router /plans/code/{code} [get]
 func (h *PlanHandler) GetPlanByCode(w http.ResponseWriter, r *http.Request) {
 	planCode := chi.URLParam(r, "code")
 	if planCode == "" {
@@ -88,7 +114,18 @@ func (h *PlanHandler) GetPlanByCode(w http.ResponseWriter, r *http.Request) {
 	h.respondWithJSON(w, http.StatusOK, planResponse{Plan: plan})
 }
 
-// CreatePlan creates a new subscription plan.
+// CreatePlan godoc
+// @Summary Create subscription plan (admin)
+// @Description Creates a new subscription plan. Requires platform owner access.
+// @Tags Plans
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 201 {object} planResponse
+// @Failure 400 {object} errorResponse
+// @Failure 403 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /admin/plans [post]
 func (h *PlanHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
 	var plan plans.SubscriptionPlan
 	if err := json.NewDecoder(r.Body).Decode(&plan); err != nil {
@@ -108,7 +145,19 @@ func (h *PlanHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
 	h.respondWithJSON(w, http.StatusCreated, planResponse{Plan: &plan})
 }
 
-// UpdatePlan updates an existing subscription plan.
+// UpdatePlan godoc
+// @Summary Update subscription plan (admin)
+// @Description Updates an existing subscription plan. Requires platform owner access.
+// @Tags Plans
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Plan UUID"
+// @Success 200 {object} planResponse
+// @Failure 400 {object} errorResponse
+// @Failure 403 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /admin/plans/{id} [put]
 func (h *PlanHandler) UpdatePlan(w http.ResponseWriter, r *http.Request) {
 	planIDStr := chi.URLParam(r, "id")
 	planID, err := uuid.Parse(planIDStr)
@@ -132,7 +181,17 @@ func (h *PlanHandler) UpdatePlan(w http.ResponseWriter, r *http.Request) {
 	h.respondWithJSON(w, http.StatusOK, planResponse{Plan: &plan})
 }
 
-// DeletePlan deletes a subscription plan.
+// DeletePlan godoc
+// @Summary Delete subscription plan (admin)
+// @Description Deletes a subscription plan. Requires platform owner access.
+// @Tags Plans
+// @Security BearerAuth
+// @Param id path string true "Plan UUID"
+// @Success 204
+// @Failure 400 {object} errorResponse
+// @Failure 403 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Router /admin/plans/{id} [delete]
 func (h *PlanHandler) DeletePlan(w http.ResponseWriter, r *http.Request) {
 	planIDStr := chi.URLParam(r, "id")
 	planID, err := uuid.Parse(planIDStr)

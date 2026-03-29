@@ -36,8 +36,17 @@ type reportUsageRequest struct {
 	Metadata    map[string]any `json:"metadata,omitempty"`
 }
 
-// ReportUsage ingests a usage event for a tenant.
-// POST /api/v1/usage/report
+// ReportUsage godoc
+// @Summary Report usage
+// @Description Ingests a usage event from microservices for tracking consumption against subscription limits
+// @Tags Usage
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Security ApiKeyAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Router /usage/report [post]
 func (h *UsageHandler) ReportUsage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -96,8 +105,17 @@ func (h *UsageHandler) ReportUsage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetUsageSummary returns aggregated usage metrics for the tenant in the given period.
-// GET /api/v1/usage?from=&to=&service=
+// GetUsageSummary godoc
+// @Summary Get usage summary
+// @Description Returns aggregated usage metrics for the tenant within a date range
+// @Tags Usage
+// @Produce json
+// @Security BearerAuth
+// @Param from query string false "Start date (RFC3339)"
+// @Param to query string false "End date (RFC3339)"
+// @Param service query string false "Filter by service name"
+// @Success 200 {object} map[string]interface{}
+// @Router /usage [get]
 func (h *UsageHandler) GetUsageSummary(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenantIDStr := resolveTenantID(r)

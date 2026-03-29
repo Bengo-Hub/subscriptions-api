@@ -24,7 +24,15 @@ func NewPlatformHandler(log *zap.Logger, client *ent.Client) *PlatformHandler {
 	}
 }
 
-// GetPlatformStats returns aggregated platform statistics.
+// GetPlatformStats godoc
+// @Summary Get platform statistics (admin)
+// @Description Returns aggregated platform stats: total plans, subscriptions, MRR. Requires platform owner.
+// @Tags Platform
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} map[string]string
+// @Router /platform/stats [get]
 func (h *PlatformHandler) GetPlatformStats(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -73,7 +81,18 @@ func (h *PlatformHandler) GetPlatformStats(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-// ListAllSubscriptions returns paginated list of all subscriptions.
+// ListAllSubscriptions godoc
+// @Summary List all subscriptions (admin)
+// @Description Returns paginated list of all tenant subscriptions. Requires platform owner.
+// @Tags Platform
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number (default 1)"
+// @Param pageSize query int false "Page size (default 20)"
+// @Param status query string false "Filter by status (ACTIVE, TRIAL, EXPIRED, etc.)"
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} map[string]string
+// @Router /admin/subscriptions [get]
 func (h *PlatformHandler) ListAllSubscriptions(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

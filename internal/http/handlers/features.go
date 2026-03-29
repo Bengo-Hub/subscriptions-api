@@ -41,9 +41,16 @@ type featureCheckResponse struct {
 	Source      string `json:"source"` // "cache" or "db"
 }
 
-// CheckFeature verifies whether the tenant's subscription includes the given feature.
-// GET /api/v1/features/{code}/check
-// Cache key: subscription:feature:{tenant_id}:{feature_code} TTL 60s
+// CheckFeature godoc
+// @Summary Check feature entitlement
+// @Description Checks if a specific feature is available for the tenant's subscription. Cached for 60s.
+// @Tags Features
+// @Produce json
+// @Security BearerAuth
+// @Param code path string true "Feature code"
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} map[string]string
+// @Router /features/{code}/check [get]
 func (h *FeatureHandler) CheckFeature(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	featureCode := chi.URLParam(r, "code")
@@ -118,8 +125,14 @@ func (h *FeatureHandler) CheckFeature(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// GetEntitlements returns the full feature/limits set for the tenant's subscription.
-// GET /api/v1/features
+// GetEntitlements godoc
+// @Summary Get all feature entitlements
+// @Description Returns the full set of features and limits for the tenant's current subscription
+// @Tags Features
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Router /features [get]
 func (h *FeatureHandler) GetEntitlements(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenantIDStr := resolveTenantID(r)

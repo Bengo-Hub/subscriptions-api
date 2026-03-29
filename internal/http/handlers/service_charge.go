@@ -24,7 +24,15 @@ func NewServiceChargeHandler(log *zap.Logger, db *ent.Client) *ServiceChargeHand
 	}
 }
 
-// ListServiceChargePlans returns all active service charge plans.
+// ListServiceChargePlans godoc
+// @Summary List service charge plans
+// @Description Returns all active service charge plans, optionally filtered by service
+// @Tags ServiceCharges
+// @Produce json
+// @Security BearerAuth
+// @Param service query string false "Filter by service name"
+// @Success 200 {object} map[string]interface{}
+// @Router /service-charges/plans [get]
 func (h *ServiceChargeHandler) ListServiceChargePlans(w http.ResponseWriter, r *http.Request) {
 	query := h.db.ServiceChargePlan.Query().
 		Where(servicechargeplan.IsActive(true)).
@@ -68,7 +76,16 @@ func (h *ServiceChargeHandler) ListServiceChargePlans(w http.ResponseWriter, r *
 	})
 }
 
-// GetServiceChargePlan returns a single service charge plan by code.
+// GetServiceChargePlan godoc
+// @Summary Get service charge plan
+// @Description Returns a specific service charge plan by code
+// @Tags ServiceCharges
+// @Produce json
+// @Security BearerAuth
+// @Param code path string true "Service charge plan code"
+// @Success 200 {object} map[string]interface{}
+// @Failure 404 {object} map[string]string
+// @Router /service-charges/plans/{code} [get]
 func (h *ServiceChargeHandler) GetServiceChargePlan(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 	if code == "" {
