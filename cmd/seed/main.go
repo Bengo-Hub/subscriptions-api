@@ -1165,7 +1165,7 @@ func seedRBACPermissions(ctx context.Context, tx *ent.Tx) error {
 			OnConflictColumns(subscriptionspermission.FieldPermissionCode).
 			DoNothing().
 			Exec(ctx)
-		if err != nil && !ent.IsNotSingular(err) {
+		if err != nil && err.Error() != "sql: no rows in result set" {
 			return fmt.Errorf("create permission %s: %w", p.code, err)
 		}
 	}
@@ -1220,7 +1220,7 @@ func seedRBACPermissions(ctx context.Context, tx *ent.Tx) error {
 				).
 				DoNothing().
 				Exec(ctx)
-			if err != nil && !ent.IsNotSingular(err) {
+			if err != nil && err.Error() != "sql: no rows in result set" {
 				return fmt.Errorf("create role %s for tenant %s: %w", rd.code, t.Slug, err)
 			}
 
@@ -1249,7 +1249,7 @@ func seedRBACPermissions(ctx context.Context, tx *ent.Tx) error {
 					).
 					DoNothing().
 					Exec(ctx)
-				if err != nil && !ent.IsNotSingular(err) {
+				if err != nil && err.Error() != "sql: no rows in result set" {
 					return fmt.Errorf("assign permission %s to role %s: %w", code, rd.code, err)
 				}
 			}
@@ -1332,6 +1332,10 @@ func seedRateLimitConfigs(ctx context.Context, tx *ent.Tx) error {
 
 	for _, c := range configs {
 		id := uuid.NewSHA1(uuid.NameSpaceOID, []byte(fmt.Sprintf("rl:%s:%s:%s", c.serviceName, c.keyType, c.endpointPattern)))
+		exists, _ := tx.RateLimitConfig.Get(ctx, id)
+		if exists != nil {
+			continue
+		}
 		_, err := tx.RateLimitConfig.Create().
 			SetID(id).
 			SetServiceName(c.serviceName).
@@ -1344,9 +1348,6 @@ func seedRateLimitConfigs(ctx context.Context, tx *ent.Tx) error {
 			SetDescription(c.description).
 			Save(ctx)
 		if err != nil {
-			if ent.IsConstraintError(err) {
-				continue
-			}
 			return fmt.Errorf("create rate limit config %s/%s/%s: %w", c.serviceName, c.keyType, c.endpointPattern, err)
 		}
 	}
@@ -1413,6 +1414,10 @@ func seedServiceConfigs(ctx context.Context, tx *ent.Tx) error {
 
 	for _, c := range configs {
 		id := uuid.NewSHA1(uuid.NameSpaceOID, []byte(fmt.Sprintf("sc::%s", c.configKey)))
+		exists, _ := tx.ServiceConfig.Get(ctx, id)
+		if exists != nil {
+			continue
+		}
 		_, err := tx.ServiceConfig.Create().
 			SetID(id).
 			SetConfigKey(c.configKey).
@@ -1422,9 +1427,6 @@ func seedServiceConfigs(ctx context.Context, tx *ent.Tx) error {
 			SetIsSecret(c.isSecret).
 			Save(ctx)
 		if err != nil {
-			if ent.IsConstraintError(err) {
-				continue
-			}
 			return fmt.Errorf("create service config %s: %w", c.configKey, err)
 		}
 	}
