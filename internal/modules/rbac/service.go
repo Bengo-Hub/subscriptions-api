@@ -61,9 +61,10 @@ func (s *Service) SyncUser(ctx context.Context, tenantID uuid.UUID, authServiceU
 		return user, nil
 	}
 
-	// Create new user
+	// Create new user — use the auth-service UUID as the local PK so that
+	// every downstream reference already matches the canonical user ID.
 	user = &SubscriptionsUser{
-		ID:                uuid.New(),
+		ID:                authServiceUserID,
 		TenantID:          tenantID,
 		AuthServiceUserID: authServiceUserID,
 		Email:             email,
