@@ -66,12 +66,18 @@ func New(
 		r.Get("/health", healthHandler.Health)
 		r.Get("/healthz", healthHandler.Health) // readiness/liveness probe path used by Helm
 
-		// Public routes
+		// Public routes (no auth required)
 		r.Get("/plans", planHandler.ListPlans)
 		r.Get("/plans/{id}", planHandler.GetPlan)
 		r.Get("/plans/code/{code}", planHandler.GetPlanByCode)
 
-		// Protected routes
+		// Public read-only routes that accept optional auth for tenant context
+		if serviceChargeHandler != nil {
+			r.Get("/service-charges/plans", serviceChargeHandler.ListServiceChargePlans)
+			r.Get("/service-charges/plans/{code}", serviceChargeHandler.GetServiceChargePlan)
+		}
+
+		// Authenticated routes
 		r.Group(func(r chi.Router) {
 			if authMiddleware != nil {
 				r.Use(authMiddleware.RequireAuth)
@@ -146,12 +152,8 @@ func New(
 				})
 			}
 
-			// Service charge plans
+			// Service charge plans (GET plans moved to public; tenant-specific remains protected)
 			if serviceChargeHandler != nil {
-				r.Route("/service-charges", func(r chi.Router) {
-					r.Get("/plans", serviceChargeHandler.ListServiceChargePlans)
-					r.Get("/plans/{code}", serviceChargeHandler.GetServiceChargePlan)
-				})
 				r.Get("/tenants/{tenantID}/service-charges", serviceChargeHandler.GetTenantServiceCharges)
 			}
 

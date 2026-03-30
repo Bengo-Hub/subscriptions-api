@@ -365,7 +365,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 	plans := []planDef{
 		// ── Monthly Plans ────────────────────────────────────────────────
 		{
-			id:           uuid.MustParse("00000000-0000-0000-0000-000000000001"),
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:STARTER")),
 			planCode:     "STARTER",
 			name:         "Starter (Lite)",
 			description:  "Perfect for small cafes and pilot operations. Core ordering features with essential admin tools.",
@@ -402,7 +402,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			},
 		},
 		{
-			id:           uuid.MustParse("00000000-0000-0000-0000-000000000002"),
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:GROWTH")),
 			planCode:     "GROWTH",
 			name:         "Growth (Standard)",
 			description:  "Ideal for growing cafes with multiple outlets. Advanced features including loyalty program and multi-outlet support.",
@@ -444,7 +444,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			},
 		},
 		{
-			id:           uuid.MustParse("00000000-0000-0000-0000-000000000003"),
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:PROFESSIONAL")),
 			planCode:     "PROFESSIONAL",
 			name:         "Professional (Scale)",
 			description:  "For multi-branch cafes and chains. Complete feature set with POS integration, route optimization, and priority support.",
@@ -495,7 +495,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 
 		// ── Yearly Plans (≈10 months pricing = ~8.3% discount) ──────────
 		{
-			id:           uuid.MustParse("00000000-0000-0000-0000-000000000011"),
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:STARTER_YEARLY")),
 			planCode:     "STARTER_YEARLY",
 			name:         "Starter (Lite) — Annual",
 			description:  "Perfect for small cafes and pilot operations. Save with annual billing.",
@@ -531,7 +531,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			},
 		},
 		{
-			id:           uuid.MustParse("00000000-0000-0000-0000-000000000012"),
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:GROWTH_YEARLY")),
 			planCode:     "GROWTH_YEARLY",
 			name:         "Growth (Standard) — Annual",
 			description:  "Ideal for growing cafes with multiple outlets. Save with annual billing.",
@@ -573,7 +573,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			},
 		},
 		{
-			id:           uuid.MustParse("00000000-0000-0000-0000-000000000013"),
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:PROFESSIONAL_YEARLY")),
 			planCode:     "PROFESSIONAL_YEARLY",
 			name:         "Professional (Scale) — Annual",
 			description:  "For multi-branch cafes and chains. Save with annual billing.",
@@ -882,9 +882,9 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 
 	// Plan UUIDs from seedSubscriptionPlans
 	planIDs := map[string]uuid.UUID{
-		"STARTER":      uuid.MustParse("00000000-0000-0000-0000-000000000001"),
-		"GROWTH":       uuid.MustParse("00000000-0000-0000-0000-000000000002"),
-		"PROFESSIONAL": uuid.MustParse("00000000-0000-0000-0000-000000000003"),
+		"STARTER":      uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:STARTER")),
+		"GROWTH":       uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:GROWTH")),
+		"PROFESSIONAL": uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:PROFESSIONAL")),
 	}
 
 	now := time.Now()
