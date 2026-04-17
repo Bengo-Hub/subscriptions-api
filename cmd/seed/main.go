@@ -1041,6 +1041,7 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 	}
 
 	minCharge50 := 50.0
+	minCharge5 := 5.0
 	maxCharge5000 := 5000.0
 	maxCharge2000 := 2000.0
 	maxCharge500 := 500.0
@@ -1106,10 +1107,10 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 		{
 			code:        "SC_MARKETFLOW_ADS",
 			name:        "MarketFlow Ads Service Fee",
-			description: "Platform fee on ad campaign budgets processed through MarketFlow. 5% of ads budget, KES 50 minimum, KES 500 max per campaign. Configurable from /platform/billing.",
+			description: "Platform fee on ad campaign budgets processed through MarketFlow. 5% of ads budget, KES 5 minimum, KES 500 max per campaign. Configurable from /platform/billing.",
 			chargeType:  servicechargeplan.ChargeTypePERCENTAGE,
 			chargeValue: 5.0,
-			minCharge:   &minCharge50,
+			minCharge:   &minCharge5,
 			maxCharge:   &maxCharge500,
 			services:    []string{"marketflow"},
 			isDefault:   true,
