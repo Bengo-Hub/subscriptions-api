@@ -283,6 +283,31 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			onetimePrice: 80000,
 			sortOrder:    33,
 		},
+
+		// MarketFlow — AI marketing automation platform
+		{
+			id:            uuid.MustParse("10000000-0000-0000-0000-000000000040"),
+			code:          "marketflow",
+			name:          "MarketFlow AI Marketing",
+			description:   "AI-powered marketing automation: chatbots, ad campaigns, landing funnels, nurture sequences, lead management, and conversion tracking.",
+			category:      product.CategoryProduct,
+			isBaseService: false,
+			monthlyPrice:  3500,
+			yearlyPrice:   35000,
+			onetimePrice:  0,
+			sortOrder:     40,
+		},
+		{
+			id:           uuid.MustParse("10000000-0000-0000-0000-000000000041"),
+			code:         "marketflow_ai_credits",
+			name:         "MarketFlow AI Credits",
+			description:  "Top-up pack of 100 AI chat credits for MarketFlow. Each credit = 1 user question + AI response. Base plan includes 5 free/month (Starter) or 100/month (Growth).",
+			category:     product.CategoryAddOn,
+			monthlyPrice: 1000,
+			yearlyPrice:  10000,
+			onetimePrice: 0,
+			sortOrder:    41,
+		},
 	}
 
 	for _, p := range products {
@@ -1076,6 +1101,25 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 			chargeValue: 10.0,
 			services:    []string{"truload"},
 			isDefault:   true,
+		},
+		{
+			code:        "SC_MARKETFLOW_ADS",
+			name:        "MarketFlow Ads Service Fee",
+			description: "Platform fee on ad campaign budgets processed through MarketFlow. 5% of ads budget, KES 50 minimum, KES 5,000 cap per campaign. Configurable from /platform/billing.",
+			chargeType:  servicechargeplan.ChargeTypePERCENTAGE,
+			chargeValue: 5.0,
+			minCharge:   &minCharge50,
+			maxCharge:   &maxCharge5000,
+			services:    []string{"marketflow"},
+			isDefault:   true,
+		},
+		{
+			code:        "SC_MARKETFLOW_AI_CREDIT",
+			name:        "MarketFlow AI Credit Fee",
+			description: "Per-credit fee when purchasing AI chat credits beyond the plan allowance. KES 10 per credit.",
+			chargeType:  servicechargeplan.ChargeTypeFIXED_PER_TRANSACTION,
+			chargeValue: 10.0,
+			services:    []string{"marketflow"},
 		},
 	}
 
