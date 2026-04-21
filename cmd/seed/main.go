@@ -82,6 +82,11 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed plans: %w", err)
 	}
 
+	// 2.5 Seed TruLoad transporter portal plans (Basic, Standard, Premium)
+	if err := seedTruLoadTransporterPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed transporter plans: %w", err)
+	}
+
 	// 3. Seed bundles (delivery, pos-suite, complete)
 	if err := seedBundles(ctx, tx); err != nil {
 		return fmt.Errorf("seed bundles: %w", err)
@@ -748,6 +753,238 @@ func seedPlanFeaturesWithLimits(ctx context.Context, tx *ent.Tx, planID uuid.UUI
 		if _, err := builder.Save(ctx); err != nil {
 			return fmt.Errorf("create feature %s: %w", f.code, err)
 		}
+	}
+
+	return nil
+}
+
+// ── TruLoad Transporter Portal Plans ────────────────────────────────────────
+// Separate plan tier for transporters (data consumers) accessing the TruLoad
+// transporter portal. Cheaper than org-level plans; priced for self-service.
+// Features mirror the plan matrix in the TruLoad commercial weighing spec.
+
+func seedTruLoadTransporterPlans(ctx context.Context, tx *ent.Tx) error {
+	now := time.Now()
+
+	type planDef struct {
+		id           uuid.UUID
+		planCode     string
+		name         string
+		description  string
+		billingCycle string
+		price        float64
+		tierOrder    int
+		tierLimits   map[string]any
+		features     []featureDef
+	}
+
+	plans := []planDef{
+		// ── Monthly Plans ────────────────────────────────────────────────
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:plan:TRANSPORTER_BASIC")),
+			planCode:     "TRANSPORTER_BASIC",
+			name:         "Transporter Basic",
+			description:  "View your own weight tickets (90 days history). 1 user, 1 site, email notifications, PDF ticket downloads.",
+			billingCycle: "MONTHLY",
+			price:        500.0,
+			tierOrder:    1,
+			tierLimits: map[string]any{
+				"max_users":    1,
+				"max_sites":    1,
+				"history_days": 90,
+			},
+			features: []featureDef{
+				{code: "portal_access"},
+				{code: "ticket_download"},
+				{code: "email_notifications"},
+				{code: "history_days", limitValue: 90},
+				{code: "max_users", limitValue: 1},
+			},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:plan:TRANSPORTER_STANDARD")),
+			planCode:     "TRANSPORTER_STANDARD",
+			name:         "Transporter Standard",
+			description:  "Full weighing history, 5 users, multi-site access, CSV export, driver reports, vehicle trends, SMS+email notifications.",
+			billingCycle: "MONTHLY",
+			price:        1500.0,
+			tierOrder:    2,
+			tierLimits: map[string]any{
+				"max_users":    5,
+				"max_sites":    -1, // unlimited
+				"history_days": -1, // unlimited
+			},
+			features: []featureDef{
+				{code: "portal_access"},
+				{code: "ticket_download"},
+				{code: "email_notifications"},
+				{code: "sms_notifications"},
+				{code: "multi_site_access"},
+				{code: "data_export"},
+				{code: "driver_reports"},
+				{code: "vehicle_trends"},
+				{code: "consignment_tracking"},
+				{code: "max_users", limitValue: 5},
+			},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:plan:TRANSPORTER_PREMIUM")),
+			planCode:     "TRANSPORTER_PREMIUM",
+			name:         "Transporter Premium",
+			description:  "Unlimited users, all sites, API access, advanced analytics, consignment tracking, webhooks, and bulk data export.",
+			billingCycle: "MONTHLY",
+			price:        3500.0,
+			tierOrder:    3,
+			tierLimits: map[string]any{
+				"max_users":    -1, // unlimited
+				"max_sites":    -1, // unlimited
+				"history_days": -1, // unlimited
+			},
+			features: []featureDef{
+				{code: "portal_access"},
+				{code: "ticket_download"},
+				{code: "email_notifications"},
+				{code: "sms_notifications"},
+				{code: "multi_site_access"},
+				{code: "data_export"},
+				{code: "driver_reports"},
+				{code: "vehicle_trends"},
+				{code: "consignment_tracking"},
+				{code: "api_access"},
+				{code: "analytics"},
+				{code: "webhooks"},
+			},
+		},
+
+		// ── Annual Plans (10 months pricing ≈ 16.7% discount) ───────────
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:plan:TRANSPORTER_BASIC_YEARLY")),
+			planCode:     "TRANSPORTER_BASIC_YEARLY",
+			name:         "Transporter Basic — Annual",
+			description:  "View your own weight tickets (90 days). 1 user, 1 site. Save with annual billing.",
+			billingCycle: "ANNUAL",
+			price:        5000.0,
+			tierOrder:    1,
+			tierLimits: map[string]any{
+				"max_users":    1,
+				"max_sites":    1,
+				"history_days": 90,
+			},
+			features: []featureDef{
+				{code: "portal_access"},
+				{code: "ticket_download"},
+				{code: "email_notifications"},
+				{code: "history_days", limitValue: 90},
+				{code: "max_users", limitValue: 1},
+			},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:plan:TRANSPORTER_STANDARD_YEARLY")),
+			planCode:     "TRANSPORTER_STANDARD_YEARLY",
+			name:         "Transporter Standard — Annual",
+			description:  "Full history, 5 users, multi-site, CSV export, driver reports, vehicle trends. Save with annual billing.",
+			billingCycle: "ANNUAL",
+			price:        15000.0,
+			tierOrder:    2,
+			tierLimits: map[string]any{
+				"max_users":    5,
+				"max_sites":    -1,
+				"history_days": -1,
+			},
+			features: []featureDef{
+				{code: "portal_access"},
+				{code: "ticket_download"},
+				{code: "email_notifications"},
+				{code: "sms_notifications"},
+				{code: "multi_site_access"},
+				{code: "data_export"},
+				{code: "driver_reports"},
+				{code: "vehicle_trends"},
+				{code: "consignment_tracking"},
+				{code: "max_users", limitValue: 5},
+			},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:plan:TRANSPORTER_PREMIUM_YEARLY")),
+			planCode:     "TRANSPORTER_PREMIUM_YEARLY",
+			name:         "Transporter Premium — Annual",
+			description:  "Unlimited users, all sites, API access, analytics, webhooks, bulk export. Save with annual billing.",
+			billingCycle: "ANNUAL",
+			price:        35000.0,
+			tierOrder:    3,
+			tierLimits: map[string]any{
+				"max_users":    -1,
+				"max_sites":    -1,
+				"history_days": -1,
+			},
+			features: []featureDef{
+				{code: "portal_access"},
+				{code: "ticket_download"},
+				{code: "email_notifications"},
+				{code: "sms_notifications"},
+				{code: "multi_site_access"},
+				{code: "data_export"},
+				{code: "driver_reports"},
+				{code: "vehicle_trends"},
+				{code: "consignment_tracking"},
+				{code: "api_access"},
+				{code: "analytics"},
+				{code: "webhooks"},
+			},
+		},
+	}
+
+	for _, p := range plans {
+		existing, err := tx.SubscriptionPlan.Get(ctx, p.id)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("lookup transporter plan %s: %w", p.planCode, err)
+		}
+
+		if existing != nil {
+			_, err = tx.SubscriptionPlan.UpdateOneID(p.id).
+				SetPlanCode(p.planCode).
+				SetName(p.name).
+				SetDescription(p.description).
+				SetBillingCycle(p.billingCycle).
+				SetPlanType(subscriptionplan.PlanTypeTIERED).
+				SetBasePrice(p.price).
+				SetCurrency("KES").
+				SetIsActive(true).
+				SetIsPublic(true).
+				SetTierOrder(p.tierOrder).
+				SetTierLimitsJSON(p.tierLimits).
+				SetUpdatedAt(now).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("update transporter plan %s: %w", p.planCode, err)
+			}
+		} else {
+			_, err = tx.SubscriptionPlan.Create().
+				SetID(p.id).
+				SetPlanCode(p.planCode).
+				SetName(p.name).
+				SetDescription(p.description).
+				SetBillingCycle(p.billingCycle).
+				SetPlanType(subscriptionplan.PlanTypeTIERED).
+				SetBasePrice(p.price).
+				SetCurrency("KES").
+				SetIsActive(true).
+				SetIsPublic(true).
+				SetTierOrder(p.tierOrder).
+				SetTierLimitsJSON(p.tierLimits).
+				SetCreatedAt(now).
+				SetUpdatedAt(now).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("create transporter plan %s: %w", p.planCode, err)
+			}
+		}
+
+		if err := seedPlanFeaturesWithLimits(ctx, tx, p.id, p.features); err != nil {
+			return fmt.Errorf("seed features for transporter plan %s: %w", p.planCode, err)
+		}
+
+		log.Printf("  transporter plan: %s (%s, %s, KES %.0f)", p.name, p.planCode, p.billingCycle, p.price)
 	}
 
 	return nil
