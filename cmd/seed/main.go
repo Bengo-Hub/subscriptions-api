@@ -82,7 +82,12 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed plans: %w", err)
 	}
 
-	// 2.5 Seed TruLoad transporter portal plans (Basic, Standard, Premium)
+	// 2.5 Seed TruLoad org-level plans (Starter, Growth, Professional + License)
+	if err := seedTruLoadOrgPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed truload org plans: %w", err)
+	}
+
+	// 2.6 Seed TruLoad transporter portal plans (Basic, Standard, Premium)
 	if err := seedTruLoadTransporterPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed transporter plans: %w", err)
 	}
@@ -287,6 +292,20 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			yearlyPrice:  10000,
 			onetimePrice: 80000,
 			sortOrder:    33,
+		},
+
+		// TruLoad — Intelligent weighbridge platform
+		{
+			id:            uuid.MustParse("10000000-0000-0000-0000-000000000050"),
+			code:          "truload",
+			name:          "TruLoad Weighbridge",
+			description:   "Multi-tenant weighbridge platform for axle-load enforcement (KURA/KeNHA) and commercial weighing (factories, logistics, mining, agriculture). Includes TruConnect scale integration, case management, prosecution, invoicing, PDF tickets, and reporting.",
+			category:      product.CategoryProduct,
+			isBaseService: false,
+			monthlyPrice:  2500,
+			yearlyPrice:   27500,
+			onetimePrice:  150000,
+			sortOrder:     50,
 		},
 
 		// MarketFlow — AI marketing automation platform
@@ -758,6 +777,278 @@ func seedPlanFeaturesWithLimits(ctx context.Context, tx *ent.Tx, planID uuid.UUI
 	return nil
 }
 
+// ── TruLoad Org-Level Plans ──────────────────────────────────────────────────
+// Plans for TruLoad tenant organisations (weighbridge operators).
+// Three tiers: Starter, Growth, Professional — each with MONTHLY + ANNUAL billing.
+// Plus a ONE_TIME license plan for outright purchase.
+// Feature codes match the TruLoad feature gate matrix in the backend.
+
+func seedTruLoadOrgPlans(ctx context.Context, tx *ent.Tx) error {
+	now := time.Now()
+
+	type planDef struct {
+		id           uuid.UUID
+		planCode     string
+		name         string
+		description  string
+		billingCycle string
+		planType     subscriptionplan.PlanType
+		price        float64
+		tierOrder    int
+		tierLimits   map[string]any
+		features     []string
+	}
+
+	plans := []planDef{
+		// ── Monthly Plans ────────────────────────────────────────────────
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:STARTER")),
+			planCode:     "TRULOAD_STARTER",
+			name:         "TruLoad Starter",
+			description:  "Essential weighbridge management for single-station operations. Commercial weighing, enforcement, invoicing, PDF tickets, and core reporting.",
+			billingCycle: "MONTHLY",
+			planType:     subscriptionplan.PlanTypeTIERED,
+			price:        2500.0,
+			tierOrder:    1,
+			tierLimits: map[string]any{
+				"max_stations":        1,
+				"max_users":           5,
+				"max_weighings_month": 500,
+			},
+			features: []string{
+				"commercial_weighing",
+				"enforcement_weighing",
+				"invoicing",
+				"reporting",
+				"tare_management",
+				"tolerance_settings",
+				"cargo_types",
+			},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:GROWTH")),
+			planCode:     "TRULOAD_GROWTH",
+			name:         "TruLoad Growth",
+			description:  "Multi-station support with transporter portal and case management. Adds prosecution tracking and transporter self-service portal access.",
+			billingCycle: "MONTHLY",
+			planType:     subscriptionplan.PlanTypeTIERED,
+			price:        6000.0,
+			tierOrder:    2,
+			tierLimits: map[string]any{
+				"max_stations":        5,
+				"max_users":           20,
+				"max_weighings_month": 3000,
+			},
+			features: []string{
+				"commercial_weighing",
+				"enforcement_weighing",
+				"invoicing",
+				"reporting",
+				"tare_management",
+				"tolerance_settings",
+				"cargo_types",
+				"case_management",
+				"prosecution",
+				"transporter_portal",
+			},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:PROFESSIONAL")),
+			planCode:     "TRULOAD_PROFESSIONAL",
+			name:         "TruLoad Professional",
+			description:  "Full-featured weighbridge platform for large operators and government agencies. Unlimited stations, API/webhook access, advanced analytics, and priority support.",
+			billingCycle: "MONTHLY",
+			planType:     subscriptionplan.PlanTypeTIERED,
+			price:        12500.0,
+			tierOrder:    3,
+			tierLimits: map[string]any{
+				"max_stations":        -1,
+				"max_users":           -1,
+				"max_weighings_month": -1,
+			},
+			features: []string{
+				"commercial_weighing",
+				"enforcement_weighing",
+				"invoicing",
+				"reporting",
+				"tare_management",
+				"tolerance_settings",
+				"cargo_types",
+				"case_management",
+				"prosecution",
+				"transporter_portal",
+				"api_webhooks",
+			},
+		},
+
+		// ── Annual Plans (≈10 months pricing) ───────────────────────────
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:STARTER_YEARLY")),
+			planCode:     "TRULOAD_STARTER_YEARLY",
+			name:         "TruLoad Starter — Annual",
+			description:  "Essential weighbridge management. Save with annual billing.",
+			billingCycle: "ANNUAL",
+			planType:     subscriptionplan.PlanTypeTIERED,
+			price:        27500.0,
+			tierOrder:    1,
+			tierLimits: map[string]any{
+				"max_stations":        1,
+				"max_users":           5,
+				"max_weighings_month": 500,
+			},
+			features: []string{
+				"commercial_weighing",
+				"enforcement_weighing",
+				"invoicing",
+				"reporting",
+				"tare_management",
+				"tolerance_settings",
+				"cargo_types",
+			},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:GROWTH_YEARLY")),
+			planCode:     "TRULOAD_GROWTH_YEARLY",
+			name:         "TruLoad Growth — Annual",
+			description:  "Multi-station with transporter portal and case management. Save with annual billing.",
+			billingCycle: "ANNUAL",
+			planType:     subscriptionplan.PlanTypeTIERED,
+			price:        66000.0,
+			tierOrder:    2,
+			tierLimits: map[string]any{
+				"max_stations":        5,
+				"max_users":           20,
+				"max_weighings_month": 3000,
+			},
+			features: []string{
+				"commercial_weighing",
+				"enforcement_weighing",
+				"invoicing",
+				"reporting",
+				"tare_management",
+				"tolerance_settings",
+				"cargo_types",
+				"case_management",
+				"prosecution",
+				"transporter_portal",
+			},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:PROFESSIONAL_YEARLY")),
+			planCode:     "TRULOAD_PROFESSIONAL_YEARLY",
+			name:         "TruLoad Professional — Annual",
+			description:  "Full-featured weighbridge platform. Unlimited capacity, API access, and priority support. Save with annual billing.",
+			billingCycle: "ANNUAL",
+			planType:     subscriptionplan.PlanTypeTIERED,
+			price:        137500.0,
+			tierOrder:    3,
+			tierLimits: map[string]any{
+				"max_stations":        -1,
+				"max_users":           -1,
+				"max_weighings_month": -1,
+			},
+			features: []string{
+				"commercial_weighing",
+				"enforcement_weighing",
+				"invoicing",
+				"reporting",
+				"tare_management",
+				"tolerance_settings",
+				"cargo_types",
+				"case_management",
+				"prosecution",
+				"transporter_portal",
+				"api_webhooks",
+			},
+		},
+
+		// ── License Plan (ONE_TIME perpetual purchase) ───────────────────
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:LICENSE")),
+			planCode:     "TRULOAD_LICENSE",
+			name:         "TruLoad License",
+			description:  "Perpetual software license for TruLoad. One-time purchase. All features included. Excludes ongoing cloud hosting and support.",
+			billingCycle: "ONE_TIME",
+			planType:     subscriptionplan.PlanTypeTIERED,
+			price:        150000.0,
+			tierOrder:    4,
+			tierLimits: map[string]any{
+				"max_stations":        -1,
+				"max_users":           -1,
+				"max_weighings_month": -1,
+			},
+			features: []string{
+				"commercial_weighing",
+				"enforcement_weighing",
+				"invoicing",
+				"reporting",
+				"tare_management",
+				"tolerance_settings",
+				"cargo_types",
+				"case_management",
+				"prosecution",
+				"transporter_portal",
+				"api_webhooks",
+			},
+		},
+	}
+
+	for _, p := range plans {
+		existing, err := tx.SubscriptionPlan.Get(ctx, p.id)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("lookup truload org plan %s: %w", p.planCode, err)
+		}
+
+		if existing != nil {
+			_, err = tx.SubscriptionPlan.UpdateOneID(p.id).
+				SetPlanCode(p.planCode).
+				SetName(p.name).
+				SetDescription(p.description).
+				SetBillingCycle(p.billingCycle).
+				SetPlanType(p.planType).
+				SetBasePrice(p.price).
+				SetCurrency("KES").
+				SetIsActive(true).
+				SetIsPublic(true).
+				SetTierOrder(p.tierOrder).
+				SetTierLimitsJSON(p.tierLimits).
+				SetUpdatedAt(now).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("update truload org plan %s: %w", p.planCode, err)
+			}
+		} else {
+			_, err = tx.SubscriptionPlan.Create().
+				SetID(p.id).
+				SetPlanCode(p.planCode).
+				SetName(p.name).
+				SetDescription(p.description).
+				SetBillingCycle(p.billingCycle).
+				SetPlanType(p.planType).
+				SetBasePrice(p.price).
+				SetCurrency("KES").
+				SetIsActive(true).
+				SetIsPublic(true).
+				SetTierOrder(p.tierOrder).
+				SetTierLimitsJSON(p.tierLimits).
+				SetCreatedAt(now).
+				SetUpdatedAt(now).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("create truload org plan %s: %w", p.planCode, err)
+			}
+		}
+
+		if err := seedPlanFeatures(ctx, tx, p.id, p.features); err != nil {
+			return fmt.Errorf("seed features for truload org plan %s: %w", p.planCode, err)
+		}
+
+		log.Printf("  truload org plan: %s (%s, %s, KES %.0f)", p.name, p.planCode, p.billingCycle, p.price)
+	}
+
+	return nil
+}
+
 // ── TruLoad Transporter Portal Plans ────────────────────────────────────────
 // Separate plan tier for transporters (data consumers) accessing the TruLoad
 // transporter portal. Cheaper than org-level plans; priced for self-service.
@@ -1113,22 +1404,26 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 	// Tenant definitions with slug → plan mapping.
 	// UUIDs are resolved at runtime from auth-api (see resolveTenantID above).
 	// Platform owner slug (codevertex) is excluded — no tenant subscription; see TRINITY-AUTHORIZATION-PATTERN.md.
-	tenantDefs := []struct {
-		slug string
-		name string
-		plan string
-	}{
-		{"urban-loft", "Urban Loft Cafe", "GROWTH"},
-		{"mss", "Masterspace Solutions", "GROWTH"},
-		{"kura", "Kenya Urban Roads Authority", "STARTER"},
-		{"ultichange", "UltiChange", "STARTER"},
+	type tenantDef struct {
+		slug       string
+		name       string
+		plan       string
+		bundleCode string
+	}
+
+	tenantDefs := []tenantDef{
+		{"urban-loft", "Urban Loft Cafe", "GROWTH", "delivery"},
+		{"mss", "Masterspace Solutions", "GROWTH", "delivery"},
+		{"kura", "Kenya Urban Roads Authority", "TRULOAD_STARTER", "truload"},
+		{"ultichange", "UltiChange", "STARTER", "delivery"},
 	}
 
 	type resolvedTenant struct {
-		id   uuid.UUID
-		slug string
-		name string
-		plan string
+		id         uuid.UUID
+		slug       string
+		name       string
+		plan       string
+		bundleCode string
 	}
 
 	var tenants []resolvedTenant
@@ -1140,14 +1435,16 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 			log.Printf("  [SKIP] tenant %q: %v", td.slug, err)
 			continue
 		}
-		tenants = append(tenants, resolvedTenant{id: id, slug: td.slug, name: td.name, plan: td.plan})
+		tenants = append(tenants, resolvedTenant{id: id, slug: td.slug, name: td.name, plan: td.plan, bundleCode: td.bundleCode})
 	}
 
-	// Plan UUIDs from seedSubscriptionPlans
+	// Plan UUIDs from seedSubscriptionPlans + seedTruLoadOrgPlans
 	planIDs := map[string]uuid.UUID{
-		"STARTER":      uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:STARTER")),
-		"GROWTH":       uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:GROWTH")),
-		"PROFESSIONAL": uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:PROFESSIONAL")),
+		"STARTER":         uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:STARTER")),
+		"GROWTH":          uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:GROWTH")),
+		"PROFESSIONAL":    uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:PROFESSIONAL")),
+		"TRULOAD_STARTER": uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:STARTER")),
+		"TRULOAD_GROWTH":  uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:GROWTH")),
 	}
 
 	now := time.Now()
@@ -1172,7 +1469,7 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 				SetTrialEndsAt(trialEnd).
 				SetCurrentPeriodStart(now).
 				SetCurrentPeriodEnd(trialEnd).
-				SetBundleCode("delivery").
+				SetBundleCode(t.bundleCode).
 				SetMetadata(map[string]any{
 					"seeded":      true,
 					"tenant_name": t.name,
@@ -1192,7 +1489,7 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 				SetTrialEndsAt(trialEnd).
 				SetCurrentPeriodStart(now).
 				SetCurrentPeriodEnd(trialEnd).
-				SetBundleCode("delivery").
+				SetBundleCode(t.bundleCode).
 				SetMetadata(map[string]any{
 					"seeded":      true,
 					"tenant_name": t.name,
@@ -1205,9 +1502,61 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 			log.Printf("  subscription: %s → %s (trial, 14 days)", t.name, t.plan)
 		}
 
-		// Activate delivery bundle products for the subscription
-		if err := activateDeliveryProducts(ctx, tx, tenantSubID, now); err != nil {
-			return fmt.Errorf("activate products for %s: %w", t.slug, err)
+		// Activate products for the subscription based on bundle
+		if t.bundleCode == "truload" {
+			if err := activateTruLoadProducts(ctx, tx, tenantSubID, now); err != nil {
+				return fmt.Errorf("activate truload products for %s: %w", t.slug, err)
+			}
+		} else {
+			if err := activateDeliveryProducts(ctx, tx, tenantSubID, now); err != nil {
+				return fmt.Errorf("activate products for %s: %w", t.slug, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func activateTruLoadProducts(ctx context.Context, tx *ent.Tx, subID uuid.UUID, now time.Time) error {
+	truloadProducts := []struct {
+		id   uuid.UUID
+		code string
+	}{
+		{uuid.MustParse("10000000-0000-0000-0000-000000000050"), "truload"},
+		{uuid.MustParse("10000000-0000-0000-0000-000000000012"), "treasury"},
+	}
+
+	for _, p := range truloadProducts {
+		existingPS, err := tx.ProductSubscription.Query().
+			Where(
+				productsubscription.TenantSubscriptionIDEQ(subID),
+				productsubscription.ProductCodeEQ(p.code),
+			).
+			First(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("lookup product subscription %s: %w", p.code, err)
+		}
+
+		if existingPS != nil {
+			_, err = tx.ProductSubscription.UpdateOne(existingPS).
+				SetProductID(p.id).
+				SetStatus(productsubscription.StatusActive).
+				SetActivatedAt(now).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("update product subscription %s: %w", p.code, err)
+			}
+		} else {
+			_, err = tx.ProductSubscription.Create().
+				SetTenantSubscriptionID(subID).
+				SetProductCode(p.code).
+				SetProductID(p.id).
+				SetStatus(productsubscription.StatusActive).
+				SetActivatedAt(now).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("create product subscription %s: %w", p.code, err)
+			}
 		}
 	}
 
