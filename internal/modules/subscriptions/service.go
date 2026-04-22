@@ -18,17 +18,19 @@ import (
 
 // Service handles subscription lifecycle operations with state machine validation.
 type Service struct {
-	client         *ent.Client
-	log            *zap.Logger
-	treasuryClient *serviceclient.Client
+	client            *ent.Client
+	log               *zap.Logger
+	treasuryClient    *serviceclient.Client
+	treasuryAPIKey    string
 }
 
 // New creates a subscription lifecycle service.
-func New(client *ent.Client, log *zap.Logger, treasuryClient *serviceclient.Client) *Service {
+func New(client *ent.Client, log *zap.Logger, treasuryClient *serviceclient.Client, treasuryAPIKey string) *Service {
 	return &Service{
 		client:         client,
 		log:            log.Named("subscriptions.service"),
 		treasuryClient: treasuryClient,
+		treasuryAPIKey: treasuryAPIKey,
 	}
 }
 
@@ -179,7 +181,11 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 	}
 
 	// 3. Call Treasury-API
-	resp, err := s.treasuryClient.Post(ctx, fmt.Sprintf("/api/v1/%s/payments/intents", in.TenantID), req, nil)
+	var treasuryHeaders map[string]string
+	if s.treasuryAPIKey != "" {
+		treasuryHeaders = map[string]string{"X-API-Key": s.treasuryAPIKey}
+	}
+	resp, err := s.treasuryClient.Post(ctx, fmt.Sprintf("/api/v1/%s/payments/intents", in.TenantID), req, treasuryHeaders)
 	if err != nil {
 		return nil, fmt.Errorf("treasury api error: %w", err)
 	}

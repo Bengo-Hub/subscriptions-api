@@ -196,7 +196,7 @@ func New(ctx context.Context) (*App, error) {
 	}
 
 	// Create subscription service and handler
-	subscriptionSvc := subscriptions.New(ormClient, log, treasuryClient)
+	subscriptionSvc := subscriptions.New(ormClient, log, treasuryClient, cfg.Services.TreasuryAPIKey)
 	subscriptionHandler := handlers.NewSubscriptionHandler(log, ormClient, subscriptionSvc)
 	addonHandler := handlers.NewAddonHandler(log, ormClient)
 

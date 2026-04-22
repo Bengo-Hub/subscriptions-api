@@ -30,8 +30,9 @@ type AppConfig struct {
 }
 
 type ServicesConfig struct {
-	AuthAPI     string `envconfig:"AUTH_API_URL" default:"https://sso.codevertexitsolutions.com"`
-	TreasuryAPI string `envconfig:"TREASURY_API_URL" default:"https://booksapi.codevertexitsolutions.com"`
+	AuthAPI        string `envconfig:"AUTH_API_URL" default:"https://sso.codevertexitsolutions.com"`
+	TreasuryAPI    string `envconfig:"TREASURY_API_URL" default:"https://booksapi.codevertexitsolutions.com"`
+	TreasuryAPIKey string `envconfig:"TREASURY_API_KEY"`
 }
 
 type HTTPConfig struct {
