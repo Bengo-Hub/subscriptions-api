@@ -1,19 +1,38 @@
 #!/bin/sh
 # Entrypoint script for Subscriptions-API service
-# Runs migrations (via app startup) and seed before starting the server
 
 set -e
 
 echo "========================================="
-echo " Subscriptions-API - Starting"
+echo "Subscriptions-API Service Startup"
 echo "========================================="
 
-echo "Running seed (idempotent)..."
-/usr/local/bin/seed || echo "Seed completed with warnings (non-fatal)"
+echo "Waiting for database and running migrations..."
+MAX_RETRIES=60
+RETRY_COUNT=0
+
+until /usr/local/bin/subscription-migrate > /dev/null 2>&1 || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
+  RETRY_COUNT=$((RETRY_COUNT+1))
+  echo "Database not ready yet... (attempt $RETRY_COUNT/$MAX_RETRIES)"
+  sleep 5
+done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+  echo "Database connection timeout after $MAX_RETRIES attempts"
+  exit 1
+fi
+
+echo "Migrations applied successfully"
 
 echo ""
 echo "========================================="
-echo " Subscriptions-API - Seeding complete"
+echo "Running seed (idempotent)"
+echo "========================================="
+/usr/local/bin/subscription-seed || echo "Seed completed with warnings (non-fatal)"
+
+echo ""
+echo "========================================="
+echo "Starting Subscriptions-API server"
 echo "========================================="
 echo ""
 

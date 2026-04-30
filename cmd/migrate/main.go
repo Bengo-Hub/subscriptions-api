@@ -9,10 +9,12 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/schema"
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/bengobox/subscription-service/internal/config"
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/migrate"
 )
 
 func main() {
@@ -24,7 +26,13 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 
-	db, err := sql.Open("pgx", cfg.Postgres.URL)
+	// Prefer direct PostgreSQL URL to bypass PgBouncer during migrations.
+	dbURL := cfg.Postgres.URL
+	if cfg.Postgres.MigrateURL != "" {
+		dbURL = cfg.Postgres.MigrateURL
+	}
+
+	db, err := sql.Open("pgx", dbURL)
 	if err != nil {
 		log.Fatalf("open database: %v", err)
 	}
@@ -48,7 +56,7 @@ func main() {
 		}
 	}
 
-	if err := client.Schema.Create(ctx); err != nil {
+	if err := client.Schema.Create(ctx, schema.WithDir(migrate.Dir)); err != nil {
 		log.Fatalf("run migrations: %v", err)
 	}
 
