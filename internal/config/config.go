@@ -75,7 +75,7 @@ type SecurityConfig struct {
 	JWKSURL     string `envconfig:"JWT_JWKS_URL" default:"https://sso.codevertexitsolutions.com/api/v1/.well-known/jwks.json"`
 	Issuer      string `envconfig:"JWT_ISSUER" default:"https://sso.codevertexitsolutions.com"`
 	Audience    string `envconfig:"JWT_AUDIENCE" default:"codevertex"`
-	APIKey      string `envconfig:"API_KEY"`
+	APIKey      string `envconfig:"INTERNAL_SERVICE_KEY"`
 	APIKeyDBURL string `envconfig:"API_KEY_DB_URL"`
 }
 
