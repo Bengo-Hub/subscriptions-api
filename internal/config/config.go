@@ -61,7 +61,7 @@ type RedisConfig struct {
 }
 
 type EventsConfig struct {
-	NATSURL    string `envconfig:"NATS_URL" default:"nats://127.0.0.1:4222"`
+	NATSURL    string `envconfig:"EVENTS_NATS_URL" default:"nats://127.0.0.1:4222"`
 	StreamName string `envconfig:"NATS_STREAM" default:"subscription"`
 }
 
