@@ -76,6 +76,7 @@ type InitiateSubscriptionResult struct {
 	Amount           decimal.Decimal `json:"amount"`
 	Currency         string          `json:"currency"`
 	AuthorizationURL *string         `json:"authorization_url,omitempty"`
+	InitiateURL      string          `json:"initiate_url,omitempty"`
 }
 
 // SubscriptionResult is returned from lifecycle operations.
@@ -200,6 +201,7 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 		Amount           decimal.Decimal `json:"amount"`
 		Currency         string          `json:"currency"`
 		AuthorizationURL *string         `json:"authorization_url,omitempty"`
+		InitiateURL      string          `json:"initiate_url,omitempty"`
 	}
 	if err := resp.DecodeJSON(&treasuryResp); err != nil {
 		return nil, fmt.Errorf("decode treasury response: %w", err)
@@ -211,6 +213,7 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 		Amount:           treasuryResp.Amount,
 		Currency:         treasuryResp.Currency,
 		AuthorizationURL: treasuryResp.AuthorizationURL,
+		InitiateURL:      treasuryResp.InitiateURL,
 	}, nil
 }
 
