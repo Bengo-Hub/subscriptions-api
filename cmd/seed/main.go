@@ -92,6 +92,21 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed transporter plans: %w", err)
 	}
 
+	// 2.7 Seed inventory standalone plans
+	if err := seedInventoryPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed inventory plans: %w", err)
+	}
+
+	// 2.8 Seed ERP standalone plans
+	if err := seedERPPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed erp plans: %w", err)
+	}
+
+	// 2.9 Seed POS per-device license plans
+	if err := seedPOSLicensePlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed pos license plans: %w", err)
+	}
+
 	// 3. Seed bundles (delivery, pos-suite, complete)
 	if err := seedBundles(ctx, tx); err != nil {
 		return fmt.Errorf("seed bundles: %w", err)
@@ -331,6 +346,33 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			yearlyPrice:  10000,
 			onetimePrice: 0,
 			sortOrder:    41,
+		},
+
+		// Inventory Management
+		{
+			id:           uuid.MustParse("10000000-0000-0000-0000-000000000060"),
+			code:         "inventory",
+			name:         "Inventory Management",
+			description:  "Real-time stock tracking, supplier management, purchase orders, low-stock alerts, batch/expiry tracking, and multi-warehouse support.",
+			category:     product.CategoryProduct,
+			monthlyPrice: 500,
+			yearlyPrice:  5500,
+			onetimePrice: 80000,
+			sortOrder:    60,
+		},
+
+		// ERP Suite
+		{
+			id:            uuid.MustParse("10000000-0000-0000-0000-000000000070"),
+			code:          "erp",
+			name:          "ERP Suite",
+			description:   "Integrated enterprise resource planning: HR, payroll, procurement, asset management, budgeting, and financial reporting.",
+			category:      product.CategoryProduct,
+			isBaseService: false,
+			monthlyPrice:  2000,
+			yearlyPrice:   22000,
+			onetimePrice:  150000,
+			sortOrder:     70,
 		},
 	}
 
@@ -1281,6 +1323,420 @@ func seedTruLoadTransporterPlans(ctx context.Context, tx *ent.Tx) error {
 	return nil
 }
 
+// ── Inventory Plans ──────────────────────────────────────────────────────────
+
+func seedInventoryPlans(ctx context.Context, tx *ent.Tx) error {
+	now := time.Now()
+
+	type planDef struct {
+		id           uuid.UUID
+		planCode     string
+		name         string
+		description  string
+		billingCycle string
+		price        float64
+		tierOrder    int
+		tierLimits   map[string]any
+		features     []string
+	}
+
+	plans := []planDef{
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("inventory:STARTER")),
+			planCode:     "INVENTORY_STARTER",
+			name:         "Inventory Starter",
+			description:  "Essential stock tracking for small operations. Single warehouse, manual purchase orders, low-stock alerts.",
+			billingCycle: "MONTHLY",
+			price:        500.0,
+			tierOrder:    1,
+			tierLimits: map[string]any{
+				"max_warehouses":    1,
+				"max_products":      500,
+				"max_suppliers":     10,
+				"max_users":         3,
+			},
+			features: []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("inventory:GROWTH")),
+			planCode:     "INVENTORY_GROWTH",
+			name:         "Inventory Growth",
+			description:  "Multi-warehouse support, batch/expiry tracking, supplier portal, and advanced analytics.",
+			billingCycle: "MONTHLY",
+			price:        1500.0,
+			tierOrder:    2,
+			tierLimits: map[string]any{
+				"max_warehouses":    5,
+				"max_products":      5000,
+				"max_suppliers":     50,
+				"max_users":         10,
+			},
+			features: []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports", "multi_warehouse", "batch_expiry_tracking", "supplier_portal", "advanced_analytics"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("inventory:PROFESSIONAL")),
+			planCode:     "INVENTORY_PROFESSIONAL",
+			name:         "Inventory Professional",
+			description:  "Unlimited warehouses, API access, barcode scanning, bulk imports, and priority support.",
+			billingCycle: "MONTHLY",
+			price:        3000.0,
+			tierOrder:    3,
+			tierLimits: map[string]any{
+				"max_warehouses": -1,
+				"max_products":   -1,
+				"max_suppliers":  -1,
+				"max_users":      -1,
+			},
+			features: []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports", "multi_warehouse", "batch_expiry_tracking", "supplier_portal", "advanced_analytics", "api_access", "barcode_scanning", "bulk_import", "priority_support"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("inventory:STARTER_YEARLY")),
+			planCode:     "INVENTORY_STARTER_YEARLY",
+			name:         "Inventory Starter — Annual",
+			description:  "Essential stock tracking. Save with annual billing.",
+			billingCycle: "ANNUAL",
+			price:        5500.0,
+			tierOrder:    1,
+			tierLimits:   map[string]any{"max_warehouses": 1, "max_products": 500, "max_suppliers": 10, "max_users": 3},
+			features:     []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("inventory:GROWTH_YEARLY")),
+			planCode:     "INVENTORY_GROWTH_YEARLY",
+			name:         "Inventory Growth — Annual",
+			description:  "Multi-warehouse, batch/expiry tracking, supplier portal. Save with annual billing.",
+			billingCycle: "ANNUAL",
+			price:        16500.0,
+			tierOrder:    2,
+			tierLimits:   map[string]any{"max_warehouses": 5, "max_products": 5000, "max_suppliers": 50, "max_users": 10},
+			features:     []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports", "multi_warehouse", "batch_expiry_tracking", "supplier_portal", "advanced_analytics"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("inventory:PROFESSIONAL_YEARLY")),
+			planCode:     "INVENTORY_PROFESSIONAL_YEARLY",
+			name:         "Inventory Professional — Annual",
+			description:  "Unlimited capacity, API access, barcode scanning. Save with annual billing.",
+			billingCycle: "ANNUAL",
+			price:        33000.0,
+			tierOrder:    3,
+			tierLimits:   map[string]any{"max_warehouses": -1, "max_products": -1, "max_suppliers": -1, "max_users": -1},
+			features:     []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports", "multi_warehouse", "batch_expiry_tracking", "supplier_portal", "advanced_analytics", "api_access", "barcode_scanning", "bulk_import", "priority_support"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("inventory:ONE_TIME")),
+			planCode:     "INVENTORY_ONE_TIME",
+			name:         "Inventory — Perpetual License",
+			description:  "One-time purchase of Inventory Management. All features included. Excludes ongoing cloud hosting.",
+			billingCycle: "ONE_TIME",
+			price:        80000.0,
+			tierOrder:    4,
+			tierLimits:   map[string]any{"max_warehouses": -1, "max_products": -1, "max_suppliers": -1, "max_users": -1},
+			features:     []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports", "multi_warehouse", "batch_expiry_tracking", "supplier_portal", "advanced_analytics", "api_access", "barcode_scanning", "bulk_import", "priority_support"},
+		},
+	}
+
+	for _, p := range plans {
+		existing, err := tx.SubscriptionPlan.Get(ctx, p.id)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("lookup inventory plan %s: %w", p.planCode, err)
+		}
+		if existing != nil {
+			_, err = tx.SubscriptionPlan.UpdateOneID(p.id).
+				SetPlanCode(p.planCode).SetName(p.name).SetDescription(p.description).
+				SetBillingCycle(p.billingCycle).SetPlanType(subscriptionplan.PlanTypeSTANDALONE_SERVICE).
+				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(true).
+				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).SetUpdatedAt(now).Save(ctx)
+		} else {
+			_, err = tx.SubscriptionPlan.Create().
+				SetID(p.id).SetPlanCode(p.planCode).SetName(p.name).SetDescription(p.description).
+				SetBillingCycle(p.billingCycle).SetPlanType(subscriptionplan.PlanTypeSTANDALONE_SERVICE).
+				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(true).
+				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).
+				SetCreatedAt(now).SetUpdatedAt(now).Save(ctx)
+		}
+		if err != nil {
+			return fmt.Errorf("upsert inventory plan %s: %w", p.planCode, err)
+		}
+		if err := seedPlanFeatures(ctx, tx, p.id, p.features); err != nil {
+			return fmt.Errorf("seed features for inventory plan %s: %w", p.planCode, err)
+		}
+		log.Printf("  inventory plan: %s (%s, KES %.0f)", p.name, p.billingCycle, p.price)
+	}
+	return nil
+}
+
+// ── ERP Plans ─────────────────────────────────────────────────────────────────
+
+func seedERPPlans(ctx context.Context, tx *ent.Tx) error {
+	now := time.Now()
+
+	type planDef struct {
+		id           uuid.UUID
+		planCode     string
+		name         string
+		description  string
+		billingCycle string
+		price        float64
+		tierOrder    int
+		tierLimits   map[string]any
+		features     []string
+	}
+
+	plans := []planDef{
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("erp:STARTER")),
+			planCode:     "ERP_STARTER",
+			name:         "ERP Starter",
+			description:  "Core HR, payroll, and basic procurement for small teams. Up to 20 employees.",
+			billingCycle: "MONTHLY",
+			price:        2000.0,
+			tierOrder:    1,
+			tierLimits:   map[string]any{"max_employees": 20, "max_users": 5, "max_departments": 3},
+			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("erp:GROWTH")),
+			planCode:     "ERP_GROWTH",
+			name:         "ERP Growth",
+			description:  "Multi-department HR, payroll, asset management, budgeting, and advanced reporting. Up to 100 employees.",
+			billingCycle: "MONTHLY",
+			price:        5000.0,
+			tierOrder:    2,
+			tierLimits:   map[string]any{"max_employees": 100, "max_users": 20, "max_departments": -1},
+			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("erp:PROFESSIONAL")),
+			planCode:     "ERP_PROFESSIONAL",
+			name:         "ERP Professional",
+			description:  "Unlimited employees, full financial suite, API access, custom workflows, and priority support.",
+			billingCycle: "MONTHLY",
+			price:        10000.0,
+			tierOrder:    3,
+			tierLimits:   map[string]any{"max_employees": -1, "max_users": -1, "max_departments": -1},
+			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("erp:STARTER_YEARLY")),
+			planCode:     "ERP_STARTER_YEARLY",
+			name:         "ERP Starter — Annual",
+			description:  "Core HR and payroll. Save with annual billing.",
+			billingCycle: "ANNUAL",
+			price:        22000.0,
+			tierOrder:    1,
+			tierLimits:   map[string]any{"max_employees": 20, "max_users": 5, "max_departments": 3},
+			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("erp:GROWTH_YEARLY")),
+			planCode:     "ERP_GROWTH_YEARLY",
+			name:         "ERP Growth — Annual",
+			description:  "Multi-department HR, asset management, budgeting. Save with annual billing.",
+			billingCycle: "ANNUAL",
+			price:        55000.0,
+			tierOrder:    2,
+			tierLimits:   map[string]any{"max_employees": 100, "max_users": 20, "max_departments": -1},
+			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("erp:PROFESSIONAL_YEARLY")),
+			planCode:     "ERP_PROFESSIONAL_YEARLY",
+			name:         "ERP Professional — Annual",
+			description:  "Unlimited employees, full financial suite, API access. Save with annual billing.",
+			billingCycle: "ANNUAL",
+			price:        110000.0,
+			tierOrder:    3,
+			tierLimits:   map[string]any{"max_employees": -1, "max_users": -1, "max_departments": -1},
+			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("erp:ONE_TIME")),
+			planCode:     "ERP_ONE_TIME",
+			name:         "ERP — Perpetual License",
+			description:  "One-time purchase of ERP Suite. All features included. Excludes ongoing cloud hosting and support.",
+			billingCycle: "ONE_TIME",
+			price:        150000.0,
+			tierOrder:    4,
+			tierLimits:   map[string]any{"max_employees": -1, "max_users": -1, "max_departments": -1},
+			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support"},
+		},
+	}
+
+	for _, p := range plans {
+		existing, err := tx.SubscriptionPlan.Get(ctx, p.id)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("lookup erp plan %s: %w", p.planCode, err)
+		}
+		if existing != nil {
+			_, err = tx.SubscriptionPlan.UpdateOneID(p.id).
+				SetPlanCode(p.planCode).SetName(p.name).SetDescription(p.description).
+				SetBillingCycle(p.billingCycle).SetPlanType(subscriptionplan.PlanTypeSTANDALONE_SERVICE).
+				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(true).
+				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).SetUpdatedAt(now).Save(ctx)
+		} else {
+			_, err = tx.SubscriptionPlan.Create().
+				SetID(p.id).SetPlanCode(p.planCode).SetName(p.name).SetDescription(p.description).
+				SetBillingCycle(p.billingCycle).SetPlanType(subscriptionplan.PlanTypeSTANDALONE_SERVICE).
+				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(true).
+				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).
+				SetCreatedAt(now).SetUpdatedAt(now).Save(ctx)
+		}
+		if err != nil {
+			return fmt.Errorf("upsert erp plan %s: %w", p.planCode, err)
+		}
+		if err := seedPlanFeatures(ctx, tx, p.id, p.features); err != nil {
+			return fmt.Errorf("seed features for erp plan %s: %w", p.planCode, err)
+		}
+		log.Printf("  erp plan: %s (%s, KES %.0f)", p.name, p.billingCycle, p.price)
+	}
+	return nil
+}
+
+// ── POS Device License Plans ──────────────────────────────────────────────────
+// License-based plans for POS — priced per device or per device group.
+// These complement the pos-suite bundle plans (which cover the software subscription).
+// Tenants choose either: subscription (monthly/yearly via pos-suite bundle) OR
+// a per-device license (one-time or recurring device seat fee).
+
+func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
+	now := time.Now()
+
+	type planDef struct {
+		id           uuid.UUID
+		planCode     string
+		name         string
+		description  string
+		billingCycle string
+		price        float64
+		tierOrder    int
+		tierLimits   map[string]any
+		features     []string
+	}
+
+	plans := []planDef{
+		// ── Monthly device-seat subscriptions ─────────────────────────────
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:device:1")),
+			planCode:     "POS_DEVICE_1",
+			name:         "POS — 1 Device",
+			description:  "Monthly subscription for 1 POS terminal. Includes full POS software, daily reports, and receipt printing.",
+			billingCycle: "MONTHLY",
+			price:        800.0,
+			tierOrder:    1,
+			tierLimits:   map[string]any{"max_devices": 1, "max_cashiers": 2},
+			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:device:5")),
+			planCode:     "POS_DEVICE_5",
+			name:         "POS — 5 Devices",
+			description:  "Monthly subscription for up to 5 POS terminals. Includes multi-cashier management and shift reporting.",
+			billingCycle: "MONTHLY",
+			price:        3500.0,
+			tierOrder:    2,
+			tierLimits:   map[string]any{"max_devices": 5, "max_cashiers": 10},
+			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:device:10")),
+			planCode:     "POS_DEVICE_10",
+			name:         "POS — 10 Devices",
+			description:  "Monthly subscription for up to 10 POS terminals. Best for multi-outlet chains.",
+			billingCycle: "MONTHLY",
+			price:        6000.0,
+			tierOrder:    3,
+			tierLimits:   map[string]any{"max_devices": 10, "max_cashiers": -1},
+			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management", "multi_outlet", "advanced_analytics"},
+		},
+		// ── Annual device-seat subscriptions ──────────────────────────────
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:device:1:yearly")),
+			planCode:     "POS_DEVICE_1_YEARLY",
+			name:         "POS — 1 Device (Annual)",
+			description:  "Annual subscription for 1 POS terminal. Save 2 months vs monthly.",
+			billingCycle: "ANNUAL",
+			price:        8000.0,
+			tierOrder:    1,
+			tierLimits:   map[string]any{"max_devices": 1, "max_cashiers": 2},
+			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:device:5:yearly")),
+			planCode:     "POS_DEVICE_5_YEARLY",
+			name:         "POS — 5 Devices (Annual)",
+			description:  "Annual subscription for up to 5 POS terminals. Save 2 months vs monthly.",
+			billingCycle: "ANNUAL",
+			price:        35000.0,
+			tierOrder:    2,
+			tierLimits:   map[string]any{"max_devices": 5, "max_cashiers": 10},
+			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:device:10:yearly")),
+			planCode:     "POS_DEVICE_10_YEARLY",
+			name:         "POS — 10 Devices (Annual)",
+			description:  "Annual subscription for up to 10 POS terminals. Save 2 months vs monthly.",
+			billingCycle: "ANNUAL",
+			price:        60000.0,
+			tierOrder:    3,
+			tierLimits:   map[string]any{"max_devices": 10, "max_cashiers": -1},
+			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management", "multi_outlet", "advanced_analytics"},
+		},
+		// ── One-time per-device perpetual license ─────────────────────────
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:license:per_device")),
+			planCode:     "POS_LICENSE_PER_DEVICE",
+			name:         "POS — Per Device Perpetual License",
+			description:  "One-time perpetual license per POS device. Owns the software for that device indefinitely. Cloud sync and updates require an active subscription.",
+			billingCycle: "ONE_TIME",
+			price:        15000.0,
+			tierOrder:    10,
+			tierLimits:   map[string]any{"max_devices": 1, "max_cashiers": -1},
+			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management"},
+		},
+		{
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:license:complete")),
+			planCode:     "POS_LICENSE_COMPLETE",
+			name:         "POS — Complete Perpetual License",
+			description:  "One-time perpetual license for unlimited POS devices at a single outlet. Full feature set included.",
+			billingCycle: "ONE_TIME",
+			price:        120000.0,
+			tierOrder:    11,
+			tierLimits:   map[string]any{"max_devices": -1, "max_cashiers": -1},
+			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management", "multi_outlet", "advanced_analytics", "api_access"},
+		},
+	}
+
+	for _, p := range plans {
+		existing, err := tx.SubscriptionPlan.Get(ctx, p.id)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("lookup pos license plan %s: %w", p.planCode, err)
+		}
+		if existing != nil {
+			_, err = tx.SubscriptionPlan.UpdateOneID(p.id).
+				SetPlanCode(p.planCode).SetName(p.name).SetDescription(p.description).
+				SetBillingCycle(p.billingCycle).SetPlanType(subscriptionplan.PlanTypeSTANDALONE_SERVICE).
+				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(true).
+				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).SetUpdatedAt(now).Save(ctx)
+		} else {
+			_, err = tx.SubscriptionPlan.Create().
+				SetID(p.id).SetPlanCode(p.planCode).SetName(p.name).SetDescription(p.description).
+				SetBillingCycle(p.billingCycle).SetPlanType(subscriptionplan.PlanTypeSTANDALONE_SERVICE).
+				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(true).
+				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).
+				SetCreatedAt(now).SetUpdatedAt(now).Save(ctx)
+		}
+		if err != nil {
+			return fmt.Errorf("upsert pos license plan %s: %w", p.planCode, err)
+		}
+		if err := seedPlanFeatures(ctx, tx, p.id, p.features); err != nil {
+			return fmt.Errorf("seed features for pos license plan %s: %w", p.planCode, err)
+		}
+		log.Printf("  pos license plan: %s (%s, KES %.0f)", p.name, p.billingCycle, p.price)
+	}
+	return nil
+}
+
 // ── Bundles ──────────────────────────────────────────────────────────────────
 // Curated product combinations with tiered pricing.
 // The "delivery" bundle maps directly to the Urban Loft inception report tiers.
@@ -1401,44 +1857,72 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 }
 
 func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.Syncer) error {
-	// Tenant definitions with slug → plan mapping.
-	// UUIDs are resolved at runtime from auth-api (see resolveTenantID above).
-	// Platform owner slug (codevertex) is excluded — no tenant subscription; see TRINITY-AUTHORIZATION-PATTERN.md.
+	// Platform owner (codevertex) is intentionally excluded — the platform owner has
+	// unrestricted access to all services without a subscription record.
+	// All other tenants must have a subscription record for feature gating to work.
+
 	type tenantDef struct {
-		slug       string
-		name       string
-		plan       string
-		bundleCode string
+		subID         uuid.UUID
+		slug          string
+		name          string
+		plan          string
+		bundleCode    string
+		status        tenantsubscription.Status
+		periodStart   time.Time
+		periodEnd     time.Time
+		extraProducts []string // product codes to activate beyond the bundle defaults
 	}
+
+	now := time.Now()
+	// Urban Loft: ACTIVE subscription, STARTER delivery bundle + POS, expires June 5 2026.
+	urbanLoftStart := time.Date(2026, 5, 17, 0, 0, 0, 0, time.UTC)
+	urbanLoftEnd := time.Date(2026, 6, 5, 23, 59, 59, 0, time.UTC)
+	trialEnd := now.Add(14 * 24 * time.Hour)
 
 	tenantDefs := []tenantDef{
-		{"urban-loft", "Urban Loft Cafe", "GROWTH", "delivery"},
-		{"mss", "Masterspace Solutions", "GROWTH", "delivery"},
-		{"kura", "Kenya Urban Roads Authority", "TRULOAD_STARTER", "truload"},
-		{"ultichange", "UltiChange", "STARTER", "delivery"},
+		{
+			subID:         uuid.MustParse("30000000-0000-0000-0000-000000000001"),
+			slug:          "urban-loft",
+			name:          "Urban Loft Cafe",
+			plan:          "STARTER",
+			bundleCode:    "delivery",
+			status:        tenantsubscription.StatusACTIVE,
+			periodStart:   urbanLoftStart,
+			periodEnd:     urbanLoftEnd,
+			extraProducts: []string{"pos"}, // POS added on top of delivery bundle
+		},
+		{
+			subID:       uuid.MustParse("30000000-0000-0000-0000-000000000002"),
+			slug:        "mss",
+			name:        "Masterspace Solutions",
+			plan:        "GROWTH",
+			bundleCode:  "delivery",
+			status:      tenantsubscription.StatusTRIAL,
+			periodStart: now,
+			periodEnd:   trialEnd,
+		},
+		{
+			subID:       uuid.MustParse("30000000-0000-0000-0000-000000000003"),
+			slug:        "kura",
+			name:        "Kenya Urban Roads Authority",
+			plan:        "TRULOAD_STARTER",
+			bundleCode:  "truload",
+			status:      tenantsubscription.StatusTRIAL,
+			periodStart: now,
+			periodEnd:   trialEnd,
+		},
+		{
+			subID:       uuid.MustParse("30000000-0000-0000-0000-000000000004"),
+			slug:        "ultichange",
+			name:        "UltiChange",
+			plan:        "STARTER",
+			bundleCode:  "delivery",
+			status:      tenantsubscription.StatusTRIAL,
+			periodStart: now,
+			periodEnd:   trialEnd,
+		},
 	}
 
-	type resolvedTenant struct {
-		id         uuid.UUID
-		slug       string
-		name       string
-		plan       string
-		bundleCode string
-	}
-
-	var tenants []resolvedTenant
-	for _, td := range tenantDefs {
-		id, err := syncer.SyncTenant(ctx, td.slug)
-		if err != nil {
-			// Log and skip rather than aborting — allows partial seeding during
-			// initial setup when some tenants may not exist yet.
-			log.Printf("  [SKIP] tenant %q: %v", td.slug, err)
-			continue
-		}
-		tenants = append(tenants, resolvedTenant{id: id, slug: td.slug, name: td.name, plan: td.plan, bundleCode: td.bundleCode})
-	}
-
-	// Plan UUIDs from seedSubscriptionPlans + seedTruLoadOrgPlans
 	planIDs := map[string]uuid.UUID{
 		"STARTER":         uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:STARTER")),
 		"GROWTH":          uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:GROWTH")),
@@ -1447,69 +1931,71 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 		"TRULOAD_GROWTH":  uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:GROWTH")),
 	}
 
-	now := time.Now()
-	trialEnd := now.Add(14 * 24 * time.Hour)
+	for _, td := range tenantDefs {
+		tenantID, err := syncer.SyncTenant(ctx, td.slug)
+		if err != nil {
+			log.Printf("  [SKIP] tenant %q: %v", td.slug, err)
+			continue
+		}
 
-	for i, t := range tenants {
-		tenantSubID := uuid.MustParse(fmt.Sprintf("30000000-0000-0000-0000-00000000000%d", i+1))
-		planID := planIDs[t.plan]
+		planID := planIDs[td.plan]
 
-		// Check if subscription already exists
 		existing, err := tx.TenantSubscription.Query().
-			Where(tenantsubscription.TenantIDEQ(t.id)).
+			Where(tenantsubscription.TenantIDEQ(tenantID)).
 			First(ctx)
 		if err != nil && !ent.IsNotFound(err) {
-			return fmt.Errorf("lookup subscription for %s: %w", t.slug, err)
+			return fmt.Errorf("lookup subscription for %s: %w", td.slug, err)
 		}
 
+		upd := map[string]any{"seeded": true, "tenant_name": td.name, "tier": td.plan}
 		if existing != nil {
-			_, err = tx.TenantSubscription.UpdateOne(existing).
+			b := tx.TenantSubscription.UpdateOne(existing).
 				SetPlanID(planID).
-				SetStatus(tenantsubscription.StatusTRIAL).
-				SetTrialEndsAt(trialEnd).
-				SetCurrentPeriodStart(now).
-				SetCurrentPeriodEnd(trialEnd).
-				SetBundleCode(t.bundleCode).
-				SetMetadata(map[string]any{
-					"seeded":      true,
-					"tenant_name": t.name,
-					"tier":        t.plan,
-				}).
-				Save(ctx)
-			if err != nil {
-				return fmt.Errorf("update subscription for %s: %w", t.slug, err)
+				SetStatus(td.status).
+				SetCurrentPeriodStart(td.periodStart).
+				SetCurrentPeriodEnd(td.periodEnd).
+				SetBundleCode(td.bundleCode).
+				SetMetadata(upd)
+			if td.status == tenantsubscription.StatusTRIAL {
+				b = b.SetTrialEndsAt(td.periodEnd)
 			}
-			log.Printf("  subscription: %s → %s (trial, updated)", t.name, t.plan)
+			_, err = b.Save(ctx)
 		} else {
-			_, err = tx.TenantSubscription.Create().
-				SetID(tenantSubID).
-				SetTenantID(t.id).
+			b := tx.TenantSubscription.Create().
+				SetID(td.subID).
+				SetTenantID(tenantID).
 				SetPlanID(planID).
-				SetStatus(tenantsubscription.StatusTRIAL).
-				SetTrialEndsAt(trialEnd).
-				SetCurrentPeriodStart(now).
-				SetCurrentPeriodEnd(trialEnd).
-				SetBundleCode(t.bundleCode).
-				SetMetadata(map[string]any{
-					"seeded":      true,
-					"tenant_name": t.name,
-					"tier":        t.plan,
-				}).
-				Save(ctx)
-			if err != nil {
-				return fmt.Errorf("create subscription for %s: %w", t.slug, err)
+				SetStatus(td.status).
+				SetCurrentPeriodStart(td.periodStart).
+				SetCurrentPeriodEnd(td.periodEnd).
+				SetBundleCode(td.bundleCode).
+				SetMetadata(upd)
+			if td.status == tenantsubscription.StatusTRIAL {
+				b = b.SetTrialEndsAt(td.periodEnd)
 			}
-			log.Printf("  subscription: %s → %s (trial, 14 days)", t.name, t.plan)
+			_, err = b.Save(ctx)
+		}
+		if err != nil {
+			return fmt.Errorf("upsert subscription for %s: %w", td.slug, err)
+		}
+		log.Printf("  subscription: %s → %s (%s, until %s)", td.name, td.plan, td.status, td.periodEnd.Format("2006-01-02"))
+
+		// Activate bundle products
+		switch td.bundleCode {
+		case "truload":
+			if err := activateTruLoadProducts(ctx, tx, td.subID, now); err != nil {
+				return fmt.Errorf("activate truload products for %s: %w", td.slug, err)
+			}
+		default:
+			if err := activateDeliveryProducts(ctx, tx, td.subID, now); err != nil {
+				return fmt.Errorf("activate delivery products for %s: %w", td.slug, err)
+			}
 		}
 
-		// Activate products for the subscription based on bundle
-		if t.bundleCode == "truload" {
-			if err := activateTruLoadProducts(ctx, tx, tenantSubID, now); err != nil {
-				return fmt.Errorf("activate truload products for %s: %w", t.slug, err)
-			}
-		} else {
-			if err := activateDeliveryProducts(ctx, tx, tenantSubID, now); err != nil {
-				return fmt.Errorf("activate products for %s: %w", t.slug, err)
+		// Activate any extra products beyond the bundle
+		for _, code := range td.extraProducts {
+			if err := activateExtraProduct(ctx, tx, td.subID, code, now); err != nil {
+				return fmt.Errorf("activate extra product %s for %s: %w", code, td.slug, err)
 			}
 		}
 	}
@@ -1608,6 +2094,61 @@ func activateDeliveryProducts(ctx context.Context, tx *ent.Tx, subID uuid.UUID, 
 		}
 	}
 
+	return nil
+}
+
+// productCodeToID maps well-known product codes to their seeded UUIDs.
+var productCodeToID = map[string]uuid.UUID{
+	"auth":         uuid.MustParse("10000000-0000-0000-0000-000000000001"),
+	"notifications": uuid.MustParse("10000000-0000-0000-0000-000000000002"),
+	"subscription": uuid.MustParse("10000000-0000-0000-0000-000000000003"),
+	"ordering":     uuid.MustParse("10000000-0000-0000-0000-000000000010"),
+	"logistics":    uuid.MustParse("10000000-0000-0000-0000-000000000011"),
+	"treasury":     uuid.MustParse("10000000-0000-0000-0000-000000000012"),
+	"pos":          uuid.MustParse("10000000-0000-0000-0000-000000000020"),
+	"storefront":   uuid.MustParse("10000000-0000-0000-0000-000000000021"),
+	"truload":      uuid.MustParse("10000000-0000-0000-0000-000000000050"),
+	"marketflow":   uuid.MustParse("10000000-0000-0000-0000-000000000040"),
+	"inventory":    uuid.MustParse("10000000-0000-0000-0000-000000000060"),
+	"erp":          uuid.MustParse("10000000-0000-0000-0000-000000000070"),
+}
+
+// activateExtraProduct upserts a single product subscription on top of an existing bundle.
+func activateExtraProduct(ctx context.Context, tx *ent.Tx, subID uuid.UUID, code string, now time.Time) error {
+	productID, ok := productCodeToID[code]
+	if !ok {
+		return fmt.Errorf("unknown product code %q in activateExtraProduct", code)
+	}
+
+	existing, err := tx.ProductSubscription.Query().
+		Where(
+			productsubscription.TenantSubscriptionIDEQ(subID),
+			productsubscription.ProductCodeEQ(code),
+		).
+		First(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return fmt.Errorf("lookup extra product %s: %w", code, err)
+	}
+
+	if existing != nil {
+		_, err = tx.ProductSubscription.UpdateOne(existing).
+			SetProductID(productID).
+			SetStatus(productsubscription.StatusActive).
+			SetActivatedAt(now).
+			Save(ctx)
+	} else {
+		_, err = tx.ProductSubscription.Create().
+			SetTenantSubscriptionID(subID).
+			SetProductCode(code).
+			SetProductID(productID).
+			SetStatus(productsubscription.StatusActive).
+			SetActivatedAt(now).
+			Save(ctx)
+	}
+	if err != nil {
+		return fmt.Errorf("upsert extra product %s: %w", code, err)
+	}
+	log.Printf("    extra product activated: %s", code)
 	return nil
 }
 
