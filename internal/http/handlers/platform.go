@@ -1,13 +1,18 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
-	"go.uber.org/zap"
 )
 
 // PlatformHandler handles platform admin endpoints.
@@ -166,6 +171,215 @@ func (h *PlatformHandler) ListAllSubscriptions(w http.ResponseWriter, r *http.Re
 		"total":    total,
 		"page":     page,
 		"pageSize": pageSize,
+	})
+}
+
+// AssignPlanToTenant godoc
+// @Summary Assign subscription plan to a tenant (admin)
+// @Description Creates or updates a tenant's subscription to the given plan. Requires platform owner.
+// @Tags Platform
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /admin/tenants/{tenant_id}/subscription [post]
+func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	tenantIDStr := chi.URLParam(r, "tenant_id")
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+
+	var body struct {
+		PlanCode   string `json:"planCode"`
+		StartTrial bool   `json:"startTrial"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if body.PlanCode == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "planCode is required"})
+		return
+	}
+
+	plan, err := h.client.SubscriptionPlan.Query().
+		Where(subscriptionplan.PlanCode(body.PlanCode)).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "plan not found"})
+			return
+		}
+		h.log.Error("failed to find plan", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	status := tenantsubscription.StatusACTIVE
+	if body.StartTrial {
+		status = tenantsubscription.StatusTRIAL
+	}
+
+	now := time.Now()
+	periodEnd := now.AddDate(0, 1, 0)
+
+	// Check if subscription already exists for tenant
+	existing, err := h.client.TenantSubscription.Query().
+		Where(tenantsubscription.TenantID(tenantID)).
+		Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		h.log.Error("failed to query existing subscription", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	var sub interface{}
+	if existing != nil {
+		// Update existing subscription
+		updated, err := h.client.TenantSubscription.UpdateOneID(existing.ID).
+			SetPlanID(plan.ID).
+			SetStatus(status).
+			SetCurrentPeriodStart(now).
+			SetCurrentPeriodEnd(periodEnd).
+			Save(ctx)
+		if err != nil {
+			h.log.Error("failed to update tenant subscription", zap.Error(err))
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update subscription"})
+			return
+		}
+		sub = updated
+	} else {
+		// Create new subscription
+		created, err := h.client.TenantSubscription.Create().
+			SetTenantID(tenantID).
+			SetPlanID(plan.ID).
+			SetStatus(status).
+			SetCurrentPeriodStart(now).
+			SetCurrentPeriodEnd(periodEnd).
+			Save(ctx)
+		if err != nil {
+			h.log.Error("failed to create tenant subscription", zap.Error(err))
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create subscription"})
+			return
+		}
+		sub = created
+	}
+
+	writeJSON(w, http.StatusOK, sub)
+}
+
+// UpdateSubscriptionStatus godoc
+// @Summary Update subscription status (admin)
+// @Description Updates the status of a tenant subscription. Requires platform owner.
+// @Tags Platform
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Subscription UUID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /admin/subscriptions/{id}/status [put]
+func (h *PlatformHandler) UpdateSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid id"})
+		return
+	}
+
+	var body struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if body.Status == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "status is required"})
+		return
+	}
+
+	sub, err := h.client.TenantSubscription.UpdateOneID(id).
+		SetStatus(tenantsubscription.Status(body.Status)).
+		Save(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "subscription not found"})
+			return
+		}
+		h.log.Error("failed to update subscription status", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update subscription"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, sub)
+}
+
+// ListTenants godoc
+// @Summary List all tenants (admin)
+// @Description Returns all tenants with their current subscription status. Requires platform owner.
+// @Tags Platform
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]string
+// @Router /admin/tenants [get]
+func (h *PlatformHandler) ListTenants(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	tenants, err := h.client.Tenant.Query().
+		WithSubscriptions(func(q *ent.TenantSubscriptionQuery) {
+			q.WithPlan()
+		}).
+		All(ctx)
+	if err != nil {
+		h.log.Error("failed to list tenants", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	type tenantRow struct {
+		ID                 string `json:"id"`
+		Name               string `json:"name"`
+		Slug               string `json:"slug"`
+		SubscriptionStatus string `json:"subscriptionStatus,omitempty"`
+		PlanName           string `json:"planName,omitempty"`
+		PlanCode           string `json:"planCode,omitempty"`
+	}
+
+	data := make([]tenantRow, 0, len(tenants))
+	for _, t := range tenants {
+		row := tenantRow{
+			ID:   t.ID.String(),
+			Name: t.Name,
+			Slug: t.Slug,
+		}
+		if len(t.Edges.Subscriptions) > 0 {
+			sub := t.Edges.Subscriptions[0]
+			row.SubscriptionStatus = string(sub.Status)
+			if sub.Edges.Plan != nil {
+				row.PlanName = sub.Edges.Plan.Name
+				row.PlanCode = sub.Edges.Plan.PlanCode
+			}
+		}
+		data = append(data, row)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"data":  data,
+		"total": len(data),
 	})
 }
 

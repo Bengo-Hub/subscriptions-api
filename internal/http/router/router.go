@@ -178,10 +178,10 @@ func New(
 				r.Delete("/{id}", planHandler.DeletePlan)
 			})
 
-			// Admin list all subscriptions and platform stats
-			if platformHandler != nil {
-				r.Route("/admin", func(adminRouter chi.Router) {
-					adminRouter.Use(func(next http.Handler) http.Handler {
+			// Admin: service charge plan CRUD
+			if serviceChargeHandler != nil {
+				r.Route("/admin/service-charges", func(r chi.Router) {
+					r.Use(func(next http.Handler) http.Handler {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							if !httpware.IsPlatformOwner(r.Context()) {
 								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
@@ -190,8 +190,42 @@ func New(
 							next.ServeHTTP(w, r)
 						})
 					})
-					adminRouter.Get("/subscriptions", platformHandler.ListAllSubscriptions)
+					r.Post("/", serviceChargeHandler.CreateServiceChargePlan)
+					r.Put("/{id}", serviceChargeHandler.UpdateServiceChargePlan)
+					r.Delete("/{id}", serviceChargeHandler.DeleteServiceChargePlan)
 				})
+			}
+
+			// Admin: tenant and subscription management
+			if platformHandler != nil {
+				r.Route("/admin/tenants", func(r chi.Router) {
+					r.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							if !httpware.IsPlatformOwner(r.Context()) {
+								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+								return
+							}
+							next.ServeHTTP(w, r)
+						})
+					})
+					r.Get("/", platformHandler.ListTenants)
+					r.Post("/{tenant_id}/subscription", platformHandler.AssignPlanToTenant)
+				})
+
+				r.Route("/admin/subscriptions", func(r chi.Router) {
+					r.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							if !httpware.IsPlatformOwner(r.Context()) {
+								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+								return
+							}
+							next.ServeHTTP(w, r)
+						})
+					})
+					r.Get("/", platformHandler.ListAllSubscriptions)
+					r.Put("/{id}/status", platformHandler.UpdateSubscriptionStatus)
+				})
+
 				r.Get("/platform/stats", func(w http.ResponseWriter, r *http.Request) {
 					if !httpware.IsPlatformOwner(r.Context()) {
 						http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
