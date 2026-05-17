@@ -233,6 +233,22 @@ func New(
 					}
 					platformHandler.GetPlatformStats(w, r)
 				})
+
+				r.Route("/admin/configs", func(r chi.Router) {
+					r.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							if !httpware.IsPlatformOwner(r.Context()) {
+								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+								return
+							}
+							next.ServeHTTP(w, r)
+						})
+					})
+					r.Get("/", platformHandler.ListServiceConfigs)
+					r.Post("/", platformHandler.CreateServiceConfig)
+					r.Put("/{id}", platformHandler.UpdateServiceConfig)
+					r.Delete("/{id}", platformHandler.DeleteServiceConfig)
+				})
 			}
 		})
 	})

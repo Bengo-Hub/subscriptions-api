@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 )
@@ -381,6 +382,163 @@ func (h *PlatformHandler) ListTenants(w http.ResponseWriter, r *http.Request) {
 		"data":  data,
 		"total": len(data),
 	})
+}
+
+// ListServiceConfigs returns all platform-level (tenant_id = nil) service configs.
+func (h *PlatformHandler) ListServiceConfigs(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	configs, err := h.client.ServiceConfig.Query().
+		Where(serviceconfig.TenantIDIsNil()).
+		Order(ent.Asc(serviceconfig.FieldConfigKey)).
+		All(ctx)
+	if err != nil {
+		h.log.Error("failed to list service configs", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	type configRow struct {
+		ID          string `json:"id"`
+		ConfigKey   string `json:"configKey"`
+		ConfigValue string `json:"configValue"`
+		ConfigType  string `json:"configType"`
+		Description string `json:"description"`
+		IsSecret    bool   `json:"isSecret"`
+		UpdatedAt   string `json:"updatedAt"`
+	}
+
+	data := make([]configRow, 0, len(configs))
+	for _, c := range configs {
+		val := c.ConfigValue
+		if c.IsSecret {
+			val = "••••••••"
+		}
+		data = append(data, configRow{
+			ID:          c.ID.String(),
+			ConfigKey:   c.ConfigKey,
+			ConfigValue: val,
+			ConfigType:  c.ConfigType,
+			Description: c.Description,
+			IsSecret:    c.IsSecret,
+			UpdatedAt:   c.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		})
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"data": data, "total": len(data)})
+}
+
+// CreateServiceConfig creates a new platform-level service config.
+func (h *PlatformHandler) CreateServiceConfig(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var body struct {
+		ConfigKey   string `json:"configKey"`
+		ConfigValue string `json:"configValue"`
+		ConfigType  string `json:"configType"`
+		Description string `json:"description"`
+		IsSecret    bool   `json:"isSecret"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if body.ConfigKey == "" || body.ConfigValue == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "configKey and configValue are required"})
+		return
+	}
+	if body.ConfigType == "" {
+		body.ConfigType = "string"
+	}
+
+	id := uuid.NewSHA1(uuid.NameSpaceOID, []byte("sc::"+body.ConfigKey))
+	cfg, err := h.client.ServiceConfig.Create().
+		SetID(id).
+		SetConfigKey(body.ConfigKey).
+		SetConfigValue(body.ConfigValue).
+		SetConfigType(body.ConfigType).
+		SetDescription(body.Description).
+		SetIsSecret(body.IsSecret).
+		Save(ctx)
+	if err != nil {
+		h.log.Error("failed to create service config", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create config"})
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, cfg)
+}
+
+// UpdateServiceConfig updates an existing service config's value and metadata.
+func (h *PlatformHandler) UpdateServiceConfig(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid id"})
+		return
+	}
+
+	var body struct {
+		ConfigValue string `json:"configValue"`
+		ConfigType  string `json:"configType"`
+		Description string `json:"description"`
+		IsSecret    bool   `json:"isSecret"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if body.ConfigValue == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "configValue is required"})
+		return
+	}
+
+	upd := h.client.ServiceConfig.UpdateOneID(id).
+		SetConfigValue(body.ConfigValue).
+		SetDescription(body.Description).
+		SetIsSecret(body.IsSecret)
+	if body.ConfigType != "" {
+		upd = upd.SetConfigType(body.ConfigType)
+	}
+
+	cfg, err := upd.Save(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "config not found"})
+			return
+		}
+		h.log.Error("failed to update service config", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update config"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, cfg)
+}
+
+// DeleteServiceConfig removes a platform-level service config.
+func (h *PlatformHandler) DeleteServiceConfig(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid id"})
+		return
+	}
+
+	if err := h.client.ServiceConfig.DeleteOneID(id).Exec(ctx); err != nil {
+		if ent.IsNotFound(err) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "config not found"})
+			return
+		}
+		h.log.Error("failed to delete service config", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to delete config"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 // writeJSON is defined in features.go
