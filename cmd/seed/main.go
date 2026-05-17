@@ -102,6 +102,11 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed pos license plans: %w", err)
 	}
 
+	// 2.11 Seed MarketFlow CRM plans
+	if err := seedMarketFlowPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed marketflow plans: %w", err)
+	}
+
 	// 3. Seed bundles (delivery, pos-suite, complete)
 	if err := seedBundles(ctx, tx); err != nil {
 		return fmt.Errorf("seed bundles: %w", err)
