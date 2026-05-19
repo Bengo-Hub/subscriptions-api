@@ -70,6 +70,8 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"basic_analytics",
 				"custom_domain",
 				"openstreetmap_tracking",
+				"loyalty_program",
+				"wallet",
 			},
 		},
 		{
@@ -199,6 +201,8 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"basic_analytics",
 				"custom_domain",
 				"openstreetmap_tracking",
+				"loyalty_program",
+				"wallet",
 			},
 		},
 		{
