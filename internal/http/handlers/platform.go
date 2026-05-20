@@ -541,4 +541,4 @@ func (h *PlatformHandler) DeleteServiceConfig(w http.ResponseWriter, r *http.Req
 	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
-// writeJSON is defined in features.go
+

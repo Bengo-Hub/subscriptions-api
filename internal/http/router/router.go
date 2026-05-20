@@ -35,11 +35,13 @@ func New(
 ) *chi.Mux {
 	r := chi.NewRouter()
 
-	// Standard middleware
+	// Standard middleware — use httpware for structured zap logging and recovery,
+	// consistent with all other platform services.
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(httpware.RequestID)
+	r.Use(httpware.Logging(log))
+	r.Use(httpware.Recover(log))
 
 	// CORS
 	r.Use(cors.Handler(cors.Options{

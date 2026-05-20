@@ -206,8 +206,3 @@ func entitlementsCacheKey(tenantID uuid.UUID) string {
 	return fmt.Sprintf("subscription:entitlements:%s", tenantID.String())
 }
 
-func writeJSON(w http.ResponseWriter, code int, payload any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	_ = json.NewEncoder(w).Encode(payload)
-}
