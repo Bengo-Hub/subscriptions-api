@@ -55,6 +55,7 @@ func (r *EntRepository) CreatePlan(ctx context.Context, plan *SubscriptionPlan) 
 		SetTierOrder(plan.TierOrder).
 		SetTierLimitsJSON(tierLimits).
 		SetDiscountRules(plan.DiscountRules).
+		SetNillableServiceTag(plan.ServiceTag).
 		SetMetadata(metadata).
 		Save(ctx)
 
@@ -104,6 +105,7 @@ func (r *EntRepository) UpdatePlan(ctx context.Context, plan *SubscriptionPlan) 
 	if plan.DiscountRules != nil {
 		update = update.SetDiscountRules(plan.DiscountRules)
 	}
+	update = update.SetNillableServiceTag(plan.ServiceTag)
 
 	update = update.SetUpdatedAt(time.Now())
 
@@ -149,12 +151,15 @@ func (r *EntRepository) FindPlanByCode(ctx context.Context, code string) (*Subsc
 	return mapEntPlan(entPlan), nil
 }
 
-// ListPlans retrieves all subscription plans, optionally filtering by active status.
-func (r *EntRepository) ListPlans(ctx context.Context, activeOnly bool) ([]*SubscriptionPlan, error) {
+// ListPlans retrieves all subscription plans, optionally filtering by active status and service tag.
+func (r *EntRepository) ListPlans(ctx context.Context, activeOnly bool, serviceTag *string) ([]*SubscriptionPlan, error) {
 	query := r.client.SubscriptionPlan.Query()
 
 	if activeOnly {
 		query = query.Where(subscriptionplan.IsActive(true))
+	}
+	if serviceTag != nil {
+		query = query.Where(subscriptionplan.ServiceTag(*serviceTag))
 	}
 
 	entPlans, err := query.
@@ -338,6 +343,7 @@ func mapEntPlan(entPlan *ent.SubscriptionPlan) *SubscriptionPlan {
 		TierOrder:    entPlan.TierOrder,
 		TierLimits:   entPlan.TierLimitsJSON,
 		Metadata:     entPlan.Metadata,
+		ServiceTag:   entPlan.ServiceTag,
 		CreatedAt:    entPlan.CreatedAt,
 		UpdatedAt:    entPlan.UpdatedAt,
 		Description:  entPlan.Description,

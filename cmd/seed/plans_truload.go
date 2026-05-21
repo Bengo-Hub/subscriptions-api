@@ -20,6 +20,7 @@ import (
 
 func seedTruLoadOrgPlans(ctx context.Context, tx *ent.Tx) error {
 	now := time.Now()
+	serviceTag := "truload"
 
 	type planDef struct {
 		id           uuid.UUID
@@ -247,6 +248,7 @@ func seedTruLoadOrgPlans(ctx context.Context, tx *ent.Tx) error {
 				SetIsPublic(true).
 				SetTierOrder(p.tierOrder).
 				SetTierLimitsJSON(p.tierLimits).
+				SetServiceTag(serviceTag).
 				SetUpdatedAt(now).
 				Save(ctx)
 			if err != nil {
@@ -266,6 +268,7 @@ func seedTruLoadOrgPlans(ctx context.Context, tx *ent.Tx) error {
 				SetIsPublic(true).
 				SetTierOrder(p.tierOrder).
 				SetTierLimitsJSON(p.tierLimits).
+				SetServiceTag(serviceTag).
 				SetCreatedAt(now).
 				SetUpdatedAt(now).
 				Save(ctx)
@@ -291,6 +294,7 @@ func seedTruLoadOrgPlans(ctx context.Context, tx *ent.Tx) error {
 
 func seedTruLoadTransporterPlans(ctx context.Context, tx *ent.Tx) error {
 	now := time.Now()
+	serviceTag := "truload"
 
 	type planDef struct {
 		id           uuid.UUID
@@ -479,6 +483,7 @@ func seedTruLoadTransporterPlans(ctx context.Context, tx *ent.Tx) error {
 				SetIsPublic(true).
 				SetTierOrder(p.tierOrder).
 				SetTierLimitsJSON(p.tierLimits).
+				SetServiceTag(serviceTag).
 				SetUpdatedAt(now).
 				Save(ctx)
 			if err != nil {
@@ -498,6 +503,7 @@ func seedTruLoadTransporterPlans(ctx context.Context, tx *ent.Tx) error {
 				SetIsPublic(true).
 				SetTierOrder(p.tierOrder).
 				SetTierLimitsJSON(p.tierLimits).
+				SetServiceTag(serviceTag).
 				SetCreatedAt(now).
 				SetUpdatedAt(now).
 				Save(ctx)

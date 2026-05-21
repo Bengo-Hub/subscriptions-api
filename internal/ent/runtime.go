@@ -381,19 +381,19 @@ func init() {
 	// subscriptionplan.DefaultTierLimitsJSON holds the default value on creation for the tier_limits_json field.
 	subscriptionplan.DefaultTierLimitsJSON = subscriptionplanDescTierLimitsJSON.Default.(map[string]interface{})
 	// subscriptionplanDescDiscountRules is the schema descriptor for discount_rules field.
-	subscriptionplanDescDiscountRules := subscriptionplanFields[14].Descriptor()
+	subscriptionplanDescDiscountRules := subscriptionplanFields[15].Descriptor()
 	// subscriptionplan.DefaultDiscountRules holds the default value on creation for the discount_rules field.
 	subscriptionplan.DefaultDiscountRules = subscriptionplanDescDiscountRules.Default.([]map[string]interface{})
 	// subscriptionplanDescMetadata is the schema descriptor for metadata field.
-	subscriptionplanDescMetadata := subscriptionplanFields[15].Descriptor()
+	subscriptionplanDescMetadata := subscriptionplanFields[16].Descriptor()
 	// subscriptionplan.DefaultMetadata holds the default value on creation for the metadata field.
 	subscriptionplan.DefaultMetadata = subscriptionplanDescMetadata.Default.(map[string]interface{})
 	// subscriptionplanDescCreatedAt is the schema descriptor for created_at field.
-	subscriptionplanDescCreatedAt := subscriptionplanFields[16].Descriptor()
+	subscriptionplanDescCreatedAt := subscriptionplanFields[17].Descriptor()
 	// subscriptionplan.DefaultCreatedAt holds the default value on creation for the created_at field.
 	subscriptionplan.DefaultCreatedAt = subscriptionplanDescCreatedAt.Default.(func() time.Time)
 	// subscriptionplanDescUpdatedAt is the schema descriptor for updated_at field.
-	subscriptionplanDescUpdatedAt := subscriptionplanFields[17].Descriptor()
+	subscriptionplanDescUpdatedAt := subscriptionplanFields[18].Descriptor()
 	// subscriptionplan.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	subscriptionplan.DefaultUpdatedAt = subscriptionplanDescUpdatedAt.Default.(func() time.Time)
 	// subscriptionplan.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

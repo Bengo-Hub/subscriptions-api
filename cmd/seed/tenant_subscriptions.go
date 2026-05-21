@@ -42,19 +42,19 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 			subID:         uuid.MustParse("30000000-0000-0000-0000-000000000001"),
 			slug:          "urban-loft",
 			name:          "Urban Loft Cafe",
-			plan:          "STARTER",
-			bundleCode:    "delivery",
+			plan:          "ORDERING_STARTER",
+			bundleCode:    "ordering",
 			status:        tenantsubscription.StatusACTIVE,
 			periodStart:   urbanLoftStart,
 			periodEnd:     urbanLoftEnd,
-			extraProducts: []string{"pos"}, // POS added on top of delivery bundle
+			extraProducts: []string{"pos"}, // POS added on top of ordering bundle
 		},
 		{
 			subID:       uuid.MustParse("30000000-0000-0000-0000-000000000002"),
 			slug:        "mss",
 			name:        "Masterspace Solutions",
-			plan:        "GROWTH",
-			bundleCode:  "delivery",
+			plan:        "ORDERING_GROWTH",
+			bundleCode:  "ordering",
 			status:      tenantsubscription.StatusTRIAL,
 			periodStart: now,
 			periodEnd:   trialEnd,
@@ -73,8 +73,8 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 			subID:       uuid.MustParse("30000000-0000-0000-0000-000000000004"),
 			slug:        "ultichange",
 			name:        "UltiChange",
-			plan:        "STARTER",
-			bundleCode:  "delivery",
+			plan:        "ORDERING_STARTER",
+			bundleCode:  "ordering",
 			status:      tenantsubscription.StatusTRIAL,
 			periodStart: now,
 			periodEnd:   trialEnd,
@@ -82,11 +82,11 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 	}
 
 	planIDs := map[string]uuid.UUID{
-		"STARTER":         uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:STARTER")),
-		"GROWTH":          uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:GROWTH")),
-		"PROFESSIONAL":    uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:PROFESSIONAL")),
-		"TRULOAD_STARTER": uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:STARTER")),
-		"TRULOAD_GROWTH":  uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:GROWTH")),
+		"ORDERING_STARTER":      uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_STARTER")),
+		"ORDERING_GROWTH":       uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_GROWTH")),
+		"ORDERING_PROFESSIONAL": uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_PROFESSIONAL")),
+		"TRULOAD_STARTER":       uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:STARTER")),
+		"TRULOAD_GROWTH":        uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:GROWTH")),
 	}
 
 	for _, td := range tenantDefs {
@@ -144,9 +144,13 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 			if err := activateTruLoadProducts(ctx, tx, td.subID, now); err != nil {
 				return fmt.Errorf("activate truload products for %s: %w", td.slug, err)
 			}
+		case "ordering", "delivery": // "delivery" kept for backward-compat with existing prod rows
+			if err := activateDeliveryProducts(ctx, tx, td.subID, now); err != nil {
+				return fmt.Errorf("activate ordering products for %s: %w", td.slug, err)
+			}
 		default:
 			if err := activateDeliveryProducts(ctx, tx, td.subID, now); err != nil {
-				return fmt.Errorf("activate delivery products for %s: %w", td.slug, err)
+				return fmt.Errorf("activate ordering products for %s: %w", td.slug, err)
 			}
 		}
 

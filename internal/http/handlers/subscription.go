@@ -222,6 +222,64 @@ func (h *SubscriptionHandler) GetByTenantID(w http.ResponseWriter, r *http.Reque
 	h.respondWithJSON(w, http.StatusOK, sub)
 }
 
+// GetServiceSubscriptions returns a per-service-tag subscription view for a tenant.
+// S2S endpoint for auth-ui billing tab. Requires API key or platform owner JWT.
+// GET /api/v1/tenants/{tenant_id}/subscriptions
+func (h *SubscriptionHandler) GetServiceSubscriptions(w http.ResponseWriter, r *http.Request) {
+	tenantIDStr := chi.URLParam(r, "tenant_id")
+	if tenantIDStr == "" {
+		h.respondWithError(w, http.StatusBadRequest, "tenant_id required")
+		return
+	}
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid tenant_id")
+		return
+	}
+
+	result, err := h.service.GetServiceSubscriptions(r.Context(), tenantID)
+	if err != nil {
+		h.log.Error("failed to get service subscriptions", zap.Error(err))
+		h.respondWithError(w, http.StatusInternalServerError, "failed to get subscriptions")
+		return
+	}
+
+	h.respondWithJSON(w, http.StatusOK, result)
+}
+
+// SwitchPlan changes the plan for a subscription identified by its ID.
+// PUT /api/v1/subscriptions/{id}/switch-plan
+func (h *SubscriptionHandler) SwitchPlan(w http.ResponseWriter, r *http.Request) {
+	subIDStr := chi.URLParam(r, "id")
+	if subIDStr == "" {
+		h.respondWithError(w, http.StatusBadRequest, "subscription id required")
+		return
+	}
+	subID, err := uuid.Parse(subIDStr)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid subscription id")
+		return
+	}
+
+	var body struct {
+		PlanCode string `json:"plan_code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.PlanCode == "" {
+		h.respondWithError(w, http.StatusBadRequest, "plan_code required")
+		return
+	}
+
+	ctx := r.Context()
+	sub, err := h.service.SwitchPlanByID(ctx, subID, body.PlanCode)
+	if err != nil {
+		h.log.Error("failed to switch plan", zap.String("sub_id", subIDStr), zap.Error(err))
+		h.respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	h.respondWithJSON(w, http.StatusOK, sub)
+}
+
 // GetSettings returns subscription settings (auto-renew, notification preferences).
 // GetSettings godoc
 // @Summary Get subscription settings

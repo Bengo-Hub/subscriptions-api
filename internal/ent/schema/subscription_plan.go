@@ -59,6 +59,10 @@ func (SubscriptionPlan) Fields() []ent.Field {
 			Values("TIERED", "STANDALONE_SERVICE", "BUNDLE", "CUSTOM").
 			Default("TIERED").
 			Comment("Type: TIERED (Urban Cafe), STANDALONE_SERVICE, BUNDLE, CUSTOM"),
+		field.String("service_tag").
+			Optional().
+			Nillable().
+			Comment("Service this plan belongs to: ordering, truload, logistics, inventory, erp, pos, marketflow, cafe_website. Null = bundle or platform-wide."),
 		field.JSON("discount_rules", []map[string]any{}).
 			Default([]map[string]any{}).
 			Optional().
@@ -90,5 +94,6 @@ func (SubscriptionPlan) Indexes() []ent.Index {
 		index.Fields("plan_code"),
 		index.Fields("is_active"),
 		index.Fields("tier_order"),
+		index.Fields("service_tag"),
 	}
 }

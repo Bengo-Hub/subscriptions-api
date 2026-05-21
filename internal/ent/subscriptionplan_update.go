@@ -241,6 +241,26 @@ func (_u *SubscriptionPlanUpdate) SetNillablePlanType(v *subscriptionplan.PlanTy
 	return _u
 }
 
+// SetServiceTag sets the "service_tag" field.
+func (_u *SubscriptionPlanUpdate) SetServiceTag(v string) *SubscriptionPlanUpdate {
+	_u.mutation.SetServiceTag(v)
+	return _u
+}
+
+// SetNillableServiceTag sets the "service_tag" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillableServiceTag(v *string) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetServiceTag(*v)
+	}
+	return _u
+}
+
+// ClearServiceTag clears the value of the "service_tag" field.
+func (_u *SubscriptionPlanUpdate) ClearServiceTag() *SubscriptionPlanUpdate {
+	_u.mutation.ClearServiceTag()
+	return _u
+}
+
 // SetDiscountRules sets the "discount_rules" field.
 func (_u *SubscriptionPlanUpdate) SetDiscountRules(v []map[string]interface{}) *SubscriptionPlanUpdate {
 	_u.mutation.SetDiscountRules(v)
@@ -546,6 +566,12 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if value, ok := _u.mutation.PlanType(); ok {
 		_spec.SetField(subscriptionplan.FieldPlanType, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.ServiceTag(); ok {
+		_spec.SetField(subscriptionplan.FieldServiceTag, field.TypeString, value)
+	}
+	if _u.mutation.ServiceTagCleared() {
+		_spec.ClearField(subscriptionplan.FieldServiceTag, field.TypeString)
 	}
 	if value, ok := _u.mutation.DiscountRules(); ok {
 		_spec.SetField(subscriptionplan.FieldDiscountRules, field.TypeJSON, value)
@@ -971,6 +997,26 @@ func (_u *SubscriptionPlanUpdateOne) SetNillablePlanType(v *subscriptionplan.Pla
 	return _u
 }
 
+// SetServiceTag sets the "service_tag" field.
+func (_u *SubscriptionPlanUpdateOne) SetServiceTag(v string) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetServiceTag(v)
+	return _u
+}
+
+// SetNillableServiceTag sets the "service_tag" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillableServiceTag(v *string) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetServiceTag(*v)
+	}
+	return _u
+}
+
+// ClearServiceTag clears the value of the "service_tag" field.
+func (_u *SubscriptionPlanUpdateOne) ClearServiceTag() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearServiceTag()
+	return _u
+}
+
 // SetDiscountRules sets the "discount_rules" field.
 func (_u *SubscriptionPlanUpdateOne) SetDiscountRules(v []map[string]interface{}) *SubscriptionPlanUpdateOne {
 	_u.mutation.SetDiscountRules(v)
@@ -1306,6 +1352,12 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 	}
 	if value, ok := _u.mutation.PlanType(); ok {
 		_spec.SetField(subscriptionplan.FieldPlanType, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.ServiceTag(); ok {
+		_spec.SetField(subscriptionplan.FieldServiceTag, field.TypeString, value)
+	}
+	if _u.mutation.ServiceTagCleared() {
+		_spec.ClearField(subscriptionplan.FieldServiceTag, field.TypeString)
 	}
 	if value, ok := _u.mutation.DiscountRules(); ok {
 		_spec.SetField(subscriptionplan.FieldDiscountRules, field.TypeJSON, value)

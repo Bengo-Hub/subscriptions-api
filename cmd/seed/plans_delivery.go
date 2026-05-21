@@ -12,13 +12,15 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 )
 
-// ── Subscription Plans ───────────────────────────────────────────────────────
+// ── Ordering Plans ────────────────────────────────────────────────────────────
 // Derived from Urban Cafe Food Delivery System Inception Report v1.0 (Nov 2025).
 // Three tiers: Starter (Lite), Growth (Standard), Professional (Scale).
 // Each tier has monthly and yearly billing variants (yearly = 10 months pricing).
+// The ORDERING_STARTER tier bundles basic access to inventory, logistics, and cafe-website.
 
 func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 	now := time.Now()
+	serviceTag := "ordering"
 
 	type planDef struct {
 		id           uuid.UUID
@@ -36,20 +38,20 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 	plans := []planDef{
 		// ── Monthly Plans ────────────────────────────────────────────────
 		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:STARTER")),
-			planCode:     "STARTER",
-			name:         "Starter (Lite)",
-			description:  "Perfect for small cafes and pilot operations. Core ordering features with essential admin tools.",
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_STARTER")),
+			planCode:     "ORDERING_STARTER",
+			name:         "Ordering Starter (Lite)",
+			description:  "Perfect for small cafes and pilot operations. Core ordering features with essential admin tools. Includes basic inventory, logistics, and cafe-website access.",
 			billingCycle: "MONTHLY",
 			planType:     subscriptionplan.PlanTypeTIERED,
 			price:        2500.0,
 			tierOrder:    1,
 			tierLimits: map[string]any{
-				"max_admins":                    2,
-				"max_riders":                    5,
-				"max_orders_per_day":            300,
-				"max_outlets":                   1,
-				"api_calls_per_month":           10000,
+				"max_admins":                     2,
+				"max_riders":                     5,
+				"max_orders_per_day":             300,
+				"max_outlets":                    1,
+				"api_calls_per_month":            10000,
 				"live_tracking_requests_per_day": 500,
 				"live_tracking_duration_minutes": 30,
 				"routing_requests_per_day":       100,
@@ -59,6 +61,13 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				// Overage rates
 				"overage_rider_price_per_month":      250.0,
 				"overage_orders_price_per_100_month": 375.0,
+				// Cross-service basic access (bundled in starter)
+				"inventory_max_sku":            500,
+				"inventory_max_warehouses":     1,
+				"logistics_max_active_routes":  5,
+				"logistics_max_zones":          1,
+				"cafe_website_enabled":         true,
+				"cafe_website_max_menu_items":  50,
 			},
 			features: []string{
 				"customer_portal",
@@ -72,12 +81,15 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"openstreetmap_tracking",
 				"loyalty_program",
 				"wallet",
+				"basic_inventory_access",
+				"basic_logistics_access",
+				"cafe_website_basic",
 			},
 		},
 		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:GROWTH")),
-			planCode:     "GROWTH",
-			name:         "Growth (Standard)",
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_GROWTH")),
+			planCode:     "ORDERING_GROWTH",
+			name:         "Ordering Growth (Standard)",
 			description:  "Ideal for growing cafes with multiple outlets. Advanced features including loyalty program and multi-outlet support.",
 			billingCycle: "MONTHLY",
 			planType:     subscriptionplan.PlanTypeTIERED,
@@ -117,9 +129,9 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			},
 		},
 		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:PROFESSIONAL")),
-			planCode:     "PROFESSIONAL",
-			name:         "Professional (Scale)",
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_PROFESSIONAL")),
+			planCode:     "ORDERING_PROFESSIONAL",
+			name:         "Ordering Professional (Scale)",
 			description:  "For multi-branch cafes and chains. Complete feature set with POS integration, route optimization, and priority support.",
 			billingCycle: "MONTHLY",
 			planType:     subscriptionplan.PlanTypeTIERED,
@@ -168,10 +180,10 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 
 		// ── Yearly Plans (≈10 months pricing = ~8.3% discount) ──────────
 		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:STARTER_YEARLY")),
-			planCode:     "STARTER_YEARLY",
-			name:         "Starter (Lite) — Annual",
-			description:  "Perfect for small cafes and pilot operations. Save with annual billing.",
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_STARTER_YEARLY")),
+			planCode:     "ORDERING_STARTER_YEARLY",
+			name:         "Ordering Starter (Lite) — Annual",
+			description:  "Perfect for small cafes and pilot operations. Includes basic inventory, logistics, and cafe-website access. Save with annual billing.",
 			billingCycle: "ANNUAL",
 			planType:     subscriptionplan.PlanTypeTIERED,
 			price:        27500.0,
@@ -190,6 +202,12 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"webhook_calls_per_day":              100,
 				"overage_rider_price_per_month":      250.0,
 				"overage_orders_price_per_100_month": 375.0,
+				"inventory_max_sku":                  500,
+				"inventory_max_warehouses":           1,
+				"logistics_max_active_routes":        5,
+				"logistics_max_zones":                1,
+				"cafe_website_enabled":               true,
+				"cafe_website_max_menu_items":        50,
 			},
 			features: []string{
 				"customer_portal",
@@ -203,12 +221,15 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"openstreetmap_tracking",
 				"loyalty_program",
 				"wallet",
+				"basic_inventory_access",
+				"basic_logistics_access",
+				"cafe_website_basic",
 			},
 		},
 		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:GROWTH_YEARLY")),
-			planCode:     "GROWTH_YEARLY",
-			name:         "Growth (Standard) — Annual",
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_GROWTH_YEARLY")),
+			planCode:     "ORDERING_GROWTH_YEARLY",
+			name:         "Ordering Growth (Standard) — Annual",
 			description:  "Ideal for growing cafes with multiple outlets. Save with annual billing.",
 			billingCycle: "ANNUAL",
 			planType:     subscriptionplan.PlanTypeTIERED,
@@ -248,9 +269,9 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 			},
 		},
 		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:PROFESSIONAL_YEARLY")),
-			planCode:     "PROFESSIONAL_YEARLY",
-			name:         "Professional (Scale) — Annual",
+			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_PROFESSIONAL_YEARLY")),
+			planCode:     "ORDERING_PROFESSIONAL_YEARLY",
+			name:         "Ordering Professional (Scale) — Annual",
 			description:  "For multi-branch cafes and chains. Save with annual billing.",
 			billingCycle: "ANNUAL",
 			planType:     subscriptionplan.PlanTypeTIERED,
@@ -317,6 +338,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				SetIsPublic(true).
 				SetTierOrder(p.tierOrder).
 				SetTierLimitsJSON(p.tierLimits).
+				SetServiceTag(serviceTag).
 				SetUpdatedAt(now).
 				Save(ctx)
 			if err != nil {
@@ -336,6 +358,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				SetIsPublic(true).
 				SetTierOrder(p.tierOrder).
 				SetTierLimitsJSON(p.tierLimits).
+				SetServiceTag(serviceTag).
 				SetCreatedAt(now).
 				SetUpdatedAt(now).
 				Save(ctx)

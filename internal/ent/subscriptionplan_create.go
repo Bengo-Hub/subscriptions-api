@@ -170,6 +170,20 @@ func (_c *SubscriptionPlanCreate) SetNillablePlanType(v *subscriptionplan.PlanTy
 	return _c
 }
 
+// SetServiceTag sets the "service_tag" field.
+func (_c *SubscriptionPlanCreate) SetServiceTag(v string) *SubscriptionPlanCreate {
+	_c.mutation.SetServiceTag(v)
+	return _c
+}
+
+// SetNillableServiceTag sets the "service_tag" field if the given value is not nil.
+func (_c *SubscriptionPlanCreate) SetNillableServiceTag(v *string) *SubscriptionPlanCreate {
+	if v != nil {
+		_c.SetServiceTag(*v)
+	}
+	return _c
+}
+
 // SetDiscountRules sets the "discount_rules" field.
 func (_c *SubscriptionPlanCreate) SetDiscountRules(v []map[string]interface{}) *SubscriptionPlanCreate {
 	_c.mutation.SetDiscountRules(v)
@@ -521,6 +535,10 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 		_spec.SetField(subscriptionplan.FieldPlanType, field.TypeEnum, value)
 		_node.PlanType = value
 	}
+	if value, ok := _c.mutation.ServiceTag(); ok {
+		_spec.SetField(subscriptionplan.FieldServiceTag, field.TypeString, value)
+		_node.ServiceTag = &value
+	}
 	if value, ok := _c.mutation.DiscountRules(); ok {
 		_spec.SetField(subscriptionplan.FieldDiscountRules, field.TypeJSON, value)
 		_node.DiscountRules = value
@@ -839,6 +857,24 @@ func (u *SubscriptionPlanUpsert) UpdatePlanType() *SubscriptionPlanUpsert {
 	return u
 }
 
+// SetServiceTag sets the "service_tag" field.
+func (u *SubscriptionPlanUpsert) SetServiceTag(v string) *SubscriptionPlanUpsert {
+	u.Set(subscriptionplan.FieldServiceTag, v)
+	return u
+}
+
+// UpdateServiceTag sets the "service_tag" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsert) UpdateServiceTag() *SubscriptionPlanUpsert {
+	u.SetExcluded(subscriptionplan.FieldServiceTag)
+	return u
+}
+
+// ClearServiceTag clears the value of the "service_tag" field.
+func (u *SubscriptionPlanUpsert) ClearServiceTag() *SubscriptionPlanUpsert {
+	u.SetNull(subscriptionplan.FieldServiceTag)
+	return u
+}
+
 // SetDiscountRules sets the "discount_rules" field.
 func (u *SubscriptionPlanUpsert) SetDiscountRules(v []map[string]interface{}) *SubscriptionPlanUpsert {
 	u.Set(subscriptionplan.FieldDiscountRules, v)
@@ -1146,6 +1182,27 @@ func (u *SubscriptionPlanUpsertOne) SetPlanType(v subscriptionplan.PlanType) *Su
 func (u *SubscriptionPlanUpsertOne) UpdatePlanType() *SubscriptionPlanUpsertOne {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.UpdatePlanType()
+	})
+}
+
+// SetServiceTag sets the "service_tag" field.
+func (u *SubscriptionPlanUpsertOne) SetServiceTag(v string) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetServiceTag(v)
+	})
+}
+
+// UpdateServiceTag sets the "service_tag" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertOne) UpdateServiceTag() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateServiceTag()
+	})
+}
+
+// ClearServiceTag clears the value of the "service_tag" field.
+func (u *SubscriptionPlanUpsertOne) ClearServiceTag() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.ClearServiceTag()
 	})
 }
 
@@ -1630,6 +1687,27 @@ func (u *SubscriptionPlanUpsertBulk) SetPlanType(v subscriptionplan.PlanType) *S
 func (u *SubscriptionPlanUpsertBulk) UpdatePlanType() *SubscriptionPlanUpsertBulk {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.UpdatePlanType()
+	})
+}
+
+// SetServiceTag sets the "service_tag" field.
+func (u *SubscriptionPlanUpsertBulk) SetServiceTag(v string) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetServiceTag(v)
+	})
+}
+
+// UpdateServiceTag sets the "service_tag" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertBulk) UpdateServiceTag() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateServiceTag()
+	})
+}
+
+// ClearServiceTag clears the value of the "service_tag" field.
+func (u *SubscriptionPlanUpsertBulk) ClearServiceTag() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.ClearServiceTag()
 	})
 }
 

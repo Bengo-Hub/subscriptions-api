@@ -31,8 +31,8 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 	bundles := []bundleDef{
 		{
 			id:   uuid.MustParse("20000000-0000-0000-0000-000000000001"),
-			code: "delivery",
-			name: "BengoBox Delivery",
+			code: "ordering",
+			name: "BengoBox Ordering",
 			description: "Complete food delivery platform: online ordering, logistics, payments, and storefront. " +
 				"Pricing matches the Urban Cafe Food Delivery System Inception Report tiers.",
 			products: []schema.BundleProduct{
@@ -42,9 +42,9 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 				{ProductCode: "storefront"},
 			},
 			tiers: []schema.BundleTier{
-				{PlanCode: "STARTER", MonthlyPrice: 2500, YearlyPrice: 27500},
-				{PlanCode: "GROWTH", MonthlyPrice: 6000, YearlyPrice: 66000},
-				{PlanCode: "PROFESSIONAL", MonthlyPrice: 12500, YearlyPrice: 137500},
+				{PlanCode: "ORDERING_STARTER", MonthlyPrice: 2500, YearlyPrice: 27500},
+				{PlanCode: "ORDERING_GROWTH", MonthlyPrice: 6000, YearlyPrice: 66000},
+				{PlanCode: "ORDERING_PROFESSIONAL", MonthlyPrice: 12500, YearlyPrice: 137500},
 			},
 			isDefault: true,
 			sortOrder: 1,
@@ -59,9 +59,9 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 				{ProductCode: "treasury"},
 			},
 			tiers: []schema.BundleTier{
-				{PlanCode: "STARTER", MonthlyPrice: 2000, YearlyPrice: 22000},
-				{PlanCode: "GROWTH", MonthlyPrice: 4500, YearlyPrice: 49500},
-				{PlanCode: "PROFESSIONAL", MonthlyPrice: 8000, YearlyPrice: 88000},
+				{PlanCode: "ORDERING_STARTER", MonthlyPrice: 2000, YearlyPrice: 22000},
+				{PlanCode: "ORDERING_GROWTH", MonthlyPrice: 4500, YearlyPrice: 49500},
+				{PlanCode: "ORDERING_PROFESSIONAL", MonthlyPrice: 8000, YearlyPrice: 88000},
 			},
 			sortOrder: 2,
 		},
@@ -78,9 +78,9 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 				{ProductCode: "storefront"},
 			},
 			tiers: []schema.BundleTier{
-				{PlanCode: "STARTER", MonthlyPrice: 4000, YearlyPrice: 44000},
-				{PlanCode: "GROWTH", MonthlyPrice: 9500, YearlyPrice: 104500},
-				{PlanCode: "PROFESSIONAL", MonthlyPrice: 18000, YearlyPrice: 198000},
+				{PlanCode: "ORDERING_STARTER", MonthlyPrice: 4000, YearlyPrice: 44000},
+				{PlanCode: "ORDERING_GROWTH", MonthlyPrice: 9500, YearlyPrice: 104500},
+				{PlanCode: "ORDERING_PROFESSIONAL", MonthlyPrice: 18000, YearlyPrice: 198000},
 			},
 			sortOrder: 3,
 		},

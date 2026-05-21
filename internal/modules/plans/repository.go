@@ -23,6 +23,7 @@ type SubscriptionPlan struct {
 	TierOrder               int
 	TierLimits              map[string]any
 	Metadata                map[string]any
+	ServiceTag              *string
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 	Features                []*PlanFeature
@@ -62,7 +63,7 @@ type Repository interface {
 	UpdatePlan(ctx context.Context, plan *SubscriptionPlan) error
 	FindPlanByID(ctx context.Context, id uuid.UUID) (*SubscriptionPlan, error)
 	FindPlanByCode(ctx context.Context, code string) (*SubscriptionPlan, error)
-	ListPlans(ctx context.Context, activeOnly bool) ([]*SubscriptionPlan, error)
+	ListPlans(ctx context.Context, activeOnly bool, serviceTag *string) ([]*SubscriptionPlan, error)
 	DeletePlan(ctx context.Context, id uuid.UUID) error
 
 	CreateFeature(ctx context.Context, feature *PlanFeature) error

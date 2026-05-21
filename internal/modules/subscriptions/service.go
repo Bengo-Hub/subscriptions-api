@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bengobox/subscription-service/internal/domain"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
@@ -373,16 +374,20 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 		}
 	}
 
-	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, direction, map[string]any{
-		"tenant_id":      sub.TenantID.String(),
-		"new_plan_code":  newPlan.PlanCode,
-		"new_plan_name":  newPlan.Name,
-		"old_plan_id":    oldPlanID.String(),
-		"direction":      direction,
+	eventPayload := map[string]any{
+		"tenant_id":     sub.TenantID.String(),
+		"new_plan_code": newPlan.PlanCode,
+		"new_plan_name": newPlan.Name,
+		"old_plan_id":   oldPlanID.String(),
+		"direction":     direction,
 		"notification": map[string]any{
 			"target": "tenant_admin",
 		},
-	})
+	}
+	// Directional event (subscription.upgraded / subscription.downgraded / subscription.changed)
+	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, direction, eventPayload)
+	// Consistent event for downstream services that subscribe to plan changes regardless of direction
+	s.writeOutboxEvent(ctx, tx, sub.TenantID, "tenant", sub.TenantID, "subscription.updated", eventPayload)
 
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit: %w", err)
@@ -520,6 +525,22 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 	return s.buildResult(sub, plan), nil
 }
 
+// SwitchPlanByID changes the plan for a subscription identified by its UUID.
+// Delegates to ChangePlan after resolving the tenant from the subscription record.
+func (s *Service) SwitchPlanByID(ctx context.Context, subscriptionID uuid.UUID, newPlanCode string) (*SubscriptionResult, error) {
+	sub, err := s.client.TenantSubscription.Get(ctx, subscriptionID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("subscription not found")
+		}
+		return nil, fmt.Errorf("lookup subscription: %w", err)
+	}
+	return s.ChangePlan(ctx, ChangePlanInput{
+		TenantID:    sub.TenantID,
+		NewPlanCode: newPlanCode,
+	})
+}
+
 // ActivateProduct enables a product subscription within a tenant subscription.
 func (s *Service) ActivateProduct(ctx context.Context, tenantID uuid.UUID, productCode string) error {
 	sub, err := s.getSubscription(ctx, tenantID)
@@ -613,6 +634,66 @@ func (s *Service) ListSubscriptions(ctx context.Context) ([]*SubscriptionResult,
 		results[i] = s.buildResult(sub, sub.Edges.Plan)
 	}
 	return results, nil
+}
+
+// ServiceSubscriptionEntry describes a tenant's subscription status for one service tag.
+type ServiceSubscriptionEntry struct {
+	ServiceTag  string     `json:"service_tag"`
+	Status      string     `json:"status"` // "ACTIVE", "TRIAL", "EXPIRED", "CANCELLED", "NONE"
+	PlanCode    *string    `json:"plan_code,omitempty"`
+	PlanName    *string    `json:"plan_name,omitempty"`
+	CurrentPeriodEnd *time.Time `json:"current_period_end,omitempty"`
+}
+
+// ServiceSubscriptionsResult is returned by GetServiceSubscriptions.
+type ServiceSubscriptionsResult struct {
+	TenantID     uuid.UUID                  `json:"tenant_id"`
+	Subscription *SubscriptionResult        `json:"subscription,omitempty"`
+	Services     []ServiceSubscriptionEntry `json:"services"`
+}
+
+// GetServiceSubscriptions returns a per-service-tag subscription view for a tenant.
+// Each billable service tag is listed; only the tag matching the current plan is ACTIVE.
+func (s *Service) GetServiceSubscriptions(ctx context.Context, tenantID uuid.UUID) (*ServiceSubscriptionsResult, error) {
+	sub, err := s.client.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(tenantID)).
+		WithPlan(func(q *ent.SubscriptionPlanQuery) {
+			q.WithFeatures(func(fq *ent.PlanFeatureQuery) {
+				fq.Where(planfeature.IsIncludedEQ(true))
+			})
+		}).
+		Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("query subscription: %w", err)
+	}
+
+	result := &ServiceSubscriptionsResult{TenantID: tenantID}
+
+	var activeServiceTag string
+	if sub != nil && sub.Edges.Plan != nil {
+		result.Subscription = s.buildResult(sub, sub.Edges.Plan)
+		if sub.Edges.Plan.ServiceTag != nil {
+			activeServiceTag = *sub.Edges.Plan.ServiceTag
+		}
+	}
+
+	services := make([]ServiceSubscriptionEntry, 0, len(domain.AllServiceTags))
+	for _, tag := range domain.AllServiceTags {
+		entry := ServiceSubscriptionEntry{ServiceTag: tag, Status: "NONE"}
+		if sub != nil && tag == activeServiceTag {
+			entry.Status = string(sub.Status)
+			if sub.Edges.Plan != nil {
+				code := sub.Edges.Plan.PlanCode
+				name := sub.Edges.Plan.Name
+				entry.PlanCode = &code
+				entry.PlanName = &name
+			}
+			entry.CurrentPeriodEnd = &sub.CurrentPeriodEnd
+		}
+		services = append(services, entry)
+	}
+	result.Services = services
+	return result, nil
 }
 
 // ExpiringSubscription represents a subscription nearing expiry.

@@ -42,6 +42,8 @@ const (
 	FieldTierLimitsJSON = "tier_limits_json"
 	// FieldPlanType holds the string denoting the plan_type field in the database.
 	FieldPlanType = "plan_type"
+	// FieldServiceTag holds the string denoting the service_tag field in the database.
+	FieldServiceTag = "service_tag"
 	// FieldDiscountRules holds the string denoting the discount_rules field in the database.
 	FieldDiscountRules = "discount_rules"
 	// FieldMetadata holds the string denoting the metadata field in the database.
@@ -106,6 +108,7 @@ var Columns = []string{
 	FieldTierOrder,
 	FieldTierLimitsJSON,
 	FieldPlanType,
+	FieldServiceTag,
 	FieldDiscountRules,
 	FieldMetadata,
 	FieldCreatedAt,
@@ -249,6 +252,11 @@ func ByTierOrder(opts ...sql.OrderTermOption) OrderOption {
 // ByPlanType orders the results by the plan_type field.
 func ByPlanType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPlanType, opts...).ToFunc()
+}
+
+// ByServiceTag orders the results by the service_tag field.
+func ByServiceTag(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldServiceTag, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

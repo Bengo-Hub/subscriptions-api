@@ -45,6 +45,8 @@ type SubscriptionPlan struct {
 	TierLimitsJSON map[string]interface{} `json:"tier_limits_json,omitempty"`
 	// Type: TIERED (Urban Cafe), STANDALONE_SERVICE, BUNDLE, CUSTOM
 	PlanType subscriptionplan.PlanType `json:"plan_type,omitempty"`
+	// Service this plan belongs to: ordering, truload, logistics, inventory, erp, pos, marketflow, cafe_website. Null = bundle or platform-wide.
+	ServiceTag *string `json:"service_tag,omitempty"`
 	// Dynamic discounting rules. Types: YEARLY (percentage), LOYALTY (percentage/min_months), NEW_CUSTOMER (trial_days/percentage).
 	DiscountRules []map[string]interface{} `json:"discount_rules,omitempty"`
 	// Metadata holds the value of the "metadata" field.
@@ -123,7 +125,7 @@ func (*SubscriptionPlan) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case subscriptionplan.FieldTierOrder:
 			values[i] = new(sql.NullInt64)
-		case subscriptionplan.FieldPlanCode, subscriptionplan.FieldName, subscriptionplan.FieldDescription, subscriptionplan.FieldBillingCycle, subscriptionplan.FieldCurrency, subscriptionplan.FieldPlanType:
+		case subscriptionplan.FieldPlanCode, subscriptionplan.FieldName, subscriptionplan.FieldDescription, subscriptionplan.FieldBillingCycle, subscriptionplan.FieldCurrency, subscriptionplan.FieldPlanType, subscriptionplan.FieldServiceTag:
 			values[i] = new(sql.NullString)
 		case subscriptionplan.FieldCreatedAt, subscriptionplan.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -230,6 +232,13 @@ func (_m *SubscriptionPlan) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field plan_type", values[i])
 			} else if value.Valid {
 				_m.PlanType = subscriptionplan.PlanType(value.String)
+			}
+		case subscriptionplan.FieldServiceTag:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field service_tag", values[i])
+			} else if value.Valid {
+				_m.ServiceTag = new(string)
+				*_m.ServiceTag = value.String
 			}
 		case subscriptionplan.FieldDiscountRules:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -355,6 +364,11 @@ func (_m *SubscriptionPlan) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("plan_type=")
 	builder.WriteString(fmt.Sprintf("%v", _m.PlanType))
+	builder.WriteString(", ")
+	if v := _m.ServiceTag; v != nil {
+		builder.WriteString("service_tag=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("discount_rules=")
 	builder.WriteString(fmt.Sprintf("%v", _m.DiscountRules))

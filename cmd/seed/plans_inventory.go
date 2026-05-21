@@ -16,6 +16,7 @@ import (
 
 func seedInventoryPlans(ctx context.Context, tx *ent.Tx) error {
 	now := time.Now()
+	serviceTag := "inventory"
 
 	type planDef struct {
 		id           uuid.UUID
@@ -134,13 +135,13 @@ func seedInventoryPlans(ctx context.Context, tx *ent.Tx) error {
 				SetPlanCode(p.planCode).SetName(p.name).SetDescription(p.description).
 				SetBillingCycle(p.billingCycle).SetPlanType(subscriptionplan.PlanTypeSTANDALONE_SERVICE).
 				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(true).
-				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).SetUpdatedAt(now).Save(ctx)
+				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).SetServiceTag(serviceTag).SetUpdatedAt(now).Save(ctx)
 		} else {
 			_, err = tx.SubscriptionPlan.Create().
 				SetID(p.id).SetPlanCode(p.planCode).SetName(p.name).SetDescription(p.description).
 				SetBillingCycle(p.billingCycle).SetPlanType(subscriptionplan.PlanTypeSTANDALONE_SERVICE).
 				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(true).
-				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).
+				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).SetServiceTag(serviceTag).
 				SetCreatedAt(now).SetUpdatedAt(now).Save(ctx)
 		}
 		if err != nil {

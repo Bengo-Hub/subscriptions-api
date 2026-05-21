@@ -467,6 +467,7 @@ var (
 		{Name: "tier_order", Type: field.TypeInt},
 		{Name: "tier_limits_json", Type: field.TypeJSON},
 		{Name: "plan_type", Type: field.TypeEnum, Enums: []string{"TIERED", "STANDALONE_SERVICE", "BUNDLE", "CUSTOM"}, Default: "TIERED"},
+		{Name: "service_tag", Type: field.TypeString, Nullable: true},
 		{Name: "discount_rules", Type: field.TypeJSON, Nullable: true},
 		{Name: "metadata", Type: field.TypeJSON},
 		{Name: "created_at", Type: field.TypeTime},
@@ -492,6 +493,11 @@ var (
 				Name:    "subscriptionplan_tier_order",
 				Unique:  false,
 				Columns: []*schema.Column{SubscriptionPlansColumns[11]},
+			},
+			{
+				Name:    "subscriptionplan_service_tag",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionPlansColumns[14]},
 			},
 		},
 	}

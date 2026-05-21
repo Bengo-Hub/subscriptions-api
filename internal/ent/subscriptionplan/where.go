@@ -111,6 +111,11 @@ func TierOrder(v int) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldTierOrder, v))
 }
 
+// ServiceTag applies equality check predicate on the "service_tag" field. It's identical to ServiceTagEQ.
+func ServiceTag(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldServiceTag, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldCreatedAt, v))
@@ -634,6 +639,81 @@ func PlanTypeIn(vs ...PlanType) predicate.SubscriptionPlan {
 // PlanTypeNotIn applies the NotIn predicate on the "plan_type" field.
 func PlanTypeNotIn(vs ...PlanType) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldPlanType, vs...))
+}
+
+// ServiceTagEQ applies the EQ predicate on the "service_tag" field.
+func ServiceTagEQ(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldServiceTag, v))
+}
+
+// ServiceTagNEQ applies the NEQ predicate on the "service_tag" field.
+func ServiceTagNEQ(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldServiceTag, v))
+}
+
+// ServiceTagIn applies the In predicate on the "service_tag" field.
+func ServiceTagIn(vs ...string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldServiceTag, vs...))
+}
+
+// ServiceTagNotIn applies the NotIn predicate on the "service_tag" field.
+func ServiceTagNotIn(vs ...string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldServiceTag, vs...))
+}
+
+// ServiceTagGT applies the GT predicate on the "service_tag" field.
+func ServiceTagGT(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGT(FieldServiceTag, v))
+}
+
+// ServiceTagGTE applies the GTE predicate on the "service_tag" field.
+func ServiceTagGTE(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGTE(FieldServiceTag, v))
+}
+
+// ServiceTagLT applies the LT predicate on the "service_tag" field.
+func ServiceTagLT(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLT(FieldServiceTag, v))
+}
+
+// ServiceTagLTE applies the LTE predicate on the "service_tag" field.
+func ServiceTagLTE(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLTE(FieldServiceTag, v))
+}
+
+// ServiceTagContains applies the Contains predicate on the "service_tag" field.
+func ServiceTagContains(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldContains(FieldServiceTag, v))
+}
+
+// ServiceTagHasPrefix applies the HasPrefix predicate on the "service_tag" field.
+func ServiceTagHasPrefix(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldHasPrefix(FieldServiceTag, v))
+}
+
+// ServiceTagHasSuffix applies the HasSuffix predicate on the "service_tag" field.
+func ServiceTagHasSuffix(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldHasSuffix(FieldServiceTag, v))
+}
+
+// ServiceTagIsNil applies the IsNil predicate on the "service_tag" field.
+func ServiceTagIsNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIsNull(FieldServiceTag))
+}
+
+// ServiceTagNotNil applies the NotNil predicate on the "service_tag" field.
+func ServiceTagNotNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotNull(FieldServiceTag))
+}
+
+// ServiceTagEqualFold applies the EqualFold predicate on the "service_tag" field.
+func ServiceTagEqualFold(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEqualFold(FieldServiceTag, v))
+}
+
+// ServiceTagContainsFold applies the ContainsFold predicate on the "service_tag" field.
+func ServiceTagContainsFold(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldContainsFold(FieldServiceTag, v))
 }
 
 // DiscountRulesIsNil applies the IsNil predicate on the "discount_rules" field.
