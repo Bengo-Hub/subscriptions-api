@@ -107,6 +107,21 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed marketflow plans: %w", err)
 	}
 
+	// 2.12 Seed Treasury & Finance standalone plans
+	if err := seedTreasuryPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed treasury plans: %w", err)
+	}
+
+	// 2.13 Seed ISP Billing standalone plans (hotspot + PPPoE product lines)
+	if err := seedISPBillingPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed isp_billing plans: %w", err)
+	}
+
+	// 2.14 Seed Projects & Invoicing standalone plans
+	if err := seedProjectsPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed projects plans: %w", err)
+	}
+
 	// 3. Seed bundles (delivery, pos-suite, complete)
 	if err := seedBundles(ctx, tx); err != nil {
 		return fmt.Errorf("seed bundles: %w", err)
