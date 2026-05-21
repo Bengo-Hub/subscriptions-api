@@ -122,6 +122,16 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed projects plans: %w", err)
 	}
 
+	// 2.15 Seed Notifications standalone plans
+	if err := seedNotificationsPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed notifications plans: %w", err)
+	}
+
+	// 2.16 Seed Cafe (F&B portal) standalone plans
+	if err := seedCafePlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed cafe plans: %w", err)
+	}
+
 	// 3. Seed bundles (delivery, pos-suite, complete)
 	if err := seedBundles(ctx, tx); err != nil {
 		return fmt.Errorf("seed bundles: %w", err)
