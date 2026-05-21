@@ -1,5 +1,7 @@
 # Subscription API — Architecture
 
+**Last Updated:** May 22, 2026
+
 ## System Context
 
 The Subscription API (`subscriptions-api`) is the centralized licensing, feature-gating, and subscription management backend for the BengoBox platform. It powers the **Trinity Authorization** model used across all services:
@@ -26,9 +28,13 @@ subscriptions-api/
 ├── internal/
 │   ├── app/app.go             # Application bootstrap & wiring
 │   ├── config/                # Env-based configuration (envconfig)
+│   ├── domain/
+│   │   └── service_tags.go    # Canonical service tag constants (10 tags)
 │   ├── ent/                   # Ent ORM generated code + schemas
+│   │   └── migrate/
+│   │       └── migrations/    # Atlas versioned migration SQL files
 │   ├── http/
-│   │   ├── handlers/          # HTTP handlers (plans, subscriptions, addons)
+│   │   ├── handlers/          # HTTP handlers (plans, subscriptions, billing, etc.)
 │   │   └── router/router.go   # chi router with auth middleware
 │   ├── modules/
 │   │   ├── plans/             # Plan catalog repository
@@ -38,7 +44,7 @@ subscriptions-api/
 │   ├── platform/
 │   │   ├── cache/             # Redis client init
 │   │   ├── database/          # pgxpool init
-│   │   └── events/            # NATS connection
+│   │   └── events/            # NATS connection + JetStream stream setup
 │   └── shared/
 │       └── logger/            # Zap logger init
 ├── docs/                      # This documentation
@@ -65,7 +71,7 @@ TRIAL ──→ ACTIVE ──→ SUSPENDED ──→ CANCELLED
   └──→ CANCELLED
 ```
 
-Operations: `CreateSubscription`, `ChangePlan`, `CancelSubscription`, `RenewSubscription`, `ActivateProduct`, `DeactivateProduct`
+Operations: `CreateSubscription`, `ChangePlan`, `CancelSubscription`, `RenewSubscription`, `SwitchPlan`
 
 Every mutation writes an **outbox event** atomically within the same transaction.
 
@@ -73,46 +79,74 @@ Every mutation writes an **outbox event** atomically within the same transaction
 
 **Location**: `internal/modules/plans/`
 
-Read-only repository over Ent's `SubscriptionPlan`, `PlanFeature`, `Bundle` entities. Serves the plan/bundle/feature catalog to both the admin UI and consumer services.
+Read-only repository over Ent's `SubscriptionPlan` and `PlanFeature` entities. Plans are organized by **service_tag** — each plan belongs to exactly one billable service. Serves the plan catalog to both the admin UI and consumer services via public (no-auth) endpoints.
 
 ### 3. Outbox Publisher
 
-**Location**: `internal/modules/outbox/` + `shared-events` library
+**Location**: `internal/modules/outbox/` + `shared-events` v0.2.0 library
 
-Polls the `outbox_events` table for `PENDING` events, publishes to NATS JetStream subject `subscriptions.events`, marks as `PUBLISHED`. Retry with exponential backoff on failure.
+Polls the `outbox_events` table for `PENDING` events, publishes to NATS JetStream, marks as `PUBLISHED`. Retry with exponential backoff on failure. NATS subject format: `{aggregate_type}.{event_type}` (e.g. `subscription.subscription.upgraded`, `tenant.subscription.updated`).
 
 ### 4. Auth Integration
 
 **Libraries**: `shared-auth-client` (JWT validation + API key), `httpware` (tenant/request-ID middleware)
 
 - Validates JWTs from `sso.codevertexitsolutions.com` via JWKS
-- Supports API key fallback for service-to-service calls
-- Extracts `tenant_id` from `X-Tenant-ID` header via httpware middleware
-- **RBAC:** No local roles/permissions; authorization is via auth-api JWT. Subscription resources (plans, subscriptions, features, bundles, products) use the eight actions in auth-api: `add`, `read`, `read_own`, `change`, `change_own`, `delete`, `manage`, `manage_own`. See `docs/plan.md` (Security) for full seed and RBAC notes.
+- Supports API key fallback (`X-API-Key: INTERNAL_SERVICE_KEY`) for service-to-service calls
+- Extracts `tenant_id` from JWT claims via httpware middleware
+- **No local RBAC**: subscription service validates auth via auth-api JWT claims. Plan/config mutations require `IsPlatformOwner`.
 
 ---
 
 ## Data Layer
 
-### ORM: Ent (schema-as-code)
+### ORM: Ent (schema-as-code) + Atlas Migrations
 
 Entities (current):
 
 | Entity | Table | Purpose |
 |--------|-------|---------|
-| `SubscriptionPlan` | `subscription_plans` | Plan definitions (STARTER, GROWTH, PROFESSIONAL × monthly/yearly) with dynamic plan_type and discount_rules |
+| `SubscriptionPlan` | `subscription_plans` | Plan definitions with `service_tag`, dynamic `plan_type`, `discount_rules`, `tier_limits_json` |
 | `PlanFeature` | `plan_features` | Feature flags per plan |
 | `PlanPricingHistory` | `plan_pricing_history` | Pricing audit trail |
 | `TenantSubscription` | `tenant_subscriptions` | Active subscription per tenant |
-| `ProductSubscription` | `product_subscriptions` | Many-to-many: subscription ↔ products |
-| `Product` | `products` | 8 platform products + 5 add-ons |
-| `Bundle` | `bundles` | 3 curated product bundles (delivery, pos-suite, complete) |
 | `OutboxEvent` | `outbox_events` | Transactional outbox for NATS publishing |
+| `ServiceChargePlan` | `service_charge_plans` | Commission-based pricing models (PERCENTAGE, FIXED_PER_TRANSACTION, TIERED) |
+| RBAC tables | `subscriptions_permissions`, `subscriptions_roles`, `role_permissions`, `subscriptions_users`, `user_role_assignments` | Local RBAC for billing management |
+| Config tables | `rate_limit_configs`, `service_configs` | DB-driven rate limits and platform config |
+
+> **Note**: `Product`, `Bundle`, and `ProductSubscription` entities were removed. Plans now use `service_tag` directly to identify which billable service they belong to.
+
+### Service Tags
+
+10 canonical service tags defined in `internal/domain/service_tags.go`:
+
+| Tag | Service |
+|-----|---------|
+| `ordering` | Ordering backend |
+| `pos` | POS API |
+| `logistics` | Logistics API |
+| `inventory` | Inventory API |
+| `erp` | ERP API |
+| `treasury` | Treasury API |
+| `truload` | TruLoad backend |
+| `marketflow` | MarketFlow API |
+| `isp_billing` | ISP Billing API |
+| `projects` | Projects API |
 
 ### Migration Strategy
 
-**Current**: Ent auto-migrate (`ormClient.Schema.Create(ctx)`) on startup when `RUN_MIGRATIONS=true`.
-**Target (MVP)**: Transition to **Atlas** for versioned, reviewable migrations.
+**Current**: **Atlas versioned migrations** in `internal/ent/migrate/migrations/`. Schema changes must be applied via Atlas, not Ent auto-migrate. Migration files:
+
+| File | Contents |
+|------|----------|
+| `20260311014015_initial_schema_v3.sql` | Full initial schema |
+| `20260320031754_add_service_charge_plan_and_per_service_overrides.sql` | Service charge plans |
+| `20260322100158_add_rbac_rate_limit_service_config.sql` | RBAC, rate limits, service configs |
+| `20260324063800_reduce_tenant_schema.sql` | Tenant schema simplification |
+| `20260521183226_add_service_tag_to_plans.sql` | `service_tag` column on `subscription_plans` |
+
+Migrations run in CI via the `run_migrations.sh` script (Helm pre-upgrade job).
 
 ### Database
 
@@ -120,7 +154,7 @@ PostgreSQL 16+ via `pgxpool` (connection pooling) and `database/sql` (for Ent dr
 
 ### Caching
 
-Redis 7+ — currently initialized but not yet used for feature-gate caching. MVP goal: cache feature checks with 60s TTL under key pattern `subscription:feature:{tenant_id}:{feature_code}`.
+Redis 7+ — initialized but **not used for feature-gate caching**. Subscription status and feature entitlements are baked into JWT claims by auth-api at token issuance time. Services read from JWT claims directly (no runtime Redis lookup for feature gates).
 
 ---
 
@@ -128,20 +162,25 @@ Redis 7+ — currently initialized but not yet used for feature-gate caching. MV
 
 ### Outbound (Published via Outbox → NATS JetStream)
 
-| Event | Trigger |
-|-------|---------|
-| `subscription.created` | New subscription provisioned |
-| `subscription.activated` | Payment confirmed |
-| `subscription.upgraded` | Plan tier increased |
-| `subscription.downgraded` | Plan tier decreased |
-| `subscription.cancelled` | User/system cancellation |
-| `subscription.expired` | Period/trial ended |
-| `subscription.renewed` | Subscription renewed |
+NATS stream: `subscription` (listens on `subscription.*`). Subject format: `{aggregate_type}.{event_type}`.
+
+| Subject | Aggregate Type | Event Type | Trigger |
+|---------|---------------|------------|---------|
+| `subscription.subscription.created` | subscription | subscription.created | New subscription provisioned |
+| `subscription.subscription.activated` | subscription | subscription.activated | Payment confirmed |
+| `subscription.subscription.upgraded` | subscription | subscription.upgraded | Plan tier increased |
+| `subscription.subscription.downgraded` | subscription | subscription.downgraded | Plan tier decreased |
+| `subscription.subscription.cancelled` | subscription | subscription.cancelled | User/system cancellation |
+| `subscription.subscription.expired` | subscription | subscription.expired | Period/trial ended |
+| `subscription.subscription.renewed` | subscription | subscription.renewed | Subscription renewed |
+| `tenant.subscription.updated` | tenant | subscription.updated | Any plan change (consistent event for all downstream) |
+
+The `tenant.subscription.updated` event is emitted on **every** plan change (upgrade or downgrade) on the `tenant` aggregate. Downstream services (e.g. auth-api) subscribe to this to invalidate cached JWT claims and reissue tokens with updated subscription fields.
 
 ### Inbound (Consumed from NATS)
 
-| Event | Action |
-|-------|--------|
+| Subject | Action |
+|---------|--------|
 | `auth.tenant.created` | Auto-assign Starter plan with 14-day trial |
 | `treasury.payment.succeeded` | Activate subscription |
 | `treasury.payment.failed` | Suspend/initiate dunning |
@@ -151,47 +190,83 @@ Redis 7+ — currently initialized but not yet used for feature-gate caching. MV
 ```
 1. HTTP handler calls service method
 2. Service opens Tx → writes domain mutation + outbox_events row → commits
-3. Outbox publisher goroutine polls PENDING events (5s interval)
-4. Publishes to NATS JetStream → marks PUBLISHED
-5. Failed publishes retry with exponential backoff (max 3 attempts)
+3. Outbox publisher goroutine polls PENDING events (2s interval)
+4. Publishes to NATS JetStream using subject = {aggregate_type}.{event_type}
+5. Marks event as PUBLISHED
+6. Failed publishes: retry with exponential backoff (max 10 attempts)
 ```
 
 ---
 
 ## Seed Data Summary
 
-Seeded via `go run cmd/seed/main.go` (idempotent):
+Seeded via `go run cmd/seed/main.go` (idempotent). Deployed as a Helm pre-install/upgrade job (`seed.enabled: true`, `seed.binaryName: seed`).
 
-- **13 Products**: 3 platform (auth, notifications, subscription), 3 core (ordering, logistics, treasury), 2 standard add-ons (pos, storefront), 5 integration add-ons
-- **3 Bundles**: delivery (default), pos-suite, complete
-- **6 Plans**: STARTER/GROWTH/PROFESSIONAL × MONTHLY/ANNUAL (with dynamic plan_type: TIERED, STANDALONE_SERVICE, BUNDLE, CUSTOM)
-- **Demo Subscription**: Urban Loft on GROWTH plan, 14-day trial, delivery bundle
+- **85 Plans**: Distributed across 10 service tags. Each service has plans at STARTER/GROWTH/PROFESSIONAL tiers × MONTHLY/ANNUAL billing cycles (some with ONE_TIME). Plans carry `tier_limits_json` (max_riders, max_orders_per_day, etc.) and associated `plan_features`.
+- **Service Charge Plans**: 6 seeded commission plans (e.g. `SC_TRULOAD_10PCT` at 10% for truload, `SC_ORDERING_5PCT` at 5%).
+- **Demo Subscription**: Urban Loft tenant on GROWTH plan.
+
+> All 85 plans confirmed live in production as of May 2026.
 
 ---
 
 ## API Route Map
 
-All routes under `/api/v1`:
+All routes under `/api/v1` (plus health at root `/healthz` and `/readyz`):
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
-| GET | `/healthz` | No | Liveness probe |
-| GET | `/readyz` | No | Readiness probe |
-| GET | `/metrics` | No | Prometheus metrics |
-| GET | `/plans` | Yes | List all plans |
-| GET | `/plans/code/{code}` | Yes | Get plan by code |
-| GET | `/plans/{id}` | Yes | Get plan by ID |
-| GET | `/tenants/{tenant_id}/subscription` | Yes | Get tenant subscription (JWT claims source) |
-| GET | `/tenants/{tenant_id}/features/{feature_code}/check` | Yes | Feature gate check |
-| POST | `/tenants/{tenant_id}/subscription` | Yes | Create subscription |
-| PUT | `/tenants/{tenant_id}/subscription/plan` | Yes | Change plan |
-| POST | `/tenants/{tenant_id}/subscription/cancel` | Yes | Cancel subscription |
-| POST | `/tenants/{tenant_id}/subscription/renew` | Yes | Renew subscription |
-| GET | `/tenants/{tenant_id}/products` | Yes | List subscribed products |
-| POST | `/tenants/{tenant_id}/products/{code}/activate` | Yes | Activate product |
-| POST | `/tenants/{tenant_id}/products/{code}/deactivate` | Yes | Deactivate product |
+| GET | `/healthz` | No | Liveness/readiness probe |
+| GET | `/readyz` | No | Readiness probe (alias) |
+| GET | `/api/v1/healthz` | No | Health (Helm probe path) |
+| GET | `/v1/docs/*` | No | Swagger UI |
+| GET | `/api/v1/openapi.json` | No | OpenAPI spec |
+| **Plans (PUBLIC — no auth)** | | | |
+| GET | `/api/v1/plans` | **No** | List all active plans |
+| GET | `/api/v1/plans/{id}` | **No** | Get plan by ID |
+| GET | `/api/v1/plans/code/{code}` | **No** | Get plan by plan_code |
+| GET | `/api/v1/service-charges/plans` | **No** | List service charge plans |
+| GET | `/api/v1/service-charges/plans/{code}` | **No** | Get service charge plan by code |
+| **Tenant Subscription (JWT or API key required)** | | | |
+| GET | `/api/v1/subscription` | Yes | Get current tenant's subscription |
+| POST | `/api/v1/subscription` | Yes | Create subscription for current tenant |
+| PUT | `/api/v1/subscription/plan` | Yes | Change plan |
+| POST | `/api/v1/subscription/initiate` | Yes | Initiate payment for subscription |
+| GET | `/api/v1/subscription/settings` | Yes | Get subscription settings |
+| PUT | `/api/v1/subscription/settings` | Yes | Update subscription settings |
+| GET | `/api/v1/billing` | Yes | Get billing summary |
+| **S2S / Cross-Tenant** | | | |
+| GET | `/api/v1/tenants/{tenant_id}/subscription` | Yes (S2S or PO) | Get subscription by tenant ID — used by auth-api for JWT enrichment |
+| GET | `/api/v1/tenants/{tenant_id}/subscriptions` | Yes | Per-service-tag subscription view — used by billing UI (auth-ui) |
+| GET | `/api/v1/subscriptions/expiring` | Yes | List expiring subscriptions — used by notifications-api |
+| PUT | `/api/v1/subscriptions/{id}/switch-plan` | Yes | Switch plan by subscription ID |
+| **Feature Gates** | | | |
+| GET | `/api/v1/features` | Yes | Get all feature entitlements for current tenant |
+| GET | `/api/v1/features/{code}/check` | Yes | Check specific feature availability |
+| **Usage Reporting** | | | |
+| POST | `/api/v1/usage/report` | Yes | Report usage metric |
+| GET | `/api/v1/usage` | Yes | Get usage summary |
+| GET | `/api/v1/usage/summary` | Yes | Usage summary (alias) |
+| **Service Charges** | | | |
+| GET | `/api/v1/tenants/{tenantID}/service-charges` | Yes | Get tenant service charge config |
+| **Admin (Platform Owner only)** | | | |
+| POST | `/api/v1/admin/plans` | Yes (PO) | Create plan |
+| PUT | `/api/v1/admin/plans/{id}` | Yes (PO) | Update plan |
+| DELETE | `/api/v1/admin/plans/{id}` | Yes (PO) | Delete plan |
+| POST | `/api/v1/admin/service-charges` | Yes (PO) | Create service charge plan |
+| PUT | `/api/v1/admin/service-charges/{id}` | Yes (PO) | Update service charge plan |
+| DELETE | `/api/v1/admin/service-charges/{id}` | Yes (PO) | Delete service charge plan |
+| GET | `/api/v1/admin/tenants` | Yes (PO) | List all tenants |
+| POST | `/api/v1/admin/tenants/{tenant_id}/subscription` | Yes (PO) | Assign plan to tenant |
+| GET | `/api/v1/admin/subscriptions` | Yes (PO) | List all subscriptions |
+| PUT | `/api/v1/admin/subscriptions/{id}/status` | Yes (PO) | Update subscription status |
+| GET | `/api/v1/platform/stats` | Yes (PO) | Platform-wide subscription stats |
+| GET | `/api/v1/admin/configs` | Yes (PO) | List service configs |
+| POST | `/api/v1/admin/configs` | Yes (PO) | Create service config |
+| PUT | `/api/v1/admin/configs/{id}` | Yes (PO) | Update service config |
+| DELETE | `/api/v1/admin/configs/{id}` | Yes (PO) | Delete service config |
 
-Plus add-on routes registered by `AddonHandler`.
+**PO** = Platform Owner (tenant slug `codevertex`) only.
 
 ---
 
@@ -201,22 +276,24 @@ Plus add-on routes registered by `AddonHandler`.
 |---------|-----------|
 | Language | Go 1.22+ |
 | Router | chi v5 |
-| ORM | Ent |
+| ORM | Ent (schema-as-code) |
+| Migrations | Atlas (versioned SQL files) |
 | Database | PostgreSQL 16+ (pgxpool) |
-| Cache | Redis 7+ |
-| Events | NATS JetStream (`EVENTS_NATS_URL`) |
-| Auth | shared-auth-client (JWKS + API key) |
+| Cache | Redis 7+ (initialized; JWT-based feature gating in practice) |
+| Events | NATS JetStream (`EVENTS_NATS_URL`), stream `subscription` |
+| Auth | shared-auth-client v0.6.1 (JWKS + API key) |
 | Logging | zap (structured) |
 | Container | Multi-stage Docker build |
 | CI/CD | GitHub Actions → ArgoCD |
-| Orchestration | Kubernetes (devops-k8s) |
+| Orchestration | Kubernetes (devops-k8s, namespace `subscriptions`) |
 
 ---
 
 ## Key Design Decisions
 
-1. **Ent over raw SQL** — Schema-as-code with generated type-safe queries, automatic migrations during development
-2. **Outbox pattern** — Guarantees at-least-once event delivery without distributed transactions
-3. **Trinity Authorization** — Subscription claims baked into JWT, eliminating runtime calls for most feature checks
-4. **Product/Bundle model** — Tenants subscribe to bundles (product groupings) rather than individual products, simplifying pricing
-5. **Idempotent seeder** — `cmd/seed/main.go` can be re-run safely; uses upsert logic
+1. **service_tag over Product/Bundle model** — Plans now belong to exactly one billable service via `service_tag`. This replaces the earlier Product/Bundle/ProductSubscription many-to-many model with a simpler per-service-tag subscription view.
+2. **Atlas over Ent auto-migrate** — Schema changes require explicit versioned migration files. This prevents accidental destructive migrations in production.
+3. **JWT-baked subscription claims** — Subscription status, features, and limits are embedded in the JWT at issuance. Services read from JWT claims (no runtime calls to subscriptions-api for feature gates), eliminating latency and a dependency.
+4. **Outbox pattern** — Guarantees at-least-once event delivery without distributed transactions. Both directional events (`subscription.upgraded/downgraded`) and a consistent `tenant.subscription.updated` event are emitted on plan changes.
+5. **Public plan catalog** — `/plans`, `/plans/{id}`, `/plans/code/{code}` require no authentication. Pricing pages, onboarding flows, and unauthenticated quote tools can call these freely.
+6. **Idempotent seeder** — `cmd/seed/main.go` can be re-run safely; uses upsert logic. 85 plans across 10 service tags are seeded and confirmed live.

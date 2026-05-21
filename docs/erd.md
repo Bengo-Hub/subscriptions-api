@@ -15,14 +15,15 @@ The subscription service manages all subscription and licensing operations, prov
 
 ### subscription_plans
 
-**Purpose**: Subscription plan definitions (Starter, Growth, Professional, Custom).
+**Purpose**: Subscription plan definitions organized by service_tag and tier (Starter, Growth, Professional).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | UUID | PRIMARY KEY | Plan identifier |
-| `plan_code` | VARCHAR(50) | NOT NULL, UNIQUE | Plan code (STARTER, GROWTH, PROFESSIONAL, CUSTOM) |
+| `plan_code` | VARCHAR(50) | NOT NULL, UNIQUE | Plan code (e.g. `ORDERING-GROWTH-MONTHLY`) |
 | `name` | VARCHAR(255) | NOT NULL | Display name |
 | `description` | TEXT | | Plan description |
+| `service_tag` | VARCHAR(50) | NOT NULL | Billable service: `ordering`, `pos`, `logistics`, `inventory`, `erp`, `treasury`, `truload`, `marketflow`, `isp_billing`, `projects` |
 | `billing_cycle` | VARCHAR(20) | NOT NULL, CHECK | MONTHLY, QUARTERLY, ANNUAL, ONE_TIME |
 | `plan_type` | VARCHAR(50) | NOT NULL | TIERED, STANDALONE_SERVICE, BUNDLE, CUSTOM |
 | `base_price` | NUMERIC(18,2) | NOT NULL | Base subscription price |
@@ -35,6 +36,8 @@ The subscription service manages all subscription and licensing operations, prov
 | `metadata` | JSONB | | Additional plan metadata |
 | `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Creation timestamp |
 | `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Last update timestamp |
+
+> **Added May 2026** via Atlas migration `20260521183226_add_service_tag_to_plans.sql`. Previously plans used a Product/Bundle model; `service_tag` replaces that with a direct per-service association. 85 plans seeded across 10 service tags.
 
 **Example tier_limits_json**:
 ```json
@@ -51,6 +54,7 @@ The subscription service manages all subscription and licensing operations, prov
 - `idx_subscription_plans_plan_code` ON `plan_code`
 - `idx_subscription_plans_is_active` ON `is_active`
 - `idx_subscription_plans_tier_order` ON `tier_order`
+- `idx_subscription_plans_service_tag` ON `service_tag`
 
 **Constraints**:
 - CHECK: `billing_cycle IN ('MONTHLY', 'QUARTERLY', 'ANNUAL', 'ONE_TIME')`
@@ -550,16 +554,15 @@ The subscription service manages all subscription and licensing operations, prov
 | `error_message` | TEXT | | Error message (if failed) |
 | `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Creation timestamp |
 
-**Outbound Event Types**:
-- `subscription.created` - New subscription created
-- `subscription.trial_started` - Trial period started
-- `subscription.upgraded` - Plan upgraded
-- `subscription.downgraded` - Plan downgraded
-- `subscription.renewed` - Subscription renewed
-- `subscription.cancelled` - Subscription cancelled
-- `subscription.expired` - Subscription expired
-- `subscription.overage_detected` - Usage overage detected
-- `subscription.entitlements_changed` - Feature entitlements changed
+**Outbound Event Types** (NATS subject = `{aggregate_type}.{event_type}`):
+- `subscription.subscription.created` — New subscription created
+- `subscription.subscription.activated` — Subscription activated after payment
+- `subscription.subscription.upgraded` — Plan upgraded
+- `subscription.subscription.downgraded` — Plan downgraded
+- `subscription.subscription.renewed` — Subscription renewed
+- `subscription.subscription.cancelled` — Subscription cancelled
+- `subscription.subscription.expired` — Subscription expired
+- `tenant.subscription.updated` — Consistent event on tenant aggregate; emitted on every plan change
 
 **Indexes**:
 - `idx_outbox_events_tenant_id` ON `tenant_id`
@@ -643,22 +646,15 @@ This section defines how Subscription Service entities relate to other services:
 
 ## Seed & Defaults
 
-**Subscription Plans** (Per Inception Report):
-```sql
--- Starter Plan
-INSERT INTO subscription_plans (plan_code, name, billing_cycle, base_price, currency, tier_order, tier_limits_json)
-VALUES ('STARTER', 'Starter (Lite)', 'MONTHLY', 2500.00, 'KES', 1, 
-  '{"max_admins": 2, "max_riders": 5, "max_orders_per_day": 300}');
+**Subscription Plans** — 85 plans seeded (confirmed production as of May 2026):
 
--- Growth Plan
-INSERT INTO subscription_plans (plan_code, name, billing_cycle, base_price, currency, tier_order, tier_limits_json)
-VALUES ('GROWTH', 'Growth (Standard)', 'MONTHLY', 6000.00, 'KES', 2,
-  '{"max_admins": 3, "max_riders": 15, "max_orders_per_day": 1000}');
+Plans follow the naming convention `{SERVICE_TAG}-{TIER}-{BILLING_CYCLE}` (e.g. `ORDERING-GROWTH-MONTHLY`). Each service tag (`ordering`, `pos`, `logistics`, `inventory`, `erp`, `treasury`, `truload`, `marketflow`, `isp_billing`, `projects`) has STARTER/GROWTH/PROFESSIONAL × MONTHLY/ANNUAL variants.
 
--- Professional Plan
-INSERT INTO subscription_plans (plan_code, name, billing_cycle, base_price, currency, tier_order, tier_limits_json)
-VALUES ('PROFESSIONAL', 'Professional (Scale)', 'MONTHLY', 12500.00, 'KES', 3,
-  '{"max_admins": -1, "max_riders": 30, "max_orders_per_day": 2500}');
+Example plans:
+```
+ORDERING-STARTER-MONTHLY  — 2,500 KES/mo, 5 riders, 300 orders/day
+ORDERING-GROWTH-MONTHLY   — 6,000 KES/mo, 15 riders, 1,000 orders/day
+ORDERING-PROFESSIONAL-MONTHLY — 12,500 KES/mo, 30 riders, 2,500 orders/day
 ```
 
 **Feature Mappings**:

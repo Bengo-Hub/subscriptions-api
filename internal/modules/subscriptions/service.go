@@ -374,10 +374,18 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 		}
 	}
 
+	// Include tenant_slug so downstream subscribers can invalidate keyed Redis caches
+	tenantSlug := ""
+	if t, err := tx.Tenant.Get(ctx, sub.TenantID); err == nil {
+		tenantSlug = t.Slug
+	}
+
 	eventPayload := map[string]any{
 		"tenant_id":     sub.TenantID.String(),
+		"tenant_slug":   tenantSlug,
 		"new_plan_code": newPlan.PlanCode,
 		"new_plan_name": newPlan.Name,
+		"service_tag":   func() string { if newPlan.ServiceTag != nil { return *newPlan.ServiceTag }; return "" }(),
 		"old_plan_id":   oldPlanID.String(),
 		"direction":     direction,
 		"notification": map[string]any{

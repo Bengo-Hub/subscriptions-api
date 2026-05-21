@@ -221,23 +221,25 @@
 - Secrets via Vault/Parameter Store
 - Rate limiting & anomaly detection middleware
 - JWT validation via auth-service
-- **RBAC:** No local Permission/Role schema; RBAC is enforced via auth-api JWT. All subscription resources (plans, subscriptions, features, bundles, products) use the standard **eight actions** defined in auth-api: `add`, `read`, `read_own`, `change`, `change_own`, `delete`, `manage`, `manage_own`. The API validates JWT via `shared-auth-client` middleware; authorization checks are performed using claims from auth-api.
-- **Subscription tiering in auth layer**: Each microservice (ordering, logistics, treasury, etc.) integrates subscription tier and product-level tiering in its authorization layer — e.g. feature gates and limits from subscription-service (via JWT claims or real-time check) before allowing access or usage.
-- **Seed:** Core data is seeded by `cmd/seed`: (1) **Base Products** (Hidden from storefront: auth, notifications, subscription, treasury); (2) **Selectable Modules** (POS, Ordering, Logistics, Storefront, Inventory, etc.); (3) **Subscription Plans** — Urban Loft Tiers (Starter: 20k/mo, Growth: 45k/mo, Professional: 95k/mo); (4) **One-time summation logic** — A-la-carte plans sum the `onetime_price` of each included module (min 80k each).
+- **RBAC:** Local RBAC schema implemented (`subscriptions_permissions`, `subscriptions_roles`, `role_permissions`, `subscriptions_users`, `user_role_assignments`). System roles: `subscriptions_admin`, `billing_manager`, `viewer`. Plan and config mutations require `is_platform_owner`. API validates JWT via `shared-auth-client` middleware.
+- **Subscription tiering in auth layer**: Each microservice (ordering, logistics, treasury, etc.) integrates subscription tier via JWT claims (`sub_plan`, `sub_status`, `sub_features`, `sub_limits`, `sub_expires`) — no runtime calls to subscriptions-api needed for feature gates.
+- **Seed:** 85 plans seeded across 10 service tags (`ordering`, `pos`, `logistics`, `inventory`, `erp`, `treasury`, `truload`, `marketflow`, `isp_billing`, `projects`) at STARTER/GROWTH/PROFESSIONAL × MONTHLY/ANNUAL. 6 service charge plans seeded. Seeder is idempotent and runs as a Helm pre-install/upgrade job.
 - **Discounts & Promo Codes**: Plans support `discount_rules` for Yearly (fixed %), Loyal customers, and New Customer promotions.
 - **Notification Credits**: Implementation of `TenantCredit` system for SMS/WhatsApp. Platform admins set rates; tenants purchase bucketed credits.
 
 ### Scalability
 - Stateless HTTP layer
 - Background workers via NATS/Redis streams
-- Feature gate caching (Redis)
+- Subscription claims baked into JWT at issuance — no runtime Redis feature-gate lookups needed
+- Redis initialized for future use (rate limiting, session data)
 - Usage aggregation batch processing
 
 ### Data Modelling
-- Ent schemas as single source of truth ✅
+- Ent schemas + Atlas versioned migrations (in `internal/ent/migrate/migrations/`) ✅
 - Tenant/outlet discovery webhooks
-- Outbox pattern for reliable domain events ✅ **IMPLEMENTED** (using shared-events library)
+- Outbox pattern for reliable domain events ✅ **IMPLEMENTED** (shared-events v0.2.0 library)
 - Immutable audit trail for subscription changes
+- `service_tag` on `subscription_plans` — 10 canonical tags, 85 seeded plans ✅ **IMPLEMENTED**
 
 ---
 
