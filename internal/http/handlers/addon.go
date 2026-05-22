@@ -49,9 +49,17 @@ type addonItem struct {
 	Purchased       bool    `json:"purchased"`
 }
 
-// ListAddons returns purchasable add-ons (plan features with is_included=false)
-// for the tenant's current plan, annotated with whether already purchased.
-// GET /api/v1/addons
+// ListAddons godoc
+// @Summary List available add-ons
+// @Description Returns purchasable add-on features (is_included=false) for the tenant's current plan, annotated with purchase status.
+// @Tags Addons
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /addons [get]
 func (h *AddonHandler) ListAddons(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenantIDStr := httpware.GetTenantID(ctx)
@@ -122,8 +130,22 @@ func (h *AddonHandler) ListAddons(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"addons": items})
 }
 
-// PurchaseAddon initiates purchase of a specific add-on feature.
-// POST /api/v1/addons/{feature_code}/purchase
+// PurchaseAddon godoc
+// @Summary Purchase an add-on
+// @Description Initiates purchase of a specific add-on feature. Free add-ons are activated immediately; paid add-ons create a Treasury payment intent.
+// @Tags Addons
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param feature_code path string true "Feature code of the add-on"
+// @Param body body object false "Optional return URL for payment redirect"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Failure 503 {object} map[string]string
+// @Router /addons/{feature_code}/purchase [post]
 func (h *AddonHandler) PurchaseAddon(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	featureCode := chi.URLParam(r, "feature_code")
@@ -245,8 +267,18 @@ func (h *AddonHandler) PurchaseAddon(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// RemoveAddon deactivates a purchased add-on feature.
-// DELETE /api/v1/addons/{feature_code}
+// RemoveAddon godoc
+// @Summary Remove an add-on
+// @Description Deactivates a previously purchased add-on feature for the tenant.
+// @Tags Addons
+// @Produce json
+// @Security BearerAuth
+// @Param feature_code path string true "Feature code of the add-on to remove"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /addons/{feature_code} [delete]
 func (h *AddonHandler) RemoveAddon(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	featureCode := chi.URLParam(r, "feature_code")

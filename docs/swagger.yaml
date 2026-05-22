@@ -1,0 +1,1136 @@
+basePath: /api/v1
+definitions:
+  handlers.errorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  handlers.listPlansResponse:
+    properties:
+      count:
+        type: integer
+      plans:
+        items:
+          $ref: '#/definitions/plans.SubscriptionPlan'
+        type: array
+    type: object
+  handlers.planResponse:
+    properties:
+      plan:
+        $ref: '#/definitions/plans.SubscriptionPlan'
+    type: object
+  plans.PlanFeature:
+    properties:
+      createdAt:
+        type: string
+      featureCode:
+        type: string
+      id:
+        type: string
+      isIncluded:
+        type: boolean
+      limitValue:
+        type: integer
+      metadata:
+        additionalProperties: {}
+        type: object
+      overageUnitPrice:
+        format: float64
+        type: number
+      planID:
+        type: string
+    type: object
+  plans.SubscriptionPlan:
+    properties:
+      basePrice:
+        format: float64
+        type: number
+      billingCycle:
+        type: string
+      createdAt:
+        type: string
+      currency:
+        type: string
+      description:
+        type: string
+      discountRules:
+        items:
+          additionalProperties: {}
+          type: object
+        type: array
+      features:
+        items:
+          $ref: '#/definitions/plans.PlanFeature'
+        type: array
+      id:
+        type: string
+      isActive:
+        type: boolean
+      isPublic:
+        type: boolean
+      metadata:
+        additionalProperties: {}
+        type: object
+      name:
+        type: string
+      onetimeAllProductsPrice:
+        format: float64
+        type: number
+      planCode:
+        type: string
+      serviceTag:
+        type: string
+      tierLimits:
+        additionalProperties: {}
+        type: object
+      tierOrder:
+        type: integer
+      updatedAt:
+        type: string
+      useSumBasedPricing:
+        type: boolean
+    type: object
+host: pricingapi.codevertexitsolutions.com
+info:
+  contact: {}
+  description: HTTP API for the BengoBox Subscriptions Service — manages subscription
+    plans, features, usage, billing, and tenant entitlements.
+  title: Subscriptions API
+  version: "1.0"
+paths:
+  /addons:
+    get:
+      description: Returns purchasable add-on features (is_included=false) for the
+        tenant's current plan, annotated with purchase status.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List available add-ons
+      tags:
+      - Addons
+  /addons/{feature_code}:
+    delete:
+      description: Deactivates a previously purchased add-on feature for the tenant.
+      parameters:
+      - description: Feature code of the add-on to remove
+        in: path
+        name: feature_code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Remove an add-on
+      tags:
+      - Addons
+  /addons/{feature_code}/purchase:
+    post:
+      consumes:
+      - application/json
+      description: Initiates purchase of a specific add-on feature. Free add-ons are
+        activated immediately; paid add-ons create a Treasury payment intent.
+      parameters:
+      - description: Feature code of the add-on
+        in: path
+        name: feature_code
+        required: true
+        type: string
+      - description: Optional return URL for payment redirect
+        in: body
+        name: body
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Purchase an add-on
+      tags:
+      - Addons
+  /admin/plans:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new subscription plan. Requires platform owner access.
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.planResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create subscription plan (admin)
+      tags:
+      - Plans
+  /admin/plans/{id}:
+    delete:
+      description: Deletes a subscription plan. Requires platform owner access.
+      parameters:
+      - description: Plan UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete subscription plan (admin)
+      tags:
+      - Plans
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing subscription plan. Requires platform owner
+        access.
+      parameters:
+      - description: Plan UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.planResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update subscription plan (admin)
+      tags:
+      - Plans
+  /admin/service-charges:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new service charge plan. Requires platform owner.
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create service charge plan (admin)
+      tags:
+      - ServiceCharges
+  /admin/service-charges/{id}:
+    delete:
+      description: Deletes a service charge plan by ID. Requires platform owner.
+      parameters:
+      - description: Service charge plan UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete service charge plan (admin)
+      tags:
+      - ServiceCharges
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing service charge plan. Requires platform owner.
+      parameters:
+      - description: Service charge plan UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update service charge plan (admin)
+      tags:
+      - ServiceCharges
+  /admin/subscriptions:
+    get:
+      description: Returns paginated list of all tenant subscriptions. Requires platform
+        owner.
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20)
+        in: query
+        name: pageSize
+        type: integer
+      - description: Filter by status (ACTIVE, TRIAL, EXPIRED, etc.)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all subscriptions (admin)
+      tags:
+      - Platform
+  /admin/subscriptions/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Updates the status of a tenant subscription. Requires platform
+        owner.
+      parameters:
+      - description: Subscription UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update subscription status (admin)
+      tags:
+      - Platform
+  /admin/tenants:
+    get:
+      description: Returns all tenants with their current subscription status. Requires
+        platform owner.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all tenants (admin)
+      tags:
+      - Platform
+  /admin/tenants/{tenant_id}/subscription:
+    post:
+      consumes:
+      - application/json
+      description: Creates or updates a tenant's subscription to the given plan. Requires
+        platform owner.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Assign subscription plan to a tenant (admin)
+      tags:
+      - Platform
+  /billing:
+    get:
+      description: Returns billing details and payment history for the tenant's subscription
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get billing information
+      tags:
+      - Billing
+  /features:
+    get:
+      description: Returns the full set of features and limits for the tenant's current
+        subscription
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all feature entitlements
+      tags:
+      - Features
+  /features/{code}/check:
+    get:
+      description: Checks if a specific feature is available for the tenant's subscription.
+        Cached for 60s.
+      parameters:
+      - description: Feature code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Check feature entitlement
+      tags:
+      - Features
+  /health:
+    get:
+      description: Returns service health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - Health
+  /plans:
+    get:
+      description: Returns all available subscription plans with pricing
+      parameters:
+      - description: Filter by active status
+        in: query
+        name: active
+        type: boolean
+      - description: Filter by service tag (ordering, truload, logistics, inventory,
+          erp, pos, marketflow)
+        in: query
+        name: service
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.listPlansResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: List subscription plans
+      tags:
+      - Plans
+  /plans/{id}:
+    get:
+      description: Returns a specific subscription plan by UUID
+      parameters:
+      - description: Plan UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.planResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: Get plan by ID
+      tags:
+      - Plans
+  /plans/code/{code}:
+    get:
+      description: Returns a specific subscription plan by plan code (e.g. STARTER,
+        GROWTH, PROFESSIONAL)
+      parameters:
+      - description: Plan code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.planResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.errorResponse'
+      summary: Get plan by code
+      tags:
+      - Plans
+  /platform/stats:
+    get:
+      description: 'Returns aggregated platform stats: total plans, subscriptions,
+        MRR. Requires platform owner.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get platform statistics (admin)
+      tags:
+      - Platform
+  /service-charges/plans:
+    get:
+      description: Returns all active service charge plans, optionally filtered by
+        service
+      parameters:
+      - description: Filter by service name
+        in: query
+        name: service
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List service charge plans
+      tags:
+      - ServiceCharges
+  /service-charges/plans/{code}:
+    get:
+      description: Returns a specific service charge plan by code
+      parameters:
+      - description: Service charge plan code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get service charge plan
+      tags:
+      - ServiceCharges
+  /subscription:
+    get:
+      description: Returns the current tenant's subscription with plan details
+      parameters:
+      - description: Tenant UUID
+        in: header
+        name: X-Tenant-ID
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current subscription
+      tags:
+      - Subscriptions
+    post:
+      consumes:
+      - application/json
+      description: Provisions a new subscription for the tenant (starts trial if applicable)
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create subscription
+      tags:
+      - Subscriptions
+  /subscription/initiate:
+    post:
+      consumes:
+      - application/json
+      description: Starts the subscription provisioning process for a new tenant
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Initiate subscription
+      tags:
+      - Subscriptions
+  /subscription/plan:
+    put:
+      consumes:
+      - application/json
+      description: Upgrades or downgrades the tenant's subscription plan
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Change subscription plan
+      tags:
+      - Subscriptions
+  /subscription/settings:
+    get:
+      description: Returns the current tenant's subscription settings (auto-renew,
+        payment method, etc.)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get subscription settings
+      tags:
+      - Subscriptions
+    put:
+      consumes:
+      - application/json
+      description: Updates the current tenant's subscription settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update subscription settings
+      tags:
+      - Subscriptions
+  /subscriptions/expiring:
+    get:
+      description: Returns subscriptions expiring within the specified number of days.
+        Used by notifications-api.
+      parameters:
+      - description: Days until expiry (default 7)
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      - ApiKeyAuth: []
+      summary: List expiring subscriptions (S2S)
+      tags:
+      - Subscriptions
+  /tenants/{tenant_id}/subscription:
+    get:
+      description: Returns a tenant's subscription by tenant UUID. Used by auth-api
+        for JWT enrichment.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      - ApiKeyAuth: []
+      summary: Get subscription by tenant ID (S2S)
+      tags:
+      - Subscriptions
+  /usage:
+    get:
+      description: Returns aggregated usage metrics with plan limits for the current
+        billing period
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get usage summary
+      tags:
+      - Usage
+  /usage/report:
+    post:
+      consumes:
+      - application/json
+      description: Ingests a usage event from microservices for tracking consumption
+        against subscription limits
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "429":
+          description: Usage limit exceeded — X-RateLimit-Limit, X-RateLimit-Remaining,
+            X-RateLimit-Reset headers included
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      - ApiKeyAuth: []
+      summary: Report usage
+      tags:
+      - Usage
+  /usage/summary:
+    get:
+      description: Returns key usage metrics as named objects for the dashboard
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get usage dashboard summary
+      tags:
+      - Usage
+  /webhooks/treasury/payment-status:
+    post:
+      consumes:
+      - application/json
+      description: Receives payment completion/failure events from Treasury to activate
+        or suspend subscriptions.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Treasury payment webhook (S2S)
+      tags:
+      - Webhooks
+schemes:
+- https
+- http
+securityDefinitions:
+  ApiKeyAuth:
+    description: Service-to-service API key
+    in: header
+    name: X-API-Key
+    type: apiKey
+  BearerAuth:
+    description: JWT Bearer token from SSO (e.g. "Bearer eyJ...")
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

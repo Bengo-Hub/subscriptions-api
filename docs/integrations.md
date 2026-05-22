@@ -198,6 +198,37 @@ api.Use(func(next http.Handler) http.Handler {
 4. Treasury processes payment and emits `treasury.payment.succeeded`
 5. Subscriptions-api activates the subscription
 
+**Treasury webhook contract** (S2S — `POST /api/v1/webhooks/treasury/payment-status`):
+
+```
+Auth: X-API-Key: INTERNAL_SERVICE_KEY
+Content-Type: application/json
+
+{
+  "payment_intent_id": "pi_xxxx",
+  "status": "completed" | "failed",
+  "tenant_id": "uuid",
+  "plan_code": "ORDERING-GROWTH-MONTHLY",
+  "amount": 6000.00,
+  "currency": "KES"
+}
+```
+
+- `completed` → sets subscription `ACTIVE`, updates `current_period_start/end`, publishes `subscription.activated`, invalidates feature cache.
+- `failed` → sets subscription `SUSPENDED`, publishes `subscription.payment_required`, invalidates feature cache.
+
+**Add-on purchase flow** (paid add-ons):
+
+1. Tenant calls `POST /api/v1/addons/{feature_code}/purchase`
+2. Subscriptions-api POSTs to Treasury `/api/v1/{tenant_id}/payments/intents` with `reference_type: "addon_purchase"`
+3. On payment completion, Treasury calls the webhook above with `metadata.addon: true`
+
+**Renewal flow** (background job):
+
+1. Hourly job finds `ACTIVE` subscriptions expiring within 24h
+2. Paid plans: POSTs to Treasury `/api/v1/payments/intents` with `reference_type: "subscription_renewal"`
+3. On payment completion, Treasury calls the webhook — `completed` triggers another renewal cycle
+
 ---
 
 ### Ordering, POS, Logistics, Inventory, ERP, Projects Services
@@ -335,8 +366,12 @@ req.Header.Set("X-API-Key", os.Getenv("INTERNAL_SERVICE_KEY"))
 | PUT | `/api/v1/subscriptions/{id}/switch-plan` | JWT | Billing UI plan change |
 | GET | `/api/v1/features` | JWT | Tenant (self) |
 | GET | `/api/v1/features/{code}/check` | JWT | Any service |
-| POST | `/api/v1/usage/report` | JWT or API key | Domain services |
+| POST | `/api/v1/usage/report` | JWT or API key | Domain services (returns 429 when plan limit exceeded) |
 | GET | `/api/v1/usage` | JWT | Tenant (self) |
+| GET | `/api/v1/addons` | JWT | Tenant (self) — list available add-ons |
+| POST | `/api/v1/addons/{code}/purchase` | JWT | Tenant (self) — purchase an add-on |
+| DELETE | `/api/v1/addons/{code}` | JWT | Tenant (self) — remove an add-on |
+| POST | `/api/v1/webhooks/treasury/payment-status` | X-API-Key | Treasury (S2S webhook) |
 
 ---
 
@@ -356,7 +391,12 @@ req.Header.Set("X-API-Key", os.Getenv("INTERNAL_SERVICE_KEY"))
 | `subscription.subscription.downgraded` | Plan tier decreased |
 | `subscription.subscription.cancelled` | Cancellation |
 | `subscription.subscription.expired` | Period/trial ended |
-| `subscription.subscription.renewed` | Renewal |
+| `subscription.subscription.renewed` | Renewal (free plan period extended) |
+| `subscription.subscription.suspended` | Manual suspension or payment failure |
+| `subscription.subscription.reactivated` | Suspension lifted |
+| `subscription.subscription.payment_required` | Treasury payment failed |
+| `subscription.subscription.renewal_initiated` | Renewal payment intent created (paid plans) |
+| `subscription.addon.purchased` | Add-on feature purchased |
 | `tenant.subscription.updated` | Any plan change (consistent event on tenant aggregate) |
 
 **Event payload example** (`subscription.subscription.upgraded`):
@@ -419,6 +459,24 @@ All subscription enforcement returns this discriminated error body:
 ```
 
 The `upgrade: true` field distinguishes subscription 403s from RBAC 403s. Frontends show an upgrade banner/modal instead of redirecting to unauthorized.
+
+### Usage Rate Limiting (429)
+
+When a domain service calls `POST /api/v1/usage/report` and the tenant has exceeded their plan's metric limit for the current month, the endpoint returns:
+
+```http
+HTTP/1.1 429 Too Many Requests
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 2026-06-01T00:00:00Z
+Content-Type: application/json
+
+{"error":"usage limit exceeded","metric":"order_count","limit":"1000"}
+```
+
+Limit is loaded from `rate_limit_configs` in the DB (keyed by `metric_type` and plan tier). The Redis counter key is `usage:limit:{tenant_id}:{metric_type}:{YYYY-MM}` — resets automatically at the start of the next month via Redis `EXPIREAT`.
+
+Domain services that receive a 429 should surface an upgrade prompt or reject the operation. Superusers and Platform Owners bypass enforcement.
 
 ### Outbox Retry Policy
 

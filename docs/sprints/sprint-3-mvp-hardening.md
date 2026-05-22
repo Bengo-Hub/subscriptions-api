@@ -24,7 +24,7 @@ Sprints 1-2 delivered the database schema, seed data, CRUD endpoints, state mach
 - [x] Cache key: `subscription:feature:{tenant_id}:{feature_code}` with 60s TTL
 - [x] `GET /api/v1/features` — full entitlements endpoint with cache key `subscription:entitlements:{tenant_id}`
 - [x] `FeatureHandler.InvalidateCache(ctx, tenantID)` — purges entitlements + all feature keys via pattern
-- [ ] Wire `InvalidateCache` calls on subscription mutations (create, change plan, cancel, renew) — TODO
+- [x] Wire `InvalidateCache` calls on subscription mutations (create, change plan, cancel, renew) ✅ DONE (May 2026)
 - [x] Redis health already in `/healthz` endpoint
 
 #### 2. JWT Claims Enrichment — End-to-End Verification
@@ -71,10 +71,10 @@ Sprints 1-2 delivered the database schema, seed data, CRUD endpoints, state mach
 
 ### P2 — Nice to Have
 
-#### 8. OpenAPI Spec Generation
-- [ ] Add swaggo annotations to all handlers (partially done)
-- [ ] Generate `openapi.yaml` via `swag init`
-- [ ] Serve Swagger UI at `/docs/`
+#### 8. OpenAPI Spec Generation ✅ DONE
+- [x] Add swaggo annotations to all handlers ✅ DONE (May 2026)
+- [x] Generate `openapi.yaml` via `swag init` ✅ DONE
+- [x] Serve Swagger UI at `/docs/`
 
 #### 9. Structured Error Responses
 - [ ] Standardize error format: `{"error": "...", "code": "...", "details": {}}`

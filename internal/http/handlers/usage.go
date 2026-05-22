@@ -53,6 +53,8 @@ type reportUsageRequest struct {
 // @Security ApiKeyAuth
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
+// @Failure 429 {object} map[string]string "Usage limit exceeded — X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset headers included"
+// @Failure 500 {object} map[string]string
 // @Router /usage/report [post]
 func (h *UsageHandler) ReportUsage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

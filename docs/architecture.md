@@ -154,7 +154,11 @@ PostgreSQL 16+ via `pgxpool` (connection pooling) and `database/sql` (for Ent dr
 
 ### Caching
 
-Redis 7+ — initialized but **not used for feature-gate caching**. Subscription status and feature entitlements are baked into JWT claims by auth-api at token issuance time. Services read from JWT claims directly (no runtime Redis lookup for feature gates).
+Redis 7+ — used for:
+- **Usage rate limiting counters**: `usage:limit:{tenant_id}:{metric_type}:{YYYY-MM}` — incremented atomically on each `POST /usage/report`. If counter exceeds the plan's `rate_limit_config` for the metric, returns `429 Too Many Requests` with `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers.
+- **Feature-gate entitlement cache**: `subscription:entitlements:{tenant_id}` and `subscription:feature:{tenant_id}:*` — written by `FeatureHandler`, invalidated via `FeatureHandler.InvalidateCache` after every subscription mutation (create, change plan, cancel, renew, webhook activation/suspension).
+
+Subscription status and feature entitlements are also baked into JWT claims by auth-api at token issuance time, so services can check features from JWT claims without a runtime Redis lookup.
 
 ---
 
@@ -173,9 +177,23 @@ NATS stream: `subscription` (listens on `subscription.*`). Subject format: `{agg
 | `subscription.subscription.cancelled` | subscription | subscription.cancelled | User/system cancellation |
 | `subscription.subscription.expired` | subscription | subscription.expired | Period/trial ended |
 | `subscription.subscription.renewed` | subscription | subscription.renewed | Subscription renewed |
+| `subscription.subscription.suspended` | subscription | subscription.suspended | Manual suspension or payment failure |
+| `subscription.subscription.reactivated` | subscription | subscription.reactivated | Suspension lifted |
+| `subscription.subscription.payment_required` | subscription | subscription.payment_required | Treasury payment failed |
+| `subscription.subscription.renewal_initiated` | subscription | subscription.renewal_initiated | Renewal payment intent created |
+| `subscription.addon.purchased` | subscription | addon.purchased | Tenant purchased an add-on feature |
 | `tenant.subscription.updated` | tenant | subscription.updated | Any plan change (consistent event for all downstream) |
 
 The `tenant.subscription.updated` event is emitted on **every** plan change (upgrade or downgrade) on the `tenant` aggregate. Downstream services (e.g. auth-api) subscribe to this to invalidate cached JWT claims and reissue tokens with updated subscription fields.
+
+### Background Jobs
+
+**Location**: `internal/jobs/renewal.go`, started from `app.Run()` as goroutines.
+
+| Job | Interval | Logic |
+|-----|----------|-------|
+| **Expiry Job** | Every 1h | Queries `ACTIVE` subscriptions where `current_period_end < NOW()`. Sets each to `EXPIRED`, publishes `subscription.expired`, invalidates cache. |
+| **Renewal Job** | Every 1h (offset 30m) | Queries `ACTIVE` subscriptions expiring within 24h. Free plans (`base_price == 0`): extends period directly, publishes `subscription.renewed`. Paid plans: POSTs to Treasury `/api/v1/payments/intents` with `reference_type: subscription_renewal`, publishes `subscription.renewal_initiated`. |
 
 ### Inbound (Consumed from NATS)
 
@@ -249,6 +267,12 @@ All routes under `/api/v1` (plus health at root `/healthz` and `/readyz`):
 | GET | `/api/v1/usage/summary` | Yes | Usage summary (alias) |
 | **Service Charges** | | | |
 | GET | `/api/v1/tenants/{tenantID}/service-charges` | Yes | Get tenant service charge config |
+| **Add-ons (JWT required)** | | | |
+| GET | `/api/v1/addons` | Yes | List available add-on features for tenant's plan |
+| POST | `/api/v1/addons/{feature_code}/purchase` | Yes | Purchase an add-on (free: instant; paid: Treasury intent) |
+| DELETE | `/api/v1/addons/{feature_code}` | Yes | Remove a purchased add-on |
+| **Webhooks (S2S — X-API-Key)** | | | |
+| POST | `/api/v1/webhooks/treasury/payment-status` | X-API-Key | Treasury payment completion/failure callback — activates or suspends subscription |
 | **Admin (Platform Owner only)** | | | |
 | POST | `/api/v1/admin/plans` | Yes (PO) | Create plan |
 | PUT | `/api/v1/admin/plans/{id}` | Yes (PO) | Update plan |
@@ -279,7 +303,7 @@ All routes under `/api/v1` (plus health at root `/healthz` and `/readyz`):
 | ORM | Ent (schema-as-code) |
 | Migrations | Atlas (versioned SQL files) |
 | Database | PostgreSQL 16+ (pgxpool) |
-| Cache | Redis 7+ (initialized; JWT-based feature gating in practice) |
+| Cache | Redis 7+ (usage rate-limit counters + feature-gate entitlement cache) |
 | Events | NATS JetStream (`EVENTS_NATS_URL`), stream `subscription` |
 | Auth | shared-auth-client v0.6.1 (JWKS + API key) |
 | Logging | zap (structured) |
