@@ -76,6 +76,7 @@ func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 		billing["planCode"] = sub.Edges.Plan.PlanCode
 		billing["planName"] = sub.Edges.Plan.Name
 		billing["amount"] = sub.Edges.Plan.BasePrice
+		billing["nextAmount"] = sub.Edges.Plan.BasePrice // alias for UI compatibility
 		billing["currency"] = sub.Edges.Plan.Currency
 	}
 

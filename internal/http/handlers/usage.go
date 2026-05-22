@@ -4,26 +4,29 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
-
 )
 
 // UsageHandler accepts usage metric reports from microservices.
-// Storage uses raw SQL on the usage_events table (created by Ent schema UsageEvent after codegen).
 type UsageHandler struct {
 	log *zap.Logger
 	db  *pgxpool.Pool
+	orm *ent.Client
 }
 
 // NewUsageHandler creates a new UsageHandler.
-func NewUsageHandler(log *zap.Logger, db *pgxpool.Pool) *UsageHandler {
+func NewUsageHandler(log *zap.Logger, db *pgxpool.Pool, orm *ent.Client) *UsageHandler {
 	return &UsageHandler{
 		log: log.Named("usage.handler"),
 		db:  db,
+		orm: orm,
 	}
 }
 
@@ -105,15 +108,68 @@ func (h *UsageHandler) ReportUsage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// metricMeta holds display metadata for a metric type.
+type metricMeta struct {
+	name string
+	unit string
+}
+
+// metricDisplayMap maps metric_type keys to display names and units.
+var metricDisplayMap = map[string]metricMeta{
+	"orders":         {name: "Orders", unit: "orders"},
+	"riders":         {name: "Riders", unit: "riders"},
+	"outlets":        {name: "Outlets", unit: "outlets"},
+	"api_calls":      {name: "API Calls", unit: "calls"},
+	"users":          {name: "Users", unit: "users"},
+	"products":       {name: "Products", unit: "products"},
+	"reports":        {name: "Reports", unit: "reports"},
+	"drivers":        {name: "Drivers", unit: "drivers"},
+	"vehicles":       {name: "Vehicles", unit: "vehicles"},
+	"deliveries":     {name: "Deliveries", unit: "deliveries"},
+	"contacts":       {name: "Contacts", unit: "contacts"},
+	"campaigns":      {name: "Campaigns", unit: "campaigns"},
+	"devices":        {name: "Devices", unit: "devices"},
+	"warehouses":     {name: "Warehouses", unit: "warehouses"},
+	"pos_terminals":  {name: "POS Terminals", unit: "terminals"},
+	"transactions":   {name: "Transactions", unit: "transactions"},
+	"inventory_items": {name: "Inventory Items", unit: "items"},
+}
+
+// limitKeyForMetric finds the plan limit key that corresponds to a metric type.
+// Plan limits use keys like "max_orders_per_day", "max_riders", etc.
+func limitKeyForMetric(metricType string, planLimits map[string]any) (string, bool) {
+	mt := strings.ToLower(metricType)
+	for k := range planLimits {
+		kl := strings.ToLower(k)
+		// "max_orders_per_day" contains "orders", "max_riders" contains "riders"
+		if strings.Contains(kl, mt) {
+			return k, true
+		}
+	}
+	return "", false
+}
+
+type usageMetricRow struct {
+	MetricType string  `json:"metric_type"`
+	Total      float64 `json:"total"`
+	EventCount int     `json:"event_count"`
+}
+
+type metricResult struct {
+	Name      string `json:"name"`
+	Key       string `json:"key"`
+	Used      int    `json:"used"`
+	Limit     int    `json:"limit"`
+	Unit      string `json:"unit"`
+	ResetDate string `json:"resetDate"`
+}
+
 // GetUsageSummary godoc
 // @Summary Get usage summary
-// @Description Returns aggregated usage metrics for the tenant within a date range
+// @Description Returns aggregated usage metrics with plan limits for the current billing period
 // @Tags Usage
 // @Produce json
 // @Security BearerAuth
-// @Param from query string false "Start date (RFC3339)"
-// @Param to query string false "End date (RFC3339)"
-// @Param service query string false "Filter by service name"
 // @Success 200 {object} map[string]interface{}
 // @Router /usage [get]
 func (h *UsageHandler) GetUsageSummary(w http.ResponseWriter, r *http.Request) {
@@ -129,28 +185,230 @@ func (h *UsageHandler) GetUsageSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	from, to := parseUsageDateRange(r)
-	serviceFilter := r.URL.Query().Get("service")
-
-	type metricSummary struct {
-		MetricType string  `json:"metric_type"`
-		Total      float64 `json:"total"`
-		EventCount int     `json:"event_count"`
+	// Fetch subscription + plan limits
+	planName := ""
+	periodEnd := time.Time{}
+	planLimits := map[string]any{}
+	if h.orm != nil {
+		sub, serr := h.orm.TenantSubscription.Query().
+			Where(tenantsubscription.TenantIDEQ(tenantID)).
+			WithPlan().
+			Only(ctx)
+		if serr == nil {
+			periodEnd = sub.CurrentPeriodEnd
+			if sub.Edges.Plan != nil {
+				planName = sub.Edges.Plan.Name
+				if sub.Edges.Plan.TierLimitsJSON != nil {
+					planLimits = sub.Edges.Plan.TierLimitsJSON
+				}
+			}
+		}
 	}
 
-	metrics, err := h.queryUsageSummary(ctx, tenantID, from, to, serviceFilter)
+	// Determine billing period: use current subscription period, fallback to last 30 days
+	from, to := parseUsageDateRange(r)
+	if !periodEnd.IsZero() {
+		to = periodEnd
+		// period start = period_end minus billing cycle (approx 30 days for MONTHLY)
+		from = to.AddDate(0, -1, 0)
+	}
+	resetDate := to.Format("2006-01-02")
+
+	// Aggregate usage events
+	rawMetrics, err := h.queryUsageSummary(ctx, tenantID, from, to, "")
 	if err != nil {
 		h.log.Error("failed to query usage summary", zap.Error(err))
 		http.Error(w, `{"error":"failed to retrieve usage"}`, http.StatusInternalServerError)
 		return
 	}
 
+	// Build metrics map: metric_type -> total
+	usedByType := map[string]float64{}
+	for _, m := range rawMetrics {
+		usedByType[m.MetricType] = m.Total
+	}
+
+	// Build result: start from plan limits (so all configured metrics appear even if unused)
+	seenKeys := map[string]bool{}
+	var metrics []metricResult
+
+	for limitKey, limitVal := range planLimits {
+		// Parse limit value
+		limit := 0
+		switch v := limitVal.(type) {
+		case float64:
+			limit = int(v)
+		case int:
+			limit = v
+		case int64:
+			limit = int(v)
+		}
+
+		// Find matching metric type (e.g. "max_orders_per_day" -> "orders")
+		metricType := inferMetricType(limitKey)
+		if metricType == "" || seenKeys[metricType] {
+			continue
+		}
+		seenKeys[metricType] = true
+
+		meta, ok := metricDisplayMap[metricType]
+		if !ok {
+			// Derive display from limitKey
+			displayKey := strings.TrimPrefix(strings.ToLower(limitKey), "max_")
+			displayKey = strings.ReplaceAll(displayKey, "_per_day", "")
+			displayKey = strings.ReplaceAll(displayKey, "_per_month", "")
+			meta = metricMeta{
+				name: strings.Title(strings.ReplaceAll(displayKey, "_", " ")),
+				unit: displayKey,
+			}
+		}
+
+		used := int(usedByType[metricType])
+		metrics = append(metrics, metricResult{
+			Name:      meta.name,
+			Key:       metricType,
+			Used:      used,
+			Limit:     limit,
+			Unit:      meta.unit,
+			ResetDate: resetDate,
+		})
+	}
+
+	// Also add any metric types that have usage but no plan limit
+	for metricType, total := range usedByType {
+		if seenKeys[metricType] {
+			continue
+		}
+		meta, ok := metricDisplayMap[metricType]
+		if !ok {
+			meta = metricMeta{
+				name: strings.Title(strings.ReplaceAll(metricType, "_", " ")),
+				unit: metricType,
+			}
+		}
+		metrics = append(metrics, metricResult{
+			Name:      meta.name,
+			Key:       metricType,
+			Used:      int(total),
+			Limit:     0,
+			Unit:      meta.unit,
+			ResetDate: resetDate,
+		})
+	}
+
+	if metrics == nil {
+		metrics = []metricResult{}
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
-		"tenant_id":    tenantIDStr,
-		"period_from":  from.Format("2006-01-02"),
-		"period_to":    to.Format("2006-01-02"),
-		"metrics":      metrics,
+		"metrics": metrics,
+		"billingPeriod": map[string]string{
+			"start": from.Format("2006-01-02"),
+			"end":   to.Format("2006-01-02"),
+		},
+		"plan": planName,
 	})
+}
+
+// GetUsageDashboard returns a simplified usage summary for the dashboard widget.
+// @Summary Get usage dashboard summary
+// @Description Returns key usage metrics as named objects for the dashboard
+// @Tags Usage
+// @Produce json
+// @Security BearerAuth
+// @Router /usage/summary [get]
+func (h *UsageHandler) GetUsageDashboard(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	tenantIDStr := resolveTenantID(r)
+	if tenantIDStr == "" {
+		http.Error(w, `{"error":"tenant_id required"}`, http.StatusBadRequest)
+		return
+	}
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		http.Error(w, `{"error":"invalid tenant_id"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Fetch subscription + plan limits
+	planLimits := map[string]any{}
+	periodEnd := time.Time{}
+	if h.orm != nil {
+		sub, serr := h.orm.TenantSubscription.Query().
+			Where(tenantsubscription.TenantIDEQ(tenantID)).
+			WithPlan().
+			Only(ctx)
+		if serr == nil {
+			periodEnd = sub.CurrentPeriodEnd
+			if sub.Edges.Plan != nil && sub.Edges.Plan.TierLimitsJSON != nil {
+				planLimits = sub.Edges.Plan.TierLimitsJSON
+			}
+		}
+	}
+
+	// Determine period
+	to := time.Now()
+	if !periodEnd.IsZero() {
+		to = periodEnd
+	}
+	from := to.AddDate(0, -1, 0)
+
+	rawMetrics, err := h.queryUsageSummary(ctx, tenantID, from, to, "")
+	if err != nil {
+		h.log.Error("failed to query usage for dashboard", zap.Error(err))
+		writeJSON(w, http.StatusOK, map[string]any{}) // return empty rather than error
+		return
+	}
+
+	usedByType := map[string]float64{}
+	for _, m := range rawMetrics {
+		usedByType[m.MetricType] = m.Total
+	}
+
+	result := map[string]any{}
+
+	// Well-known dashboard metrics
+	dashboardMetrics := []string{"orders", "riders", "outlets", "api_calls"}
+	for _, mt := range dashboardMetrics {
+		limit := 0
+		if lk, ok := limitKeyForMetric(mt, planLimits); ok {
+			switch v := planLimits[lk].(type) {
+			case float64:
+				limit = int(v)
+			case int:
+				limit = v
+			}
+		}
+		result[mt] = map[string]int{
+			"used":  int(usedByType[mt]),
+			"limit": limit,
+		}
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+
+// inferMetricType extracts the base metric name from a limit key.
+// e.g. "max_orders_per_day" -> "orders", "max_riders" -> "riders"
+func inferMetricType(limitKey string) string {
+	key := strings.ToLower(limitKey)
+	key = strings.TrimPrefix(key, "max_")
+	key = strings.ReplaceAll(key, "_per_day", "")
+	key = strings.ReplaceAll(key, "_per_month", "")
+	key = strings.ReplaceAll(key, "_per_hour", "")
+	key = strings.TrimSuffix(key, "_count")
+	key = strings.TrimSuffix(key, "_limit")
+	// Normalize common variants
+	if key == "order" {
+		return "orders"
+	}
+	if key == "rider" {
+		return "riders"
+	}
+	if key == "outlet" {
+		return "outlets"
+	}
+	return key
 }
 
 type metricRow struct {

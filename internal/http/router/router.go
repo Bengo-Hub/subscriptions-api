@@ -154,7 +154,7 @@ func New(
 				r.Route("/usage", func(r chi.Router) {
 					r.Post("/report", usageHandler.ReportUsage)
 					r.Get("/", usageHandler.GetUsageSummary)
-					r.Get("/summary", usageHandler.GetUsageSummary) // alias for frontend
+					r.Get("/summary", usageHandler.GetUsageDashboard)
 				})
 			}
 

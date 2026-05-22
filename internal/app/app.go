@@ -204,7 +204,7 @@ func New(ctx context.Context) (*App, error) {
 	featureHandler := handlers.NewFeatureHandler(log, subscriptionSvc, redisClient)
 
 	// Usage tracking handler (raw SQL — requires UsageEvent Ent schema codegen to create table)
-	usageHandler := handlers.NewUsageHandler(log, dbPool)
+	usageHandler := handlers.NewUsageHandler(log, dbPool, ormClient)
 
 	// Service charge plan handler
 	serviceChargeHandler := handlers.NewServiceChargeHandler(log, ormClient)
