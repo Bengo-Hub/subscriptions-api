@@ -1643,10 +1643,9 @@ const docTemplate = `{
                     "additionalProperties": {}
                 },
                 "overageUnitPrice": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
-                "planID": {
+                "planId": {
                     "type": "string"
                 }
             }
@@ -1655,8 +1654,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "basePrice": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "billingCycle": {
                     "type": "string"
@@ -1700,8 +1698,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "onetimeAllProductsPrice": {
-                    "type": "number",
-                    "format": "float64"
+                    "type": "number"
                 },
                 "planCode": {
                     "type": "string"

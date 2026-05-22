@@ -35,15 +35,13 @@ definitions:
         additionalProperties: {}
         type: object
       overageUnitPrice:
-        format: float64
         type: number
-      planID:
+      planId:
         type: string
     type: object
   plans.SubscriptionPlan:
     properties:
       basePrice:
-        format: float64
         type: number
       billingCycle:
         type: string
@@ -74,7 +72,6 @@ definitions:
       name:
         type: string
       onetimeAllProductsPrice:
-        format: float64
         type: number
       planCode:
         type: string
