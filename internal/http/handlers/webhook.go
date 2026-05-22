@@ -1,0 +1,191 @@
+package handlers
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/google/uuid"
+	"go.uber.org/zap"
+
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
+)
+
+// WebhookHandler handles inbound webhooks from internal services (e.g. Treasury).
+type WebhookHandler struct {
+	log            *zap.Logger
+	orm            *ent.Client
+	svc            *subscriptions.Service
+	apiKey         string
+	featureHandler *FeatureHandler
+}
+
+// NewWebhookHandler creates a new WebhookHandler.
+func NewWebhookHandler(log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, apiKey string, featureHandler *FeatureHandler) *WebhookHandler {
+	return &WebhookHandler{
+		log:            log.Named("webhook.handler"),
+		orm:            orm,
+		svc:            svc,
+		apiKey:         apiKey,
+		featureHandler: featureHandler,
+	}
+}
+
+// HandleTreasuryPayment godoc
+// @Summary Treasury payment webhook (S2S)
+// @Description Receives payment completion/failure events from Treasury to activate or suspend subscriptions.
+// @Tags Webhooks
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /webhooks/treasury/payment-status [post]
+func (h *WebhookHandler) HandleTreasuryPayment(w http.ResponseWriter, r *http.Request) {
+	// Validate S2S API key
+	if h.apiKey != "" && r.Header.Get("X-API-Key") != h.apiKey {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	var body struct {
+		PaymentIntentID string `json:"payment_intent_id"`
+		Status          string `json:"status"` // "completed" or "failed"
+		TenantID        string `json:"tenant_id"`
+		PlanCode        string `json:"plan_code"`
+		Amount          float64 `json:"amount"`
+		Currency        string  `json:"currency"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	if body.TenantID == "" || body.Status == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id and status are required"})
+		return
+	}
+
+	tenantID, err := uuid.Parse(body.TenantID)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+
+	ctx := r.Context()
+
+	switch body.Status {
+	case "completed":
+		if err := h.activateSubscription(ctx, tenantID, body.PlanCode); err != nil {
+			h.log.Error("failed to activate subscription via webhook", zap.String("tenant_id", body.TenantID), zap.Error(err))
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to activate subscription"})
+			return
+		}
+		if h.featureHandler != nil {
+			h.featureHandler.InvalidateCache(ctx, tenantID)
+		}
+		h.log.Info("subscription activated via treasury webhook", zap.String("tenant_id", body.TenantID), zap.String("plan_code", body.PlanCode))
+
+	case "failed":
+		if err := h.markPaymentRequired(ctx, tenantID); err != nil {
+			h.log.Error("failed to mark payment_required via webhook", zap.String("tenant_id", body.TenantID), zap.Error(err))
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update subscription"})
+			return
+		}
+		if h.featureHandler != nil {
+			h.featureHandler.InvalidateCache(ctx, tenantID)
+		}
+		h.log.Info("subscription marked payment_required via treasury webhook", zap.String("tenant_id", body.TenantID))
+
+	default:
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unknown status: " + body.Status})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "processed"})
+}
+
+func (h *WebhookHandler) activateSubscription(ctx context.Context, tenantID uuid.UUID, planCode string) error {
+	now := time.Now().UTC()
+	periodEnd := now.AddDate(0, 1, 0)
+
+	tx, err := h.orm.Tx(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	sub, err := tx.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(tenantID)).
+		Only(ctx)
+	if err != nil {
+		return err
+	}
+
+	update := tx.TenantSubscription.UpdateOneID(sub.ID).
+		SetStatus(tenantsubscription.StatusACTIVE).
+		SetCurrentPeriodStart(now).
+		SetCurrentPeriodEnd(periodEnd)
+
+	sub, err = update.Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	h.svc.WriteOutboxEventPublic(ctx, tx, tenantID, "subscription", sub.ID, "activated", map[string]any{
+		"tenant_id": tenantID.String(),
+		"plan_code": planCode,
+		"status":    "ACTIVE",
+		"notification": map[string]any{
+			"target": "tenant_admin",
+		},
+	})
+
+	return tx.Commit()
+}
+
+func (h *WebhookHandler) markPaymentRequired(ctx context.Context, tenantID uuid.UUID) error {
+	tx, err := h.orm.Tx(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	sub, err := tx.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(tenantID)).
+		Only(ctx)
+	if err != nil {
+		return err
+	}
+
+	// SUSPENDED status represents payment_required (no PAYMENT_REQUIRED status in schema)
+	sub, err = tx.TenantSubscription.UpdateOneID(sub.ID).
+		SetStatus(tenantsubscription.StatusSUSPENDED).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	h.svc.WriteOutboxEventPublic(ctx, tx, tenantID, "subscription", sub.ID, "payment_required", map[string]any{
+		"tenant_id": tenantID.String(),
+		"status":    "SUSPENDED",
+		"notification": map[string]any{
+			"target": "tenant_admin",
+		},
+	})
+
+	return tx.Commit()
+}

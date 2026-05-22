@@ -29,6 +29,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/migrate"
 	handlers "github.com/bengobox/subscription-service/internal/http/handlers"
 	router "github.com/bengobox/subscription-service/internal/http/router"
+	"github.com/bengobox/subscription-service/internal/jobs"
 	"github.com/bengobox/subscription-service/internal/modules/consumers"
 	"github.com/bengobox/subscription-service/internal/modules/outbox"
 	"github.com/bengobox/subscription-service/internal/modules/plans"
@@ -51,6 +52,8 @@ type App struct {
 	orm             *ent.Client
 	outboxPublisher *eventslib.Publisher
 	tenantConsumer  *consumers.TenantCreatedConsumer
+	subscriptionSvc *subscriptions.Service
+	treasuryClient  *serviceclient.Client
 }
 
 func New(ctx context.Context) (*App, error) {
@@ -195,30 +198,35 @@ func New(ctx context.Context) (*App, error) {
 		}
 	}
 
-	// Create subscription service and handler
+	// Create subscription service
 	subscriptionSvc := subscriptions.New(ormClient, log, treasuryClient, cfg.Services.TreasuryAPIKey)
-	subscriptionHandler := handlers.NewSubscriptionHandler(log, ormClient, subscriptionSvc)
-	addonHandler := handlers.NewAddonHandler(log, ormClient)
 
-	// Feature gate handler with Redis caching
+	// Feature gate handler with Redis caching (constructed first — injected into mutation handlers)
 	featureHandler := handlers.NewFeatureHandler(log, subscriptionSvc, redisClient)
 
+	// Subscription, addon, and platform handlers (featureHandler injected for cache invalidation)
+	subscriptionHandler := handlers.NewSubscriptionHandler(log, ormClient, subscriptionSvc, featureHandler)
+	addonHandler := handlers.NewAddonHandler(log, ormClient, subscriptionSvc, treasuryClient, cfg.Services.TreasuryAPIKey, featureHandler)
+
 	// Usage tracking handler (raw SQL — requires UsageEvent Ent schema codegen to create table)
-	usageHandler := handlers.NewUsageHandler(log, dbPool, ormClient)
+	usageHandler := handlers.NewUsageHandler(log, dbPool, ormClient, redisClient)
 
 	// Service charge plan handler
 	serviceChargeHandler := handlers.NewServiceChargeHandler(log, ormClient)
 
 	// Billing and platform admin handlers
-	billingHandler := handlers.NewBillingHandler(log, ormClient)
-	platformHandler := handlers.NewPlatformHandler(log, ormClient)
+	billingHandler := handlers.NewBillingHandler(log, ormClient, treasuryClient, cfg.Services.TreasuryAPIKey)
+	platformHandler := handlers.NewPlatformHandler(log, ormClient, featureHandler)
+
+	// Inbound webhook handler (Treasury payment callbacks)
+	webhookHandler := handlers.NewWebhookHandler(log, ormClient, subscriptionSvc, cfg.Security.APIKey, featureHandler)
 
 	// RBAC module
 	rbacRepo := rbac.NewEntRepository(ormClient)
 	rbacService := rbac.NewService(rbacRepo, log, tenantSyncer)
 	rbacHandler := handlers.NewRBACHandler(log, rbacService, rbacRepo)
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),
@@ -239,6 +247,8 @@ func New(ctx context.Context) (*App, error) {
 		orm:             ormClient,
 		outboxPublisher: outboxPublisher,
 		tenantConsumer:  consumers.NewTenantCreatedConsumer(log, subscriptionSvc),
+		subscriptionSvc: subscriptionSvc,
+		treasuryClient:  treasuryClient,
 	}, nil
 }
 
@@ -251,6 +261,12 @@ func (a *App) Run(ctx context.Context) error {
 			}
 		}()
 		a.log.Info("outbox publisher started")
+	}
+
+	// Start renewal and expiry background jobs
+	if a.orm != nil && a.subscriptionSvc != nil {
+		go jobs.StartRenewalJob(ctx, a.log, a.orm, a.subscriptionSvc, a.treasuryClient, a.cfg.Services.TreasuryAPIKey)
+		a.log.Info("subscription renewal and expiry jobs started")
 	}
 
 	// Start auth.tenant.created consumer for auto-provisioning new tenants

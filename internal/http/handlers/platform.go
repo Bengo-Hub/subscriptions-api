@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -18,15 +19,17 @@ import (
 
 // PlatformHandler handles platform admin endpoints.
 type PlatformHandler struct {
-	log    *zap.Logger
-	client *ent.Client
+	log            *zap.Logger
+	client         *ent.Client
+	featureHandler *FeatureHandler
 }
 
 // NewPlatformHandler creates a new platform handler.
-func NewPlatformHandler(log *zap.Logger, client *ent.Client) *PlatformHandler {
+func NewPlatformHandler(log *zap.Logger, client *ent.Client, featureHandler *FeatureHandler) *PlatformHandler {
 	return &PlatformHandler{
-		log:    log.Named("platform.handler"),
-		client: client,
+		log:            log.Named("platform.handler"),
+		client:         client,
+		featureHandler: featureHandler,
 	}
 }
 
@@ -114,11 +117,11 @@ func (h *PlatformHandler) ListAllSubscriptions(w http.ResponseWriter, r *http.Re
 
 	query := h.client.TenantSubscription.Query().
 		WithPlan().
-		WithTenant().
-		WithProductSubscriptions()
+		WithTenant()
 
 	if status := r.URL.Query().Get("status"); status != "" {
-		query = query.Where(tenantsubscription.StatusEQ(tenantsubscription.Status(status)))
+		// Accept both uppercase (ACTIVE) and lowercase (active) from the frontend
+		query = query.Where(tenantsubscription.StatusEQ(tenantsubscription.Status(strings.ToUpper(status))))
 	}
 
 	total, err := query.Clone().Count(ctx)
@@ -140,31 +143,66 @@ func (h *PlatformHandler) ListAllSubscriptions(w http.ResponseWriter, r *http.Re
 	}
 
 	type subRow struct {
-		ID         string `json:"id"`
-		TenantID   string `json:"tenantId"`
-		TenantName string `json:"tenantName"`
-		PlanCode   string `json:"planCode"`
-		PlanName   string `json:"planName"`
-		Status     string `json:"status"`
-		CreatedAt  string `json:"createdAt"`
+		ID               string  `json:"id"`
+		TenantID         string  `json:"tenantId"`
+		TenantName       string  `json:"tenantName"`
+		TenantSlug       string  `json:"tenantSlug"`
+		PlanCode         string  `json:"planCode"`
+		PlanName         string  `json:"planName"`
+		PlanTier         string  `json:"planTier"`
+		Status           string  `json:"status"`
+		StartDate        string  `json:"startDate"`
+		CurrentPeriodEnd string  `json:"currentPeriodEnd"`
+		MonthlyRevenue   float64 `json:"monthlyRevenue"`
+		Currency         string  `json:"currency"`
 	}
+
+	searchTerm := strings.ToLower(r.URL.Query().Get("search"))
 
 	data := make([]subRow, 0, len(subs))
 	for _, s := range subs {
-		row := subRow{
-			ID:        s.ID.String(),
-			TenantID:  s.TenantID.String(),
-			Status:    string(s.Status),
-			CreatedAt: s.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		}
-		if s.Edges.Plan != nil {
-			row.PlanCode = s.Edges.Plan.PlanCode
-			row.PlanName = s.Edges.Plan.Name
-		}
+		tenantName := ""
+		tenantSlug := ""
 		if s.Edges.Tenant != nil {
-			row.TenantName = s.Edges.Tenant.Name
+			tenantName = s.Edges.Tenant.Name
+			tenantSlug = s.Edges.Tenant.Slug
 		}
-		data = append(data, row)
+
+		// Apply search filter (tenant name or slug contains search term)
+		if searchTerm != "" {
+			if !strings.Contains(strings.ToLower(tenantName), searchTerm) &&
+				!strings.Contains(strings.ToLower(tenantSlug), searchTerm) {
+				continue
+			}
+		}
+
+		planCode := ""
+		planName := ""
+		planTier := ""
+		monthlyRevenue := 0.0
+		currency := "KES"
+		if s.Edges.Plan != nil {
+			planCode = s.Edges.Plan.PlanCode
+			planName = s.Edges.Plan.Name
+			monthlyRevenue = s.Edges.Plan.BasePrice
+			currency = s.Edges.Plan.Currency
+			planTier = derivePlanTier(s.Edges.Plan.PlanCode, s.Edges.Plan.TierOrder)
+		}
+
+		data = append(data, subRow{
+			ID:               s.ID.String(),
+			TenantID:         s.TenantID.String(),
+			TenantName:       tenantName,
+			TenantSlug:       tenantSlug,
+			PlanCode:         planCode,
+			PlanName:         planName,
+			PlanTier:         planTier,
+			Status:           strings.ToLower(string(s.Status)),
+			StartDate:        s.CurrentPeriodStart.Format("2006-01-02T15:04:05Z"),
+			CurrentPeriodEnd: s.CurrentPeriodEnd.Format("2006-01-02T15:04:05Z"),
+			MonthlyRevenue:   monthlyRevenue,
+			Currency:         currency,
+		})
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -274,6 +312,10 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 		sub = created
 	}
 
+	if h.featureHandler != nil {
+		h.featureHandler.InvalidateCache(ctx, tenantID)
+	}
+
 	writeJSON(w, http.StatusOK, sub)
 }
 
@@ -323,6 +365,10 @@ func (h *PlatformHandler) UpdateSubscriptionStatus(w http.ResponseWriter, r *htt
 		h.log.Error("failed to update subscription status", zap.Error(err))
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update subscription"})
 		return
+	}
+
+	if h.featureHandler != nil {
+		h.featureHandler.InvalidateCache(ctx, sub.TenantID)
 	}
 
 	writeJSON(w, http.StatusOK, sub)
@@ -515,6 +561,30 @@ func (h *PlatformHandler) UpdateServiceConfig(w http.ResponseWriter, r *http.Req
 	}
 
 	writeJSON(w, http.StatusOK, cfg)
+}
+
+// derivePlanTier returns a human-readable tier label from the plan code or tier order.
+func derivePlanTier(planCode string, tierOrder int) string {
+	code := strings.ToLower(planCode)
+	switch {
+	case strings.Contains(code, "starter") || tierOrder == 1:
+		return "starter"
+	case strings.Contains(code, "growth") || tierOrder == 2:
+		return "growth"
+	case strings.Contains(code, "professional") || strings.Contains(code, "pro") || tierOrder == 3:
+		return "professional"
+	case strings.Contains(code, "enterprise") || tierOrder >= 4:
+		return "enterprise"
+	case strings.Contains(code, "custom"):
+		return "custom"
+	case strings.Contains(code, "free"):
+		return "free"
+	default:
+		if tierOrder > 0 {
+			return strconv.Itoa(tierOrder)
+		}
+		return strings.ToLower(planCode)
+	}
 }
 
 // DeleteServiceConfig removes a platform-level service config.

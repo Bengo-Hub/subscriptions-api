@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -11,22 +12,25 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
 // UsageHandler accepts usage metric reports from microservices.
 type UsageHandler struct {
-	log *zap.Logger
-	db  *pgxpool.Pool
-	orm *ent.Client
+	log   *zap.Logger
+	db    *pgxpool.Pool
+	orm   *ent.Client
+	cache *redis.Client
 }
 
 // NewUsageHandler creates a new UsageHandler.
-func NewUsageHandler(log *zap.Logger, db *pgxpool.Pool, orm *ent.Client) *UsageHandler {
+func NewUsageHandler(log *zap.Logger, db *pgxpool.Pool, orm *ent.Client, cache *redis.Client) *UsageHandler {
 	return &UsageHandler{
-		log: log.Named("usage.handler"),
-		db:  db,
-		orm: orm,
+		log:   log.Named("usage.handler"),
+		db:    db,
+		orm:   orm,
+		cache: cache,
 	}
 }
 
@@ -75,6 +79,27 @@ func (h *UsageHandler) ReportUsage(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Metadata == nil {
 		req.Metadata = map[string]any{}
+	}
+
+	// Enforce plan limits via Redis counter before recording event
+	if h.cache != nil && h.orm != nil {
+		if remaining, limit, exceeded := h.checkUsageLimit(ctx, tenantID, req.MetricType, req.Value); exceeded {
+			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", limit))
+			w.Header().Set("X-RateLimit-Remaining", "0")
+			w.Header().Set("X-RateLimit-Reset", time.Now().AddDate(0, 1, 0).Format(time.RFC3339))
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error":   "usage limit exceeded",
+				"metric":  req.MetricType,
+				"limit":   fmt.Sprintf("%d", limit),
+			})
+			return
+		} else {
+			// Set headers on allowed requests too (for observability)
+			if limit > 0 {
+				w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", limit))
+				w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
+			}
+		}
 	}
 
 	metadataJSON, _ := json.Marshal(req.Metadata)
@@ -446,6 +471,65 @@ func (h *UsageHandler) queryUsageSummary(ctx context.Context, tenantID uuid.UUID
 		result = append(result, row)
 	}
 	return result, rows.Err()
+}
+
+// checkUsageLimit checks the tenant's current usage against plan limits using Redis counters.
+// Returns (remaining, limit, exceeded). When limit == 0 the metric is unlimited.
+func (h *UsageHandler) checkUsageLimit(ctx context.Context, tenantID uuid.UUID, metricType string, value float64) (remaining, limit int, exceeded bool) {
+	// Fetch plan limits from ORM
+	sub, err := h.orm.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(tenantID)).
+		WithPlan().
+		Only(ctx)
+	if err != nil || sub.Edges.Plan == nil {
+		return 0, 0, false // no subscription or plan found — allow (don't block)
+	}
+
+	planLimits := sub.Edges.Plan.TierLimitsJSON
+	limitKey, ok := limitKeyForMetric(metricType, planLimits)
+	if !ok {
+		return 0, 0, false // no limit configured for this metric
+	}
+
+	var planLimit int
+	switch v := planLimits[limitKey].(type) {
+	case float64:
+		planLimit = int(v)
+	case int:
+		planLimit = v
+	default:
+		return 0, 0, false
+	}
+	if planLimit <= 0 {
+		return 0, 0, false // unlimited
+	}
+
+	// Redis counter key: usage:limit:{tenantID}:{metricType}:{YYYY-MM}
+	period := time.Now().UTC().Format("2006-01")
+	cacheKey := fmt.Sprintf("usage:limit:%s:%s:%s", tenantID.String(), metricType, period)
+
+	// Increment atomically
+	newTotal, err := h.cache.IncrByFloat(ctx, cacheKey, value).Result()
+	if err != nil {
+		// Redis failure → allow the request (fail open)
+		h.log.Warn("redis usage counter failed, allowing request", zap.String("key", cacheKey), zap.Error(err))
+		return 0, planLimit, false
+	}
+
+	// Set TTL on first write: expire at end of next month
+	ttl, _ := h.cache.TTL(ctx, cacheKey).Result()
+	if ttl < 0 {
+		now := time.Now().UTC()
+		expiry := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, time.UTC)
+		_ = h.cache.ExpireAt(ctx, cacheKey, expiry).Err()
+	}
+
+	current := int(newTotal)
+	rem := planLimit - current
+	if rem < 0 {
+		rem = 0
+	}
+	return rem, planLimit, current > planLimit
 }
 
 func parseUsageDateRange(r *http.Request) (time.Time, time.Time) {

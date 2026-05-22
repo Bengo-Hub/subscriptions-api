@@ -15,16 +15,18 @@ import (
 )
 
 type SubscriptionHandler struct {
-	log     *zap.Logger
-	client  *ent.Client
-	service *subscriptions.Service
+	log            *zap.Logger
+	client         *ent.Client
+	service        *subscriptions.Service
+	featureHandler *FeatureHandler
 }
 
-func NewSubscriptionHandler(log *zap.Logger, client *ent.Client, svc *subscriptions.Service) *SubscriptionHandler {
+func NewSubscriptionHandler(log *zap.Logger, client *ent.Client, svc *subscriptions.Service, featureHandler *FeatureHandler) *SubscriptionHandler {
 	return &SubscriptionHandler{
-		log:     log.Named("subscription.handler"),
-		client:  client,
-		service: svc,
+		log:            log.Named("subscription.handler"),
+		client:         client,
+		service:        svc,
+		featureHandler: featureHandler,
 	}
 }
 
@@ -101,6 +103,10 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.featureHandler != nil {
+		h.featureHandler.InvalidateCache(ctx, sub.TenantID)
+	}
+
 	h.respondWithJSON(w, http.StatusCreated, sub)
 }
 
@@ -139,6 +145,10 @@ func (h *SubscriptionHandler) ChangePlan(w http.ResponseWriter, r *http.Request)
 		h.log.Error("failed to change plan", zap.Error(err))
 		h.respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	if h.featureHandler != nil {
+		h.featureHandler.InvalidateCache(ctx, in.TenantID)
 	}
 
 	h.respondWithJSON(w, http.StatusOK, sub)
@@ -275,6 +285,10 @@ func (h *SubscriptionHandler) SwitchPlan(w http.ResponseWriter, r *http.Request)
 		h.log.Error("failed to switch plan", zap.String("sub_id", subIDStr), zap.Error(err))
 		h.respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	if h.featureHandler != nil {
+		h.featureHandler.InvalidateCache(ctx, sub.TenantID)
 	}
 
 	h.respondWithJSON(w, http.StatusOK, sub)

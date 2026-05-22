@@ -28,6 +28,7 @@ func New(
 	billingHandler *handlers.BillingHandler,
 	platformHandler *handlers.PlatformHandler,
 	rbacHandler *handlers.RBACHandler,
+	webhookHandler *handlers.WebhookHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -72,6 +73,11 @@ func New(
 		r.Get("/plans", planHandler.ListPlans)
 		r.Get("/plans/{id}", planHandler.GetPlan)
 		r.Get("/plans/code/{code}", planHandler.GetPlanByCode)
+
+		// S2S webhook routes (API key auth handled inside handler)
+		if webhookHandler != nil {
+			r.Post("/webhooks/treasury/payment-status", webhookHandler.HandleTreasuryPayment)
+		}
 
 		// Public read-only routes that accept optional auth for tenant context
 		if serviceChargeHandler != nil {
@@ -140,6 +146,15 @@ func New(
 			r.Get("/subscriptions/expiring", subscriptionHandler.ListExpiring)
 			// Switch plan by subscription ID — for billing UI plan change flows.
 			r.Put("/subscriptions/{id}/switch-plan", subscriptionHandler.SwitchPlan)
+
+			// Add-on management
+			if addonHandler != nil {
+				r.Route("/addons", func(r chi.Router) {
+					r.Get("/", addonHandler.ListAddons)
+					r.Post("/{feature_code}/purchase", addonHandler.PurchaseAddon)
+					r.Delete("/{feature_code}", addonHandler.RemoveAddon)
+				})
+			}
 
 			// Feature gate checks — used by all microservices for Trinity Authorization
 			if featureHandler != nil {

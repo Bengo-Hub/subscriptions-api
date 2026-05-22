@@ -159,12 +159,10 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 		return nil, fmt.Errorf("lookup plan: %w", err)
 	}
 
-	// 2. Prepare payment intent request for Treasury
+	// 2. For free plans, activate directly without Treasury
 	amount := decimal.NewFromFloat(plan.BasePrice)
 	if amount.IsZero() {
-		// For free plans, we can just create the subscription directly or return a special status
-		// For now, let's assume UI handles free plans by calling CreateSubscription (TRIAL/ACTIVE)
-		return nil, fmt.Errorf("use create endpoint for free plans or trials")
+		return s.activateFreePlan(ctx, in, plan)
 	}
 
 	req := map[string]any{
@@ -342,6 +340,19 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 
 	oldPlanID := sub.PlanID
 
+	// Load old plan for proration calculation
+	oldPlan, _ := s.client.SubscriptionPlan.Get(ctx, oldPlanID)
+
+	// Calculate proration credit for mid-cycle upgrade
+	var prorationCredit float64
+	if oldPlan != nil && oldPlan.BasePrice > 0 && sub.CurrentPeriodEnd.After(time.Now().UTC()) {
+		totalDays := sub.CurrentPeriodEnd.Sub(sub.CurrentPeriodStart).Hours() / 24
+		remainingDays := sub.CurrentPeriodEnd.Sub(time.Now().UTC()).Hours() / 24
+		if totalDays > 0 {
+			prorationCredit = oldPlan.BasePrice * (remainingDays / totalDays)
+		}
+	}
+
 	tx, err := s.client.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("start transaction: %w", err)
@@ -352,25 +363,36 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 		}
 	}()
 
+	// Store proration credit in metadata for next renewal
+	metadata := sub.Metadata
+	if metadata == nil {
+		metadata = map[string]any{}
+	}
+	if prorationCredit > 0 && newPlan.TierOrder > 0 && oldPlan != nil && newPlan.TierOrder > oldPlan.TierOrder {
+		// Upgrade: store credit balance to reduce next renewal charge
+		metadata["proration_credit"] = prorationCredit
+		metadata["proration_credit_expires"] = sub.CurrentPeriodEnd.Format(time.RFC3339)
+	} else if oldPlan != nil && newPlan.TierOrder < oldPlan.TierOrder {
+		// Downgrade: credit carries to next renewal, clear any existing upgrade credit
+		metadata["proration_credit"] = 0
+	}
+
 	sub, err = tx.TenantSubscription.UpdateOneID(sub.ID).
 		SetPlanID(newPlan.ID).
 		SetStatus(tenantsubscription.StatusACTIVE).
+		SetMetadata(metadata).
 		Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("update subscription plan: %w", err)
 	}
 
-	// Determine if upgrade or downgrade
+	// Determine if upgrade or downgrade (reuse oldPlan already loaded for proration)
 	direction := "changed"
-	if newPlan.TierOrder > 0 {
-		// Load old plan to compare
-		oldPlan, _ := s.client.SubscriptionPlan.Get(ctx, oldPlanID)
-		if oldPlan != nil {
-			if newPlan.TierOrder > oldPlan.TierOrder {
-				direction = "upgraded"
-			} else if newPlan.TierOrder < oldPlan.TierOrder {
-				direction = "downgraded"
-			}
+	if newPlan.TierOrder > 0 && oldPlan != nil {
+		if newPlan.TierOrder > oldPlan.TierOrder {
+			direction = "upgraded"
+		} else if newPlan.TierOrder < oldPlan.TierOrder {
+			direction = "downgraded"
 		}
 	}
 
@@ -747,6 +769,73 @@ func (s *Service) ListExpiring(ctx context.Context, days int) ([]ExpiringSubscri
 	return results, nil
 }
 
+// activateFreePlan provisions a free plan subscription without going through Treasury.
+func (s *Service) activateFreePlan(ctx context.Context, in InitiateSubscriptionInput, plan *ent.SubscriptionPlan) (*InitiateSubscriptionResult, error) {
+	now := time.Now().UTC()
+	periodEnd := now.AddDate(0, 1, 0)
+
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("start transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	// Upsert: update if exists, create if not
+	existing, err := tx.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(in.TenantID)).
+		Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, fmt.Errorf("query existing subscription: %w", err)
+	}
+
+	if existing != nil {
+		_, err = tx.TenantSubscription.UpdateOneID(existing.ID).
+			SetPlanID(plan.ID).
+			SetStatus(tenantsubscription.StatusACTIVE).
+			SetCurrentPeriodStart(now).
+			SetCurrentPeriodEnd(periodEnd).
+			ClearCancelledAt().
+			ClearCancelReason().
+			Save(ctx)
+	} else {
+		_, err = tx.TenantSubscription.Create().
+			SetTenantID(in.TenantID).
+			SetPlanID(plan.ID).
+			SetStatus(tenantsubscription.StatusACTIVE).
+			SetCurrentPeriodStart(now).
+			SetCurrentPeriodEnd(periodEnd).
+			Save(ctx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("provision free subscription: %w", err)
+	}
+
+	s.writeOutboxEvent(ctx, tx, in.TenantID, "subscription", in.TenantID, "activated", map[string]any{
+		"tenant_id": in.TenantID.String(),
+		"plan_code": plan.PlanCode,
+		"plan_name": plan.Name,
+		"status":    "ACTIVE",
+		"free_plan": true,
+	})
+
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit: %w", err)
+	}
+
+	zero := decimal.Zero
+	status := "active"
+	return &InitiateSubscriptionResult{
+		IntentID: in.TenantID, // reuse tenant ID as a stable token for free plans
+		Status:   status,
+		Amount:   zero,
+		Currency: plan.Currency,
+	}, nil
+}
+
 // --- Helpers ---
 
 func (s *Service) getSubscription(ctx context.Context, tenantID uuid.UUID) (*ent.TenantSubscription, error) {
@@ -797,6 +886,11 @@ func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.Subscriptio
 	}
 
 	return result
+}
+
+// WriteOutboxEventPublic is the exported wrapper for use by handlers in other packages.
+func (s *Service) WriteOutboxEventPublic(ctx context.Context, tx *ent.Tx, tenantID uuid.UUID, aggregateType string, aggregateID uuid.UUID, eventType string, data map[string]any) {
+	s.writeOutboxEvent(ctx, tx, tenantID, aggregateType, aggregateID, eventType, data)
 }
 
 func (s *Service) writeOutboxEvent(ctx context.Context, tx *ent.Tx, tenantID uuid.UUID, aggregateType string, aggregateID uuid.UUID, eventType string, data map[string]any) {
