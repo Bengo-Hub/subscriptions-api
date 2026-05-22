@@ -9,25 +9,25 @@ import (
 
 // SubscriptionPlan represents a subscription plan entity.
 type SubscriptionPlan struct {
-	ID                      uuid.UUID
-	PlanCode                string
-	Name                    string
-	Description             string
-	BillingCycle            string
-	BasePrice               float64
-	OnetimeAllProductsPrice *float64
-	UseSumBasedPricing      bool
-	Currency                string
-	IsActive                bool
-	IsPublic                bool
-	TierOrder               int
-	TierLimits              map[string]any
-	Metadata                map[string]any
-	ServiceTag              *string
-	CreatedAt               time.Time
-	UpdatedAt               time.Time
-	Features                []*PlanFeature
-	DiscountRules           []map[string]any
+	ID                      uuid.UUID        `json:"id"`
+	PlanCode                string           `json:"planCode"`
+	Name                    string           `json:"name"`
+	Description             string           `json:"description"`
+	BillingCycle            string           `json:"billingCycle"`
+	BasePrice               float64          `json:"basePrice"`
+	OnetimeAllProductsPrice *float64         `json:"onetimeAllProductsPrice,omitempty"`
+	UseSumBasedPricing      bool             `json:"useSumBasedPricing"`
+	Currency                string           `json:"currency"`
+	IsActive                bool             `json:"isActive"`
+	IsPublic                bool             `json:"isPublic"`
+	TierOrder               int              `json:"tierOrder"`
+	TierLimits              map[string]any   `json:"tierLimits"`
+	Metadata                map[string]any   `json:"metadata,omitempty"`
+	ServiceTag              *string          `json:"serviceTag,omitempty"`
+	CreatedAt               time.Time        `json:"createdAt"`
+	UpdatedAt               time.Time        `json:"updatedAt"`
+	Features                []*PlanFeature   `json:"features"`
+	DiscountRules           []map[string]any `json:"discountRules,omitempty"`
 }
 
 // Product represents a subscribable product.
@@ -47,14 +47,14 @@ type Product struct {
 
 // PlanFeature represents a plan feature mapping.
 type PlanFeature struct {
-	ID          uuid.UUID
-	PlanID      uuid.UUID
-	FeatureCode string
-	IsIncluded      bool
-	LimitValue      *int
-	OverageUnitPrice float64
-	Metadata        map[string]any
-	CreatedAt   time.Time
+	ID               uuid.UUID      `json:"id"`
+	PlanID           uuid.UUID      `json:"planId"`
+	FeatureCode      string         `json:"featureCode"`
+	IsIncluded       bool           `json:"isIncluded"`
+	LimitValue       *int           `json:"limitValue,omitempty"`
+	OverageUnitPrice float64        `json:"overageUnitPrice"`
+	Metadata         map[string]any `json:"metadata,omitempty"`
+	CreatedAt        time.Time      `json:"createdAt"`
 }
 
 // Repository abstracts persistence for subscription plans.

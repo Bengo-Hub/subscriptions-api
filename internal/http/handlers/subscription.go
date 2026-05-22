@@ -330,12 +330,22 @@ func (h *SubscriptionHandler) GetSettings(w http.ResponseWriter, r *http.Request
 		metadata = map[string]any{}
 	}
 
+	usageThreshold := 80
+	if v, ok := metadata["usage_threshold"]; ok {
+		switch t := v.(type) {
+		case float64:
+			usageThreshold = int(t)
+		case int:
+			usageThreshold = t
+		}
+	}
+
 	settings := map[string]any{
-		"autoRenew":          metadata["auto_renew"] != false,
-		"emailNotifications": metadata["email_notifications"] != false,
-		"usageAlerts":        metadata["usage_alerts"] != false,
-		"usageThreshold":     metadata["usage_threshold"],
-		"billingEmail":       metadata["billing_email"],
+		"autoRenew":              boolFromMeta(metadata, "auto_renew", true),
+		"billingEmail":           metadata["billing_email"],
+		"notifyBeforeRenewal":    boolFromMeta(metadata, "email_notifications", true),
+		"notifyOnUsageThreshold": boolFromMeta(metadata, "usage_alerts", false),
+		"usageThresholdPercent":  usageThreshold,
 	}
 
 	h.respondWithJSON(w, http.StatusOK, settings)
@@ -380,13 +390,24 @@ func (h *SubscriptionHandler) UpdateSettings(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Merge settings into metadata
+	// Merge settings into metadata — map frontend camelCase keys to storage snake_case keys
 	metadata := sub.Metadata
 	if metadata == nil {
 		metadata = map[string]any{}
 	}
+	keyMap := map[string]string{
+		"autoRenew":              "auto_renew",
+		"billingEmail":           "billing_email",
+		"notifyBeforeRenewal":    "email_notifications",
+		"notifyOnUsageThreshold": "usage_alerts",
+		"usageThresholdPercent":  "usage_threshold",
+	}
 	for k, v := range req {
-		metadata[k] = v
+		if storageKey, ok := keyMap[k]; ok {
+			metadata[storageKey] = v
+		} else {
+			metadata[k] = v
+		}
 	}
 
 	_, err = h.client.TenantSubscription.UpdateOneID(sub.ID).
@@ -431,6 +452,17 @@ func (h *SubscriptionHandler) ListExpiring(w http.ResponseWriter, r *http.Reques
 	}
 
 	h.respondWithJSON(w, http.StatusOK, results)
+}
+
+func boolFromMeta(m map[string]any, key string, defaultVal bool) bool {
+	v, ok := m[key]
+	if !ok {
+		return defaultVal
+	}
+	if b, ok := v.(bool); ok {
+		return b
+	}
+	return defaultVal
 }
 
 func (h *SubscriptionHandler) respondWithError(w http.ResponseWriter, code int, message string) {

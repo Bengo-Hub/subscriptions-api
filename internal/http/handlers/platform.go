@@ -45,31 +45,27 @@ func NewPlatformHandler(log *zap.Logger, client *ent.Client, featureHandler *Fea
 func (h *PlatformHandler) GetPlatformStats(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	totalPlans, err := h.client.SubscriptionPlan.Query().
+	totalPlans, _ := h.client.SubscriptionPlan.Query().Count(ctx)
+	activePlans, _ := h.client.SubscriptionPlan.Query().
 		Where(subscriptionplan.IsActive(true)).
 		Count(ctx)
-	if err != nil {
-		h.log.Error("failed to count plans", zap.Error(err))
-		totalPlans = 0
-	}
-
-	totalSubscriptions, err := h.client.TenantSubscription.Query().Count(ctx)
-	if err != nil {
-		h.log.Error("failed to count subscriptions", zap.Error(err))
-		totalSubscriptions = 0
-	}
-
-	activeSubscriptions, err := h.client.TenantSubscription.Query().
-		Where(tenantsubscription.StatusIn("ACTIVE", "TRIAL")).
+	totalSubscriptions, _ := h.client.TenantSubscription.Query().Count(ctx)
+	activeSubscriptions, _ := h.client.TenantSubscription.Query().
+		Where(tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE)).
 		Count(ctx)
-	if err != nil {
-		h.log.Error("failed to count active subscriptions", zap.Error(err))
-		activeSubscriptions = 0
-	}
+	trialingCount, _ := h.client.TenantSubscription.Query().
+		Where(tenantsubscription.StatusEQ(tenantsubscription.StatusTRIAL)).
+		Count(ctx)
+	churnedCount, _ := h.client.TenantSubscription.Query().
+		Where(tenantsubscription.StatusIn(
+			tenantsubscription.StatusCANCELLED,
+			tenantsubscription.StatusEXPIRED,
+		)).
+		Count(ctx)
 
-	// Calculate MRR from active plans
+	// MRR: sum base prices for ACTIVE subscriptions only
 	activeSubs, err := h.client.TenantSubscription.Query().
-		Where(tenantsubscription.StatusIn("ACTIVE", "TRIAL")).
+		Where(tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE)).
 		WithPlan().
 		All(ctx)
 	mrr := 0.0
@@ -83,8 +79,11 @@ func (h *PlatformHandler) GetPlatformStats(w http.ResponseWriter, r *http.Reques
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"totalPlans":          totalPlans,
+		"activePlans":         activePlans,
 		"totalSubscriptions":  totalSubscriptions,
 		"activeSubscriptions": activeSubscriptions,
+		"trialingCount":       trialingCount,
+		"churnedCount":        churnedCount,
 		"mrr":                 mrr,
 		"currency":            "KES",
 	})
@@ -402,8 +401,10 @@ func (h *PlatformHandler) ListTenants(w http.ResponseWriter, r *http.Request) {
 		Name               string `json:"name"`
 		Slug               string `json:"slug"`
 		SubscriptionStatus string `json:"subscriptionStatus,omitempty"`
+		SubscriptionID     string `json:"subscriptionId,omitempty"`
 		PlanName           string `json:"planName,omitempty"`
 		PlanCode           string `json:"planCode,omitempty"`
+		CurrentPeriodEnd   string `json:"currentPeriodEnd,omitempty"`
 	}
 
 	data := make([]tenantRow, 0, len(tenants))
@@ -416,6 +417,10 @@ func (h *PlatformHandler) ListTenants(w http.ResponseWriter, r *http.Request) {
 		if len(t.Edges.Subscriptions) > 0 {
 			sub := t.Edges.Subscriptions[0]
 			row.SubscriptionStatus = string(sub.Status)
+			row.SubscriptionID = sub.ID.String()
+			if !sub.CurrentPeriodEnd.IsZero() {
+				row.CurrentPeriodEnd = sub.CurrentPeriodEnd.Format("2006-01-02T15:04:05Z")
+			}
 			if sub.Edges.Plan != nil {
 				row.PlanName = sub.Edges.Plan.Name
 				row.PlanCode = sub.Edges.Plan.PlanCode
