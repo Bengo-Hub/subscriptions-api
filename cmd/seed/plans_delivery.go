@@ -126,6 +126,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"promo_codes",
 				"group_ordering",
 				"paystack_gateway",
+				"pos_terminal",
 			},
 		},
 		{
@@ -169,6 +170,8 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"group_ordering",
 				"paystack_gateway",
 				"pos_integration",
+				"pos_terminal",
+				"kds",
 				"route_optimization",
 				"priority_support",
 				"api_webhooks",
@@ -266,6 +269,7 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"promo_codes",
 				"group_ordering",
 				"paystack_gateway",
+				"pos_terminal",
 			},
 		},
 		{
@@ -309,6 +313,8 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"group_ordering",
 				"paystack_gateway",
 				"pos_integration",
+				"pos_terminal",
+				"kds",
 				"route_optimization",
 				"priority_support",
 				"api_webhooks",

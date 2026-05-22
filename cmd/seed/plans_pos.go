@@ -56,7 +56,7 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			price:        3500.0,
 			tierOrder:    2,
 			tierLimits:   map[string]any{"max_devices": 5, "max_cashiers": 10},
-			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management"},
+			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management", "kds"},
 		},
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:device:10")),
@@ -67,7 +67,7 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			price:        6000.0,
 			tierOrder:    3,
 			tierLimits:   map[string]any{"max_devices": 10, "max_cashiers": -1},
-			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management", "multi_outlet", "advanced_analytics"},
+			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management", "multi_outlet", "advanced_analytics", "kds"},
 		},
 		// ── Annual device-seat subscriptions ──────────────────────────────
 		{
@@ -90,7 +90,7 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			price:        35000.0,
 			tierOrder:    2,
 			tierLimits:   map[string]any{"max_devices": 5, "max_cashiers": 10},
-			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management"},
+			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management", "kds"},
 		},
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:device:10:yearly")),
@@ -124,7 +124,7 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			price:        120000.0,
 			tierOrder:    11,
 			tierLimits:   map[string]any{"max_devices": -1, "max_cashiers": -1},
-			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management", "multi_outlet", "advanced_analytics", "api_access"},
+			features:     []string{"pos_terminal", "order_management", "receipt_printing", "daily_reports", "mpesa_pos", "multi_cashier", "shift_reports", "table_management", "multi_outlet", "advanced_analytics", "api_access", "kds"},
 		},
 	}
 
