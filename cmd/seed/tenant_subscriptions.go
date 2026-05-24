@@ -79,6 +79,20 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 			periodStart: now,
 			periodEnd:   trialEnd,
 		},
+		{
+			// codevertex-demo: permanent PROFESSIONAL subscription for cross-platform demos.
+			// is_demo=true in the JWT already bypasses enforcement; this record exists for
+			// subscription-api reporting and admin tooling completeness.
+			subID:       uuid.MustParse("30000000-0000-0000-0000-000000000005"),
+			slug:        "codevertex-demo",
+			name:        "Codevertex Demo",
+			plan:        "ORDERING_PROFESSIONAL",
+			bundleCode:  "ordering",
+			status:      tenantsubscription.StatusACTIVE,
+			periodStart: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+			periodEnd:   time.Date(2099, 12, 31, 23, 59, 59, 0, time.UTC),
+			extraProducts: []string{"pos", "inventory"},
+		},
 	}
 
 	planIDs := map[string]uuid.UUID{
