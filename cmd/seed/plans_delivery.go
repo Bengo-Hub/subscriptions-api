@@ -66,8 +66,18 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"inventory_max_warehouses":     1,
 				"logistics_max_active_routes":  5,
 				"logistics_max_zones":          1,
-				"cafe_website_enabled":         true,
-				"cafe_website_max_menu_items":  50,
+				// Table management
+				"tables_enabled":    true,
+				"tables_max_tables": 20,
+				// Cafe-website public page controls
+				"cafe_website_enabled":                true,
+				"cafe_website_max_menu_items":         50,
+				"cafe_website_max_events_published":   5,
+				"cafe_website_max_team_displayed":     6,
+				"cafe_website_bookings_enabled":       true,
+				"cafe_website_loyalty_enabled":        true,
+				// Overage: extra events published beyond limit
+				"overage_event_published_price_per_month": 200.0,
 			},
 			features: []string{
 				"customer_portal",
@@ -84,6 +94,11 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"basic_inventory_access",
 				"basic_logistics_access",
 				"cafe_website_basic",
+				"cafe_website_events",
+				"cafe_website_booking",
+				"cafe_website_team_showcase",
+				"cafe_website_loyalty",
+				"tables_floor_plan",
 			},
 		},
 		{
@@ -109,6 +124,17 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"webhook_calls_per_day":              1000,
 				"overage_rider_price_per_month":      250.0,
 				"overage_orders_price_per_100_month": 375.0,
+				// Table management
+				"tables_enabled":    true,
+				"tables_max_tables": 50,
+				// Cafe-website
+				"cafe_website_enabled":                true,
+				"cafe_website_max_menu_items":         200,
+				"cafe_website_max_events_published":   20,
+				"cafe_website_max_team_displayed":     15,
+				"cafe_website_bookings_enabled":       true,
+				"cafe_website_loyalty_enabled":        true,
+				"overage_event_published_price_per_month": 150.0,
 			},
 			features: []string{
 				"customer_portal",
@@ -127,6 +153,11 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"group_ordering",
 				"paystack_gateway",
 				"pos_terminal",
+				"cafe_website_events",
+				"cafe_website_booking",
+				"cafe_website_team_showcase",
+				"cafe_website_loyalty",
+				"tables_floor_plan",
 			},
 		},
 		{
@@ -152,6 +183,16 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"webhook_calls_per_day":              10000,
 				"overage_rider_price_per_month":      250.0,
 				"overage_orders_price_per_100_month": 375.0,
+				// Table management
+				"tables_enabled":    true,
+				"tables_max_tables": -1, // Unlimited
+				// Cafe-website — fully unlimited for professional
+				"cafe_website_enabled":              true,
+				"cafe_website_max_menu_items":       -1,
+				"cafe_website_max_events_published": -1,
+				"cafe_website_max_team_displayed":   -1,
+				"cafe_website_bookings_enabled":     true,
+				"cafe_website_loyalty_enabled":      true,
 			},
 			features: []string{
 				"customer_portal",
@@ -178,6 +219,11 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"white_labeling",
 				"google_maps",
 				"premium_support",
+				"cafe_website_events",
+				"cafe_website_booking",
+				"cafe_website_team_showcase",
+				"cafe_website_loyalty",
+				"tables_floor_plan",
 			},
 		},
 
@@ -209,8 +255,17 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"inventory_max_warehouses":           1,
 				"logistics_max_active_routes":        5,
 				"logistics_max_zones":                1,
-				"cafe_website_enabled":               true,
-				"cafe_website_max_menu_items":        50,
+				// Table management
+				"tables_enabled":    true,
+				"tables_max_tables": 20,
+				// Cafe-website
+				"cafe_website_enabled":                    true,
+				"cafe_website_max_menu_items":             50,
+				"cafe_website_max_events_published":       5,
+				"cafe_website_max_team_displayed":         6,
+				"cafe_website_bookings_enabled":           true,
+				"cafe_website_loyalty_enabled":            true,
+				"overage_event_published_price_per_month": 200.0,
 			},
 			features: []string{
 				"customer_portal",
@@ -227,6 +282,11 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"basic_inventory_access",
 				"basic_logistics_access",
 				"cafe_website_basic",
+				"cafe_website_events",
+				"cafe_website_booking",
+				"cafe_website_team_showcase",
+				"cafe_website_loyalty",
+				"tables_floor_plan",
 			},
 		},
 		{
@@ -252,6 +312,17 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"webhook_calls_per_day":              1000,
 				"overage_rider_price_per_month":      250.0,
 				"overage_orders_price_per_100_month": 375.0,
+				// Table management
+				"tables_enabled":    true,
+				"tables_max_tables": 50,
+				// Cafe-website
+				"cafe_website_enabled":                    true,
+				"cafe_website_max_menu_items":             200,
+				"cafe_website_max_events_published":       20,
+				"cafe_website_max_team_displayed":         15,
+				"cafe_website_bookings_enabled":           true,
+				"cafe_website_loyalty_enabled":            true,
+				"overage_event_published_price_per_month": 150.0,
 			},
 			features: []string{
 				"customer_portal",
@@ -270,6 +341,11 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"group_ordering",
 				"paystack_gateway",
 				"pos_terminal",
+				"cafe_website_events",
+				"cafe_website_booking",
+				"cafe_website_team_showcase",
+				"cafe_website_loyalty",
+				"tables_floor_plan",
 			},
 		},
 		{
@@ -295,6 +371,16 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"webhook_calls_per_day":              10000,
 				"overage_rider_price_per_month":      250.0,
 				"overage_orders_price_per_100_month": 375.0,
+				// Table management
+				"tables_enabled":    true,
+				"tables_max_tables": -1,
+				// Cafe-website — fully unlimited
+				"cafe_website_enabled":              true,
+				"cafe_website_max_menu_items":       -1,
+				"cafe_website_max_events_published": -1,
+				"cafe_website_max_team_displayed":   -1,
+				"cafe_website_bookings_enabled":     true,
+				"cafe_website_loyalty_enabled":      true,
 			},
 			features: []string{
 				"customer_portal",
@@ -321,6 +407,11 @@ func seedSubscriptionPlans(ctx context.Context, tx *ent.Tx) error {
 				"white_labeling",
 				"google_maps",
 				"premium_support",
+				"cafe_website_events",
+				"cafe_website_booking",
+				"cafe_website_team_showcase",
+				"cafe_website_loyalty",
+				"tables_floor_plan",
 			},
 		},
 	}
