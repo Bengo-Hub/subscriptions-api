@@ -116,6 +116,11 @@ func ServiceTag(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldServiceTag, v))
 }
 
+// FreeTrialDays applies equality check predicate on the "free_trial_days" field. It's identical to FreeTrialDaysEQ.
+func FreeTrialDays(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldFreeTrialDays, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldCreatedAt, v))
@@ -714,6 +719,46 @@ func ServiceTagEqualFold(v string) predicate.SubscriptionPlan {
 // ServiceTagContainsFold applies the ContainsFold predicate on the "service_tag" field.
 func ServiceTagContainsFold(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldContainsFold(FieldServiceTag, v))
+}
+
+// FreeTrialDaysEQ applies the EQ predicate on the "free_trial_days" field.
+func FreeTrialDaysEQ(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldFreeTrialDays, v))
+}
+
+// FreeTrialDaysNEQ applies the NEQ predicate on the "free_trial_days" field.
+func FreeTrialDaysNEQ(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldFreeTrialDays, v))
+}
+
+// FreeTrialDaysIn applies the In predicate on the "free_trial_days" field.
+func FreeTrialDaysIn(vs ...int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldFreeTrialDays, vs...))
+}
+
+// FreeTrialDaysNotIn applies the NotIn predicate on the "free_trial_days" field.
+func FreeTrialDaysNotIn(vs ...int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldFreeTrialDays, vs...))
+}
+
+// FreeTrialDaysGT applies the GT predicate on the "free_trial_days" field.
+func FreeTrialDaysGT(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGT(FieldFreeTrialDays, v))
+}
+
+// FreeTrialDaysGTE applies the GTE predicate on the "free_trial_days" field.
+func FreeTrialDaysGTE(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGTE(FieldFreeTrialDays, v))
+}
+
+// FreeTrialDaysLT applies the LT predicate on the "free_trial_days" field.
+func FreeTrialDaysLT(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLT(FieldFreeTrialDays, v))
+}
+
+// FreeTrialDaysLTE applies the LTE predicate on the "free_trial_days" field.
+func FreeTrialDaysLTE(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLTE(FieldFreeTrialDays, v))
 }
 
 // DiscountRulesIsNil applies the IsNil predicate on the "discount_rules" field.

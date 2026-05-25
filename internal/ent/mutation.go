@@ -10053,6 +10053,8 @@ type SubscriptionPlanMutation struct {
 	tier_limits_json                      *map[string]interface{}
 	plan_type                             *subscriptionplan.PlanType
 	service_tag                           *string
+	free_trial_days                       *int
+	addfree_trial_days                    *int
 	discount_rules                        *[]map[string]interface{}
 	appenddiscount_rules                  []map[string]interface{}
 	metadata                              *map[string]interface{}
@@ -10784,6 +10786,62 @@ func (m *SubscriptionPlanMutation) ResetServiceTag() {
 	delete(m.clearedFields, subscriptionplan.FieldServiceTag)
 }
 
+// SetFreeTrialDays sets the "free_trial_days" field.
+func (m *SubscriptionPlanMutation) SetFreeTrialDays(i int) {
+	m.free_trial_days = &i
+	m.addfree_trial_days = nil
+}
+
+// FreeTrialDays returns the value of the "free_trial_days" field in the mutation.
+func (m *SubscriptionPlanMutation) FreeTrialDays() (r int, exists bool) {
+	v := m.free_trial_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFreeTrialDays returns the old "free_trial_days" field's value of the SubscriptionPlan entity.
+// If the SubscriptionPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionPlanMutation) OldFreeTrialDays(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFreeTrialDays is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFreeTrialDays requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFreeTrialDays: %w", err)
+	}
+	return oldValue.FreeTrialDays, nil
+}
+
+// AddFreeTrialDays adds i to the "free_trial_days" field.
+func (m *SubscriptionPlanMutation) AddFreeTrialDays(i int) {
+	if m.addfree_trial_days != nil {
+		*m.addfree_trial_days += i
+	} else {
+		m.addfree_trial_days = &i
+	}
+}
+
+// AddedFreeTrialDays returns the value that was added to the "free_trial_days" field in this mutation.
+func (m *SubscriptionPlanMutation) AddedFreeTrialDays() (r int, exists bool) {
+	v := m.addfree_trial_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetFreeTrialDays resets all changes to the "free_trial_days" field.
+func (m *SubscriptionPlanMutation) ResetFreeTrialDays() {
+	m.free_trial_days = nil
+	m.addfree_trial_days = nil
+}
+
 // SetDiscountRules sets the "discount_rules" field.
 func (m *SubscriptionPlanMutation) SetDiscountRules(value []map[string]interface{}) {
 	m.discount_rules = &value
@@ -11207,7 +11265,7 @@ func (m *SubscriptionPlanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SubscriptionPlanMutation) Fields() []string {
-	fields := make([]string, 0, 18)
+	fields := make([]string, 0, 19)
 	if m.plan_code != nil {
 		fields = append(fields, subscriptionplan.FieldPlanCode)
 	}
@@ -11249,6 +11307,9 @@ func (m *SubscriptionPlanMutation) Fields() []string {
 	}
 	if m.service_tag != nil {
 		fields = append(fields, subscriptionplan.FieldServiceTag)
+	}
+	if m.free_trial_days != nil {
+		fields = append(fields, subscriptionplan.FieldFreeTrialDays)
 	}
 	if m.discount_rules != nil {
 		fields = append(fields, subscriptionplan.FieldDiscountRules)
@@ -11298,6 +11359,8 @@ func (m *SubscriptionPlanMutation) Field(name string) (ent.Value, bool) {
 		return m.PlanType()
 	case subscriptionplan.FieldServiceTag:
 		return m.ServiceTag()
+	case subscriptionplan.FieldFreeTrialDays:
+		return m.FreeTrialDays()
 	case subscriptionplan.FieldDiscountRules:
 		return m.DiscountRules()
 	case subscriptionplan.FieldMetadata:
@@ -11343,6 +11406,8 @@ func (m *SubscriptionPlanMutation) OldField(ctx context.Context, name string) (e
 		return m.OldPlanType(ctx)
 	case subscriptionplan.FieldServiceTag:
 		return m.OldServiceTag(ctx)
+	case subscriptionplan.FieldFreeTrialDays:
+		return m.OldFreeTrialDays(ctx)
 	case subscriptionplan.FieldDiscountRules:
 		return m.OldDiscountRules(ctx)
 	case subscriptionplan.FieldMetadata:
@@ -11458,6 +11523,13 @@ func (m *SubscriptionPlanMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetServiceTag(v)
 		return nil
+	case subscriptionplan.FieldFreeTrialDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFreeTrialDays(v)
+		return nil
 	case subscriptionplan.FieldDiscountRules:
 		v, ok := value.([]map[string]interface{})
 		if !ok {
@@ -11503,6 +11575,9 @@ func (m *SubscriptionPlanMutation) AddedFields() []string {
 	if m.addtier_order != nil {
 		fields = append(fields, subscriptionplan.FieldTierOrder)
 	}
+	if m.addfree_trial_days != nil {
+		fields = append(fields, subscriptionplan.FieldFreeTrialDays)
+	}
 	return fields
 }
 
@@ -11517,6 +11592,8 @@ func (m *SubscriptionPlanMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedOnetimeAllProductsPrice()
 	case subscriptionplan.FieldTierOrder:
 		return m.AddedTierOrder()
+	case subscriptionplan.FieldFreeTrialDays:
+		return m.AddedFreeTrialDays()
 	}
 	return nil, false
 }
@@ -11546,6 +11623,13 @@ func (m *SubscriptionPlanMutation) AddField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddTierOrder(v)
+		return nil
+	case subscriptionplan.FieldFreeTrialDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFreeTrialDays(v)
 		return nil
 	}
 	return fmt.Errorf("unknown SubscriptionPlan numeric field %s", name)
@@ -11642,6 +11726,9 @@ func (m *SubscriptionPlanMutation) ResetField(name string) error {
 		return nil
 	case subscriptionplan.FieldServiceTag:
 		m.ResetServiceTag()
+		return nil
+	case subscriptionplan.FieldFreeTrialDays:
+		m.ResetFreeTrialDays()
 		return nil
 	case subscriptionplan.FieldDiscountRules:
 		m.ResetDiscountRules()

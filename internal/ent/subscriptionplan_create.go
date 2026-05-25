@@ -184,6 +184,20 @@ func (_c *SubscriptionPlanCreate) SetNillableServiceTag(v *string) *Subscription
 	return _c
 }
 
+// SetFreeTrialDays sets the "free_trial_days" field.
+func (_c *SubscriptionPlanCreate) SetFreeTrialDays(v int) *SubscriptionPlanCreate {
+	_c.mutation.SetFreeTrialDays(v)
+	return _c
+}
+
+// SetNillableFreeTrialDays sets the "free_trial_days" field if the given value is not nil.
+func (_c *SubscriptionPlanCreate) SetNillableFreeTrialDays(v *int) *SubscriptionPlanCreate {
+	if v != nil {
+		_c.SetFreeTrialDays(*v)
+	}
+	return _c
+}
+
 // SetDiscountRules sets the "discount_rules" field.
 func (_c *SubscriptionPlanCreate) SetDiscountRules(v []map[string]interface{}) *SubscriptionPlanCreate {
 	_c.mutation.SetDiscountRules(v)
@@ -361,6 +375,10 @@ func (_c *SubscriptionPlanCreate) defaults() {
 		v := subscriptionplan.DefaultPlanType
 		_c.mutation.SetPlanType(v)
 	}
+	if _, ok := _c.mutation.FreeTrialDays(); !ok {
+		v := subscriptionplan.DefaultFreeTrialDays
+		_c.mutation.SetFreeTrialDays(v)
+	}
 	if _, ok := _c.mutation.DiscountRules(); !ok {
 		v := subscriptionplan.DefaultDiscountRules
 		_c.mutation.SetDiscountRules(v)
@@ -437,6 +455,9 @@ func (_c *SubscriptionPlanCreate) check() error {
 		if err := subscriptionplan.PlanTypeValidator(v); err != nil {
 			return &ValidationError{Name: "plan_type", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.plan_type": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.FreeTrialDays(); !ok {
+		return &ValidationError{Name: "free_trial_days", err: errors.New(`ent: missing required field "SubscriptionPlan.free_trial_days"`)}
 	}
 	if _, ok := _c.mutation.Metadata(); !ok {
 		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required field "SubscriptionPlan.metadata"`)}
@@ -538,6 +559,10 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 	if value, ok := _c.mutation.ServiceTag(); ok {
 		_spec.SetField(subscriptionplan.FieldServiceTag, field.TypeString, value)
 		_node.ServiceTag = &value
+	}
+	if value, ok := _c.mutation.FreeTrialDays(); ok {
+		_spec.SetField(subscriptionplan.FieldFreeTrialDays, field.TypeInt, value)
+		_node.FreeTrialDays = value
 	}
 	if value, ok := _c.mutation.DiscountRules(); ok {
 		_spec.SetField(subscriptionplan.FieldDiscountRules, field.TypeJSON, value)
@@ -875,6 +900,24 @@ func (u *SubscriptionPlanUpsert) ClearServiceTag() *SubscriptionPlanUpsert {
 	return u
 }
 
+// SetFreeTrialDays sets the "free_trial_days" field.
+func (u *SubscriptionPlanUpsert) SetFreeTrialDays(v int) *SubscriptionPlanUpsert {
+	u.Set(subscriptionplan.FieldFreeTrialDays, v)
+	return u
+}
+
+// UpdateFreeTrialDays sets the "free_trial_days" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsert) UpdateFreeTrialDays() *SubscriptionPlanUpsert {
+	u.SetExcluded(subscriptionplan.FieldFreeTrialDays)
+	return u
+}
+
+// AddFreeTrialDays adds v to the "free_trial_days" field.
+func (u *SubscriptionPlanUpsert) AddFreeTrialDays(v int) *SubscriptionPlanUpsert {
+	u.Add(subscriptionplan.FieldFreeTrialDays, v)
+	return u
+}
+
 // SetDiscountRules sets the "discount_rules" field.
 func (u *SubscriptionPlanUpsert) SetDiscountRules(v []map[string]interface{}) *SubscriptionPlanUpsert {
 	u.Set(subscriptionplan.FieldDiscountRules, v)
@@ -1203,6 +1246,27 @@ func (u *SubscriptionPlanUpsertOne) UpdateServiceTag() *SubscriptionPlanUpsertOn
 func (u *SubscriptionPlanUpsertOne) ClearServiceTag() *SubscriptionPlanUpsertOne {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.ClearServiceTag()
+	})
+}
+
+// SetFreeTrialDays sets the "free_trial_days" field.
+func (u *SubscriptionPlanUpsertOne) SetFreeTrialDays(v int) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetFreeTrialDays(v)
+	})
+}
+
+// AddFreeTrialDays adds v to the "free_trial_days" field.
+func (u *SubscriptionPlanUpsertOne) AddFreeTrialDays(v int) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddFreeTrialDays(v)
+	})
+}
+
+// UpdateFreeTrialDays sets the "free_trial_days" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertOne) UpdateFreeTrialDays() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateFreeTrialDays()
 	})
 }
 
@@ -1708,6 +1772,27 @@ func (u *SubscriptionPlanUpsertBulk) UpdateServiceTag() *SubscriptionPlanUpsertB
 func (u *SubscriptionPlanUpsertBulk) ClearServiceTag() *SubscriptionPlanUpsertBulk {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.ClearServiceTag()
+	})
+}
+
+// SetFreeTrialDays sets the "free_trial_days" field.
+func (u *SubscriptionPlanUpsertBulk) SetFreeTrialDays(v int) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetFreeTrialDays(v)
+	})
+}
+
+// AddFreeTrialDays adds v to the "free_trial_days" field.
+func (u *SubscriptionPlanUpsertBulk) AddFreeTrialDays(v int) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddFreeTrialDays(v)
+	})
+}
+
+// UpdateFreeTrialDays sets the "free_trial_days" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertBulk) UpdateFreeTrialDays() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateFreeTrialDays()
 	})
 }
 

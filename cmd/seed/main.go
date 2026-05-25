@@ -67,9 +67,9 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed products: %w", err)
 	}
 
-	// 2. Seed subscription plans (Starter, Growth, Professional — monthly + yearly)
-	if err := seedSubscriptionPlans(ctx, tx); err != nil {
-		return fmt.Errorf("seed plans: %w", err)
+	// 2. Seed ordering plans (Starter, Growth, Professional — monthly + yearly)
+	if err := seedOrderingPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed ordering plans: %w", err)
 	}
 
 	// 2.5 Seed TruLoad org-level plans (Starter, Growth, Professional + License)

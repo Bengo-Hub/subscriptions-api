@@ -44,6 +44,8 @@ const (
 	FieldPlanType = "plan_type"
 	// FieldServiceTag holds the string denoting the service_tag field in the database.
 	FieldServiceTag = "service_tag"
+	// FieldFreeTrialDays holds the string denoting the free_trial_days field in the database.
+	FieldFreeTrialDays = "free_trial_days"
 	// FieldDiscountRules holds the string denoting the discount_rules field in the database.
 	FieldDiscountRules = "discount_rules"
 	// FieldMetadata holds the string denoting the metadata field in the database.
@@ -109,6 +111,7 @@ var Columns = []string{
 	FieldTierLimitsJSON,
 	FieldPlanType,
 	FieldServiceTag,
+	FieldFreeTrialDays,
 	FieldDiscountRules,
 	FieldMetadata,
 	FieldCreatedAt,
@@ -144,6 +147,8 @@ var (
 	DefaultIsPublic bool
 	// DefaultTierLimitsJSON holds the default value on creation for the "tier_limits_json" field.
 	DefaultTierLimitsJSON map[string]interface{}
+	// DefaultFreeTrialDays holds the default value on creation for the "free_trial_days" field.
+	DefaultFreeTrialDays int
 	// DefaultDiscountRules holds the default value on creation for the "discount_rules" field.
 	DefaultDiscountRules []map[string]interface{}
 	// DefaultMetadata holds the default value on creation for the "metadata" field.
@@ -257,6 +262,11 @@ func ByPlanType(opts ...sql.OrderTermOption) OrderOption {
 // ByServiceTag orders the results by the service_tag field.
 func ByServiceTag(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldServiceTag, opts...).ToFunc()
+}
+
+// ByFreeTrialDays orders the results by the free_trial_days field.
+func ByFreeTrialDays(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFreeTrialDays, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

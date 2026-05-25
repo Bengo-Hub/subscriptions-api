@@ -63,6 +63,9 @@ func (SubscriptionPlan) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("Service this plan belongs to: ordering, truload, logistics, inventory, erp, pos, marketflow, cafe_website. Null = bundle or platform-wide."),
+		field.Int("free_trial_days").
+			Default(14).
+			Comment("Number of free trial days for new subscribers. Platform admins can override per plan. 0 = no trial."),
 		field.JSON("discount_rules", []map[string]any{}).
 			Default([]map[string]any{}).
 			Optional().

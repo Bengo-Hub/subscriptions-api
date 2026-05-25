@@ -261,6 +261,27 @@ func (_u *SubscriptionPlanUpdate) ClearServiceTag() *SubscriptionPlanUpdate {
 	return _u
 }
 
+// SetFreeTrialDays sets the "free_trial_days" field.
+func (_u *SubscriptionPlanUpdate) SetFreeTrialDays(v int) *SubscriptionPlanUpdate {
+	_u.mutation.ResetFreeTrialDays()
+	_u.mutation.SetFreeTrialDays(v)
+	return _u
+}
+
+// SetNillableFreeTrialDays sets the "free_trial_days" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillableFreeTrialDays(v *int) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetFreeTrialDays(*v)
+	}
+	return _u
+}
+
+// AddFreeTrialDays adds value to the "free_trial_days" field.
+func (_u *SubscriptionPlanUpdate) AddFreeTrialDays(v int) *SubscriptionPlanUpdate {
+	_u.mutation.AddFreeTrialDays(v)
+	return _u
+}
+
 // SetDiscountRules sets the "discount_rules" field.
 func (_u *SubscriptionPlanUpdate) SetDiscountRules(v []map[string]interface{}) *SubscriptionPlanUpdate {
 	_u.mutation.SetDiscountRules(v)
@@ -572,6 +593,12 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if _u.mutation.ServiceTagCleared() {
 		_spec.ClearField(subscriptionplan.FieldServiceTag, field.TypeString)
+	}
+	if value, ok := _u.mutation.FreeTrialDays(); ok {
+		_spec.SetField(subscriptionplan.FieldFreeTrialDays, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedFreeTrialDays(); ok {
+		_spec.AddField(subscriptionplan.FieldFreeTrialDays, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.DiscountRules(); ok {
 		_spec.SetField(subscriptionplan.FieldDiscountRules, field.TypeJSON, value)
@@ -1017,6 +1044,27 @@ func (_u *SubscriptionPlanUpdateOne) ClearServiceTag() *SubscriptionPlanUpdateOn
 	return _u
 }
 
+// SetFreeTrialDays sets the "free_trial_days" field.
+func (_u *SubscriptionPlanUpdateOne) SetFreeTrialDays(v int) *SubscriptionPlanUpdateOne {
+	_u.mutation.ResetFreeTrialDays()
+	_u.mutation.SetFreeTrialDays(v)
+	return _u
+}
+
+// SetNillableFreeTrialDays sets the "free_trial_days" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillableFreeTrialDays(v *int) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetFreeTrialDays(*v)
+	}
+	return _u
+}
+
+// AddFreeTrialDays adds value to the "free_trial_days" field.
+func (_u *SubscriptionPlanUpdateOne) AddFreeTrialDays(v int) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddFreeTrialDays(v)
+	return _u
+}
+
 // SetDiscountRules sets the "discount_rules" field.
 func (_u *SubscriptionPlanUpdateOne) SetDiscountRules(v []map[string]interface{}) *SubscriptionPlanUpdateOne {
 	_u.mutation.SetDiscountRules(v)
@@ -1358,6 +1406,12 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 	}
 	if _u.mutation.ServiceTagCleared() {
 		_spec.ClearField(subscriptionplan.FieldServiceTag, field.TypeString)
+	}
+	if value, ok := _u.mutation.FreeTrialDays(); ok {
+		_spec.SetField(subscriptionplan.FieldFreeTrialDays, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedFreeTrialDays(); ok {
+		_spec.AddField(subscriptionplan.FieldFreeTrialDays, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.DiscountRules(); ok {
 		_spec.SetField(subscriptionplan.FieldDiscountRules, field.TypeJSON, value)

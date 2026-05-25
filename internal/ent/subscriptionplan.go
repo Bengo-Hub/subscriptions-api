@@ -47,6 +47,8 @@ type SubscriptionPlan struct {
 	PlanType subscriptionplan.PlanType `json:"plan_type,omitempty"`
 	// Service this plan belongs to: ordering, truload, logistics, inventory, erp, pos, marketflow, cafe_website. Null = bundle or platform-wide.
 	ServiceTag *string `json:"service_tag,omitempty"`
+	// Number of free trial days for new subscribers. Platform admins can override per plan. 0 = no trial.
+	FreeTrialDays int `json:"free_trial_days,omitempty"`
 	// Dynamic discounting rules. Types: YEARLY (percentage), LOYALTY (percentage/min_months), NEW_CUSTOMER (trial_days/percentage).
 	DiscountRules []map[string]interface{} `json:"discount_rules,omitempty"`
 	// Metadata holds the value of the "metadata" field.
@@ -123,7 +125,7 @@ func (*SubscriptionPlan) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case subscriptionplan.FieldBasePrice, subscriptionplan.FieldOnetimeAllProductsPrice:
 			values[i] = new(sql.NullFloat64)
-		case subscriptionplan.FieldTierOrder:
+		case subscriptionplan.FieldTierOrder, subscriptionplan.FieldFreeTrialDays:
 			values[i] = new(sql.NullInt64)
 		case subscriptionplan.FieldPlanCode, subscriptionplan.FieldName, subscriptionplan.FieldDescription, subscriptionplan.FieldBillingCycle, subscriptionplan.FieldCurrency, subscriptionplan.FieldPlanType, subscriptionplan.FieldServiceTag:
 			values[i] = new(sql.NullString)
@@ -239,6 +241,12 @@ func (_m *SubscriptionPlan) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ServiceTag = new(string)
 				*_m.ServiceTag = value.String
+			}
+		case subscriptionplan.FieldFreeTrialDays:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field free_trial_days", values[i])
+			} else if value.Valid {
+				_m.FreeTrialDays = int(value.Int64)
 			}
 		case subscriptionplan.FieldDiscountRules:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -369,6 +377,9 @@ func (_m *SubscriptionPlan) String() string {
 		builder.WriteString("service_tag=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", ")
+	builder.WriteString("free_trial_days=")
+	builder.WriteString(fmt.Sprintf("%v", _m.FreeTrialDays))
 	builder.WriteString(", ")
 	builder.WriteString("discount_rules=")
 	builder.WriteString(fmt.Sprintf("%v", _m.DiscountRules))
