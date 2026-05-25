@@ -33,11 +33,11 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 		features      []string
 	}
 
-	allPOSFeatures := []string{
+	basePOSFeatures := []string{
 		"pos_terminal", "order_management", "receipt_printing", "daily_reports",
-		"mpesa_pos", "multi_cashier", "shift_reports", "table_management",
-		"kds", "offline_sync",
+		"mpesa_pos", "shift_reports", "table_management", "kds", "offline_sync",
 	}
+	allPOSFeatures := append(basePOSFeatures, "multi_cashier")
 
 	plans := []planDef{
 		// ── Monthly device-seat subscriptions ──────────────────────────────
@@ -51,10 +51,7 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:     1,
 			freeTrialDays: 30,
 			tierLimits:    map[string]any{"max_devices": 1, "max_cashiers": 2, "max_tables": 20},
-			features: []string{
-				"pos_terminal", "order_management", "receipt_printing", "daily_reports",
-				"mpesa_pos", "shift_reports", "table_management", "offline_sync",
-			},
+			features:      basePOSFeatures,
 		},
 		{
 			id:            uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:device:5")),
@@ -66,7 +63,7 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:     2,
 			freeTrialDays: 14,
 			tierLimits:    map[string]any{"max_devices": 5, "max_cashiers": 10, "max_tables": 50},
-			features:      append(allPOSFeatures, "multi_cashier"),
+			features:      allPOSFeatures,
 		},
 		{
 			id:            uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:device:10")),
@@ -78,7 +75,7 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:     3,
 			freeTrialDays: 14,
 			tierLimits:    map[string]any{"max_devices": 10, "max_cashiers": -1, "max_tables": -1},
-			features:      append(allPOSFeatures, "multi_cashier", "multi_outlet", "advanced_analytics", "hotel_module"),
+			features:      append(allPOSFeatures, "multi_outlet", "advanced_analytics", "hotel_module"),
 		},
 		// ── Annual device-seat subscriptions ───────────────────────────────
 		{
@@ -91,10 +88,7 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:     1,
 			freeTrialDays: 30,
 			tierLimits:    map[string]any{"max_devices": 1, "max_cashiers": 2, "max_tables": 20},
-			features: []string{
-				"pos_terminal", "order_management", "receipt_printing", "daily_reports",
-				"mpesa_pos", "shift_reports", "table_management", "offline_sync",
-			},
+			features:      basePOSFeatures,
 		},
 		{
 			id:            uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:device:5:yearly")),
@@ -106,7 +100,7 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:     2,
 			freeTrialDays: 14,
 			tierLimits:    map[string]any{"max_devices": 5, "max_cashiers": 10, "max_tables": 50},
-			features:      append(allPOSFeatures, "multi_cashier"),
+			features:      allPOSFeatures,
 		},
 		{
 			id:            uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:device:10:yearly")),
@@ -118,7 +112,7 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:     3,
 			freeTrialDays: 14,
 			tierLimits:    map[string]any{"max_devices": 10, "max_cashiers": -1, "max_tables": -1},
-			features:      append(allPOSFeatures, "multi_cashier", "multi_outlet", "advanced_analytics", "hotel_module"),
+			features:      append(allPOSFeatures, "multi_outlet", "advanced_analytics", "hotel_module"),
 		},
 		// ── One-time perpetual licenses ─────────────────────────────────────
 		{
@@ -143,7 +137,7 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:     11,
 			freeTrialDays: 0,
 			tierLimits:    map[string]any{"max_devices": -1, "max_cashiers": -1, "max_tables": -1},
-			features:      append(allPOSFeatures, "multi_cashier", "multi_outlet", "advanced_analytics", "hotel_module", "api_access"),
+			features:      append(allPOSFeatures, "multi_outlet", "advanced_analytics", "hotel_module", "api_access"),
 		},
 	}
 
