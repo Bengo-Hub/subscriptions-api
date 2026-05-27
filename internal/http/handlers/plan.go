@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Bengo-Hub/pagination"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -59,10 +60,17 @@ func (h *PlanHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.respondWithJSON(w, http.StatusOK, listPlansResponse{
-		Plans: plansList,
-		Count: len(plansList),
-	})
+	p := pagination.Parse(r)
+	total := len(plansList)
+	start := p.Offset
+	if start > total {
+		start = total
+	}
+	end := start + p.Limit
+	if end > total {
+		end = total
+	}
+	h.respondWithJSON(w, http.StatusOK, pagination.NewResponse(plansList[start:end], total, p))
 }
 
 // GetPlan godoc
