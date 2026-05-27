@@ -73,7 +73,7 @@ func (s *Service) ListPlansWithPrices(ctx context.Context, activeOnly bool, serv
 
 		return plans, nil
 	}
-	return sharedcache.GetOrSet(ctx, s.cache, key, sharedcache.TTLModerate, fetch)
+	return sharedcache.GetOrSet(ctx, s.cache, key, sharedcache.TTLReference, fetch)
 }
 
 // calculatePrice performs the SUM-based logic if use_sum_based_pricing is true.
