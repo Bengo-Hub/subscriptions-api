@@ -204,9 +204,19 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 
 	currency := "KES"
 	planCode := "unknown"
-	if sub != nil && sub.Edges.Plan != nil {
-		currency = sub.Edges.Plan.Currency
-		planCode = sub.Edges.Plan.PlanCode
+	// billing_email is stored in subscription settings metadata for comms/payment.
+	// Fall back to a deterministic valid email from tenant ID so Paystack accepts the intent.
+	customerEmail := fmt.Sprintf("tenant-%s@billing.codevertexitsolutions.com", tenantIDStr[:8])
+	if sub != nil {
+		if sub.Edges.Plan != nil {
+			currency = sub.Edges.Plan.Currency
+			planCode = sub.Edges.Plan.PlanCode
+		}
+		if sub.Metadata != nil {
+			if be, ok := sub.Metadata["billing_email"].(string); ok && be != "" {
+				customerEmail = be
+			}
+		}
 	}
 
 	headers := map[string]string{}
@@ -226,6 +236,7 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 		"amount":         0, // treasury gateway floors to 1 KES minimum for Paystack; refunded automatically
 		"source_service": "subscriptions",
 		"description":    "Card verification (KES 1 charged and refunded automatically)",
+		"customer_email": customerEmail,
 		"metadata": map[string]any{
 			"tenant_id": tenantIDStr,
 			"plan_code": planCode,
