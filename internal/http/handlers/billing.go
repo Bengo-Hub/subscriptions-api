@@ -236,7 +236,7 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 	// checkout UI. Treasury charges 1 KES to verify the card; it is automatically refunded
 	// after authorization_code is captured — the same pattern used by Stripe, Anthropic, Cursor.
 	intentReq := map[string]any{
-		"reference_id":   fmt.Sprintf("card-setup-%s", tenantIDStr),
+		"reference_id":   fmt.Sprintf("card-setup-%s-%d", tenantIDStr[:8], time.Now().UnixMilli()),
 		"reference_type": "card_setup",
 		"payment_method": "pending",
 		"currency":       currency,
