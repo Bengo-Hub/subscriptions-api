@@ -257,9 +257,10 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 	}
 
 	var result struct {
-		IntentID    string `json:"intent_id"`
-		InitiateURL string `json:"initiate_url"`
-		Status      string `json:"status"`
+		IntentID         string  `json:"intent_id"`
+		InitiateURL      string  `json:"initiate_url"`
+		AuthorizationURL *string `json:"authorization_url"`
+		Status           string  `json:"status"`
 	}
 	if err := json.Unmarshal(resp.Body, &result); err != nil {
 		h.log.Error("failed to decode treasury response", zap.String("tenant_id", tenantIDStr), zap.Error(err))
@@ -267,9 +268,16 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Card intents return authorization_url (Paystack checkout); pending intents return initiate_url.
+	// Always expose a single initiate_url to the frontend.
+	initiateURL := result.InitiateURL
+	if initiateURL == "" && result.AuthorizationURL != nil && *result.AuthorizationURL != "" {
+		initiateURL = *result.AuthorizationURL
+	}
+
 	writeJSON(w, http.StatusCreated, map[string]any{
 		"payment_intent_id": result.IntentID,
-		"initiate_url":      result.InitiateURL,
+		"initiate_url":      initiateURL,
 		"status":            result.Status,
 	})
 }
