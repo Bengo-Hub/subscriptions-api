@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"time"
 
+	authclient "github.com/Bengo-Hub/shared-auth-client"
+	serviceclient "github.com/Bengo-Hub/shared-service-client"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
-	serviceclient "github.com/Bengo-Hub/shared-service-client"
 	"go.uber.org/zap"
 )
 
@@ -204,9 +205,13 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 
 	currency := "KES"
 	planCode := "unknown"
-	// billing_email is stored in subscription settings metadata for comms/payment.
-	// Fall back to a deterministic valid email from tenant ID so Paystack accepts the intent.
-	customerEmail := fmt.Sprintf("tenant-%s@billing.codevertexitsolutions.com", tenantIDStr[:8])
+
+	// Resolve customer email: JWT claims → subscription billing_email → platform fallback.
+	customerEmail := "codevertexitsolutions@gmail.com"
+	if claims, ok := authclient.ClaimsFromContext(r.Context()); ok && claims.Email != "" {
+		customerEmail = claims.Email
+	}
+
 	if sub != nil {
 		if sub.Edges.Plan != nil {
 			currency = sub.Edges.Plan.Currency
