@@ -52,6 +52,7 @@ type App struct {
 	orm             *ent.Client
 	outboxPublisher *eventslib.Publisher
 	tenantConsumer  *consumers.TenantCreatedConsumer
+	usageConsumer   *consumers.UsageConsumer
 	subscriptionSvc *subscriptions.Service
 	treasuryClient  *serviceclient.Client
 }
@@ -205,7 +206,7 @@ func New(ctx context.Context) (*App, error) {
 	featureHandler := handlers.NewFeatureHandler(log, subscriptionSvc, redisClient)
 
 	// Subscription, addon, and platform handlers (featureHandler injected for cache invalidation)
-	subscriptionHandler := handlers.NewSubscriptionHandler(log, ormClient, subscriptionSvc, featureHandler)
+	subscriptionHandler := handlers.NewSubscriptionHandler(log, ormClient, dbPool, subscriptionSvc, featureHandler)
 	addonHandler := handlers.NewAddonHandler(log, ormClient, subscriptionSvc, treasuryClient, cfg.Services.TreasuryAPIKey, featureHandler)
 
 	// Usage tracking handler (raw SQL — requires UsageEvent Ent schema codegen to create table)
@@ -247,6 +248,7 @@ func New(ctx context.Context) (*App, error) {
 		orm:             ormClient,
 		outboxPublisher: outboxPublisher,
 		tenantConsumer:  consumers.NewTenantCreatedConsumer(log, subscriptionSvc),
+		usageConsumer:   consumers.NewUsageConsumer(log, dbPool, ormClient, redisClient),
 		subscriptionSvc: subscriptionSvc,
 		treasuryClient:  treasuryClient,
 	}, nil
@@ -281,6 +283,21 @@ func (a *App) Run(ctx context.Context) error {
 				}
 			}()
 			a.log.Info("tenant.created consumer started")
+		}
+	}
+
+	// Start usage event consumers (ordering, pos, inventory, etc. → usage_events table)
+	if a.usageConsumer != nil && a.events != nil {
+		js, err := a.events.JetStream()
+		if err != nil {
+			a.log.Warn("jetstream unavailable, usage consumer not started", zap.Error(err))
+		} else {
+			go func() {
+				if err := a.usageConsumer.Start(ctx, js); err != nil {
+					a.log.Error("usage consumer stopped", zap.Error(err))
+				}
+			}()
+			a.log.Info("usage event consumer started")
 		}
 	}
 

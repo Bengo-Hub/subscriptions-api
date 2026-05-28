@@ -134,6 +134,7 @@ func New(
 			// Billing
 			if billingHandler != nil {
 				r.Get("/billing", billingHandler.GetBilling)
+				r.Post("/subscription/payment-method/setup", billingHandler.SetupPaymentMethod)
 			}
 
 			// S2S subscription lookup by tenant ID — used by auth-api for JWT enrichment.

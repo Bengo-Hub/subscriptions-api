@@ -54,12 +54,19 @@ func (h *WebhookHandler) HandleTreasuryPayment(w http.ResponseWriter, r *http.Re
 	}
 
 	var body struct {
-		PaymentIntentID string `json:"payment_intent_id"`
-		Status          string `json:"status"` // "completed" or "failed"
-		TenantID        string `json:"tenant_id"`
-		PlanCode        string `json:"plan_code"`
+		PaymentIntentID string  `json:"payment_intent_id"`
+		Status          string  `json:"status"` // "completed" or "failed"
+		TenantID        string  `json:"tenant_id"`
+		PlanCode        string  `json:"plan_code"`
+		ReferenceType   string  `json:"reference_type"`
 		Amount          float64 `json:"amount"`
 		Currency        string  `json:"currency"`
+		// Card authorization data — populated on charge.success when Paystack returns a reusable card.
+		PaystackAuthCode string `json:"paystack_auth_code"`
+		CardLast4        string `json:"card_last4"`
+		CardType         string `json:"card_type"`
+		CardExpMonth     string `json:"card_exp_month"`
+		CardExpYear      string `json:"card_exp_year"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
@@ -81,10 +88,27 @@ func (h *WebhookHandler) HandleTreasuryPayment(w http.ResponseWriter, r *http.Re
 
 	switch body.Status {
 	case "completed":
+		// For card_setup intents: store authorization_code for auto-renewal, no subscription state change.
+		if body.ReferenceType == "card_setup" {
+			if body.PaystackAuthCode != "" {
+				if err := h.saveCardAuthorization(ctx, tenantID, body.PaystackAuthCode, body.CardType, body.CardLast4, body.CardExpMonth, body.CardExpYear); err != nil {
+					h.log.Error("failed to save card authorization", zap.String("tenant_id", body.TenantID), zap.Error(err))
+					writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save card authorization"})
+					return
+				}
+				h.log.Info("card authorization saved for auto-renewal", zap.String("tenant_id", body.TenantID), zap.String("last4", body.CardLast4))
+			}
+			break
+		}
+		// For subscription / renewal intents: activate/extend subscription period.
 		if err := h.activateSubscription(ctx, tenantID, body.PlanCode); err != nil {
 			h.log.Error("failed to activate subscription via webhook", zap.String("tenant_id", body.TenantID), zap.Error(err))
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to activate subscription"})
 			return
+		}
+		// If a card authorization arrived with the renewal, persist it.
+		if body.PaystackAuthCode != "" {
+			_ = h.saveCardAuthorization(ctx, tenantID, body.PaystackAuthCode, body.CardType, body.CardLast4, body.CardExpMonth, body.CardExpYear)
 		}
 		if h.featureHandler != nil {
 			h.featureHandler.InvalidateCache(ctx, tenantID)
@@ -92,6 +116,10 @@ func (h *WebhookHandler) HandleTreasuryPayment(w http.ResponseWriter, r *http.Re
 		h.log.Info("subscription activated via treasury webhook", zap.String("tenant_id", body.TenantID), zap.String("plan_code", body.PlanCode))
 
 	case "failed":
+		if body.ReferenceType == "card_setup" {
+			h.log.Warn("card setup failed", zap.String("tenant_id", body.TenantID))
+			break
+		}
 		if err := h.markPaymentRequired(ctx, tenantID); err != nil {
 			h.log.Error("failed to mark payment_required via webhook", zap.String("tenant_id", body.TenantID), zap.Error(err))
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update subscription"})
@@ -108,6 +136,34 @@ func (h *WebhookHandler) HandleTreasuryPayment(w http.ResponseWriter, r *http.Re
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "processed"})
+}
+
+// saveCardAuthorization stores a Paystack authorization_code in subscription metadata for auto-renewal.
+func (h *WebhookHandler) saveCardAuthorization(ctx context.Context, tenantID uuid.UUID, authCode, cardType, last4, expMonth, expYear string) error {
+	sub, err := h.orm.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(tenantID)).
+		Only(ctx)
+	if err != nil {
+		return err
+	}
+
+	meta := make(map[string]any)
+	for k, v := range sub.Metadata {
+		meta[k] = v
+	}
+	meta["paystack_auth_code"] = authCode
+	meta["payment_method"] = map[string]any{
+		"type":      "card",
+		"brand":     cardType,
+		"last4":     last4,
+		"expiryMonth": expMonth,
+		"expiryYear":  expYear,
+	}
+
+	_, err = h.orm.TenantSubscription.UpdateOneID(sub.ID).
+		SetMetadata(meta).
+		Save(ctx)
+	return err
 }
 
 func (h *WebhookHandler) activateSubscription(ctx context.Context, tenantID uuid.UUID, planCode string) error {

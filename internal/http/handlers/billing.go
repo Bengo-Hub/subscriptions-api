@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -163,3 +164,95 @@ func (h *BillingHandler) fetchInvoices(ctx context.Context, tenantID uuid.UUID) 
 	return rows
 }
 
+// SetupPaymentMethod godoc
+// @Summary Setup payment method for auto-renewal
+// @Description Creates a Paystack payment intent so the tenant can register a card for subscription auto-renewal
+// @Tags Billing
+// @Produce json
+// @Security BearerAuth
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 503 {object} map[string]string
+// @Router /subscription/payment-method/setup [post]
+func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Request) {
+	if h.treasuryClient == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "treasury client not configured"})
+		return
+	}
+
+	tenantIDStr := resolveTenantID(r)
+	if tenantIDStr == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
+		return
+	}
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+
+	// Look up subscription to get billing details
+	sub, err := h.client.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(tenantID)).
+		WithPlan().
+		Only(r.Context())
+	if err != nil && !ent.IsNotFound(err) {
+		h.log.Error("failed to fetch subscription for card setup", zap.String("tenant_id", tenantIDStr), zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	currency := "KES"
+	planCode := "unknown"
+	if sub != nil && sub.Edges.Plan != nil {
+		currency = sub.Edges.Plan.Currency
+		planCode = sub.Edges.Plan.PlanCode
+	}
+
+	headers := map[string]string{}
+	if h.treasuryAPIKey != "" {
+		headers["X-API-Key"] = h.treasuryAPIKey
+	}
+
+	// Create a zero-amount (card tokenisation) payment intent via treasury S2S.
+	// Treasury calls Paystack /transaction/initialize; Paystack captures card and returns authorization_code.
+	// On charge.success, treasury webhook delivers authorization_code back to subscriptions-api.
+	intentReq := map[string]any{
+		"reference_id":   fmt.Sprintf("card-setup-%s", tenantIDStr),
+		"reference_type": "card_setup",
+		"payment_method": "card",
+		"currency":       currency,
+		"amount":         0,
+		"source_service": "subscriptions",
+		"description":    "Card setup for subscription auto-renewal",
+		"metadata": map[string]any{
+			"tenant_id": tenantIDStr,
+			"plan_code": planCode,
+			"purpose":   "card_setup",
+		},
+	}
+
+	resp, err := h.treasuryClient.Post(r.Context(), fmt.Sprintf("/api/v1/s2s/%s/payments/intents", tenantIDStr), intentReq, headers)
+	if err != nil || !resp.IsSuccess() {
+		h.log.Error("failed to create card setup intent", zap.String("tenant_id", tenantIDStr), zap.Error(err))
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "failed to create payment intent"})
+		return
+	}
+
+	var result struct {
+		IntentID    string `json:"intent_id"`
+		InitiateURL string `json:"initiate_url"`
+		Status      string `json:"status"`
+	}
+	if err := json.Unmarshal(resp.Body, &result); err != nil {
+		h.log.Error("failed to decode treasury response", zap.String("tenant_id", tenantIDStr), zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "invalid treasury response"})
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"payment_intent_id": result.IntentID,
+		"initiate_url":      result.InitiateURL,
+		"status":            result.Status,
+	})
+}

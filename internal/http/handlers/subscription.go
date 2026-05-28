@@ -1,15 +1,18 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 	httpware "github.com/Bengo-Hub/httpware"
 )
@@ -17,14 +20,16 @@ import (
 type SubscriptionHandler struct {
 	log            *zap.Logger
 	client         *ent.Client
+	db             *pgxpool.Pool
 	service        *subscriptions.Service
 	featureHandler *FeatureHandler
 }
 
-func NewSubscriptionHandler(log *zap.Logger, client *ent.Client, svc *subscriptions.Service, featureHandler *FeatureHandler) *SubscriptionHandler {
+func NewSubscriptionHandler(log *zap.Logger, client *ent.Client, db *pgxpool.Pool, svc *subscriptions.Service, featureHandler *FeatureHandler) *SubscriptionHandler {
 	return &SubscriptionHandler{
 		log:            log.Named("subscription.handler"),
 		client:         client,
+		db:             db,
 		service:        svc,
 		featureHandler: featureHandler,
 	}
@@ -229,7 +234,61 @@ func (h *SubscriptionHandler) GetByTenantID(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	h.respondWithJSON(w, http.StatusOK, sub)
+	// Build the response: embed the subscription result then append current-month usage_limits
+	// so frontend services can cache it in IndexedDB for offline enforcement.
+	raw, _ := json.Marshal(sub)
+	var resp map[string]any
+	_ = json.Unmarshal(raw, &resp)
+	resp["usage_limits"] = h.buildUsageLimits(r.Context(), tenantID, sub)
+
+	h.respondWithJSON(w, http.StatusOK, resp)
+}
+
+// buildUsageLimits queries current-month usage and pairs it with plan limits.
+// Returns an empty map on any error so the subscription response is never blocked.
+func (h *SubscriptionHandler) buildUsageLimits(ctx context.Context, tenantID uuid.UUID, sub *subscriptions.SubscriptionResult) map[string]any {
+	result := map[string]any{}
+	if h.db == nil || sub == nil {
+		return result
+	}
+
+	now := time.Now().UTC()
+	periodStart := now.AddDate(0, -1, 0)
+
+	rows, err := h.db.Query(ctx, `
+		SELECT metric_type, SUM(value) as total
+		FROM usage_events
+		WHERE tenant_id = $1 AND created_at >= $2 AND created_at <= $3
+		GROUP BY metric_type
+	`, tenantID, periodStart, now)
+	if err != nil {
+		return result
+	}
+	defer rows.Close()
+
+	usedByType := map[string]int{}
+	for rows.Next() {
+		var metricType string
+		var total float64
+		if err := rows.Scan(&metricType, &total); err == nil {
+			usedByType[metricType] = int(total)
+		}
+	}
+
+	for metricType, limit := range sub.Limits {
+		result[metricType] = map[string]int{
+			"used":  usedByType[metricType],
+			"limit": limit,
+		}
+	}
+	// Also include metrics that have usage but no plan limit
+	for metricType, used := range usedByType {
+		if _, exists := result[metricType]; !exists {
+			result[metricType] = map[string]int{"used": used, "limit": 0}
+		}
+	}
+
+	return result
 }
 
 // GetServiceSubscriptions returns a per-service-tag subscription view for a tenant.
