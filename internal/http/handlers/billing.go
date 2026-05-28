@@ -229,16 +229,18 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 		headers["X-API-Key"] = h.treasuryAPIKey
 	}
 
-	// Create a card-tokenisation payment intent via treasury S2S.
-	// Treasury charges 1 KES (Paystack minimum) to verify the card; it is automatically
-	// refunded after the authorization_code is captured — the same pattern used by
-	// Stripe, Anthropic, Cursor, etc. for card-on-file setup.
+	// Create a pending card-tokenisation intent via treasury S2S.
+	// payment_method="pending" so treasury returns an initiate_url in treasury format
+	// ({publicBase}/api/v1/pay/{tenantID}/intents/{intentID}/initiate). TreasuryPaymentModal
+	// loads treasury-ui with this URL; treasury-ui then initiates Paystack and handles the
+	// checkout UI. Treasury charges 1 KES to verify the card; it is automatically refunded
+	// after authorization_code is captured — the same pattern used by Stripe, Anthropic, Cursor.
 	intentReq := map[string]any{
 		"reference_id":   fmt.Sprintf("card-setup-%s", tenantIDStr),
 		"reference_type": "card_setup",
-		"payment_method": "card",
+		"payment_method": "pending",
 		"currency":       currency,
-		"amount":         0, // treasury gateway floors to 1 KES minimum for Paystack; refunded automatically
+		"amount":         1, // 1 KES verification charge; refunded automatically after authorization_code is captured
 		"source_service": "subscriptions",
 		"description":    "Card verification (KES 1 charged and refunded automatically)",
 		"customer_email": customerEmail,
