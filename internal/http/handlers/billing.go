@@ -214,17 +214,18 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 		headers["X-API-Key"] = h.treasuryAPIKey
 	}
 
-	// Create a zero-amount (card tokenisation) payment intent via treasury S2S.
-	// Treasury calls Paystack /transaction/initialize; Paystack captures card and returns authorization_code.
-	// On charge.success, treasury webhook delivers authorization_code back to subscriptions-api.
+	// Create a card-tokenisation payment intent via treasury S2S.
+	// Treasury charges 1 KES (Paystack minimum) to verify the card; it is automatically
+	// refunded after the authorization_code is captured — the same pattern used by
+	// Stripe, Anthropic, Cursor, etc. for card-on-file setup.
 	intentReq := map[string]any{
 		"reference_id":   fmt.Sprintf("card-setup-%s", tenantIDStr),
 		"reference_type": "card_setup",
 		"payment_method": "card",
 		"currency":       currency,
-		"amount":         0,
+		"amount":         0, // treasury gateway floors to 1 KES minimum for Paystack; refunded automatically
 		"source_service": "subscriptions",
-		"description":    "Card setup for subscription auto-renewal",
+		"description":    "Card verification (KES 1 charged and refunded automatically)",
 		"metadata": map[string]any{
 			"tenant_id": tenantIDStr,
 			"plan_code": planCode,
