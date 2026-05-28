@@ -51,10 +51,11 @@ type App struct {
 	events          *nats.Conn
 	orm             *ent.Client
 	outboxPublisher *eventslib.Publisher
-	tenantConsumer  *consumers.TenantCreatedConsumer
-	usageConsumer   *consumers.UsageConsumer
-	subscriptionSvc *subscriptions.Service
-	treasuryClient  *serviceclient.Client
+	tenantConsumer   *consumers.TenantCreatedConsumer
+	usageConsumer    *consumers.UsageConsumer
+	paymentConsumer  *consumers.TreasuryPaymentConsumer
+	subscriptionSvc  *subscriptions.Service
+	treasuryClient   *serviceclient.Client
 }
 
 func New(ctx context.Context) (*App, error) {
@@ -249,6 +250,7 @@ func New(ctx context.Context) (*App, error) {
 		outboxPublisher: outboxPublisher,
 		tenantConsumer:  consumers.NewTenantCreatedConsumer(log, subscriptionSvc),
 		usageConsumer:   consumers.NewUsageConsumer(log, dbPool, ormClient, redisClient),
+		paymentConsumer: consumers.NewTreasuryPaymentConsumer(log, ormClient),
 		subscriptionSvc: subscriptionSvc,
 		treasuryClient:  treasuryClient,
 	}, nil
@@ -298,6 +300,21 @@ func (a *App) Run(ctx context.Context) error {
 				}
 			}()
 			a.log.Info("usage event consumer started")
+		}
+	}
+
+	// Start treasury payment consumer (stores Paystack auth_code for auto-renewal)
+	if a.paymentConsumer != nil && a.events != nil {
+		js, err := a.events.JetStream()
+		if err != nil {
+			a.log.Warn("jetstream unavailable, treasury payment consumer not started", zap.Error(err))
+		} else {
+			go func() {
+				if err := a.paymentConsumer.Start(ctx, js); err != nil {
+					a.log.Error("treasury payment consumer stopped", zap.Error(err))
+				}
+			}()
+			a.log.Info("treasury payment consumer started")
 		}
 	}
 
