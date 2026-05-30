@@ -14,7 +14,7 @@ import (
 
 // ── Bundles ──────────────────────────────────────────────────────────────────
 // Curated product combinations with tiered pricing.
-// The "delivery" bundle maps directly to the Urban Loft inception report tiers.
+// The "delivery" bundle covers ordering + logistics + treasury + storefront tiers.
 
 func seedBundles(ctx context.Context, tx *ent.Tx) error {
 	type bundleDef struct {

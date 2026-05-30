@@ -32,23 +32,9 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 	}
 
 	now := time.Now()
-	// Urban Loft: ACTIVE subscription, STARTER delivery bundle + POS, expires June 5 2026.
-	urbanLoftStart := time.Date(2026, 5, 17, 0, 0, 0, 0, time.UTC)
-	urbanLoftEnd := time.Date(2026, 6, 5, 23, 59, 59, 0, time.UTC)
 	trialEnd := now.Add(14 * 24 * time.Hour)
 
 	tenantDefs := []tenantDef{
-		{
-			subID:         uuid.MustParse("30000000-0000-0000-0000-000000000001"),
-			slug:          "urban-loft",
-			name:          "Urban Loft Cafe",
-			plan:          "ORDERING_STARTER",
-			bundleCode:    "ordering",
-			status:        tenantsubscription.StatusACTIVE,
-			periodStart:   urbanLoftStart,
-			periodEnd:     urbanLoftEnd,
-			extraProducts: []string{"pos"}, // POS added on top of ordering bundle
-		},
 		{
 			subID:       uuid.MustParse("30000000-0000-0000-0000-000000000002"),
 			slug:        "mss",
