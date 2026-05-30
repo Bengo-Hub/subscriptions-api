@@ -21,6 +21,30 @@ func (f BundleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BundleMutation", m)
 }
 
+// The CouponFunc type is an adapter to allow the use of ordinary
+// function as Coupon mutator.
+type CouponFunc func(context.Context, *ent.CouponMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CouponFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CouponMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CouponMutation", m)
+}
+
+// The CustomAddonFunc type is an adapter to allow the use of ordinary
+// function as CustomAddon mutator.
+type CustomAddonFunc func(context.Context, *ent.CustomAddonMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CustomAddonFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CustomAddonMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CustomAddonMutation", m)
+}
+
 // The OutboxEventFunc type is an adapter to allow the use of ordinary
 // function as OutboxEvent mutator.
 type OutboxEventFunc func(context.Context, *ent.OutboxEventMutation) (ent.Value, error)
@@ -31,6 +55,18 @@ func (f OutboxEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OutboxEventMutation", m)
+}
+
+// The OverageChargeFunc type is an adapter to allow the use of ordinary
+// function as OverageCharge mutator.
+type OverageChargeFunc func(context.Context, *ent.OverageChargeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f OverageChargeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.OverageChargeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OverageChargeMutation", m)
 }
 
 // The PlanFeatureFunc type is an adapter to allow the use of ordinary
@@ -127,6 +163,30 @@ func (f ServiceConfigFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Valu
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ServiceConfigMutation", m)
+}
+
+// The SubscriptionCreditFunc type is an adapter to allow the use of ordinary
+// function as SubscriptionCredit mutator.
+type SubscriptionCreditFunc func(context.Context, *ent.SubscriptionCreditMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SubscriptionCreditFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.SubscriptionCreditMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SubscriptionCreditMutation", m)
+}
+
+// The SubscriptionCreditTransactionFunc type is an adapter to allow the use of ordinary
+// function as SubscriptionCreditTransaction mutator.
+type SubscriptionCreditTransactionFunc func(context.Context, *ent.SubscriptionCreditTransactionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SubscriptionCreditTransactionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.SubscriptionCreditTransactionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SubscriptionCreditTransactionMutation", m)
 }
 
 // The SubscriptionPlanFunc type is an adapter to allow the use of ordinary

@@ -9,8 +9,17 @@ import (
 // Bundle is the predicate function for bundle builders.
 type Bundle func(*sql.Selector)
 
+// Coupon is the predicate function for coupon builders.
+type Coupon func(*sql.Selector)
+
+// CustomAddon is the predicate function for customaddon builders.
+type CustomAddon func(*sql.Selector)
+
 // OutboxEvent is the predicate function for outboxevent builders.
 type OutboxEvent func(*sql.Selector)
+
+// OverageCharge is the predicate function for overagecharge builders.
+type OverageCharge func(*sql.Selector)
 
 // PlanFeature is the predicate function for planfeature builders.
 type PlanFeature func(*sql.Selector)
@@ -35,6 +44,12 @@ type ServiceChargePlan func(*sql.Selector)
 
 // ServiceConfig is the predicate function for serviceconfig builders.
 type ServiceConfig func(*sql.Selector)
+
+// SubscriptionCredit is the predicate function for subscriptioncredit builders.
+type SubscriptionCredit func(*sql.Selector)
+
+// SubscriptionCreditTransaction is the predicate function for subscriptioncredittransaction builders.
+type SubscriptionCreditTransaction func(*sql.Selector)
 
 // SubscriptionPlan is the predicate function for subscriptionplan builders.
 type SubscriptionPlan func(*sql.Selector)

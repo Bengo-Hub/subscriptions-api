@@ -534,6 +534,56 @@ func (h *UsageHandler) checkUsageLimit(ctx context.Context, tenantID uuid.UUID, 
 	return rem, planLimit, current > planLimit
 }
 
+// GetAlerts reads active usage threshold alerts from Redis and returns them to the caller.
+// The service UI banner calls this endpoint to decide whether to show a usage warning.
+func (h *UsageHandler) GetAlerts(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	tenantIDStr := resolveTenantID(r)
+	if tenantIDStr == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
+		return
+	}
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+
+	if h.cache == nil {
+		writeJSON(w, http.StatusOK, map[string]any{"alerts": []any{}})
+		return
+	}
+
+	// Scan for all alert keys for this tenant: usage:alert:{tenantID}:*
+	pattern := fmt.Sprintf("usage:alert:%s:*", tenantID.String())
+	keys, err := h.cache.Keys(ctx, pattern).Result()
+	if err != nil {
+		h.log.Warn("GetAlerts: redis scan failed", zap.Error(err))
+		writeJSON(w, http.StatusOK, map[string]any{"alerts": []any{}})
+		return
+	}
+
+	type alertItem struct {
+		Metric  string  `json:"metric"`
+		Limit   int     `json:"limit"`
+		Current float64 `json:"current"`
+		Pct     int     `json:"pct"`
+	}
+	alerts := make([]alertItem, 0, len(keys))
+	for _, key := range keys {
+		val, err := h.cache.Get(ctx, key).Result()
+		if err != nil {
+			continue
+		}
+		var item alertItem
+		if err := json.Unmarshal([]byte(val), &item); err == nil {
+			alerts = append(alerts, item)
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"alerts": alerts})
+}
+
 func parseUsageDateRange(r *http.Request) (time.Time, time.Time) {
 	now := time.Now()
 	from := now.AddDate(0, -1, 0)

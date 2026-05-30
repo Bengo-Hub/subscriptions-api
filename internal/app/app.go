@@ -30,6 +30,7 @@ import (
 	handlers "github.com/bengobox/subscription-service/internal/http/handlers"
 	router "github.com/bengobox/subscription-service/internal/http/router"
 	"github.com/bengobox/subscription-service/internal/jobs"
+	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/consumers"
 	"github.com/bengobox/subscription-service/internal/modules/outbox"
 	"github.com/bengobox/subscription-service/internal/modules/plans"
@@ -228,7 +229,13 @@ func New(ctx context.Context) (*App, error) {
 	rbacService := rbac.NewService(rbacRepo, log, tenantSyncer)
 	rbacHandler := handlers.NewRBACHandler(log, rbacService, rbacRepo)
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
+	// Custom addon handler (platform-admin managed recurring/one-time charges)
+	customAddonHandler := handlers.NewCustomAddonHandler(log, ormClient)
+
+	// Coupon + credit wallet handler
+	couponHandler := handlers.NewCouponHandler(log, ormClient)
+
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),
@@ -238,6 +245,9 @@ func New(ctx context.Context) (*App, error) {
 		WriteTimeout:      cfg.HTTP.WriteTimeout,
 		IdleTimeout:       cfg.HTTP.IdleTimeout,
 	}
+
+	paymentConsumer := consumers.NewTreasuryPaymentConsumer(log, ormClient)
+	paymentConsumer.SetSubscriptionService(subscriptionSvc)
 
 	return &App{
 		cfg:             cfg,
@@ -250,7 +260,7 @@ func New(ctx context.Context) (*App, error) {
 		outboxPublisher: outboxPublisher,
 		tenantConsumer:  consumers.NewTenantCreatedConsumer(log, subscriptionSvc),
 		usageConsumer:   consumers.NewUsageConsumer(log, dbPool, ormClient, redisClient),
-		paymentConsumer: consumers.NewTreasuryPaymentConsumer(log, ormClient),
+		paymentConsumer: paymentConsumer,
 		subscriptionSvc: subscriptionSvc,
 		treasuryClient:  treasuryClient,
 	}, nil
@@ -271,6 +281,12 @@ func (a *App) Run(ctx context.Context) error {
 	if a.orm != nil && a.subscriptionSvc != nil {
 		go jobs.StartRenewalJob(ctx, a.log, a.orm, a.subscriptionSvc, a.treasuryClient, a.cfg.Services.TreasuryAPIKey)
 		a.log.Info("subscription renewal and expiry jobs started")
+	}
+
+	// Start dunning job — retries payment for SUSPENDED subscriptions on days 1, 3, 7
+	if a.orm != nil && a.subscriptionSvc != nil {
+		go billing.StartDunningJob(ctx, a.log, a.orm, a.subscriptionSvc, a.treasuryClient, a.cfg.Services.TreasuryAPIKey)
+		a.log.Info("dunning job started")
 	}
 
 	// Start auth.tenant.created consumer for auto-provisioning new tenants

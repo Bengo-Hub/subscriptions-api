@@ -7,6 +7,8 @@ import (
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/billing"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
@@ -18,39 +20,52 @@ const treasuryPaymentSucceededSubject = "treasury.payment.succeeded"
 type treasuryPaymentEvent struct {
 	EventType string `json:"event_type"`
 	Payload   struct {
-		IntentID        string `json:"intent_id"`
-		TenantID        string `json:"tenant_id"`
-		ReferenceType   string `json:"reference_type"`
-		Status          string `json:"status"`
-		PaystackAuthCode string `json:"paystack_auth_code"`
-		CardLast4       string `json:"card_last4"`
-		CardType        string `json:"card_type"`
-		CardExpMonth    string `json:"card_exp_month"`
-		CardExpYear     string `json:"card_exp_year"`
+		IntentID         string  `json:"intent_id"`
+		TenantID         string  `json:"tenant_id"`
+		ReferenceType    string  `json:"reference_type"`
+		Status           string  `json:"status"`
+		PlanCode         string  `json:"plan_code"`
+		Amount           float64 `json:"amount"`
+		PaystackAuthCode string  `json:"paystack_auth_code"`
+		CardLast4        string  `json:"card_last4"`
+		CardType         string  `json:"card_type"`
+		CardExpMonth     string  `json:"card_exp_month"`
+		CardExpYear      string  `json:"card_exp_year"`
 	} `json:"payload"`
 	// Also accept flat structure (some publishers embed payload at top-level)
-	TenantID        string `json:"tenant_id"`
-	ReferenceType   string `json:"reference_type"`
-	PaystackAuthCode string `json:"paystack_auth_code"`
-	CardLast4       string `json:"card_last4"`
-	CardType        string `json:"card_type"`
-	CardExpMonth    string `json:"card_exp_month"`
-	CardExpYear     string `json:"card_exp_year"`
+	TenantID         string  `json:"tenant_id"`
+	ReferenceType    string  `json:"reference_type"`
+	PlanCode         string  `json:"plan_code"`
+	Amount           float64 `json:"amount"`
+	PaystackAuthCode string  `json:"paystack_auth_code"`
+	CardLast4        string  `json:"card_last4"`
+	CardType         string  `json:"card_type"`
+	CardExpMonth     string  `json:"card_exp_month"`
+	CardExpYear      string  `json:"card_exp_year"`
 }
 
-// TreasuryPaymentConsumer listens for treasury.payment.succeeded events and stores
-// Paystack authorization_code for card_setup intents to enable auto-renewal.
+// TreasuryPaymentConsumer listens for treasury.payment.succeeded events:
+//   - card_setup: stores Paystack authorization_code for auto-renewal
+//   - subscription/renewal: activates/renews subscription, earns loyalty credits
 type TreasuryPaymentConsumer struct {
-	log *zap.Logger
-	orm *ent.Client
+	log           *zap.Logger
+	orm           *ent.Client
+	svc           *subscriptions.Service
+	creditService *billing.CreditService
 }
 
 // NewTreasuryPaymentConsumer creates a new consumer.
 func NewTreasuryPaymentConsumer(log *zap.Logger, orm *ent.Client) *TreasuryPaymentConsumer {
 	return &TreasuryPaymentConsumer{
-		log: log.Named("consumers.treasury_payment"),
-		orm: orm,
+		log:           log.Named("consumers.treasury_payment"),
+		orm:           orm,
+		creditService: billing.NewCreditService(log, orm),
 	}
+}
+
+// SetSubscriptionService injects the subscription service for activation flows.
+func (c *TreasuryPaymentConsumer) SetSubscriptionService(svc *subscriptions.Service) {
+	c.svc = svc
 }
 
 // Start subscribes to treasury.payment.succeeded and blocks until ctx is cancelled.
@@ -120,26 +135,63 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 		expYear = ev.CardExpYear
 	}
 
-	if refType != "card_setup" || authCode == "" {
-		// Not a card setup event or no authorization code — nothing to do.
-		return nil
-	}
-
 	tenantID, err := uuid.Parse(tenantIDStr)
 	if err != nil {
 		c.log.Warn("invalid tenant_id in treasury payment event", zap.String("tenant_id", tenantIDStr))
 		return nil
 	}
 
-	if err := c.saveCardAuthorization(ctx, tenantID, authCode, cardType, last4, expMonth, expYear); err != nil {
-		c.log.Error("failed to save card authorization", zap.String("tenant_id", tenantIDStr), zap.Error(err))
-		return err
+	// Store card authorization for any event that includes one (card_setup or subscription)
+	if authCode != "" {
+		if err := c.saveCardAuthorization(ctx, tenantID, authCode, cardType, last4, expMonth, expYear); err != nil {
+			c.log.Error("failed to save card authorization", zap.String("tenant_id", tenantIDStr), zap.Error(err))
+			// Non-fatal: continue processing
+		} else {
+			c.log.Info("card authorization stored for auto-renewal",
+				zap.String("tenant_id", tenantIDStr),
+				zap.String("last4", last4),
+			)
+		}
 	}
 
-	c.log.Info("card authorization stored for auto-renewal",
-		zap.String("tenant_id", tenantIDStr),
-		zap.String("last4", last4),
-	)
+	if refType != "subscription" && refType != "renewal" {
+		// card_setup or unknown — nothing more to do
+		return nil
+	}
+
+	// Subscription payment: activate/renew
+	if c.svc != nil {
+		planCode := ev.Payload.PlanCode
+		if planCode == "" {
+			planCode = ev.PlanCode
+		}
+		if _, err := c.svc.RenewSubscription(ctx, subscriptions.RenewInput{
+			TenantID: tenantID,
+			PlanCode: planCode,
+		}); err != nil {
+			c.log.Error("failed to renew subscription on payment.succeeded", zap.String("tenant_id", tenantIDStr), zap.Error(err))
+			return err
+		}
+		c.log.Info("subscription renewed via NATS payment event", zap.String("tenant_id", tenantIDStr))
+	}
+
+	// Earn loyalty credits on successful subscription payment
+	amountKes := int(ev.Payload.Amount)
+	if amountKes == 0 {
+		amountKes = int(ev.Amount)
+	}
+	if amountKes > 0 {
+		refID := uuid.New()
+		if intentIDStr := ev.Payload.IntentID; intentIDStr != "" {
+			if id, err := uuid.Parse(intentIDStr); err == nil {
+				refID = id
+			}
+		}
+		if err := c.creditService.EarnLoyaltyCredits(ctx, tenantID, amountKes, refID); err != nil {
+			c.log.Warn("failed to earn loyalty credits", zap.String("tenant_id", tenantIDStr), zap.Error(err))
+		}
+	}
+
 	return nil
 }
 

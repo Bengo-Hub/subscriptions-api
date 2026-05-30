@@ -48,6 +48,91 @@ var (
 			},
 		},
 	}
+	// CouponsColumns holds the columns for the "coupons" table.
+	CouponsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "code", Type: field.TypeString, Size: 64},
+		{Name: "name", Type: field.TypeString, Size: 128},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"percentage", "fixed_kes", "free_months"}},
+		{Name: "value", Type: field.TypeFloat64},
+		{Name: "applicable_plan_codes", Type: field.TypeJSON, Nullable: true},
+		{Name: "min_plan_price", Type: field.TypeFloat64, Default: 0},
+		{Name: "max_uses", Type: field.TypeInt, Default: -1},
+		{Name: "used_count", Type: field.TypeInt, Default: 0},
+		{Name: "max_stacks", Type: field.TypeInt, Default: 1},
+		{Name: "is_active", Type: field.TypeBool, Default: true},
+		{Name: "valid_from", Type: field.TypeTime},
+		{Name: "valid_until", Type: field.TypeTime, Nullable: true},
+		{Name: "created_by", Type: field.TypeUUID},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// CouponsTable holds the schema information for the "coupons" table.
+	CouponsTable = &schema.Table{
+		Name:       "coupons",
+		Columns:    CouponsColumns,
+		PrimaryKey: []*schema.Column{CouponsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "coupon_code",
+				Unique:  true,
+				Columns: []*schema.Column{CouponsColumns[1]},
+			},
+			{
+				Name:    "coupon_is_active",
+				Unique:  false,
+				Columns: []*schema.Column{CouponsColumns[11]},
+			},
+			{
+				Name:    "coupon_valid_until",
+				Unique:  false,
+				Columns: []*schema.Column{CouponsColumns[13]},
+			},
+		},
+	}
+	// CustomAddonsColumns holds the columns for the "custom_addons" table.
+	CustomAddonsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeString, Size: 128},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "service_code", Type: field.TypeString, Nullable: true, Size: 64},
+		{Name: "service_addon_type", Type: field.TypeString, Nullable: true, Size: 64},
+		{Name: "billing_cycle", Type: field.TypeEnum, Enums: []string{"monthly", "annual", "one_time"}, Default: "monthly"},
+		{Name: "unit_price_kes", Type: field.TypeInt},
+		{Name: "quantity", Type: field.TypeInt, Default: 1},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "paused", "cancelled"}, Default: "active"},
+		{Name: "notes", Type: field.TypeString, Nullable: true, Size: 512},
+		{Name: "created_by_user_id", Type: field.TypeUUID},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// CustomAddonsTable holds the schema information for the "custom_addons" table.
+	CustomAddonsTable = &schema.Table{
+		Name:       "custom_addons",
+		Columns:    CustomAddonsColumns,
+		PrimaryKey: []*schema.Column{CustomAddonsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "customaddon_tenant_id",
+				Unique:  false,
+				Columns: []*schema.Column{CustomAddonsColumns[1]},
+			},
+			{
+				Name:    "customaddon_tenant_id_status",
+				Unique:  false,
+				Columns: []*schema.Column{CustomAddonsColumns[1], CustomAddonsColumns[9]},
+			},
+			{
+				Name:    "customaddon_service_code",
+				Unique:  false,
+				Columns: []*schema.Column{CustomAddonsColumns[4]},
+			},
+		},
+	}
 	// OutboxEventsColumns holds the columns for the "outbox_events" table.
 	OutboxEventsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -93,6 +178,63 @@ var (
 				Name:    "outboxevent_created_at",
 				Unique:  false,
 				Columns: []*schema.Column{OutboxEventsColumns[11]},
+			},
+		},
+	}
+	// OverageChargesColumns holds the columns for the "overage_charges" table.
+	OverageChargesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "metric_type", Type: field.TypeString, Size: 64},
+		{Name: "period_date", Type: field.TypeTime},
+		{Name: "units_used", Type: field.TypeFloat64},
+		{Name: "plan_limit", Type: field.TypeInt},
+		{Name: "units_over", Type: field.TypeFloat64},
+		{Name: "unit_price_kes", Type: field.TypeFloat64},
+		{Name: "total_charge_kes", Type: field.TypeFloat64},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "invoiced", "waived"}, Default: "pending"},
+		{Name: "invoiced_at", Type: field.TypeTime, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "tenant_subscription_id", Type: field.TypeUUID},
+	}
+	// OverageChargesTable holds the schema information for the "overage_charges" table.
+	OverageChargesTable = &schema.Table{
+		Name:       "overage_charges",
+		Columns:    OverageChargesColumns,
+		PrimaryKey: []*schema.Column{OverageChargesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "overage_charges_tenant_subscriptions_overage_charges",
+				Columns:    []*schema.Column{OverageChargesColumns[12]},
+				RefColumns: []*schema.Column{TenantSubscriptionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "overagecharge_tenant_id",
+				Unique:  false,
+				Columns: []*schema.Column{OverageChargesColumns[1]},
+			},
+			{
+				Name:    "overagecharge_tenant_subscription_id",
+				Unique:  false,
+				Columns: []*schema.Column{OverageChargesColumns[12]},
+			},
+			{
+				Name:    "overagecharge_status",
+				Unique:  false,
+				Columns: []*schema.Column{OverageChargesColumns[9]},
+			},
+			{
+				Name:    "overagecharge_period_date",
+				Unique:  false,
+				Columns: []*schema.Column{OverageChargesColumns[3]},
+			},
+			{
+				Name:    "overagecharge_tenant_subscription_id_metric_type_period_date",
+				Unique:  true,
+				Columns: []*schema.Column{OverageChargesColumns[12], OverageChargesColumns[2], OverageChargesColumns[3]},
 			},
 		},
 	}
@@ -448,6 +590,76 @@ var (
 				Name:    "serviceconfig_config_key",
 				Unique:  false,
 				Columns: []*schema.Column{ServiceConfigsColumns[2]},
+			},
+		},
+	}
+	// SubscriptionCreditsColumns holds the columns for the "subscription_credits" table.
+	SubscriptionCreditsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "balance_kes", Type: field.TypeInt, Default: 0},
+		{Name: "lifetime_earned_kes", Type: field.TypeInt, Default: 0},
+		{Name: "loyalty_rate", Type: field.TypeFloat64, Default: 0.02},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// SubscriptionCreditsTable holds the schema information for the "subscription_credits" table.
+	SubscriptionCreditsTable = &schema.Table{
+		Name:       "subscription_credits",
+		Columns:    SubscriptionCreditsColumns,
+		PrimaryKey: []*schema.Column{SubscriptionCreditsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "subscriptioncredit_tenant_id",
+				Unique:  true,
+				Columns: []*schema.Column{SubscriptionCreditsColumns[1]},
+			},
+		},
+	}
+	// SubscriptionCreditTransactionsColumns holds the columns for the "subscription_credit_transactions" table.
+	SubscriptionCreditTransactionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"earned", "coupon_redeemed", "gifted", "auto_applied", "expired", "manual_adjusted"}},
+		{Name: "amount_kes", Type: field.TypeInt},
+		{Name: "ref_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "ref_type", Type: field.TypeString, Nullable: true, Size: 64},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "credit_id", Type: field.TypeUUID},
+	}
+	// SubscriptionCreditTransactionsTable holds the schema information for the "subscription_credit_transactions" table.
+	SubscriptionCreditTransactionsTable = &schema.Table{
+		Name:       "subscription_credit_transactions",
+		Columns:    SubscriptionCreditTransactionsColumns,
+		PrimaryKey: []*schema.Column{SubscriptionCreditTransactionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "subscription_credit_transactions_subscription_credits_transactions",
+				Columns:    []*schema.Column{SubscriptionCreditTransactionsColumns[8]},
+				RefColumns: []*schema.Column{SubscriptionCreditsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "subscriptioncredittransaction_tenant_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionCreditTransactionsColumns[1]},
+			},
+			{
+				Name:    "subscriptioncredittransaction_credit_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionCreditTransactionsColumns[8]},
+			},
+			{
+				Name:    "subscriptioncredittransaction_type",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionCreditTransactionsColumns[2]},
+			},
+			{
+				Name:    "subscriptioncredittransaction_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionCreditTransactionsColumns[7]},
 			},
 		},
 	}
@@ -818,7 +1030,10 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		BundlesTable,
+		CouponsTable,
+		CustomAddonsTable,
 		OutboxEventsTable,
+		OverageChargesTable,
 		PlanFeaturesTable,
 		PlanPricingHistoriesTable,
 		ProductsTable,
@@ -827,6 +1042,8 @@ var (
 		RolePermissionsTable,
 		ServiceChargePlansTable,
 		ServiceConfigsTable,
+		SubscriptionCreditsTable,
+		SubscriptionCreditTransactionsTable,
 		SubscriptionPlansTable,
 		SubscriptionsPermissionsTable,
 		SubscriptionsRolesTable,
@@ -839,6 +1056,7 @@ var (
 )
 
 func init() {
+	OverageChargesTable.ForeignKeys[0].RefTable = TenantSubscriptionsTable
 	PlanFeaturesTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
 	PlanPricingHistoriesTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
 	ProductSubscriptionsTable.ForeignKeys[0].RefTable = ProductsTable
@@ -847,6 +1065,7 @@ func init() {
 	ProductSubscriptionsTable.ForeignKeys[3].RefTable = TenantSubscriptionsTable
 	RolePermissionsTable.ForeignKeys[0].RefTable = SubscriptionsRolesTable
 	RolePermissionsTable.ForeignKeys[1].RefTable = SubscriptionsPermissionsTable
+	SubscriptionCreditTransactionsTable.ForeignKeys[0].RefTable = SubscriptionCreditsTable
 	TenantSubscriptionsTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
 	TenantSubscriptionsTable.ForeignKeys[1].RefTable = TenantsTable
 	UserRoleAssignmentsTable.ForeignKeys[0].RefTable = SubscriptionsRolesTable

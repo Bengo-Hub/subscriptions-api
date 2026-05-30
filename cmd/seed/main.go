@@ -72,6 +72,11 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed ordering plans: %w", err)
 	}
 
+	// 2.1 Seed bundle-specific plans (POS_SUITE_*, COMPLETE_*, ORDERING_SETUP_FEE)
+	if err := seedBundlePlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed bundle plans: %w", err)
+	}
+
 	// 2.5 Seed TruLoad org-level plans (Starter, Growth, Professional + License)
 	if err := seedTruLoadOrgPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed truload org plans: %w", err)
@@ -130,6 +135,11 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 	// 3.5 Seed service charge plans
 	if err := seedServiceChargePlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed service charge plans: %w", err)
+	}
+
+	// 3.6 Seed subscription coupons (platform discount codes for tenant billing)
+	if err := seedCoupons(ctx, tx); err != nil {
+		return fmt.Errorf("seed coupons: %w", err)
 	}
 
 	// 4. Seed subscriptions for ALL tenants (each tenant must have a subscription, trial periods allowed)

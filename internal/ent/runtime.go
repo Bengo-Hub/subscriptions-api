@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
+	"github.com/bengobox/subscription-service/internal/ent/coupon"
+	"github.com/bengobox/subscription-service/internal/ent/customaddon"
 	"github.com/bengobox/subscription-service/internal/ent/outboxevent"
+	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/planpricinghistory"
 	"github.com/bengobox/subscription-service/internal/ent/product"
@@ -15,6 +18,8 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/schema"
 	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptioncredit"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptioncredittransaction"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionspermission"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
@@ -74,6 +79,98 @@ func init() {
 	bundleDescID := bundleFields[0].Descriptor()
 	// bundle.DefaultID holds the default value on creation for the id field.
 	bundle.DefaultID = bundleDescID.Default.(func() uuid.UUID)
+	couponFields := schema.Coupon{}.Fields()
+	_ = couponFields
+	// couponDescCode is the schema descriptor for code field.
+	couponDescCode := couponFields[1].Descriptor()
+	// coupon.CodeValidator is a validator for the "code" field. It is called by the builders before save.
+	coupon.CodeValidator = couponDescCode.Validators[0].(func(string) error)
+	// couponDescName is the schema descriptor for name field.
+	couponDescName := couponFields[2].Descriptor()
+	// coupon.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	coupon.NameValidator = couponDescName.Validators[0].(func(string) error)
+	// couponDescMinPlanPrice is the schema descriptor for min_plan_price field.
+	couponDescMinPlanPrice := couponFields[7].Descriptor()
+	// coupon.DefaultMinPlanPrice holds the default value on creation for the min_plan_price field.
+	coupon.DefaultMinPlanPrice = couponDescMinPlanPrice.Default.(float64)
+	// couponDescMaxUses is the schema descriptor for max_uses field.
+	couponDescMaxUses := couponFields[8].Descriptor()
+	// coupon.DefaultMaxUses holds the default value on creation for the max_uses field.
+	coupon.DefaultMaxUses = couponDescMaxUses.Default.(int)
+	// couponDescUsedCount is the schema descriptor for used_count field.
+	couponDescUsedCount := couponFields[9].Descriptor()
+	// coupon.DefaultUsedCount holds the default value on creation for the used_count field.
+	coupon.DefaultUsedCount = couponDescUsedCount.Default.(int)
+	// couponDescMaxStacks is the schema descriptor for max_stacks field.
+	couponDescMaxStacks := couponFields[10].Descriptor()
+	// coupon.DefaultMaxStacks holds the default value on creation for the max_stacks field.
+	coupon.DefaultMaxStacks = couponDescMaxStacks.Default.(int)
+	// couponDescIsActive is the schema descriptor for is_active field.
+	couponDescIsActive := couponFields[11].Descriptor()
+	// coupon.DefaultIsActive holds the default value on creation for the is_active field.
+	coupon.DefaultIsActive = couponDescIsActive.Default.(bool)
+	// couponDescValidFrom is the schema descriptor for valid_from field.
+	couponDescValidFrom := couponFields[12].Descriptor()
+	// coupon.DefaultValidFrom holds the default value on creation for the valid_from field.
+	coupon.DefaultValidFrom = couponDescValidFrom.Default.(func() time.Time)
+	// couponDescMetadata is the schema descriptor for metadata field.
+	couponDescMetadata := couponFields[15].Descriptor()
+	// coupon.DefaultMetadata holds the default value on creation for the metadata field.
+	coupon.DefaultMetadata = couponDescMetadata.Default.(map[string]interface{})
+	// couponDescCreatedAt is the schema descriptor for created_at field.
+	couponDescCreatedAt := couponFields[16].Descriptor()
+	// coupon.DefaultCreatedAt holds the default value on creation for the created_at field.
+	coupon.DefaultCreatedAt = couponDescCreatedAt.Default.(func() time.Time)
+	// couponDescUpdatedAt is the schema descriptor for updated_at field.
+	couponDescUpdatedAt := couponFields[17].Descriptor()
+	// coupon.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	coupon.DefaultUpdatedAt = couponDescUpdatedAt.Default.(func() time.Time)
+	// coupon.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	coupon.UpdateDefaultUpdatedAt = couponDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// couponDescID is the schema descriptor for id field.
+	couponDescID := couponFields[0].Descriptor()
+	// coupon.DefaultID holds the default value on creation for the id field.
+	coupon.DefaultID = couponDescID.Default.(func() uuid.UUID)
+	customaddonFields := schema.CustomAddon{}.Fields()
+	_ = customaddonFields
+	// customaddonDescName is the schema descriptor for name field.
+	customaddonDescName := customaddonFields[2].Descriptor()
+	// customaddon.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	customaddon.NameValidator = customaddonDescName.Validators[0].(func(string) error)
+	// customaddonDescServiceCode is the schema descriptor for service_code field.
+	customaddonDescServiceCode := customaddonFields[4].Descriptor()
+	// customaddon.ServiceCodeValidator is a validator for the "service_code" field. It is called by the builders before save.
+	customaddon.ServiceCodeValidator = customaddonDescServiceCode.Validators[0].(func(string) error)
+	// customaddonDescServiceAddonType is the schema descriptor for service_addon_type field.
+	customaddonDescServiceAddonType := customaddonFields[5].Descriptor()
+	// customaddon.ServiceAddonTypeValidator is a validator for the "service_addon_type" field. It is called by the builders before save.
+	customaddon.ServiceAddonTypeValidator = customaddonDescServiceAddonType.Validators[0].(func(string) error)
+	// customaddonDescQuantity is the schema descriptor for quantity field.
+	customaddonDescQuantity := customaddonFields[8].Descriptor()
+	// customaddon.DefaultQuantity holds the default value on creation for the quantity field.
+	customaddon.DefaultQuantity = customaddonDescQuantity.Default.(int)
+	// customaddonDescNotes is the schema descriptor for notes field.
+	customaddonDescNotes := customaddonFields[10].Descriptor()
+	// customaddon.NotesValidator is a validator for the "notes" field. It is called by the builders before save.
+	customaddon.NotesValidator = customaddonDescNotes.Validators[0].(func(string) error)
+	// customaddonDescMetadata is the schema descriptor for metadata field.
+	customaddonDescMetadata := customaddonFields[12].Descriptor()
+	// customaddon.DefaultMetadata holds the default value on creation for the metadata field.
+	customaddon.DefaultMetadata = customaddonDescMetadata.Default.(map[string]interface{})
+	// customaddonDescCreatedAt is the schema descriptor for created_at field.
+	customaddonDescCreatedAt := customaddonFields[13].Descriptor()
+	// customaddon.DefaultCreatedAt holds the default value on creation for the created_at field.
+	customaddon.DefaultCreatedAt = customaddonDescCreatedAt.Default.(func() time.Time)
+	// customaddonDescUpdatedAt is the schema descriptor for updated_at field.
+	customaddonDescUpdatedAt := customaddonFields[14].Descriptor()
+	// customaddon.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	customaddon.DefaultUpdatedAt = customaddonDescUpdatedAt.Default.(func() time.Time)
+	// customaddon.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	customaddon.UpdateDefaultUpdatedAt = customaddonDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// customaddonDescID is the schema descriptor for id field.
+	customaddonDescID := customaddonFields[0].Descriptor()
+	// customaddon.DefaultID holds the default value on creation for the id field.
+	customaddon.DefaultID = customaddonDescID.Default.(func() uuid.UUID)
 	outboxeventFields := schema.OutboxEvent{}.Fields()
 	_ = outboxeventFields
 	// outboxeventDescAggregateType is the schema descriptor for aggregate_type field.
@@ -100,6 +197,20 @@ func init() {
 	outboxeventDescID := outboxeventFields[0].Descriptor()
 	// outboxevent.DefaultID holds the default value on creation for the id field.
 	outboxevent.DefaultID = outboxeventDescID.Default.(func() uuid.UUID)
+	overagechargeFields := schema.OverageCharge{}.Fields()
+	_ = overagechargeFields
+	// overagechargeDescMetricType is the schema descriptor for metric_type field.
+	overagechargeDescMetricType := overagechargeFields[3].Descriptor()
+	// overagecharge.MetricTypeValidator is a validator for the "metric_type" field. It is called by the builders before save.
+	overagecharge.MetricTypeValidator = overagechargeDescMetricType.Validators[0].(func(string) error)
+	// overagechargeDescCreatedAt is the schema descriptor for created_at field.
+	overagechargeDescCreatedAt := overagechargeFields[12].Descriptor()
+	// overagecharge.DefaultCreatedAt holds the default value on creation for the created_at field.
+	overagecharge.DefaultCreatedAt = overagechargeDescCreatedAt.Default.(func() time.Time)
+	// overagechargeDescID is the schema descriptor for id field.
+	overagechargeDescID := overagechargeFields[0].Descriptor()
+	// overagecharge.DefaultID holds the default value on creation for the id field.
+	overagecharge.DefaultID = overagechargeDescID.Default.(func() uuid.UUID)
 	planfeatureFields := schema.PlanFeature{}.Fields()
 	_ = planfeatureFields
 	// planfeatureDescFeatureCode is the schema descriptor for feature_code field.
@@ -344,6 +455,48 @@ func init() {
 	serviceconfigDescID := serviceconfigFields[0].Descriptor()
 	// serviceconfig.DefaultID holds the default value on creation for the id field.
 	serviceconfig.DefaultID = serviceconfigDescID.Default.(func() uuid.UUID)
+	subscriptioncreditFields := schema.SubscriptionCredit{}.Fields()
+	_ = subscriptioncreditFields
+	// subscriptioncreditDescBalanceKes is the schema descriptor for balance_kes field.
+	subscriptioncreditDescBalanceKes := subscriptioncreditFields[2].Descriptor()
+	// subscriptioncredit.DefaultBalanceKes holds the default value on creation for the balance_kes field.
+	subscriptioncredit.DefaultBalanceKes = subscriptioncreditDescBalanceKes.Default.(int)
+	// subscriptioncreditDescLifetimeEarnedKes is the schema descriptor for lifetime_earned_kes field.
+	subscriptioncreditDescLifetimeEarnedKes := subscriptioncreditFields[3].Descriptor()
+	// subscriptioncredit.DefaultLifetimeEarnedKes holds the default value on creation for the lifetime_earned_kes field.
+	subscriptioncredit.DefaultLifetimeEarnedKes = subscriptioncreditDescLifetimeEarnedKes.Default.(int)
+	// subscriptioncreditDescLoyaltyRate is the schema descriptor for loyalty_rate field.
+	subscriptioncreditDescLoyaltyRate := subscriptioncreditFields[4].Descriptor()
+	// subscriptioncredit.DefaultLoyaltyRate holds the default value on creation for the loyalty_rate field.
+	subscriptioncredit.DefaultLoyaltyRate = subscriptioncreditDescLoyaltyRate.Default.(float64)
+	// subscriptioncreditDescUpdatedAt is the schema descriptor for updated_at field.
+	subscriptioncreditDescUpdatedAt := subscriptioncreditFields[5].Descriptor()
+	// subscriptioncredit.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	subscriptioncredit.DefaultUpdatedAt = subscriptioncreditDescUpdatedAt.Default.(func() time.Time)
+	// subscriptioncredit.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	subscriptioncredit.UpdateDefaultUpdatedAt = subscriptioncreditDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// subscriptioncreditDescID is the schema descriptor for id field.
+	subscriptioncreditDescID := subscriptioncreditFields[0].Descriptor()
+	// subscriptioncredit.DefaultID holds the default value on creation for the id field.
+	subscriptioncredit.DefaultID = subscriptioncreditDescID.Default.(func() uuid.UUID)
+	subscriptioncredittransactionFields := schema.SubscriptionCreditTransaction{}.Fields()
+	_ = subscriptioncredittransactionFields
+	// subscriptioncredittransactionDescRefType is the schema descriptor for ref_type field.
+	subscriptioncredittransactionDescRefType := subscriptioncredittransactionFields[6].Descriptor()
+	// subscriptioncredittransaction.RefTypeValidator is a validator for the "ref_type" field. It is called by the builders before save.
+	subscriptioncredittransaction.RefTypeValidator = subscriptioncredittransactionDescRefType.Validators[0].(func(string) error)
+	// subscriptioncredittransactionDescDescription is the schema descriptor for description field.
+	subscriptioncredittransactionDescDescription := subscriptioncredittransactionFields[7].Descriptor()
+	// subscriptioncredittransaction.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
+	subscriptioncredittransaction.DescriptionValidator = subscriptioncredittransactionDescDescription.Validators[0].(func(string) error)
+	// subscriptioncredittransactionDescCreatedAt is the schema descriptor for created_at field.
+	subscriptioncredittransactionDescCreatedAt := subscriptioncredittransactionFields[8].Descriptor()
+	// subscriptioncredittransaction.DefaultCreatedAt holds the default value on creation for the created_at field.
+	subscriptioncredittransaction.DefaultCreatedAt = subscriptioncredittransactionDescCreatedAt.Default.(func() time.Time)
+	// subscriptioncredittransactionDescID is the schema descriptor for id field.
+	subscriptioncredittransactionDescID := subscriptioncredittransactionFields[0].Descriptor()
+	// subscriptioncredittransaction.DefaultID holds the default value on creation for the id field.
+	subscriptioncredittransaction.DefaultID = subscriptioncredittransactionDescID.Default.(func() uuid.UUID)
 	subscriptionplanFields := schema.SubscriptionPlan{}.Fields()
 	_ = subscriptionplanFields
 	// subscriptionplanDescPlanCode is the schema descriptor for plan_code field.

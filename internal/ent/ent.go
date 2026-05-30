@@ -13,7 +13,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
+	"github.com/bengobox/subscription-service/internal/ent/coupon"
+	"github.com/bengobox/subscription-service/internal/ent/customaddon"
 	"github.com/bengobox/subscription-service/internal/ent/outboxevent"
+	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/planpricinghistory"
 	"github.com/bengobox/subscription-service/internal/ent/product"
@@ -22,6 +25,8 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/rolepermission"
 	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptioncredit"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptioncredittransaction"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionspermission"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
@@ -90,24 +95,29 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			bundle.Table:                  bundle.ValidColumn,
-			outboxevent.Table:             outboxevent.ValidColumn,
-			planfeature.Table:             planfeature.ValidColumn,
-			planpricinghistory.Table:      planpricinghistory.ValidColumn,
-			product.Table:                 product.ValidColumn,
-			productsubscription.Table:     productsubscription.ValidColumn,
-			ratelimitconfig.Table:         ratelimitconfig.ValidColumn,
-			rolepermission.Table:          rolepermission.ValidColumn,
-			servicechargeplan.Table:       servicechargeplan.ValidColumn,
-			serviceconfig.Table:           serviceconfig.ValidColumn,
-			subscriptionplan.Table:        subscriptionplan.ValidColumn,
-			subscriptionspermission.Table: subscriptionspermission.ValidColumn,
-			subscriptionsrole.Table:       subscriptionsrole.ValidColumn,
-			subscriptionsuser.Table:       subscriptionsuser.ValidColumn,
-			tenant.Table:                  tenant.ValidColumn,
-			tenantsubscription.Table:      tenantsubscription.ValidColumn,
-			usageevent.Table:              usageevent.ValidColumn,
-			userroleassignment.Table:      userroleassignment.ValidColumn,
+			bundle.Table:                        bundle.ValidColumn,
+			coupon.Table:                        coupon.ValidColumn,
+			customaddon.Table:                   customaddon.ValidColumn,
+			outboxevent.Table:                   outboxevent.ValidColumn,
+			overagecharge.Table:                 overagecharge.ValidColumn,
+			planfeature.Table:                   planfeature.ValidColumn,
+			planpricinghistory.Table:            planpricinghistory.ValidColumn,
+			product.Table:                       product.ValidColumn,
+			productsubscription.Table:           productsubscription.ValidColumn,
+			ratelimitconfig.Table:               ratelimitconfig.ValidColumn,
+			rolepermission.Table:                rolepermission.ValidColumn,
+			servicechargeplan.Table:             servicechargeplan.ValidColumn,
+			serviceconfig.Table:                 serviceconfig.ValidColumn,
+			subscriptioncredit.Table:            subscriptioncredit.ValidColumn,
+			subscriptioncredittransaction.Table: subscriptioncredittransaction.ValidColumn,
+			subscriptionplan.Table:              subscriptionplan.ValidColumn,
+			subscriptionspermission.Table:       subscriptionspermission.ValidColumn,
+			subscriptionsrole.Table:             subscriptionsrole.ValidColumn,
+			subscriptionsuser.Table:             subscriptionsuser.ValidColumn,
+			tenant.Table:                        tenant.ValidColumn,
+			tenantsubscription.Table:            tenantsubscription.ValidColumn,
+			usageevent.Table:                    usageevent.ValidColumn,
+			userroleassignment.Table:            userroleassignment.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

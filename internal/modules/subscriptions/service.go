@@ -509,7 +509,15 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 	}
 
 	now := time.Now().UTC()
-	periodEnd := now.AddDate(0, 1, 0) // 1 month
+	var periodEnd time.Time
+	switch sub.BillingCycle {
+	case tenantsubscription.BillingCycleANNUAL:
+		periodEnd = now.AddDate(1, 0, 0)
+	case tenantsubscription.BillingCycleQUARTERLY:
+		periodEnd = now.AddDate(0, 3, 0)
+	default: // MONTHLY and ONE_TIME
+		periodEnd = now.AddDate(0, 1, 0)
+	}
 
 	tx, err := s.client.Tx(ctx)
 	if err != nil {

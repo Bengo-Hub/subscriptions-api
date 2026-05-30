@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
@@ -280,6 +281,21 @@ func (_u *TenantSubscriptionUpdate) AddProductSubscriptions(v ...*ProductSubscri
 	return _u.AddProductSubscriptionIDs(ids...)
 }
 
+// AddOverageChargeIDs adds the "overage_charges" edge to the OverageCharge entity by IDs.
+func (_u *TenantSubscriptionUpdate) AddOverageChargeIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.AddOverageChargeIDs(ids...)
+	return _u
+}
+
+// AddOverageCharges adds the "overage_charges" edges to the OverageCharge entity.
+func (_u *TenantSubscriptionUpdate) AddOverageCharges(v ...*OverageCharge) *TenantSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOverageChargeIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_u *TenantSubscriptionUpdate) Mutation() *TenantSubscriptionMutation {
 	return _u.mutation
@@ -316,6 +332,27 @@ func (_u *TenantSubscriptionUpdate) RemoveProductSubscriptions(v ...*ProductSubs
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveProductSubscriptionIDs(ids...)
+}
+
+// ClearOverageCharges clears all "overage_charges" edges to the OverageCharge entity.
+func (_u *TenantSubscriptionUpdate) ClearOverageCharges() *TenantSubscriptionUpdate {
+	_u.mutation.ClearOverageCharges()
+	return _u
+}
+
+// RemoveOverageChargeIDs removes the "overage_charges" edge to OverageCharge entities by IDs.
+func (_u *TenantSubscriptionUpdate) RemoveOverageChargeIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.RemoveOverageChargeIDs(ids...)
+	return _u
+}
+
+// RemoveOverageCharges removes "overage_charges" edges to OverageCharge entities.
+func (_u *TenantSubscriptionUpdate) RemoveOverageCharges(v ...*OverageCharge) *TenantSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOverageChargeIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -540,6 +577,51 @@ func (_u *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OverageChargesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.OverageChargesTable,
+			Columns: []string{tenantsubscription.OverageChargesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(overagecharge.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOverageChargesIDs(); len(nodes) > 0 && !_u.mutation.OverageChargesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.OverageChargesTable,
+			Columns: []string{tenantsubscription.OverageChargesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(overagecharge.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OverageChargesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.OverageChargesTable,
+			Columns: []string{tenantsubscription.OverageChargesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(overagecharge.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -815,6 +897,21 @@ func (_u *TenantSubscriptionUpdateOne) AddProductSubscriptions(v ...*ProductSubs
 	return _u.AddProductSubscriptionIDs(ids...)
 }
 
+// AddOverageChargeIDs adds the "overage_charges" edge to the OverageCharge entity by IDs.
+func (_u *TenantSubscriptionUpdateOne) AddOverageChargeIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.AddOverageChargeIDs(ids...)
+	return _u
+}
+
+// AddOverageCharges adds the "overage_charges" edges to the OverageCharge entity.
+func (_u *TenantSubscriptionUpdateOne) AddOverageCharges(v ...*OverageCharge) *TenantSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOverageChargeIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_u *TenantSubscriptionUpdateOne) Mutation() *TenantSubscriptionMutation {
 	return _u.mutation
@@ -851,6 +948,27 @@ func (_u *TenantSubscriptionUpdateOne) RemoveProductSubscriptions(v ...*ProductS
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveProductSubscriptionIDs(ids...)
+}
+
+// ClearOverageCharges clears all "overage_charges" edges to the OverageCharge entity.
+func (_u *TenantSubscriptionUpdateOne) ClearOverageCharges() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearOverageCharges()
+	return _u
+}
+
+// RemoveOverageChargeIDs removes the "overage_charges" edge to OverageCharge entities by IDs.
+func (_u *TenantSubscriptionUpdateOne) RemoveOverageChargeIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.RemoveOverageChargeIDs(ids...)
+	return _u
+}
+
+// RemoveOverageCharges removes "overage_charges" edges to OverageCharge entities.
+func (_u *TenantSubscriptionUpdateOne) RemoveOverageCharges(v ...*OverageCharge) *TenantSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOverageChargeIDs(ids...)
 }
 
 // Where appends a list predicates to the TenantSubscriptionUpdate builder.
@@ -1105,6 +1223,51 @@ func (_u *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Tena
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OverageChargesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.OverageChargesTable,
+			Columns: []string{tenantsubscription.OverageChargesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(overagecharge.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOverageChargesIDs(); len(nodes) > 0 && !_u.mutation.OverageChargesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.OverageChargesTable,
+			Columns: []string{tenantsubscription.OverageChargesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(overagecharge.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OverageChargesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.OverageChargesTable,
+			Columns: []string{tenantsubscription.OverageChargesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(overagecharge.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

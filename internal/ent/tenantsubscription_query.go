@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
@@ -30,6 +31,7 @@ type TenantSubscriptionQuery struct {
 	withTenant               *TenantQuery
 	withPlan                 *SubscriptionPlanQuery
 	withProductSubscriptions *ProductSubscriptionQuery
+	withOverageCharges       *OverageChargeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -125,6 +127,28 @@ func (_q *TenantSubscriptionQuery) QueryProductSubscriptions() *ProductSubscript
 			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, selector),
 			sqlgraph.To(productsubscription.Table, productsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.ProductSubscriptionsTable, tenantsubscription.ProductSubscriptionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOverageCharges chains the current query on the "overage_charges" edge.
+func (_q *TenantSubscriptionQuery) QueryOverageCharges() *OverageChargeQuery {
+	query := (&OverageChargeClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, selector),
+			sqlgraph.To(overagecharge.Table, overagecharge.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.OverageChargesTable, tenantsubscription.OverageChargesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -327,6 +351,7 @@ func (_q *TenantSubscriptionQuery) Clone() *TenantSubscriptionQuery {
 		withTenant:               _q.withTenant.Clone(),
 		withPlan:                 _q.withPlan.Clone(),
 		withProductSubscriptions: _q.withProductSubscriptions.Clone(),
+		withOverageCharges:       _q.withOverageCharges.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -363,6 +388,17 @@ func (_q *TenantSubscriptionQuery) WithProductSubscriptions(opts ...func(*Produc
 		opt(query)
 	}
 	_q.withProductSubscriptions = query
+	return _q
+}
+
+// WithOverageCharges tells the query-builder to eager-load the nodes that are connected to
+// the "overage_charges" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TenantSubscriptionQuery) WithOverageCharges(opts ...func(*OverageChargeQuery)) *TenantSubscriptionQuery {
+	query := (&OverageChargeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withOverageCharges = query
 	return _q
 }
 
@@ -444,10 +480,11 @@ func (_q *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 	var (
 		nodes       = []*TenantSubscription{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			_q.withTenant != nil,
 			_q.withPlan != nil,
 			_q.withProductSubscriptions != nil,
+			_q.withOverageCharges != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -485,6 +522,15 @@ func (_q *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 			func(n *TenantSubscription) { n.Edges.ProductSubscriptions = []*ProductSubscription{} },
 			func(n *TenantSubscription, e *ProductSubscription) {
 				n.Edges.ProductSubscriptions = append(n.Edges.ProductSubscriptions, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withOverageCharges; query != nil {
+		if err := _q.loadOverageCharges(ctx, query, nodes,
+			func(n *TenantSubscription) { n.Edges.OverageCharges = []*OverageCharge{} },
+			func(n *TenantSubscription, e *OverageCharge) {
+				n.Edges.OverageCharges = append(n.Edges.OverageCharges, e)
 			}); err != nil {
 			return nil, err
 		}
@@ -565,6 +611,36 @@ func (_q *TenantSubscriptionQuery) loadProductSubscriptions(ctx context.Context,
 	}
 	query.Where(predicate.ProductSubscription(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(tenantsubscription.ProductSubscriptionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.TenantSubscriptionID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "tenant_subscription_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *TenantSubscriptionQuery) loadOverageCharges(ctx context.Context, query *OverageChargeQuery, nodes []*TenantSubscription, init func(*TenantSubscription), assign func(*TenantSubscription, *OverageCharge)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*TenantSubscription)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(overagecharge.FieldTenantSubscriptionID)
+	}
+	query.Where(predicate.OverageCharge(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(tenantsubscription.OverageChargesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

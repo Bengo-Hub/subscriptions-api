@@ -17,7 +17,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
+	"github.com/bengobox/subscription-service/internal/ent/coupon"
+	"github.com/bengobox/subscription-service/internal/ent/customaddon"
 	"github.com/bengobox/subscription-service/internal/ent/outboxevent"
+	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/planpricinghistory"
 	"github.com/bengobox/subscription-service/internal/ent/product"
@@ -26,6 +29,8 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/rolepermission"
 	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptioncredit"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptioncredittransaction"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionspermission"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
@@ -43,8 +48,14 @@ type Client struct {
 	Schema *migrate.Schema
 	// Bundle is the client for interacting with the Bundle builders.
 	Bundle *BundleClient
+	// Coupon is the client for interacting with the Coupon builders.
+	Coupon *CouponClient
+	// CustomAddon is the client for interacting with the CustomAddon builders.
+	CustomAddon *CustomAddonClient
 	// OutboxEvent is the client for interacting with the OutboxEvent builders.
 	OutboxEvent *OutboxEventClient
+	// OverageCharge is the client for interacting with the OverageCharge builders.
+	OverageCharge *OverageChargeClient
 	// PlanFeature is the client for interacting with the PlanFeature builders.
 	PlanFeature *PlanFeatureClient
 	// PlanPricingHistory is the client for interacting with the PlanPricingHistory builders.
@@ -61,6 +72,10 @@ type Client struct {
 	ServiceChargePlan *ServiceChargePlanClient
 	// ServiceConfig is the client for interacting with the ServiceConfig builders.
 	ServiceConfig *ServiceConfigClient
+	// SubscriptionCredit is the client for interacting with the SubscriptionCredit builders.
+	SubscriptionCredit *SubscriptionCreditClient
+	// SubscriptionCreditTransaction is the client for interacting with the SubscriptionCreditTransaction builders.
+	SubscriptionCreditTransaction *SubscriptionCreditTransactionClient
 	// SubscriptionPlan is the client for interacting with the SubscriptionPlan builders.
 	SubscriptionPlan *SubscriptionPlanClient
 	// SubscriptionsPermission is the client for interacting with the SubscriptionsPermission builders.
@@ -89,7 +104,10 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Bundle = NewBundleClient(c.config)
+	c.Coupon = NewCouponClient(c.config)
+	c.CustomAddon = NewCustomAddonClient(c.config)
 	c.OutboxEvent = NewOutboxEventClient(c.config)
+	c.OverageCharge = NewOverageChargeClient(c.config)
 	c.PlanFeature = NewPlanFeatureClient(c.config)
 	c.PlanPricingHistory = NewPlanPricingHistoryClient(c.config)
 	c.Product = NewProductClient(c.config)
@@ -98,6 +116,8 @@ func (c *Client) init() {
 	c.RolePermission = NewRolePermissionClient(c.config)
 	c.ServiceChargePlan = NewServiceChargePlanClient(c.config)
 	c.ServiceConfig = NewServiceConfigClient(c.config)
+	c.SubscriptionCredit = NewSubscriptionCreditClient(c.config)
+	c.SubscriptionCreditTransaction = NewSubscriptionCreditTransactionClient(c.config)
 	c.SubscriptionPlan = NewSubscriptionPlanClient(c.config)
 	c.SubscriptionsPermission = NewSubscriptionsPermissionClient(c.config)
 	c.SubscriptionsRole = NewSubscriptionsRoleClient(c.config)
@@ -196,26 +216,31 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:                     ctx,
-		config:                  cfg,
-		Bundle:                  NewBundleClient(cfg),
-		OutboxEvent:             NewOutboxEventClient(cfg),
-		PlanFeature:             NewPlanFeatureClient(cfg),
-		PlanPricingHistory:      NewPlanPricingHistoryClient(cfg),
-		Product:                 NewProductClient(cfg),
-		ProductSubscription:     NewProductSubscriptionClient(cfg),
-		RateLimitConfig:         NewRateLimitConfigClient(cfg),
-		RolePermission:          NewRolePermissionClient(cfg),
-		ServiceChargePlan:       NewServiceChargePlanClient(cfg),
-		ServiceConfig:           NewServiceConfigClient(cfg),
-		SubscriptionPlan:        NewSubscriptionPlanClient(cfg),
-		SubscriptionsPermission: NewSubscriptionsPermissionClient(cfg),
-		SubscriptionsRole:       NewSubscriptionsRoleClient(cfg),
-		SubscriptionsUser:       NewSubscriptionsUserClient(cfg),
-		Tenant:                  NewTenantClient(cfg),
-		TenantSubscription:      NewTenantSubscriptionClient(cfg),
-		UsageEvent:              NewUsageEventClient(cfg),
-		UserRoleAssignment:      NewUserRoleAssignmentClient(cfg),
+		ctx:                           ctx,
+		config:                        cfg,
+		Bundle:                        NewBundleClient(cfg),
+		Coupon:                        NewCouponClient(cfg),
+		CustomAddon:                   NewCustomAddonClient(cfg),
+		OutboxEvent:                   NewOutboxEventClient(cfg),
+		OverageCharge:                 NewOverageChargeClient(cfg),
+		PlanFeature:                   NewPlanFeatureClient(cfg),
+		PlanPricingHistory:            NewPlanPricingHistoryClient(cfg),
+		Product:                       NewProductClient(cfg),
+		ProductSubscription:           NewProductSubscriptionClient(cfg),
+		RateLimitConfig:               NewRateLimitConfigClient(cfg),
+		RolePermission:                NewRolePermissionClient(cfg),
+		ServiceChargePlan:             NewServiceChargePlanClient(cfg),
+		ServiceConfig:                 NewServiceConfigClient(cfg),
+		SubscriptionCredit:            NewSubscriptionCreditClient(cfg),
+		SubscriptionCreditTransaction: NewSubscriptionCreditTransactionClient(cfg),
+		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
+		SubscriptionsPermission:       NewSubscriptionsPermissionClient(cfg),
+		SubscriptionsRole:             NewSubscriptionsRoleClient(cfg),
+		SubscriptionsUser:             NewSubscriptionsUserClient(cfg),
+		Tenant:                        NewTenantClient(cfg),
+		TenantSubscription:            NewTenantSubscriptionClient(cfg),
+		UsageEvent:                    NewUsageEventClient(cfg),
+		UserRoleAssignment:            NewUserRoleAssignmentClient(cfg),
 	}, nil
 }
 
@@ -233,26 +258,31 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:                     ctx,
-		config:                  cfg,
-		Bundle:                  NewBundleClient(cfg),
-		OutboxEvent:             NewOutboxEventClient(cfg),
-		PlanFeature:             NewPlanFeatureClient(cfg),
-		PlanPricingHistory:      NewPlanPricingHistoryClient(cfg),
-		Product:                 NewProductClient(cfg),
-		ProductSubscription:     NewProductSubscriptionClient(cfg),
-		RateLimitConfig:         NewRateLimitConfigClient(cfg),
-		RolePermission:          NewRolePermissionClient(cfg),
-		ServiceChargePlan:       NewServiceChargePlanClient(cfg),
-		ServiceConfig:           NewServiceConfigClient(cfg),
-		SubscriptionPlan:        NewSubscriptionPlanClient(cfg),
-		SubscriptionsPermission: NewSubscriptionsPermissionClient(cfg),
-		SubscriptionsRole:       NewSubscriptionsRoleClient(cfg),
-		SubscriptionsUser:       NewSubscriptionsUserClient(cfg),
-		Tenant:                  NewTenantClient(cfg),
-		TenantSubscription:      NewTenantSubscriptionClient(cfg),
-		UsageEvent:              NewUsageEventClient(cfg),
-		UserRoleAssignment:      NewUserRoleAssignmentClient(cfg),
+		ctx:                           ctx,
+		config:                        cfg,
+		Bundle:                        NewBundleClient(cfg),
+		Coupon:                        NewCouponClient(cfg),
+		CustomAddon:                   NewCustomAddonClient(cfg),
+		OutboxEvent:                   NewOutboxEventClient(cfg),
+		OverageCharge:                 NewOverageChargeClient(cfg),
+		PlanFeature:                   NewPlanFeatureClient(cfg),
+		PlanPricingHistory:            NewPlanPricingHistoryClient(cfg),
+		Product:                       NewProductClient(cfg),
+		ProductSubscription:           NewProductSubscriptionClient(cfg),
+		RateLimitConfig:               NewRateLimitConfigClient(cfg),
+		RolePermission:                NewRolePermissionClient(cfg),
+		ServiceChargePlan:             NewServiceChargePlanClient(cfg),
+		ServiceConfig:                 NewServiceConfigClient(cfg),
+		SubscriptionCredit:            NewSubscriptionCreditClient(cfg),
+		SubscriptionCreditTransaction: NewSubscriptionCreditTransactionClient(cfg),
+		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
+		SubscriptionsPermission:       NewSubscriptionsPermissionClient(cfg),
+		SubscriptionsRole:             NewSubscriptionsRoleClient(cfg),
+		SubscriptionsUser:             NewSubscriptionsUserClient(cfg),
+		Tenant:                        NewTenantClient(cfg),
+		TenantSubscription:            NewTenantSubscriptionClient(cfg),
+		UsageEvent:                    NewUsageEventClient(cfg),
+		UserRoleAssignment:            NewUserRoleAssignmentClient(cfg),
 	}, nil
 }
 
@@ -282,9 +312,10 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Bundle, c.OutboxEvent, c.PlanFeature, c.PlanPricingHistory, c.Product,
-		c.ProductSubscription, c.RateLimitConfig, c.RolePermission,
-		c.ServiceChargePlan, c.ServiceConfig, c.SubscriptionPlan,
+		c.Bundle, c.Coupon, c.CustomAddon, c.OutboxEvent, c.OverageCharge,
+		c.PlanFeature, c.PlanPricingHistory, c.Product, c.ProductSubscription,
+		c.RateLimitConfig, c.RolePermission, c.ServiceChargePlan, c.ServiceConfig,
+		c.SubscriptionCredit, c.SubscriptionCreditTransaction, c.SubscriptionPlan,
 		c.SubscriptionsPermission, c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant,
 		c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
 	} {
@@ -296,9 +327,10 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Bundle, c.OutboxEvent, c.PlanFeature, c.PlanPricingHistory, c.Product,
-		c.ProductSubscription, c.RateLimitConfig, c.RolePermission,
-		c.ServiceChargePlan, c.ServiceConfig, c.SubscriptionPlan,
+		c.Bundle, c.Coupon, c.CustomAddon, c.OutboxEvent, c.OverageCharge,
+		c.PlanFeature, c.PlanPricingHistory, c.Product, c.ProductSubscription,
+		c.RateLimitConfig, c.RolePermission, c.ServiceChargePlan, c.ServiceConfig,
+		c.SubscriptionCredit, c.SubscriptionCreditTransaction, c.SubscriptionPlan,
 		c.SubscriptionsPermission, c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant,
 		c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
 	} {
@@ -311,8 +343,14 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *BundleMutation:
 		return c.Bundle.mutate(ctx, m)
+	case *CouponMutation:
+		return c.Coupon.mutate(ctx, m)
+	case *CustomAddonMutation:
+		return c.CustomAddon.mutate(ctx, m)
 	case *OutboxEventMutation:
 		return c.OutboxEvent.mutate(ctx, m)
+	case *OverageChargeMutation:
+		return c.OverageCharge.mutate(ctx, m)
 	case *PlanFeatureMutation:
 		return c.PlanFeature.mutate(ctx, m)
 	case *PlanPricingHistoryMutation:
@@ -329,6 +367,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ServiceChargePlan.mutate(ctx, m)
 	case *ServiceConfigMutation:
 		return c.ServiceConfig.mutate(ctx, m)
+	case *SubscriptionCreditMutation:
+		return c.SubscriptionCredit.mutate(ctx, m)
+	case *SubscriptionCreditTransactionMutation:
+		return c.SubscriptionCreditTransaction.mutate(ctx, m)
 	case *SubscriptionPlanMutation:
 		return c.SubscriptionPlan.mutate(ctx, m)
 	case *SubscriptionsPermissionMutation:
@@ -483,6 +525,272 @@ func (c *BundleClient) mutate(ctx context.Context, m *BundleMutation) (Value, er
 	}
 }
 
+// CouponClient is a client for the Coupon schema.
+type CouponClient struct {
+	config
+}
+
+// NewCouponClient returns a client for the Coupon from the given config.
+func NewCouponClient(c config) *CouponClient {
+	return &CouponClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `coupon.Hooks(f(g(h())))`.
+func (c *CouponClient) Use(hooks ...Hook) {
+	c.hooks.Coupon = append(c.hooks.Coupon, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `coupon.Intercept(f(g(h())))`.
+func (c *CouponClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Coupon = append(c.inters.Coupon, interceptors...)
+}
+
+// Create returns a builder for creating a Coupon entity.
+func (c *CouponClient) Create() *CouponCreate {
+	mutation := newCouponMutation(c.config, OpCreate)
+	return &CouponCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Coupon entities.
+func (c *CouponClient) CreateBulk(builders ...*CouponCreate) *CouponCreateBulk {
+	return &CouponCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CouponClient) MapCreateBulk(slice any, setFunc func(*CouponCreate, int)) *CouponCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CouponCreateBulk{err: fmt.Errorf("calling to CouponClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CouponCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CouponCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Coupon.
+func (c *CouponClient) Update() *CouponUpdate {
+	mutation := newCouponMutation(c.config, OpUpdate)
+	return &CouponUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CouponClient) UpdateOne(_m *Coupon) *CouponUpdateOne {
+	mutation := newCouponMutation(c.config, OpUpdateOne, withCoupon(_m))
+	return &CouponUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CouponClient) UpdateOneID(id uuid.UUID) *CouponUpdateOne {
+	mutation := newCouponMutation(c.config, OpUpdateOne, withCouponID(id))
+	return &CouponUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Coupon.
+func (c *CouponClient) Delete() *CouponDelete {
+	mutation := newCouponMutation(c.config, OpDelete)
+	return &CouponDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CouponClient) DeleteOne(_m *Coupon) *CouponDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CouponClient) DeleteOneID(id uuid.UUID) *CouponDeleteOne {
+	builder := c.Delete().Where(coupon.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CouponDeleteOne{builder}
+}
+
+// Query returns a query builder for Coupon.
+func (c *CouponClient) Query() *CouponQuery {
+	return &CouponQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCoupon},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Coupon entity by its id.
+func (c *CouponClient) Get(ctx context.Context, id uuid.UUID) (*Coupon, error) {
+	return c.Query().Where(coupon.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CouponClient) GetX(ctx context.Context, id uuid.UUID) *Coupon {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *CouponClient) Hooks() []Hook {
+	return c.hooks.Coupon
+}
+
+// Interceptors returns the client interceptors.
+func (c *CouponClient) Interceptors() []Interceptor {
+	return c.inters.Coupon
+}
+
+func (c *CouponClient) mutate(ctx context.Context, m *CouponMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CouponCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CouponUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CouponUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CouponDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Coupon mutation op: %q", m.Op())
+	}
+}
+
+// CustomAddonClient is a client for the CustomAddon schema.
+type CustomAddonClient struct {
+	config
+}
+
+// NewCustomAddonClient returns a client for the CustomAddon from the given config.
+func NewCustomAddonClient(c config) *CustomAddonClient {
+	return &CustomAddonClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `customaddon.Hooks(f(g(h())))`.
+func (c *CustomAddonClient) Use(hooks ...Hook) {
+	c.hooks.CustomAddon = append(c.hooks.CustomAddon, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `customaddon.Intercept(f(g(h())))`.
+func (c *CustomAddonClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CustomAddon = append(c.inters.CustomAddon, interceptors...)
+}
+
+// Create returns a builder for creating a CustomAddon entity.
+func (c *CustomAddonClient) Create() *CustomAddonCreate {
+	mutation := newCustomAddonMutation(c.config, OpCreate)
+	return &CustomAddonCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CustomAddon entities.
+func (c *CustomAddonClient) CreateBulk(builders ...*CustomAddonCreate) *CustomAddonCreateBulk {
+	return &CustomAddonCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CustomAddonClient) MapCreateBulk(slice any, setFunc func(*CustomAddonCreate, int)) *CustomAddonCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CustomAddonCreateBulk{err: fmt.Errorf("calling to CustomAddonClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CustomAddonCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CustomAddonCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CustomAddon.
+func (c *CustomAddonClient) Update() *CustomAddonUpdate {
+	mutation := newCustomAddonMutation(c.config, OpUpdate)
+	return &CustomAddonUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CustomAddonClient) UpdateOne(_m *CustomAddon) *CustomAddonUpdateOne {
+	mutation := newCustomAddonMutation(c.config, OpUpdateOne, withCustomAddon(_m))
+	return &CustomAddonUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CustomAddonClient) UpdateOneID(id uuid.UUID) *CustomAddonUpdateOne {
+	mutation := newCustomAddonMutation(c.config, OpUpdateOne, withCustomAddonID(id))
+	return &CustomAddonUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CustomAddon.
+func (c *CustomAddonClient) Delete() *CustomAddonDelete {
+	mutation := newCustomAddonMutation(c.config, OpDelete)
+	return &CustomAddonDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CustomAddonClient) DeleteOne(_m *CustomAddon) *CustomAddonDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CustomAddonClient) DeleteOneID(id uuid.UUID) *CustomAddonDeleteOne {
+	builder := c.Delete().Where(customaddon.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CustomAddonDeleteOne{builder}
+}
+
+// Query returns a query builder for CustomAddon.
+func (c *CustomAddonClient) Query() *CustomAddonQuery {
+	return &CustomAddonQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCustomAddon},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CustomAddon entity by its id.
+func (c *CustomAddonClient) Get(ctx context.Context, id uuid.UUID) (*CustomAddon, error) {
+	return c.Query().Where(customaddon.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CustomAddonClient) GetX(ctx context.Context, id uuid.UUID) *CustomAddon {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *CustomAddonClient) Hooks() []Hook {
+	return c.hooks.CustomAddon
+}
+
+// Interceptors returns the client interceptors.
+func (c *CustomAddonClient) Interceptors() []Interceptor {
+	return c.inters.CustomAddon
+}
+
+func (c *CustomAddonClient) mutate(ctx context.Context, m *CustomAddonMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CustomAddonCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CustomAddonUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CustomAddonUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CustomAddonDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CustomAddon mutation op: %q", m.Op())
+	}
+}
+
 // OutboxEventClient is a client for the OutboxEvent schema.
 type OutboxEventClient struct {
 	config
@@ -613,6 +921,155 @@ func (c *OutboxEventClient) mutate(ctx context.Context, m *OutboxEventMutation) 
 		return (&OutboxEventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown OutboxEvent mutation op: %q", m.Op())
+	}
+}
+
+// OverageChargeClient is a client for the OverageCharge schema.
+type OverageChargeClient struct {
+	config
+}
+
+// NewOverageChargeClient returns a client for the OverageCharge from the given config.
+func NewOverageChargeClient(c config) *OverageChargeClient {
+	return &OverageChargeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `overagecharge.Hooks(f(g(h())))`.
+func (c *OverageChargeClient) Use(hooks ...Hook) {
+	c.hooks.OverageCharge = append(c.hooks.OverageCharge, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `overagecharge.Intercept(f(g(h())))`.
+func (c *OverageChargeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.OverageCharge = append(c.inters.OverageCharge, interceptors...)
+}
+
+// Create returns a builder for creating a OverageCharge entity.
+func (c *OverageChargeClient) Create() *OverageChargeCreate {
+	mutation := newOverageChargeMutation(c.config, OpCreate)
+	return &OverageChargeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of OverageCharge entities.
+func (c *OverageChargeClient) CreateBulk(builders ...*OverageChargeCreate) *OverageChargeCreateBulk {
+	return &OverageChargeCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *OverageChargeClient) MapCreateBulk(slice any, setFunc func(*OverageChargeCreate, int)) *OverageChargeCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &OverageChargeCreateBulk{err: fmt.Errorf("calling to OverageChargeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*OverageChargeCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &OverageChargeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for OverageCharge.
+func (c *OverageChargeClient) Update() *OverageChargeUpdate {
+	mutation := newOverageChargeMutation(c.config, OpUpdate)
+	return &OverageChargeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *OverageChargeClient) UpdateOne(_m *OverageCharge) *OverageChargeUpdateOne {
+	mutation := newOverageChargeMutation(c.config, OpUpdateOne, withOverageCharge(_m))
+	return &OverageChargeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *OverageChargeClient) UpdateOneID(id uuid.UUID) *OverageChargeUpdateOne {
+	mutation := newOverageChargeMutation(c.config, OpUpdateOne, withOverageChargeID(id))
+	return &OverageChargeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for OverageCharge.
+func (c *OverageChargeClient) Delete() *OverageChargeDelete {
+	mutation := newOverageChargeMutation(c.config, OpDelete)
+	return &OverageChargeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *OverageChargeClient) DeleteOne(_m *OverageCharge) *OverageChargeDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *OverageChargeClient) DeleteOneID(id uuid.UUID) *OverageChargeDeleteOne {
+	builder := c.Delete().Where(overagecharge.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &OverageChargeDeleteOne{builder}
+}
+
+// Query returns a query builder for OverageCharge.
+func (c *OverageChargeClient) Query() *OverageChargeQuery {
+	return &OverageChargeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeOverageCharge},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a OverageCharge entity by its id.
+func (c *OverageChargeClient) Get(ctx context.Context, id uuid.UUID) (*OverageCharge, error) {
+	return c.Query().Where(overagecharge.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *OverageChargeClient) GetX(ctx context.Context, id uuid.UUID) *OverageCharge {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QuerySubscription queries the subscription edge of a OverageCharge.
+func (c *OverageChargeClient) QuerySubscription(_m *OverageCharge) *TenantSubscriptionQuery {
+	query := (&TenantSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(overagecharge.Table, overagecharge.FieldID, id),
+			sqlgraph.To(tenantsubscription.Table, tenantsubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, overagecharge.SubscriptionTable, overagecharge.SubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *OverageChargeClient) Hooks() []Hook {
+	return c.hooks.OverageCharge
+}
+
+// Interceptors returns the client interceptors.
+func (c *OverageChargeClient) Interceptors() []Interceptor {
+	return c.inters.OverageCharge
+}
+
+func (c *OverageChargeClient) mutate(ctx context.Context, m *OverageChargeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&OverageChargeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&OverageChargeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&OverageChargeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&OverageChargeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown OverageCharge mutation op: %q", m.Op())
 	}
 }
 
@@ -1840,6 +2297,304 @@ func (c *ServiceConfigClient) mutate(ctx context.Context, m *ServiceConfigMutati
 	}
 }
 
+// SubscriptionCreditClient is a client for the SubscriptionCredit schema.
+type SubscriptionCreditClient struct {
+	config
+}
+
+// NewSubscriptionCreditClient returns a client for the SubscriptionCredit from the given config.
+func NewSubscriptionCreditClient(c config) *SubscriptionCreditClient {
+	return &SubscriptionCreditClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `subscriptioncredit.Hooks(f(g(h())))`.
+func (c *SubscriptionCreditClient) Use(hooks ...Hook) {
+	c.hooks.SubscriptionCredit = append(c.hooks.SubscriptionCredit, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `subscriptioncredit.Intercept(f(g(h())))`.
+func (c *SubscriptionCreditClient) Intercept(interceptors ...Interceptor) {
+	c.inters.SubscriptionCredit = append(c.inters.SubscriptionCredit, interceptors...)
+}
+
+// Create returns a builder for creating a SubscriptionCredit entity.
+func (c *SubscriptionCreditClient) Create() *SubscriptionCreditCreate {
+	mutation := newSubscriptionCreditMutation(c.config, OpCreate)
+	return &SubscriptionCreditCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of SubscriptionCredit entities.
+func (c *SubscriptionCreditClient) CreateBulk(builders ...*SubscriptionCreditCreate) *SubscriptionCreditCreateBulk {
+	return &SubscriptionCreditCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *SubscriptionCreditClient) MapCreateBulk(slice any, setFunc func(*SubscriptionCreditCreate, int)) *SubscriptionCreditCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &SubscriptionCreditCreateBulk{err: fmt.Errorf("calling to SubscriptionCreditClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*SubscriptionCreditCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &SubscriptionCreditCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for SubscriptionCredit.
+func (c *SubscriptionCreditClient) Update() *SubscriptionCreditUpdate {
+	mutation := newSubscriptionCreditMutation(c.config, OpUpdate)
+	return &SubscriptionCreditUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SubscriptionCreditClient) UpdateOne(_m *SubscriptionCredit) *SubscriptionCreditUpdateOne {
+	mutation := newSubscriptionCreditMutation(c.config, OpUpdateOne, withSubscriptionCredit(_m))
+	return &SubscriptionCreditUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SubscriptionCreditClient) UpdateOneID(id uuid.UUID) *SubscriptionCreditUpdateOne {
+	mutation := newSubscriptionCreditMutation(c.config, OpUpdateOne, withSubscriptionCreditID(id))
+	return &SubscriptionCreditUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for SubscriptionCredit.
+func (c *SubscriptionCreditClient) Delete() *SubscriptionCreditDelete {
+	mutation := newSubscriptionCreditMutation(c.config, OpDelete)
+	return &SubscriptionCreditDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SubscriptionCreditClient) DeleteOne(_m *SubscriptionCredit) *SubscriptionCreditDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SubscriptionCreditClient) DeleteOneID(id uuid.UUID) *SubscriptionCreditDeleteOne {
+	builder := c.Delete().Where(subscriptioncredit.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SubscriptionCreditDeleteOne{builder}
+}
+
+// Query returns a query builder for SubscriptionCredit.
+func (c *SubscriptionCreditClient) Query() *SubscriptionCreditQuery {
+	return &SubscriptionCreditQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeSubscriptionCredit},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a SubscriptionCredit entity by its id.
+func (c *SubscriptionCreditClient) Get(ctx context.Context, id uuid.UUID) (*SubscriptionCredit, error) {
+	return c.Query().Where(subscriptioncredit.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SubscriptionCreditClient) GetX(ctx context.Context, id uuid.UUID) *SubscriptionCredit {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTransactions queries the transactions edge of a SubscriptionCredit.
+func (c *SubscriptionCreditClient) QueryTransactions(_m *SubscriptionCredit) *SubscriptionCreditTransactionQuery {
+	query := (&SubscriptionCreditTransactionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptioncredit.Table, subscriptioncredit.FieldID, id),
+			sqlgraph.To(subscriptioncredittransaction.Table, subscriptioncredittransaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, subscriptioncredit.TransactionsTable, subscriptioncredit.TransactionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *SubscriptionCreditClient) Hooks() []Hook {
+	return c.hooks.SubscriptionCredit
+}
+
+// Interceptors returns the client interceptors.
+func (c *SubscriptionCreditClient) Interceptors() []Interceptor {
+	return c.inters.SubscriptionCredit
+}
+
+func (c *SubscriptionCreditClient) mutate(ctx context.Context, m *SubscriptionCreditMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&SubscriptionCreditCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&SubscriptionCreditUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&SubscriptionCreditUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&SubscriptionCreditDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown SubscriptionCredit mutation op: %q", m.Op())
+	}
+}
+
+// SubscriptionCreditTransactionClient is a client for the SubscriptionCreditTransaction schema.
+type SubscriptionCreditTransactionClient struct {
+	config
+}
+
+// NewSubscriptionCreditTransactionClient returns a client for the SubscriptionCreditTransaction from the given config.
+func NewSubscriptionCreditTransactionClient(c config) *SubscriptionCreditTransactionClient {
+	return &SubscriptionCreditTransactionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `subscriptioncredittransaction.Hooks(f(g(h())))`.
+func (c *SubscriptionCreditTransactionClient) Use(hooks ...Hook) {
+	c.hooks.SubscriptionCreditTransaction = append(c.hooks.SubscriptionCreditTransaction, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `subscriptioncredittransaction.Intercept(f(g(h())))`.
+func (c *SubscriptionCreditTransactionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.SubscriptionCreditTransaction = append(c.inters.SubscriptionCreditTransaction, interceptors...)
+}
+
+// Create returns a builder for creating a SubscriptionCreditTransaction entity.
+func (c *SubscriptionCreditTransactionClient) Create() *SubscriptionCreditTransactionCreate {
+	mutation := newSubscriptionCreditTransactionMutation(c.config, OpCreate)
+	return &SubscriptionCreditTransactionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of SubscriptionCreditTransaction entities.
+func (c *SubscriptionCreditTransactionClient) CreateBulk(builders ...*SubscriptionCreditTransactionCreate) *SubscriptionCreditTransactionCreateBulk {
+	return &SubscriptionCreditTransactionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *SubscriptionCreditTransactionClient) MapCreateBulk(slice any, setFunc func(*SubscriptionCreditTransactionCreate, int)) *SubscriptionCreditTransactionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &SubscriptionCreditTransactionCreateBulk{err: fmt.Errorf("calling to SubscriptionCreditTransactionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*SubscriptionCreditTransactionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &SubscriptionCreditTransactionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for SubscriptionCreditTransaction.
+func (c *SubscriptionCreditTransactionClient) Update() *SubscriptionCreditTransactionUpdate {
+	mutation := newSubscriptionCreditTransactionMutation(c.config, OpUpdate)
+	return &SubscriptionCreditTransactionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SubscriptionCreditTransactionClient) UpdateOne(_m *SubscriptionCreditTransaction) *SubscriptionCreditTransactionUpdateOne {
+	mutation := newSubscriptionCreditTransactionMutation(c.config, OpUpdateOne, withSubscriptionCreditTransaction(_m))
+	return &SubscriptionCreditTransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SubscriptionCreditTransactionClient) UpdateOneID(id uuid.UUID) *SubscriptionCreditTransactionUpdateOne {
+	mutation := newSubscriptionCreditTransactionMutation(c.config, OpUpdateOne, withSubscriptionCreditTransactionID(id))
+	return &SubscriptionCreditTransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for SubscriptionCreditTransaction.
+func (c *SubscriptionCreditTransactionClient) Delete() *SubscriptionCreditTransactionDelete {
+	mutation := newSubscriptionCreditTransactionMutation(c.config, OpDelete)
+	return &SubscriptionCreditTransactionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SubscriptionCreditTransactionClient) DeleteOne(_m *SubscriptionCreditTransaction) *SubscriptionCreditTransactionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SubscriptionCreditTransactionClient) DeleteOneID(id uuid.UUID) *SubscriptionCreditTransactionDeleteOne {
+	builder := c.Delete().Where(subscriptioncredittransaction.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SubscriptionCreditTransactionDeleteOne{builder}
+}
+
+// Query returns a query builder for SubscriptionCreditTransaction.
+func (c *SubscriptionCreditTransactionClient) Query() *SubscriptionCreditTransactionQuery {
+	return &SubscriptionCreditTransactionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeSubscriptionCreditTransaction},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a SubscriptionCreditTransaction entity by its id.
+func (c *SubscriptionCreditTransactionClient) Get(ctx context.Context, id uuid.UUID) (*SubscriptionCreditTransaction, error) {
+	return c.Query().Where(subscriptioncredittransaction.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SubscriptionCreditTransactionClient) GetX(ctx context.Context, id uuid.UUID) *SubscriptionCreditTransaction {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCredit queries the credit edge of a SubscriptionCreditTransaction.
+func (c *SubscriptionCreditTransactionClient) QueryCredit(_m *SubscriptionCreditTransaction) *SubscriptionCreditQuery {
+	query := (&SubscriptionCreditClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptioncredittransaction.Table, subscriptioncredittransaction.FieldID, id),
+			sqlgraph.To(subscriptioncredit.Table, subscriptioncredit.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptioncredittransaction.CreditTable, subscriptioncredittransaction.CreditColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *SubscriptionCreditTransactionClient) Hooks() []Hook {
+	return c.hooks.SubscriptionCreditTransaction
+}
+
+// Interceptors returns the client interceptors.
+func (c *SubscriptionCreditTransactionClient) Interceptors() []Interceptor {
+	return c.inters.SubscriptionCreditTransaction
+}
+
+func (c *SubscriptionCreditTransactionClient) mutate(ctx context.Context, m *SubscriptionCreditTransactionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&SubscriptionCreditTransactionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&SubscriptionCreditTransactionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&SubscriptionCreditTransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&SubscriptionCreditTransactionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown SubscriptionCreditTransaction mutation op: %q", m.Op())
+	}
+}
+
 // SubscriptionPlanClient is a client for the SubscriptionPlan schema.
 type SubscriptionPlanClient struct {
 	config
@@ -2821,6 +3576,22 @@ func (c *TenantSubscriptionClient) QueryProductSubscriptions(_m *TenantSubscript
 	return query
 }
 
+// QueryOverageCharges queries the overage_charges edge of a TenantSubscription.
+func (c *TenantSubscriptionClient) QueryOverageCharges(_m *TenantSubscription) *OverageChargeQuery {
+	query := (&OverageChargeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, id),
+			sqlgraph.To(overagecharge.Table, overagecharge.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.OverageChargesTable, tenantsubscription.OverageChargesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *TenantSubscriptionClient) Hooks() []Hook {
 	return c.hooks.TenantSubscription
@@ -3147,17 +3918,19 @@ func (c *UserRoleAssignmentClient) mutate(ctx context.Context, m *UserRoleAssign
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Bundle, OutboxEvent, PlanFeature, PlanPricingHistory, Product,
-		ProductSubscription, RateLimitConfig, RolePermission, ServiceChargePlan,
-		ServiceConfig, SubscriptionPlan, SubscriptionsPermission, SubscriptionsRole,
-		SubscriptionsUser, Tenant, TenantSubscription, UsageEvent,
+		Bundle, Coupon, CustomAddon, OutboxEvent, OverageCharge, PlanFeature,
+		PlanPricingHistory, Product, ProductSubscription, RateLimitConfig,
+		RolePermission, ServiceChargePlan, ServiceConfig, SubscriptionCredit,
+		SubscriptionCreditTransaction, SubscriptionPlan, SubscriptionsPermission,
+		SubscriptionsRole, SubscriptionsUser, Tenant, TenantSubscription, UsageEvent,
 		UserRoleAssignment []ent.Hook
 	}
 	inters struct {
-		Bundle, OutboxEvent, PlanFeature, PlanPricingHistory, Product,
-		ProductSubscription, RateLimitConfig, RolePermission, ServiceChargePlan,
-		ServiceConfig, SubscriptionPlan, SubscriptionsPermission, SubscriptionsRole,
-		SubscriptionsUser, Tenant, TenantSubscription, UsageEvent,
+		Bundle, Coupon, CustomAddon, OutboxEvent, OverageCharge, PlanFeature,
+		PlanPricingHistory, Product, ProductSubscription, RateLimitConfig,
+		RolePermission, ServiceChargePlan, ServiceConfig, SubscriptionCredit,
+		SubscriptionCreditTransaction, SubscriptionPlan, SubscriptionsPermission,
+		SubscriptionsRole, SubscriptionsUser, Tenant, TenantSubscription, UsageEvent,
 		UserRoleAssignment []ent.Interceptor
 	}
 )

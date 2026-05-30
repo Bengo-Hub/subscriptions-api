@@ -1,0 +1,196 @@
+package billing
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/coupon"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptioncredit"
+	"github.com/google/uuid"
+	"go.uber.org/zap"
+)
+
+// CouponService validates and redeems platform-issued subscription discount codes.
+// These codes apply to tenant subscription fees only, not customer food-order PromoCode (ordering-backend).
+type CouponService struct {
+	log    *zap.Logger
+	orm    *ent.Client
+	credit *CreditService
+}
+
+// NewCouponService creates a new CouponService.
+func NewCouponService(log *zap.Logger, orm *ent.Client, credit *CreditService) *CouponService {
+	return &CouponService{
+		log:    log.Named("billing.coupon"),
+		orm:    orm,
+		credit: credit,
+	}
+}
+
+// ValidateCouponResult holds the computed discount without applying it.
+type ValidateCouponResult struct {
+	CouponID      uuid.UUID
+	Code          string
+	Type          coupon.Type
+	DiscountKes   int    // computed KES discount for fixed_kes/percentage; 0 for free_months
+	FreeMonths    int    // for free_months type
+	Description   string
+}
+
+// ValidateCoupon checks whether a coupon code is valid for the given plan and price,
+// and returns the computed discount. Does NOT apply or consume the coupon.
+func (s *CouponService) ValidateCoupon(ctx context.Context, code, planCode string, planPriceKes float64) (*ValidateCouponResult, error) {
+	c, err := s.fetchActive(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.checkApplicability(c, planCode, planPriceKes); err != nil {
+		return nil, err
+	}
+
+	result := &ValidateCouponResult{
+		CouponID:    c.ID,
+		Code:        c.Code,
+		Type:        c.Type,
+		Description: c.Name,
+	}
+
+	switch c.Type {
+	case coupon.TypePercentage:
+		result.DiscountKes = int(planPriceKes * c.Value / 100)
+	case coupon.TypeFixedKes:
+		result.DiscountKes = int(c.Value)
+	case coupon.TypeFreeMonths:
+		result.FreeMonths = int(c.Value)
+	}
+
+	return result, nil
+}
+
+// RedeemCoupon validates the coupon, converts it to a SubscriptionCreditTransaction,
+// and credits the tenant's wallet. Returns the credit amount added (KES).
+func (s *CouponService) RedeemCoupon(ctx context.Context, tenantID uuid.UUID, code, planCode string, planPriceKes float64) (int, error) {
+	c, err := s.fetchActive(ctx, code)
+	if err != nil {
+		return 0, err
+	}
+
+	if err := s.checkApplicability(c, planCode, planPriceKes); err != nil {
+		return 0, err
+	}
+
+	// Compute credit value
+	var creditKes int
+	switch c.Type {
+	case coupon.TypePercentage:
+		creditKes = int(planPriceKes * c.Value / 100)
+	case coupon.TypeFixedKes:
+		creditKes = int(c.Value)
+	case coupon.TypeFreeMonths:
+		// free_months: credit = full plan price × months
+		creditKes = int(planPriceKes) * int(c.Value)
+	}
+
+	if creditKes <= 0 {
+		return 0, fmt.Errorf("coupon yields zero value for this plan")
+	}
+
+	// Increment used_count atomically
+	updated, err := s.orm.Coupon.UpdateOneID(c.ID).
+		SetUsedCount(c.UsedCount + 1).
+		Save(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("consume coupon: %w", err)
+	}
+
+	// Add credit to wallet
+	if err := s.credit.AddCredits(ctx, tenantID, creditKes, "coupon_redeemed", c.ID, "coupon"); err != nil {
+		// Roll back used_count increment on credit failure
+		_, _ = s.orm.Coupon.UpdateOneID(c.ID).SetUsedCount(updated.UsedCount - 1).Save(ctx)
+		return 0, fmt.Errorf("add credits: %w", err)
+	}
+
+	s.log.Info("coupon redeemed",
+		zap.String("tenant_id", tenantID.String()),
+		zap.String("code", code),
+		zap.Int("credit_kes", creditKes),
+	)
+	return creditKes, nil
+}
+
+// fetchActive loads a coupon by code, checking it is active and not expired/exhausted.
+func (s *CouponService) fetchActive(ctx context.Context, code string) (*ent.Coupon, error) {
+	c, err := s.orm.Coupon.Query().
+		Where(
+			coupon.CodeEQ(strings.ToUpper(strings.TrimSpace(code))),
+			coupon.IsActiveEQ(true),
+		).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("coupon not found or inactive")
+		}
+		return nil, fmt.Errorf("lookup coupon: %w", err)
+	}
+
+	now := time.Now()
+	if c.ValidFrom.After(now) {
+		return nil, fmt.Errorf("coupon is not yet valid")
+	}
+	if c.ValidUntil != nil && c.ValidUntil.Before(now) {
+		return nil, fmt.Errorf("coupon has expired")
+	}
+	if c.MaxUses >= 0 && c.UsedCount >= c.MaxUses {
+		return nil, fmt.Errorf("coupon usage limit reached")
+	}
+
+	return c, nil
+}
+
+// checkApplicability validates the coupon against plan and price constraints.
+func (s *CouponService) checkApplicability(c *ent.Coupon, planCode string, planPriceKes float64) error {
+	if planPriceKes < c.MinPlanPrice {
+		return fmt.Errorf("plan price KES %.0f is below the minimum KES %.0f for this coupon", planPriceKes, c.MinPlanPrice)
+	}
+
+	if len(c.ApplicablePlanCodes) > 0 {
+		found := false
+		for _, pc := range c.ApplicablePlanCodes {
+			if strings.EqualFold(pc, planCode) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("coupon is not valid for plan %s", planCode)
+		}
+	}
+
+	return nil
+}
+
+// GetByCode returns a coupon by code for display purposes (no validation side effects).
+func (s *CouponService) GetByCode(ctx context.Context, code string) (*ent.Coupon, error) {
+	c, err := s.orm.Coupon.Query().
+		Where(coupon.CodeEQ(strings.ToUpper(strings.TrimSpace(code)))).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("coupon not found")
+		}
+		return nil, err
+	}
+	return c, nil
+}
+
+// walletExists checks whether a credit wallet exists for the tenant.
+func walletExists(ctx context.Context, orm *ent.Client, tenantID uuid.UUID) bool {
+	exists, _ := orm.SubscriptionCredit.Query().
+		Where(subscriptioncredit.TenantIDEQ(tenantID)).
+		Exist(ctx)
+	return exists
+}

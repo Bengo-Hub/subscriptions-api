@@ -206,6 +206,12 @@ func (h *WebhookHandler) activateSubscription(ctx context.Context, tenantID uuid
 		},
 	})
 
+	// Publish tenant_activated for CRM sync — MarketFlow upserts tenant admin as Contact
+	h.svc.WriteOutboxEventPublic(ctx, tx, tenantID, "subscription", sub.ID, "tenant_activated", map[string]any{
+		"tenant_id":  tenantID.String(),
+		"plan_code":  planCode,
+	})
+
 	return tx.Commit()
 }
 

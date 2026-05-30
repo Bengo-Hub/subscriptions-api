@@ -29,6 +29,8 @@ func New(
 	platformHandler *handlers.PlatformHandler,
 	rbacHandler *handlers.RBACHandler,
 	webhookHandler *handlers.WebhookHandler,
+	customAddonHandler *handlers.CustomAddonHandler,
+	couponHandler *handlers.CouponHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -134,7 +136,14 @@ func New(
 			// Billing
 			if billingHandler != nil {
 				r.Get("/billing", billingHandler.GetBilling)
+				r.Get("/billing/invoice-preview", billingHandler.InvoicePreview)
 				r.Post("/subscription/payment-method/setup", billingHandler.SetupPaymentMethod)
+			}
+
+			// Credit wallet + coupon redemption
+			if couponHandler != nil {
+				r.Post("/subscription/coupon/redeem", couponHandler.RedeemCoupon)
+				r.Get("/billing/credits", couponHandler.GetCreditWallet)
 			}
 
 			// S2S subscription lookup by tenant ID — used by auth-api for JWT enrichment.
@@ -148,13 +157,18 @@ func New(
 			// Switch plan by subscription ID — for billing UI plan change flows.
 			r.Put("/subscriptions/{id}/switch-plan", subscriptionHandler.SwitchPlan)
 
-			// Add-on management
+			// Add-on management (PlanFeature-based tenant purchasable addons)
 			if addonHandler != nil {
 				r.Route("/addons", func(r chi.Router) {
 					r.Get("/", addonHandler.ListAddons)
 					r.Post("/{feature_code}/purchase", addonHandler.PurchaseAddon)
 					r.Delete("/{feature_code}", addonHandler.RemoveAddon)
 				})
+			}
+
+			// Custom addons — platform-admin configured; tenant read-only view
+			if customAddonHandler != nil {
+				r.Get("/custom-addons", customAddonHandler.ListMyCustomAddons)
 			}
 
 			// Feature gate checks — used by all microservices for Trinity Authorization
@@ -171,6 +185,7 @@ func New(
 					r.Post("/report", usageHandler.ReportUsage)
 					r.Get("/", usageHandler.GetUsageSummary)
 					r.Get("/summary", usageHandler.GetUsageDashboard)
+					r.Get("/alerts", usageHandler.GetAlerts)
 				})
 			}
 
@@ -247,6 +262,25 @@ func New(
 					r.Get("/", platformHandler.ListAllSubscriptions)
 					r.Put("/{id}/status", platformHandler.UpdateSubscriptionStatus)
 				})
+
+				// Platform admin: custom addon CRUD per tenant
+				if customAddonHandler != nil {
+					r.Route("/admin/tenants/{tenant_id}/custom-addons", func(r chi.Router) {
+						r.Use(func(next http.Handler) http.Handler {
+							return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+								if !httpware.IsPlatformOwner(r.Context()) {
+									http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+									return
+								}
+								next.ServeHTTP(w, r)
+							})
+						})
+						r.Post("/", customAddonHandler.CreateCustomAddon)
+						r.Get("/", customAddonHandler.ListCustomAddonsByTenant)
+						r.Patch("/{id}", customAddonHandler.UpdateCustomAddon)
+						r.Delete("/{id}", customAddonHandler.CancelCustomAddon)
+					})
+				}
 
 				r.Get("/platform/stats", func(w http.ResponseWriter, r *http.Request) {
 					if !httpware.IsPlatformOwner(r.Context()) {

@@ -14,8 +14,14 @@ type Tx struct {
 	config
 	// Bundle is the client for interacting with the Bundle builders.
 	Bundle *BundleClient
+	// Coupon is the client for interacting with the Coupon builders.
+	Coupon *CouponClient
+	// CustomAddon is the client for interacting with the CustomAddon builders.
+	CustomAddon *CustomAddonClient
 	// OutboxEvent is the client for interacting with the OutboxEvent builders.
 	OutboxEvent *OutboxEventClient
+	// OverageCharge is the client for interacting with the OverageCharge builders.
+	OverageCharge *OverageChargeClient
 	// PlanFeature is the client for interacting with the PlanFeature builders.
 	PlanFeature *PlanFeatureClient
 	// PlanPricingHistory is the client for interacting with the PlanPricingHistory builders.
@@ -32,6 +38,10 @@ type Tx struct {
 	ServiceChargePlan *ServiceChargePlanClient
 	// ServiceConfig is the client for interacting with the ServiceConfig builders.
 	ServiceConfig *ServiceConfigClient
+	// SubscriptionCredit is the client for interacting with the SubscriptionCredit builders.
+	SubscriptionCredit *SubscriptionCreditClient
+	// SubscriptionCreditTransaction is the client for interacting with the SubscriptionCreditTransaction builders.
+	SubscriptionCreditTransaction *SubscriptionCreditTransactionClient
 	// SubscriptionPlan is the client for interacting with the SubscriptionPlan builders.
 	SubscriptionPlan *SubscriptionPlanClient
 	// SubscriptionsPermission is the client for interacting with the SubscriptionsPermission builders.
@@ -180,7 +190,10 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Bundle = NewBundleClient(tx.config)
+	tx.Coupon = NewCouponClient(tx.config)
+	tx.CustomAddon = NewCustomAddonClient(tx.config)
 	tx.OutboxEvent = NewOutboxEventClient(tx.config)
+	tx.OverageCharge = NewOverageChargeClient(tx.config)
 	tx.PlanFeature = NewPlanFeatureClient(tx.config)
 	tx.PlanPricingHistory = NewPlanPricingHistoryClient(tx.config)
 	tx.Product = NewProductClient(tx.config)
@@ -189,6 +202,8 @@ func (tx *Tx) init() {
 	tx.RolePermission = NewRolePermissionClient(tx.config)
 	tx.ServiceChargePlan = NewServiceChargePlanClient(tx.config)
 	tx.ServiceConfig = NewServiceConfigClient(tx.config)
+	tx.SubscriptionCredit = NewSubscriptionCreditClient(tx.config)
+	tx.SubscriptionCreditTransaction = NewSubscriptionCreditTransactionClient(tx.config)
 	tx.SubscriptionPlan = NewSubscriptionPlanClient(tx.config)
 	tx.SubscriptionsPermission = NewSubscriptionsPermissionClient(tx.config)
 	tx.SubscriptionsRole = NewSubscriptionsRoleClient(tx.config)

@@ -52,6 +52,8 @@ const (
 	EdgePlan = "plan"
 	// EdgeProductSubscriptions holds the string denoting the product_subscriptions edge name in mutations.
 	EdgeProductSubscriptions = "product_subscriptions"
+	// EdgeOverageCharges holds the string denoting the overage_charges edge name in mutations.
+	EdgeOverageCharges = "overage_charges"
 	// Table holds the table name of the tenantsubscription in the database.
 	Table = "tenant_subscriptions"
 	// TenantTable is the table that holds the tenant relation/edge.
@@ -75,6 +77,13 @@ const (
 	ProductSubscriptionsInverseTable = "product_subscriptions"
 	// ProductSubscriptionsColumn is the table column denoting the product_subscriptions relation/edge.
 	ProductSubscriptionsColumn = "tenant_subscription_id"
+	// OverageChargesTable is the table that holds the overage_charges relation/edge.
+	OverageChargesTable = "overage_charges"
+	// OverageChargesInverseTable is the table name for the OverageCharge entity.
+	// It exists in this package in order to avoid circular dependency with the "overagecharge" package.
+	OverageChargesInverseTable = "overage_charges"
+	// OverageChargesColumn is the table column denoting the overage_charges relation/edge.
+	OverageChargesColumn = "tenant_subscription_id"
 )
 
 // Columns holds all SQL columns for tenantsubscription fields.
@@ -284,6 +293,20 @@ func ByProductSubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpt
 		sqlgraph.OrderByNeighborTerms(s, newProductSubscriptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByOverageChargesCount orders the results by overage_charges count.
+func ByOverageChargesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOverageChargesStep(), opts...)
+	}
+}
+
+// ByOverageCharges orders the results by overage_charges terms.
+func ByOverageCharges(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOverageChargesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newTenantStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -303,5 +326,12 @@ func newProductSubscriptionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ProductSubscriptionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ProductSubscriptionsTable, ProductSubscriptionsColumn),
+	)
+}
+func newOverageChargesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OverageChargesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OverageChargesTable, OverageChargesColumn),
 	)
 }

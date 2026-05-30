@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
@@ -234,6 +235,21 @@ func (_c *TenantSubscriptionCreate) AddProductSubscriptions(v ...*ProductSubscri
 		ids[i] = v[i].ID
 	}
 	return _c.AddProductSubscriptionIDs(ids...)
+}
+
+// AddOverageChargeIDs adds the "overage_charges" edge to the OverageCharge entity by IDs.
+func (_c *TenantSubscriptionCreate) AddOverageChargeIDs(ids ...uuid.UUID) *TenantSubscriptionCreate {
+	_c.mutation.AddOverageChargeIDs(ids...)
+	return _c
+}
+
+// AddOverageCharges adds the "overage_charges" edges to the OverageCharge entity.
+func (_c *TenantSubscriptionCreate) AddOverageCharges(v ...*OverageCharge) *TenantSubscriptionCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddOverageChargeIDs(ids...)
 }
 
 // Mutation returns the TenantSubscriptionMutation object of the builder.
@@ -477,6 +493,22 @@ func (_c *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgraph
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.OverageChargesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.OverageChargesTable,
+			Columns: []string{tenantsubscription.OverageChargesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(overagecharge.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

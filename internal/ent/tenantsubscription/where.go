@@ -775,6 +775,29 @@ func HasProductSubscriptionsWith(preds ...predicate.ProductSubscription) predica
 	})
 }
 
+// HasOverageCharges applies the HasEdge predicate on the "overage_charges" edge.
+func HasOverageCharges() predicate.TenantSubscription {
+	return predicate.TenantSubscription(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, OverageChargesTable, OverageChargesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOverageChargesWith applies the HasEdge predicate on the "overage_charges" edge with a given conditions (other predicates).
+func HasOverageChargesWith(preds ...predicate.OverageCharge) predicate.TenantSubscription {
+	return predicate.TenantSubscription(func(s *sql.Selector) {
+		step := newOverageChargesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.TenantSubscription) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.AndPredicates(predicates...))
