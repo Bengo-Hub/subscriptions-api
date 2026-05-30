@@ -31,6 +31,8 @@ func New(
 	webhookHandler *handlers.WebhookHandler,
 	customAddonHandler *handlers.CustomAddonHandler,
 	couponHandler *handlers.CouponHandler,
+	usageAdminHandler *handlers.UsageAdminHandler,
+	couponAdminHandler *handlers.CouponAdminHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -282,6 +284,14 @@ func New(
 					})
 				}
 
+				// Platform admin: extend trial for a tenant subscription
+				r.Post("/admin/tenants/{tenant_id}/subscription/extend-trial", subscriptionHandler.ExtendTrial)
+
+				// Platform admin: gift credits to a tenant
+				if couponHandler != nil {
+					r.Post("/admin/tenants/{tenant_id}/credits/gift", couponHandler.GiftCredits)
+				}
+
 				r.Get("/platform/stats", func(w http.ResponseWriter, r *http.Request) {
 					if !httpware.IsPlatformOwner(r.Context()) {
 						http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
@@ -304,6 +314,23 @@ func New(
 					r.Post("/", platformHandler.CreateServiceConfig)
 					r.Put("/{id}", platformHandler.UpdateServiceConfig)
 					r.Delete("/{id}", platformHandler.DeleteServiceConfig)
+				})
+			}
+
+			// Platform admin: per-tenant usage view and manual metric override
+			if usageAdminHandler != nil {
+				r.Get("/admin/usage/tenants/{tenant_id}", usageAdminHandler.GetTenantUsage)
+				r.Put("/admin/usage/tenants/{tenant_id}/override", usageAdminHandler.OverrideMetric)
+			}
+
+			// Platform admin: coupon CRUD
+			if couponAdminHandler != nil {
+				r.Route("/admin/coupons", func(r chi.Router) {
+					r.Get("/", couponAdminHandler.ListCoupons)
+					r.Post("/", couponAdminHandler.CreateCoupon)
+					r.Get("/{id}", couponAdminHandler.GetCoupon)
+					r.Patch("/{id}", couponAdminHandler.UpdateCoupon)
+					r.Delete("/{id}", couponAdminHandler.DeleteCoupon)
 				})
 			}
 		})

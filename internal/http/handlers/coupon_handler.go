@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	authclient "github.com/Bengo-Hub/shared-auth-client"
+	httpware "github.com/Bengo-Hub/httpware"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
@@ -121,5 +124,57 @@ func (h *CouponHandler) GetCreditWallet(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"balance_kes":  balance,
 		"transactions": txns,
+	})
+}
+
+// GiftCredits handles POST /admin/tenants/{tenant_id}/credits/gift
+// Adds credits to a tenant's wallet on behalf of a platform admin.
+func (h *CouponHandler) GiftCredits(w http.ResponseWriter, r *http.Request) {
+	if !httpware.IsPlatformOwner(r.Context()) {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "forbidden"})
+		return
+	}
+
+	tenantIDStr := chi.URLParam(r, "tenant_id")
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+
+	var body struct {
+		AmountKes int    `json:"amount_kes"`
+		Reason    string `json:"reason"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.AmountKes <= 0 || body.Reason == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "amount_kes (positive int) and reason are required"})
+		return
+	}
+
+	adminUserID := uuid.Nil
+	if claims, ok := authclient.ClaimsFromContext(r.Context()); ok {
+		if id, err := claims.UserID(); err == nil {
+			adminUserID = id
+		}
+	}
+
+	ctx := r.Context()
+	if err := h.creditService.AddCredits(ctx, tenantID, body.AmountKes, "gifted", adminUserID, body.Reason); err != nil {
+		h.log.Error("gift credits failed", zap.String("tenant_id", tenantIDStr), zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to gift credits"})
+		return
+	}
+
+	balance, _ := h.creditService.GetBalance(ctx, tenantID)
+	h.log.Info("credits gifted by admin",
+		zap.String("tenant_id", tenantIDStr),
+		zap.Int("amount_kes", body.AmountKes),
+		zap.String("reason", body.Reason),
+		zap.String("admin", adminUserID.String()),
+	)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":          "gifted",
+		"amount_kes":      body.AmountKes,
+		"new_balance_kes": balance,
 	})
 }

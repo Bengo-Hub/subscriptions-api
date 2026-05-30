@@ -206,8 +206,8 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 	currency := "KES"
 	planCode := "unknown"
 
-	// Resolve customer email: JWT claims → subscription billing_email → platform fallback.
-	customerEmail := "codevertexitsolutions@gmail.com"
+	// Resolve customer email: JWT claims → subscription billing_email.
+	customerEmail := ""
 	if claims, ok := authclient.ClaimsFromContext(r.Context()); ok && claims.Email != "" {
 		customerEmail = claims.Email
 	}
@@ -222,6 +222,10 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 				customerEmail = be
 			}
 		}
+	}
+	// Ensure a non-empty email — fall back to a generic placeholder if JWT had none.
+	if customerEmail == "" {
+		customerEmail = tenantIDStr + "@subscriptions.internal"
 	}
 
 	headers := map[string]string{}

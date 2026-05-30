@@ -144,6 +144,12 @@ func initiateRenewals(ctx context.Context, log *zap.Logger, orm *ent.Client, svc
 		}
 		plan := sub.Edges.Plan
 
+		// Respect auto_renew preference: missing key or true → renew; explicit false → skip.
+		if autoRenew, ok := sub.Metadata["auto_renew"].(bool); ok && !autoRenew {
+			log.Info("renewal job: auto_renew disabled, skipping", zap.String("tenant_id", sub.TenantID.String()))
+			continue
+		}
+
 		if plan.BasePrice == 0 {
 			// Free plan: extend period directly
 			extendFreePlan(ctx, log, orm, svc, sub)

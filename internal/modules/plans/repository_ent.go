@@ -54,6 +54,7 @@ func (r *EntRepository) CreatePlan(ctx context.Context, plan *SubscriptionPlan) 
 		SetIsPublic(plan.IsPublic).
 		SetTierOrder(plan.TierOrder).
 		SetTierLimitsJSON(tierLimits).
+		SetFreeTrialDays(plan.FreeTrialDays).
 		SetDiscountRules(plan.DiscountRules).
 		SetNillableServiceTag(plan.ServiceTag).
 		SetMetadata(metadata).
@@ -99,6 +100,7 @@ func (r *EntRepository) UpdatePlan(ctx context.Context, plan *SubscriptionPlan) 
 	if plan.TierLimits != nil {
 		update = update.SetTierLimitsJSON(plan.TierLimits)
 	}
+	update = update.SetFreeTrialDays(plan.FreeTrialDays)
 	if plan.Metadata != nil {
 		update = update.SetMetadata(plan.Metadata)
 	}
@@ -341,9 +343,10 @@ func mapEntPlan(entPlan *ent.SubscriptionPlan) *SubscriptionPlan {
 		IsActive:     entPlan.IsActive,
 		IsPublic:     entPlan.IsPublic,
 		TierOrder:    entPlan.TierOrder,
-		TierLimits:   entPlan.TierLimitsJSON,
-		Metadata:     entPlan.Metadata,
-		ServiceTag:   entPlan.ServiceTag,
+		TierLimits:    entPlan.TierLimitsJSON,
+		FreeTrialDays: entPlan.FreeTrialDays,
+		Metadata:      entPlan.Metadata,
+		ServiceTag:    entPlan.ServiceTag,
 		CreatedAt:    entPlan.CreatedAt,
 		UpdatedAt:    entPlan.UpdatedAt,
 		Description:  entPlan.Description,

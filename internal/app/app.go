@@ -235,7 +235,13 @@ func New(ctx context.Context) (*App, error) {
 	// Coupon + credit wallet handler
 	couponHandler := handlers.NewCouponHandler(log, ormClient)
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
+	// Platform admin: per-tenant usage view + manual metric override
+	usageAdminHandler := handlers.NewUsageAdminHandler(log, dbPool, ormClient, redisClient)
+
+	// Platform admin: coupon CRUD
+	couponAdminHandler := handlers.NewCouponAdminHandler(log, ormClient)
+
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),

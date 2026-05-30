@@ -22,6 +22,7 @@ type SubscriptionPlan struct {
 	IsPublic                bool             `json:"isPublic"`
 	TierOrder               int              `json:"tierOrder"`
 	TierLimits              map[string]any   `json:"tierLimits"`
+	FreeTrialDays           int              `json:"freeTrialDays"`
 	Metadata                map[string]any   `json:"metadata,omitempty"`
 	ServiceTag              *string          `json:"serviceTag,omitempty"`
 	CreatedAt               time.Time        `json:"createdAt"`

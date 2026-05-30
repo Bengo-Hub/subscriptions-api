@@ -533,3 +533,67 @@ func (h *SubscriptionHandler) respondWithJSON(w http.ResponseWriter, code int, p
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(payload)
 }
+
+// ExtendTrial handles POST /admin/tenants/{tenant_id}/subscription/extend-trial
+// Extends the trial end date for a TRIAL subscription (platform admin only).
+func (h *SubscriptionHandler) ExtendTrial(w http.ResponseWriter, r *http.Request) {
+	if !httpware.IsPlatformOwner(r.Context()) {
+		h.respondWithError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+
+	tenantIDStr := chi.URLParam(r, "tenant_id")
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid tenant_id")
+		return
+	}
+
+	var body struct {
+		TrialEndsAt string `json:"trial_ends_at"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.TrialEndsAt == "" {
+		h.respondWithError(w, http.StatusBadRequest, "trial_ends_at is required (RFC3339)")
+		return
+	}
+
+	newTrialEnd, err := time.Parse(time.RFC3339, body.TrialEndsAt)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "trial_ends_at must be RFC3339")
+		return
+	}
+
+	ctx := r.Context()
+	sub, err := h.client.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(tenantID)).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			h.respondWithError(w, http.StatusNotFound, "subscription not found")
+			return
+		}
+		h.respondWithError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	if sub.Status != tenantsubscription.StatusTRIAL {
+		h.respondWithError(w, http.StatusBadRequest, "subscription is not in trial")
+		return
+	}
+
+	updated, err := h.client.TenantSubscription.UpdateOneID(sub.ID).
+		SetTrialEndsAt(newTrialEnd).
+		SetCurrentPeriodEnd(newTrialEnd).
+		Save(ctx)
+	if err != nil {
+		h.log.Error("extend trial failed", zap.String("tenant_id", tenantIDStr), zap.Error(err))
+		h.respondWithError(w, http.StatusInternalServerError, "failed to extend trial")
+		return
+	}
+
+	h.log.Info("trial extended by admin", zap.String("tenant_id", tenantIDStr), zap.Time("trial_ends_at", newTrialEnd))
+	h.respondWithJSON(w, http.StatusOK, map[string]any{
+		"status":        "extended",
+		"trial_ends_at": updated.TrialEndsAt.Format(time.RFC3339),
+	})
+}
