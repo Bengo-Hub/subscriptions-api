@@ -16,7 +16,6 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	serviceclient "github.com/Bengo-Hub/shared-service-client"
-	httpware "github.com/Bengo-Hub/httpware"
 )
 
 // AddonHandler manages optional add-on features for tenant subscriptions.
@@ -62,10 +61,7 @@ type addonItem struct {
 // @Router /addons [get]
 func (h *AddonHandler) ListAddons(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	tenantIDStr := httpware.GetTenantID(ctx)
-	if tenantIDStr == "" {
-		tenantIDStr = resolveTenantID(r)
-	}
+	tenantIDStr := resolveTenantID(r)
 	if tenantIDStr == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 		return
@@ -154,10 +150,7 @@ func (h *AddonHandler) PurchaseAddon(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tenantIDStr := httpware.GetTenantID(ctx)
-	if tenantIDStr == "" {
-		tenantIDStr = resolveTenantID(r)
-	}
+	tenantIDStr := resolveTenantID(r)
 	if tenantIDStr == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 		return
@@ -287,10 +280,7 @@ func (h *AddonHandler) RemoveAddon(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tenantIDStr := httpware.GetTenantID(ctx)
-	if tenantIDStr == "" {
-		tenantIDStr = resolveTenantID(r)
-	}
+	tenantIDStr := resolveTenantID(r)
 	if tenantIDStr == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
 		return

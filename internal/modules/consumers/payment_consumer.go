@@ -17,31 +17,33 @@ import (
 const treasuryPaymentSucceededSubject = "treasury.payment.succeeded"
 
 // treasuryPaymentEvent is the payload from treasury's payment.succeeded NATS event.
+// Amount is json.Number to handle both float64 and decimal string (treasury publishes
+// decimal.Decimal which marshals as a quoted string, e.g. "2500.00").
 type treasuryPaymentEvent struct {
 	EventType string `json:"event_type"`
 	Payload   struct {
-		IntentID         string  `json:"intent_id"`
-		TenantID         string  `json:"tenant_id"`
-		ReferenceType    string  `json:"reference_type"`
-		Status           string  `json:"status"`
-		PlanCode         string  `json:"plan_code"`
-		Amount           float64 `json:"amount"`
-		PaystackAuthCode string  `json:"paystack_auth_code"`
-		CardLast4        string  `json:"card_last4"`
-		CardType         string  `json:"card_type"`
-		CardExpMonth     string  `json:"card_exp_month"`
-		CardExpYear      string  `json:"card_exp_year"`
+		IntentID         string      `json:"intent_id"`
+		TenantID         string      `json:"tenant_id"`
+		ReferenceType    string      `json:"reference_type"`
+		Status           string      `json:"status"`
+		PlanCode         string      `json:"plan_code"`
+		Amount           json.Number `json:"amount"`
+		PaystackAuthCode string      `json:"paystack_auth_code"`
+		CardLast4        string      `json:"card_last4"`
+		CardType         string      `json:"card_type"`
+		CardExpMonth     string      `json:"card_exp_month"`
+		CardExpYear      string      `json:"card_exp_year"`
 	} `json:"payload"`
 	// Also accept flat structure (some publishers embed payload at top-level)
-	TenantID         string  `json:"tenant_id"`
-	ReferenceType    string  `json:"reference_type"`
-	PlanCode         string  `json:"plan_code"`
-	Amount           float64 `json:"amount"`
-	PaystackAuthCode string  `json:"paystack_auth_code"`
-	CardLast4        string  `json:"card_last4"`
-	CardType         string  `json:"card_type"`
-	CardExpMonth     string  `json:"card_exp_month"`
-	CardExpYear      string  `json:"card_exp_year"`
+	TenantID         string      `json:"tenant_id"`
+	ReferenceType    string      `json:"reference_type"`
+	PlanCode         string      `json:"plan_code"`
+	Amount           json.Number `json:"amount"`
+	PaystackAuthCode string      `json:"paystack_auth_code"`
+	CardLast4        string      `json:"card_last4"`
+	CardType         string      `json:"card_type"`
+	CardExpMonth     string      `json:"card_exp_month"`
+	CardExpYear      string      `json:"card_exp_year"`
 }
 
 // TreasuryPaymentConsumer listens for treasury.payment.succeeded events:
@@ -176,9 +178,9 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 	}
 
 	// Earn loyalty credits on successful subscription payment
-	amountKes := int(ev.Payload.Amount)
+	amountKes := jsonNumberToInt(ev.Payload.Amount)
 	if amountKes == 0 {
-		amountKes = int(ev.Amount)
+		amountKes = jsonNumberToInt(ev.Amount)
 	}
 	if amountKes > 0 {
 		refID := uuid.New()
@@ -195,11 +197,27 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 	return nil
 }
 
+func jsonNumberToInt(n json.Number) int {
+	if f, err := n.Float64(); err == nil {
+		return int(f)
+	}
+	return 0
+}
+
 func (c *TreasuryPaymentConsumer) saveCardAuthorization(ctx context.Context, tenantID uuid.UUID, authCode, cardType, last4, expMonth, expYear string) error {
 	sub, err := c.orm.TenantSubscription.Query().
 		Where(tenantsubscription.TenantIDEQ(tenantID)).
 		Only(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			// No subscription yet — card setup may precede subscription creation.
+			// Log and skip; the card details must be re-entered after subscribing.
+			c.log.Warn("no subscription found to attach card authorization",
+				zap.String("tenant_id", tenantID.String()),
+				zap.String("last4", last4),
+			)
+			return nil
+		}
 		return err
 	}
 

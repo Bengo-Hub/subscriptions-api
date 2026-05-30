@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bengobox/subscription-service/internal/ent"
+	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/go-chi/chi/v5"
@@ -62,6 +63,11 @@ func (h *SubscriptionHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	sub, err := h.service.GetSubscriptionResult(ctx, tenantID)
 	if err != nil {
+		// Check if this is the demo tenant — bypass subscription gating entirely
+		if h.isDemoTenant(ctx, tenantID) {
+			h.respondWithJSON(w, http.StatusOK, demoBypasResponse(tenantIDStr))
+			return
+		}
 		h.log.Error("failed to get subscription", zap.Error(err))
 		h.respondWithError(w, http.StatusNotFound, "subscription not found")
 		return
@@ -89,11 +95,10 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	tenantIDStr := httpware.GetTenantID(ctx)
-	if tenantIDStr != "" && !httpware.IsPlatformOwner(ctx) {
-		// Non-platform owners are locked to their own tenant
-		tid, _ := uuid.Parse(tenantIDStr)
-		in.TenantID = tid
+	if in.TenantID == uuid.Nil {
+		if tenantIDStr := resolveTenantID(r); tenantIDStr != "" {
+			in.TenantID, _ = uuid.Parse(tenantIDStr)
+		}
 	}
 
 	if in.TenantID == uuid.Nil {
@@ -134,10 +139,10 @@ func (h *SubscriptionHandler) ChangePlan(w http.ResponseWriter, r *http.Request)
 	}
 
 	ctx := r.Context()
-	tenantIDStr := httpware.GetTenantID(ctx)
-	if tenantIDStr != "" && !httpware.IsPlatformOwner(ctx) {
-		tid, _ := uuid.Parse(tenantIDStr)
-		in.TenantID = tid
+	if in.TenantID == uuid.Nil {
+		if tenantIDStr := resolveTenantID(r); tenantIDStr != "" {
+			in.TenantID, _ = uuid.Parse(tenantIDStr)
+		}
 	}
 
 	if in.TenantID == uuid.Nil {
@@ -178,10 +183,10 @@ func (h *SubscriptionHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	tenantIDStr := httpware.GetTenantID(ctx)
-	if tenantIDStr != "" && !httpware.IsPlatformOwner(ctx) {
-		tid, _ := uuid.Parse(tenantIDStr)
-		in.TenantID = tid
+	if in.TenantID == uuid.Nil {
+		if tenantIDStr := resolveTenantID(r); tenantIDStr != "" {
+			in.TenantID, _ = uuid.Parse(tenantIDStr)
+		}
 	}
 
 	if in.TenantID == uuid.Nil {
@@ -229,6 +234,12 @@ func (h *SubscriptionHandler) GetByTenantID(w http.ResponseWriter, r *http.Reque
 
 	sub, err := h.service.GetSubscriptionResult(r.Context(), tenantID)
 	if err != nil {
+		if h.isDemoTenant(r.Context(), tenantID) {
+			resp := demoBypasResponse(tenantIDStr)
+			resp["usage_limits"] = map[string]any{}
+			h.respondWithJSON(w, http.StatusOK, resp)
+			return
+		}
 		h.log.Debug("subscription not found for tenant", zap.String("tenant_id", tenantIDStr), zap.Error(err))
 		h.respondWithError(w, http.StatusNotFound, "subscription not found")
 		return
@@ -364,7 +375,7 @@ func (h *SubscriptionHandler) SwitchPlan(w http.ResponseWriter, r *http.Request)
 // @Router /subscription/settings [get]
 func (h *SubscriptionHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	tenantIDStr := httpware.GetTenantID(ctx)
+	tenantIDStr := resolveTenantID(r) // platform owners can pass X-Tenant-ID to manage a tenant's settings
 	if tenantIDStr == "" {
 		h.respondWithError(w, http.StatusBadRequest, "tenant_id required")
 		return
@@ -423,7 +434,7 @@ func (h *SubscriptionHandler) GetSettings(w http.ResponseWriter, r *http.Request
 // @Router /subscription/settings [put]
 func (h *SubscriptionHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	tenantIDStr := httpware.GetTenantID(ctx)
+	tenantIDStr := resolveTenantID(r)
 	if tenantIDStr == "" {
 		h.respondWithError(w, http.StatusBadRequest, "tenant_id required")
 		return
@@ -511,6 +522,36 @@ func (h *SubscriptionHandler) ListExpiring(w http.ResponseWriter, r *http.Reques
 	}
 
 	h.respondWithJSON(w, http.StatusOK, results)
+}
+
+// isDemoTenant returns true if the local tenant record for tenantID has slug "codevertex-demo".
+// The codevertex-demo tenant has no subscription record and bypasses all subscription gating.
+func (h *SubscriptionHandler) isDemoTenant(ctx context.Context, tenantID uuid.UUID) bool {
+	t, err := h.client.Tenant.Query().
+		Where(enttenant.IDEQ(tenantID)).
+		Only(ctx)
+	if err != nil {
+		return false
+	}
+	return t.Slug == "codevertex-demo"
+}
+
+// demoBypasResponse returns a synthetic always-active subscription for the demo tenant.
+func demoBypasResponse(tenantIDStr string) map[string]any {
+	now := time.Now()
+	return map[string]any{
+		"id":                   uuid.Nil.String(),
+		"tenant_id":            tenantIDStr,
+		"plan_code":            "DEMO_UNLIMITED",
+		"plan_name":            "Demo (No Subscription Required)",
+		"status":               "ACTIVE",
+		"billing_cycle":        "MONTHLY",
+		"current_period_start": now.Format(time.RFC3339),
+		"current_period_end":   now.AddDate(1, 0, 0).Format(time.RFC3339),
+		"features":             []string{},
+		"limits":               map[string]any{},
+		"is_demo_bypass":       true,
+	}
 }
 
 func boolFromMeta(m map[string]any, key string, defaultVal bool) bool {
