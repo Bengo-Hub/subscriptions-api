@@ -132,6 +132,11 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed bundles: %w", err)
 	}
 
+	// 3.4 Seed purchasable addon features (is_included=false) for each plan
+	if err := seedPlanAddonFeatures(ctx, tx); err != nil {
+		return fmt.Errorf("seed plan addon features: %w", err)
+	}
+
 	// 3.5 Seed service charge plans
 	if err := seedServiceChargePlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed service charge plans: %w", err)

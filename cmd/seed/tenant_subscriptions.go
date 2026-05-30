@@ -15,6 +15,25 @@ import (
 )
 
 func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.Syncer) error {
+	// Clean slate: delete all existing subscription records before re-seeding.
+	// This ensures no stale TRIAL/ACTIVE rows survive between seed runs.
+	existingSubs, err := tx.TenantSubscription.Query().All(ctx)
+	if err != nil {
+		return fmt.Errorf("query existing subscriptions for cleanup: %w", err)
+	}
+	for _, sub := range existingSubs {
+		// Delete child product subscriptions first (FK constraint)
+		if _, err := tx.ProductSubscription.Delete().
+			Where(productsubscription.TenantSubscriptionIDEQ(sub.ID)).
+			Exec(ctx); err != nil {
+			return fmt.Errorf("delete product subscriptions for %s: %w", sub.ID, err)
+		}
+		if err := tx.TenantSubscription.DeleteOne(sub).Exec(ctx); err != nil {
+			return fmt.Errorf("delete subscription %s: %w", sub.ID, err)
+		}
+	}
+	log.Printf("  cleaned %d existing subscription(s) for fresh seed", len(existingSubs))
+
 	// Platform owner (codevertex) is intentionally excluded — the platform owner has
 	// unrestricted access to all services without a subscription record.
 	// All other tenants must have a subscription record for feature gating to work.
@@ -87,43 +106,21 @@ func seedAllTenantSubscriptions(ctx context.Context, tx *ent.Tx, syncer *tenant.
 
 		planID := planIDs[td.plan]
 
-		existing, err := tx.TenantSubscription.Query().
-			Where(tenantsubscription.TenantIDEQ(tenantID)).
-			First(ctx)
-		if err != nil && !ent.IsNotFound(err) {
-			return fmt.Errorf("lookup subscription for %s: %w", td.slug, err)
+		meta := map[string]any{"seeded": true, "tenant_name": td.name, "tier": td.plan}
+		b := tx.TenantSubscription.Create().
+			SetID(td.subID).
+			SetTenantID(tenantID).
+			SetPlanID(planID).
+			SetStatus(td.status).
+			SetCurrentPeriodStart(td.periodStart).
+			SetCurrentPeriodEnd(td.periodEnd).
+			SetBundleCode(td.bundleCode).
+			SetMetadata(meta)
+		if td.status == tenantsubscription.StatusTRIAL {
+			b = b.SetTrialEndsAt(td.periodEnd)
 		}
-
-		upd := map[string]any{"seeded": true, "tenant_name": td.name, "tier": td.plan}
-		if existing != nil {
-			b := tx.TenantSubscription.UpdateOne(existing).
-				SetPlanID(planID).
-				SetStatus(td.status).
-				SetCurrentPeriodStart(td.periodStart).
-				SetCurrentPeriodEnd(td.periodEnd).
-				SetBundleCode(td.bundleCode).
-				SetMetadata(upd)
-			if td.status == tenantsubscription.StatusTRIAL {
-				b = b.SetTrialEndsAt(td.periodEnd)
-			}
-			_, err = b.Save(ctx)
-		} else {
-			b := tx.TenantSubscription.Create().
-				SetID(td.subID).
-				SetTenantID(tenantID).
-				SetPlanID(planID).
-				SetStatus(td.status).
-				SetCurrentPeriodStart(td.periodStart).
-				SetCurrentPeriodEnd(td.periodEnd).
-				SetBundleCode(td.bundleCode).
-				SetMetadata(upd)
-			if td.status == tenantsubscription.StatusTRIAL {
-				b = b.SetTrialEndsAt(td.periodEnd)
-			}
-			_, err = b.Save(ctx)
-		}
-		if err != nil {
-			return fmt.Errorf("upsert subscription for %s: %w", td.slug, err)
+		if _, err = b.Save(ctx); err != nil {
+			return fmt.Errorf("create subscription for %s: %w", td.slug, err)
 		}
 		log.Printf("  subscription: %s → %s (%s, until %s)", td.name, td.plan, td.status, td.periodEnd.Format("2006-01-02"))
 
