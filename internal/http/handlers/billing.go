@@ -365,9 +365,9 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 		"reference_type": "card_setup",
 		"payment_method": "pending",
 		"currency":       currency,
-		"amount":         5, // 5 KES verification charge; refunded automatically — Paystack minimum refund is KES 5
+		"amount":         5, // KES 5 verification charge (Paystack refund minimum); refunded automatically after card is tokenised
 		"source_service": "subscriptions",
-		"description":    "Card verification (KES 5 charged and refunded automatically)",
+		"description":    "Card verification (KES 5 charged and refunded automatically after card is saved)",
 		"customer_email": customerEmail,
 		"metadata": map[string]any{
 			"tenant_id": tenantIDStr,
