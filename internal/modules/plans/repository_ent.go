@@ -24,7 +24,7 @@ func NewEntRepository(client *ent.Client) *EntRepository {
 	return &EntRepository{client: client}
 }
 
-// CreatePlan persists a new subscription plan.
+// CreatePlan persists a new subscription plan and its features.
 func (r *EntRepository) CreatePlan(ctx context.Context, plan *SubscriptionPlan) error {
 	if plan == nil {
 		return errors.New("plans: nil plan provided")
@@ -62,6 +62,13 @@ func (r *EntRepository) CreatePlan(ctx context.Context, plan *SubscriptionPlan) 
 
 	if err != nil {
 		return fmt.Errorf("plans: create plan: %w", err)
+	}
+
+	// Upsert features if provided
+	if len(plan.Features) > 0 {
+		if err := r.upsertFeatures(ctx, plan.ID, plan.Features); err != nil {
+			return fmt.Errorf("plans: upsert features on create: %w", err)
+		}
 	}
 
 	return nil
@@ -114,6 +121,92 @@ func (r *EntRepository) UpdatePlan(ctx context.Context, plan *SubscriptionPlan) 
 	_, err := update.Save(ctx)
 	if err != nil {
 		return fmt.Errorf("plans: update plan: %w", err)
+	}
+
+	// Upsert features if provided
+	if len(plan.Features) > 0 {
+		if err := r.upsertFeatures(ctx, plan.ID, plan.Features); err != nil {
+			return fmt.Errorf("plans: upsert features on update: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// upsertFeatures creates-or-updates each feature in the given slice for the plan,
+// and deletes any existing features whose featureCode is no longer in the list.
+func (r *EntRepository) upsertFeatures(ctx context.Context, planID uuid.UUID, features []*PlanFeature) error {
+	// Build index of incoming feature codes
+	incoming := make(map[string]*PlanFeature, len(features))
+	for _, f := range features {
+		if f.FeatureCode != "" {
+			incoming[f.FeatureCode] = f
+		}
+	}
+
+	// Load existing features for this plan
+	existing, err := r.client.PlanFeature.Query().
+		Where(planfeature.PlanID(planID)).
+		All(ctx)
+	if err != nil {
+		return fmt.Errorf("query existing features: %w", err)
+	}
+
+	existingCodes := make(map[string]*ent.PlanFeature, len(existing))
+	for _, ef := range existing {
+		existingCodes[ef.FeatureCode] = ef
+	}
+
+	// Delete features no longer in the incoming list
+	for code, ef := range existingCodes {
+		if _, ok := incoming[code]; !ok {
+			if err := r.client.PlanFeature.DeleteOneID(ef.ID).Exec(ctx); err != nil {
+				return fmt.Errorf("delete feature %s: %w", code, err)
+			}
+		}
+	}
+
+	// Create or update each incoming feature
+	for code, f := range incoming {
+		meta := f.Metadata
+		if meta == nil {
+			meta = make(map[string]any)
+		}
+
+		if ef, exists := existingCodes[code]; exists {
+			// Update existing
+			upd := r.client.PlanFeature.UpdateOneID(ef.ID).
+				SetIsIncluded(f.IsIncluded).
+				SetOverageUnitPrice(f.OverageUnitPrice).
+				SetMetadata(meta)
+			if f.LimitValue != nil {
+				upd = upd.SetLimitValue(*f.LimitValue)
+			} else {
+				upd = upd.ClearLimitValue()
+			}
+			if _, err := upd.Save(ctx); err != nil {
+				return fmt.Errorf("update feature %s: %w", code, err)
+			}
+		} else {
+			// Create new
+			featureID := f.ID
+			if featureID == uuid.Nil {
+				featureID = uuid.New()
+			}
+			cr := r.client.PlanFeature.Create().
+				SetID(featureID).
+				SetPlanID(planID).
+				SetFeatureCode(code).
+				SetIsIncluded(f.IsIncluded).
+				SetOverageUnitPrice(f.OverageUnitPrice).
+				SetMetadata(meta)
+			if f.LimitValue != nil {
+				cr = cr.SetLimitValue(*f.LimitValue)
+			}
+			if _, err := cr.Save(ctx); err != nil {
+				return fmt.Errorf("create feature %s: %w", code, err)
+			}
+		}
 	}
 
 	return nil

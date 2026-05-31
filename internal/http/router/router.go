@@ -140,6 +140,7 @@ func New(
 				r.Get("/billing", billingHandler.GetBilling)
 				r.Get("/billing/invoice-preview", billingHandler.InvoicePreview)
 				r.Post("/subscription/payment-method/setup", billingHandler.SetupPaymentMethod)
+				r.Post("/subscription/payment-method/confirm", billingHandler.ConfirmPaymentMethod)
 			}
 
 			// Credit wallet + coupon redemption

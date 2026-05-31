@@ -165,6 +165,117 @@ func (h *BillingHandler) fetchInvoices(ctx context.Context, tenantID uuid.UUID) 
 	return rows
 }
 
+// ConfirmPaymentMethod godoc
+// @Summary Confirm payment method after card setup
+// @Description Called after successful card_setup payment. Reads the authorization_code from the
+// treasury intent metadata and persists it to the subscription for auto-renewal.
+// @Tags Billing
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Router /subscription/payment-method/confirm [post]
+func (h *BillingHandler) ConfirmPaymentMethod(w http.ResponseWriter, r *http.Request) {
+	tenantIDStr := resolveTenantID(r)
+	if tenantIDStr == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id required"})
+		return
+	}
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+
+	var body struct {
+		IntentID string `json:"intent_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.IntentID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "intent_id required"})
+		return
+	}
+
+	if h.treasuryClient == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "treasury client not configured"})
+		return
+	}
+
+	headers := map[string]string{}
+	if h.treasuryAPIKey != "" {
+		headers["X-API-Key"] = h.treasuryAPIKey
+	}
+
+	// Fetch the intent from treasury to extract the auth code saved during verify.
+	resp, err := h.treasuryClient.Get(r.Context(),
+		fmt.Sprintf("/api/v1/s2s/%s/payments/intents/%s", tenantIDStr, body.IntentID), headers)
+	if err != nil || !resp.IsSuccess() {
+		h.log.Warn("failed to fetch intent from treasury for card confirm",
+			zap.String("tenant_id", tenantIDStr), zap.String("intent_id", body.IntentID))
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "could not fetch intent from treasury"})
+		return
+	}
+
+	var intentResp struct {
+		Metadata map[string]any `json:"metadata"`
+	}
+	if err := resp.DecodeJSON(&intentResp); err != nil || intentResp.Metadata == nil {
+		writeJSON(w, http.StatusOK, map[string]string{"status": "no_card_data"})
+		return
+	}
+
+	authCode, _ := intentResp.Metadata["paystack_auth_code"].(string)
+	if authCode == "" {
+		writeJSON(w, http.StatusOK, map[string]string{"status": "no_card_data"})
+		return
+	}
+
+	cardType, _ := intentResp.Metadata["card_type"].(string)
+	last4, _ := intentResp.Metadata["card_last4"].(string)
+	expMonth, _ := intentResp.Metadata["card_exp_month"].(string)
+	expYear, _ := intentResp.Metadata["card_exp_year"].(string)
+
+	sub, err := h.client.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(tenantID)).
+		Only(r.Context())
+	if err != nil {
+		h.log.Warn("no subscription found for card confirm", zap.String("tenant_id", tenantIDStr))
+		writeJSON(w, http.StatusOK, map[string]string{"status": "no_subscription"})
+		return
+	}
+
+	meta := make(map[string]any)
+	for k, v := range sub.Metadata {
+		meta[k] = v
+	}
+	meta["paystack_auth_code"] = authCode
+	meta["payment_method"] = map[string]any{
+		"type":        "card",
+		"brand":       cardType,
+		"last4":       last4,
+		"expiryMonth": expMonth,
+		"expiryYear":  expYear,
+	}
+
+	if _, err := h.client.TenantSubscription.UpdateOneID(sub.ID).SetMetadata(meta).Save(r.Context()); err != nil {
+		h.log.Error("failed to save card authorization", zap.String("tenant_id", tenantIDStr), zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save payment method"})
+		return
+	}
+
+	h.log.Info("payment method confirmed and saved", zap.String("tenant_id", tenantIDStr), zap.String("last4", last4))
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status": "saved",
+		"payment_method": map[string]any{
+			"type":        "card",
+			"brand":       cardType,
+			"last4":       last4,
+			"expiryMonth": expMonth,
+			"expiryYear":  expYear,
+		},
+	})
+}
+
 // SetupPaymentMethod godoc
 // @Summary Setup payment method for auto-renewal
 // @Description Creates a Paystack payment intent so the tenant can register a card for subscription auto-renewal
