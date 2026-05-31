@@ -49,7 +49,7 @@ func seedTruLoadOrgPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"max_stations":        1,
 				"max_users":           5,
-				"max_weighings_month": 500,
+				"max_weighings_month": 2000,
 			},
 			features: []string{
 				"commercial_weighing",
@@ -73,7 +73,7 @@ func seedTruLoadOrgPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"max_stations":        5,
 				"max_users":           20,
-				"max_weighings_month": 3000,
+				"max_weighings_month": 10000,
 			},
 			features: []string{
 				"commercial_weighing",
@@ -130,7 +130,7 @@ func seedTruLoadOrgPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"max_stations":        1,
 				"max_users":           5,
-				"max_weighings_month": 500,
+				"max_weighings_month": 2000,
 			},
 			features: []string{
 				"commercial_weighing",
@@ -154,7 +154,7 @@ func seedTruLoadOrgPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"max_stations":        5,
 				"max_users":           20,
-				"max_weighings_month": 3000,
+				"max_weighings_month": 10000,
 			},
 			features: []string{
 				"commercial_weighing",

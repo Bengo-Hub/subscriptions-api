@@ -57,7 +57,7 @@ func seedMarketFlowPlans(ctx context.Context, tx *ent.Tx) error {
 			features: []string{
 				"contact_management", "lead_management", "basic_campaigns",
 				"landing_pages", "email_sequences", "ai_chat_agent",
-				"basic_analytics", "shortlinks",
+				"basic_analytics", "shortlinks", "profile_pages",
 			},
 		},
 		{
@@ -86,7 +86,8 @@ func seedMarketFlowPlans(ctx context.Context, tx *ent.Tx) error {
 				"advanced_analytics", "shortlinks", "lead_scoring",
 				"funnel_builder", "automation_workflows", "webhooks",
 				"ticketing", "helpdesk", "sla_policies",
-				"knowledge_base", "testimonials",
+				"knowledge_base", "testimonials", "profile_pages",
+				"deal_pipeline", "whatsapp_integration",
 			},
 		},
 		{
@@ -115,7 +116,8 @@ func seedMarketFlowPlans(ctx context.Context, tx *ent.Tx) error {
 				"advanced_analytics", "shortlinks", "lead_scoring",
 				"funnel_builder", "automation_workflows", "webhooks",
 				"ticketing", "helpdesk", "sla_policies",
-				"knowledge_base", "testimonials",
+				"knowledge_base", "testimonials", "profile_pages",
+				"deal_pipeline", "whatsapp_integration",
 				"api_access", "white_label", "custom_integrations",
 				"audit_trail", "priority_support", "dedicated_account_manager",
 			},
@@ -143,7 +145,7 @@ func seedMarketFlowPlans(ctx context.Context, tx *ent.Tx) error {
 			features: []string{
 				"contact_management", "lead_management", "basic_campaigns",
 				"landing_pages", "email_sequences", "ai_chat_agent",
-				"basic_analytics", "shortlinks",
+				"basic_analytics", "shortlinks", "profile_pages",
 			},
 		},
 		{
@@ -172,7 +174,8 @@ func seedMarketFlowPlans(ctx context.Context, tx *ent.Tx) error {
 				"advanced_analytics", "shortlinks", "lead_scoring",
 				"funnel_builder", "automation_workflows", "webhooks",
 				"ticketing", "helpdesk", "sla_policies",
-				"knowledge_base", "testimonials",
+				"knowledge_base", "testimonials", "profile_pages",
+				"deal_pipeline", "whatsapp_integration",
 			},
 		},
 		{
@@ -201,7 +204,8 @@ func seedMarketFlowPlans(ctx context.Context, tx *ent.Tx) error {
 				"advanced_analytics", "shortlinks", "lead_scoring",
 				"funnel_builder", "automation_workflows", "webhooks",
 				"ticketing", "helpdesk", "sla_policies",
-				"knowledge_base", "testimonials",
+				"knowledge_base", "testimonials", "profile_pages",
+				"deal_pipeline", "whatsapp_integration",
 				"api_access", "white_label", "custom_integrations",
 				"audit_trail", "priority_support", "dedicated_account_manager",
 			},
