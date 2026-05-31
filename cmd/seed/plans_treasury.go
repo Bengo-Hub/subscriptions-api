@@ -52,7 +52,7 @@ func seedTreasuryPlans(ctx context.Context, tx *ent.Tx) error {
 				"max_currencies":            1,
 			},
 			features: []string{
-				"wallet_management", "payment_collection", "mpesa_integration",
+				"wallet_management", "payment_collection",
 				"paystack_integration", "payment_links", "transaction_reports",
 				"invoice_generation", "basic_reconciliation", "customer_management",
 				"basic_analytics",
@@ -130,7 +130,7 @@ func seedTreasuryPlans(ctx context.Context, tx *ent.Tx) error {
 				"max_currencies":            1,
 			},
 			features: []string{
-				"wallet_management", "payment_collection", "mpesa_integration",
+				"wallet_management", "payment_collection",
 				"paystack_integration", "payment_links", "transaction_reports",
 				"invoice_generation", "basic_reconciliation", "customer_management",
 				"basic_analytics",

@@ -74,8 +74,8 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"pos_terminal", "mpesa_pos", "order_management", "receipt_printing",
 				"daily_reports", "table_management", "shift_reports", "kds",
 				"offline_sync", "basic_analytics",
-				"wallet_management", "payment_collection", "mpesa_integration",
-				"paystack_integration", "payment_links", "transaction_reports",
+				"wallet_management", "payment_collection", "paystack_integration",
+				"payment_links", "transaction_reports",
 				"loyalty_program", "wallet", "basic_treasury_access",
 			},
 		},
@@ -175,7 +175,7 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"pos_terminal", "mpesa_pos", "order_management", "receipt_printing",
 				"daily_reports", "table_management", "shift_reports", "kds", "offline_sync",
 				"basic_analytics", "wallet_management", "payment_collection",
-				"mpesa_integration", "paystack_integration", "payment_links",
+				"paystack_integration", "payment_links",
 				"transaction_reports", "loyalty_program", "wallet", "basic_treasury_access",
 			},
 		},
@@ -293,19 +293,21 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"max_integrations":   2,
 			},
 			features: []string{
-				// Ordering Starter
-				"online_ordering", "rider_app", "admin_dashboard", "mpesa_integration",
+				// Ordering Starter — Paystack is the default gateway on all plans;
+				// direct M-Pesa Daraja (mpesa_integration) is Growth+ only.
+				"online_ordering", "rider_app", "admin_dashboard",
+				"paystack_gateway", "paystack_integration",
 				"sms_notifications", "push_notifications", "basic_analytics",
 				"custom_domain", "loyalty_program", "wallet", "delivery_zones",
 				"pos_terminal", "table_management", "shift_reports", "offline_sync",
-				// POS Device-1
+				// POS Device-1 (mpesa_pos = Lipa Na M-Pesa POS till, included at Starter)
 				"mpesa_pos", "order_management", "receipt_printing", "daily_reports", "kds",
 				// Logistics Starter
 				"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch",
 				// Inventory Starter
 				"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports",
 				// Treasury Starter
-				"wallet_management", "payment_collection", "paystack_integration",
+				"wallet_management", "payment_collection",
 				"payment_links", "transaction_reports", "invoice_generation",
 				// MarketFlow CRM Starter
 				"contact_management", "lead_management", "basic_campaigns",
@@ -530,14 +532,15 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"max_integrations": 2,
 			},
 			features: []string{
-				"online_ordering", "rider_app", "admin_dashboard", "mpesa_integration",
+				"online_ordering", "rider_app", "admin_dashboard",
+				"paystack_gateway", "paystack_integration",
 				"sms_notifications", "push_notifications", "basic_analytics",
 				"custom_domain", "loyalty_program", "wallet", "delivery_zones",
 				"pos_terminal", "table_management", "shift_reports", "offline_sync",
 				"mpesa_pos", "order_management", "receipt_printing", "daily_reports", "kds",
 				"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch",
 				"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports",
-				"wallet_management", "payment_collection", "paystack_integration",
+				"wallet_management", "payment_collection",
 				"payment_links", "transaction_reports", "invoice_generation",
 				"contact_management", "lead_management", "basic_campaigns",
 				"landing_pages", "email_sequences", "ai_chat_agent", "shortlinks",

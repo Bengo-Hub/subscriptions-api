@@ -171,10 +171,31 @@ type featureDef struct {
 	overageUnitPrice float64 // price per unit above limit (0 = no overage)
 }
 
+// universalFeatures are added to every plan at every tier.
+// custom_branding represents the tenant branding tab in auth-ui (logo, primary
+// color, font) which syncs to all downstream services via Redis — available
+// to all tenants regardless of plan level.
+var universalFeatures = []string{"custom_branding"}
+
 func seedPlanFeatures(ctx context.Context, tx *ent.Tx, planID uuid.UUID, featureCodes []string) error {
-	// Convert string slice to featureDefs (backward compatible)
-	defs := make([]featureDef, len(featureCodes))
-	for i, code := range featureCodes {
+	// Merge universal features (deduplicated) then convert to featureDefs
+	seen := make(map[string]bool, len(featureCodes)+len(universalFeatures))
+	merged := make([]string, 0, len(featureCodes)+len(universalFeatures))
+	for _, c := range featureCodes {
+		if !seen[c] {
+			seen[c] = true
+			merged = append(merged, c)
+		}
+	}
+	for _, c := range universalFeatures {
+		if !seen[c] {
+			seen[c] = true
+			merged = append(merged, c)
+		}
+	}
+
+	defs := make([]featureDef, len(merged))
+	for i, code := range merged {
 		defs[i] = featureDef{code: code}
 	}
 	return seedPlanFeaturesWithLimits(ctx, tx, planID, defs)
