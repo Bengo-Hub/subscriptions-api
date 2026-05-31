@@ -15,7 +15,6 @@ import (
 	"github.com/bengobox/subscription-service/internal/config"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
-	"github.com/bengobox/subscription-service/internal/modules/tenant"
 )
 
 func main() {
@@ -147,13 +146,7 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed coupons: %w", err)
 	}
 
-	// 4. Seed subscriptions for ALL tenants (each tenant must have a subscription, trial periods allowed)
-	syncer := tenant.NewSyncer(tx.Client(), cfg.Services.AuthAPI)
-	if err := seedAllTenantSubscriptions(ctx, tx, syncer); err != nil {
-		return fmt.Errorf("seed tenant subscriptions: %w", err)
-	}
-
-	// 5. Seed RBAC permissions
+	// 4. Seed RBAC permissions
 	if err := seedRBACPermissions(ctx, tx); err != nil {
 		return fmt.Errorf("seed rbac permissions: %w", err)
 	}
