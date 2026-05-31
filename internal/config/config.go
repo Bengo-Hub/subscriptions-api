@@ -33,6 +33,7 @@ type ServicesConfig struct {
 	AuthAPI        string `envconfig:"AUTH_API_URL" default:"https://sso.codevertexitsolutions.com"`
 	TreasuryAPI    string `envconfig:"TREASURY_API_URL" default:"https://booksapi.codevertexitsolutions.com"`
 	TreasuryAPIKey string `envconfig:"INTERNAL_SERVICE_KEY"`
+	MarketflowAPI  string `envconfig:"MARKETFLOW_API_URL" default:"https://marketflowapi.codevertexitsolutions.com"`
 }
 
 type HTTPConfig struct {

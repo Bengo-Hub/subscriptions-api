@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	authclient "github.com/Bengo-Hub/shared-auth-client"
@@ -21,15 +23,17 @@ type BillingHandler struct {
 	client         *ent.Client
 	treasuryClient *serviceclient.Client
 	treasuryAPIKey string
+	marketflowURL  string
 }
 
 // NewBillingHandler creates a new billing handler.
-func NewBillingHandler(log *zap.Logger, client *ent.Client, treasuryClient *serviceclient.Client, treasuryAPIKey string) *BillingHandler {
+func NewBillingHandler(log *zap.Logger, client *ent.Client, treasuryClient *serviceclient.Client, treasuryAPIKey string, marketflowURL string) *BillingHandler {
 	return &BillingHandler{
 		log:            log.Named("billing.handler"),
 		client:         client,
 		treasuryClient: treasuryClient,
 		treasuryAPIKey: treasuryAPIKey,
+		marketflowURL:  marketflowURL,
 	}
 }
 
@@ -91,8 +95,20 @@ func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 
 	// Extract payment method from metadata if stored
 	if sub.Metadata != nil {
-		if pm, ok := sub.Metadata["payment_method"]; ok {
+		// Return payment_methods array (preferred) OR fall back to legacy payment_method singular.
+		if pms, ok := sub.Metadata["payment_methods"]; ok {
+			billing["paymentMethods"] = pms
+			// Also expose the default as paymentMethod for backwards compatibility.
+			if arr, ok := pms.([]any); ok && len(arr) > 0 {
+				billing["paymentMethod"] = arr[0]
+			}
+		} else if pm, ok := sub.Metadata["payment_method"]; ok {
 			billing["paymentMethod"] = pm
+			// Normalise legacy single entry into array form for UI.
+			billing["paymentMethods"] = []any{pm}
+		}
+		if cc, ok := sub.Metadata["cancel_at_period_end"].(bool); ok && cc {
+			billing["cancelAtPeriodEnd"] = true
 		}
 	}
 
@@ -354,6 +370,13 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 		headers["X-API-Key"] = h.treasuryAPIKey
 	}
 
+	// Upsert CRM contact for this tenant admin so the card-setup intent is linked.
+	// Non-fatal: if marketflow is unavailable the intent is still created without a CRM link.
+	var crmContactID string
+	if h.marketflowURL != "" && customerEmail != "" && !strings.HasSuffix(customerEmail, "@subscriptions.internal") {
+		crmContactID = h.upsertCRMContactByEmail(r.Context(), tenantIDStr, customerEmail)
+	}
+
 	// Create a pending card-tokenisation intent via treasury S2S.
 	// payment_method="pending" so treasury returns an initiate_url in treasury format
 	// ({publicBase}/api/v1/pay/{tenantID}/intents/{intentID}/initiate). TreasuryPaymentModal
@@ -374,6 +397,9 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 			"plan_code": planCode,
 			"purpose":   "card_setup",
 		},
+	}
+	if crmContactID != "" {
+		intentReq["crm_contact_id"] = crmContactID
 	}
 
 	resp, err := h.treasuryClient.Post(r.Context(), fmt.Sprintf("/api/v1/s2s/%s/payments/intents", tenantIDStr), intentReq, headers)
@@ -407,4 +433,46 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 		"initiate_url":      initiateURL,
 		"status":            result.Status,
 	})
+}
+
+// upsertCRMContactByEmail calls marketflow S2S to create-or-return a contact by email.
+// Returns the contact UUID string on success; returns "" on any error (non-fatal).
+func (h *BillingHandler) upsertCRMContactByEmail(ctx context.Context, tenantID, email string) string {
+	if h.marketflowURL == "" || tenantID == "" || email == "" {
+		return ""
+	}
+	body, _ := json.Marshal(map[string]any{
+		"tenant_id": tenantID,
+		"email":     email,
+	})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		h.marketflowURL+"/api/v1/internal/contacts/upsert",
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		h.log.Warn("crm upsert request build failed", zap.Error(err))
+		return ""
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if h.treasuryAPIKey != "" {
+		req.Header.Set("X-API-Key", h.treasuryAPIKey)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		h.log.Warn("crm upsert call failed", zap.String("email", email), zap.Error(err))
+		return ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		h.log.Warn("crm upsert non-200", zap.Int("status", resp.StatusCode))
+		return ""
+	}
+	var result struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		h.log.Warn("crm upsert decode failed", zap.Error(err))
+		return ""
+	}
+	return result.ID
 }

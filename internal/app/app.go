@@ -218,7 +218,7 @@ func New(ctx context.Context) (*App, error) {
 	serviceChargeHandler := handlers.NewServiceChargeHandler(log, ormClient)
 
 	// Billing and platform admin handlers
-	billingHandler := handlers.NewBillingHandler(log, ormClient, treasuryClient, cfg.Services.TreasuryAPIKey)
+	billingHandler := handlers.NewBillingHandler(log, ormClient, treasuryClient, cfg.Services.TreasuryAPIKey, cfg.Services.MarketflowAPI)
 	platformHandler := handlers.NewPlatformHandler(log, ormClient, featureHandler)
 
 	// Inbound webhook handler (Treasury payment callbacks)
