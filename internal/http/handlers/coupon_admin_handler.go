@@ -268,6 +268,11 @@ func (h *CouponAdminHandler) UpdateCoupon(w http.ResponseWriter, r *http.Request
 	if v, ok := req["min_plan_price"].(float64); ok {
 		update = update.SetMinPlanPrice(v)
 	}
+	if v, ok := req["valid_from"].(string); ok {
+		if t, err := time.Parse(time.RFC3339, v); err == nil {
+			update = update.SetValidFrom(t)
+		}
+	}
 	if v, ok := req["valid_until"].(string); ok {
 		if t, err := time.Parse(time.RFC3339, v); err == nil {
 			update = update.SetValidUntil(t)
