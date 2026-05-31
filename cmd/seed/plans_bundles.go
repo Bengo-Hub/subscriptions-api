@@ -309,6 +309,7 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				// Treasury Starter
 				"wallet_management", "payment_collection",
 				"payment_links", "transaction_reports", "invoice_generation",
+				"basic_reconciliation", "customer_management",
 				// MarketFlow CRM Starter
 				"contact_management", "lead_management", "basic_campaigns",
 				"landing_pages", "email_sequences", "ai_chat_agent", "shortlinks",
@@ -393,9 +394,11 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				// Treasury Growth additions
 				"wallet_management", "payment_collection", "paystack_integration",
 				"payment_links", "transaction_reports", "invoice_generation",
+				"basic_reconciliation", "customer_management", "vendor_management",
 				"multi_currency", "bulk_payouts", "escrow_management",
 				"payout_schedules", "reconciliation",
-				"ar_tracking", "ap_tracking",
+				"ar_tracking", "ap_tracking", "ledger_posting", "tax_codes",
+				"etims_integration",
 				// MarketFlow CRM Growth
 				"contact_management", "lead_management", "unlimited_campaigns",
 				"landing_pages", "email_sequences", "ai_chat_agent",
@@ -487,9 +490,11 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				// Treasury Professional additions
 				"wallet_management", "payment_collection", "paystack_integration",
 				"payment_links", "transaction_reports", "invoice_generation",
+				"basic_reconciliation", "customer_management", "vendor_management",
 				"multi_currency", "bulk_payouts", "escrow_management",
 				"payout_schedules", "reconciliation", "audit_trail",
 				"ar_tracking", "ap_tracking", "ledger_posting", "tax_codes",
+				"etims_integration", "equity_payouts",
 				// MarketFlow CRM Professional (webhooks already included from logistics section)
 				"contact_management", "lead_management", "unlimited_campaigns",
 				"landing_pages", "email_sequences", "ai_chat_agent",
@@ -542,6 +547,7 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports",
 				"wallet_management", "payment_collection",
 				"payment_links", "transaction_reports", "invoice_generation",
+				"basic_reconciliation", "customer_management",
 				"contact_management", "lead_management", "basic_campaigns",
 				"landing_pages", "email_sequences", "ai_chat_agent", "shortlinks",
 				"basic_inventory_access", "basic_logistics_access", "basic_treasury_access",
@@ -587,8 +593,10 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"multi_warehouse", "batch_expiry_tracking", "supplier_portal",
 				"wallet_management", "payment_collection", "paystack_integration",
 				"payment_links", "transaction_reports", "invoice_generation",
+				"basic_reconciliation", "customer_management", "vendor_management",
 				"multi_currency", "bulk_payouts", "escrow_management",
 				"payout_schedules", "reconciliation", "ar_tracking", "ap_tracking",
+				"ledger_posting", "tax_codes", "etims_integration",
 				"contact_management", "lead_management", "unlimited_campaigns",
 				"landing_pages", "email_sequences", "ai_chat_agent",
 				"lead_scoring", "funnel_builder", "automation_workflows", "webhooks",
@@ -641,9 +649,11 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"barcode_scanning", "bulk_import",
 				"wallet_management", "payment_collection", "paystack_integration",
 				"payment_links", "transaction_reports", "invoice_generation",
+				"basic_reconciliation", "customer_management", "vendor_management",
 				"multi_currency", "bulk_payouts", "escrow_management",
 				"payout_schedules", "reconciliation", "audit_trail",
 				"ar_tracking", "ap_tracking", "ledger_posting", "tax_codes",
+				"etims_integration", "equity_payouts",
 				"contact_management", "lead_management", "unlimited_campaigns",
 				"landing_pages", "email_sequences", "ai_chat_agent",
 				"lead_scoring", "funnel_builder", "automation_workflows",
