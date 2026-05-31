@@ -104,7 +104,7 @@ func seedCoupons(ctx context.Context, tx *ent.Tx) error {
 				SetValue(d.value).
 				SetMinPlanPrice(d.minPlanPrice).
 				SetMaxUses(d.maxUses).
-				SetIsActive(true).
+				SetIsActive(false).
 				SetNillableValidUntil(validUntil).
 				SetCreatedBy(adminUserID)
 			if len(d.applicablePlanCodes) > 0 {
@@ -122,7 +122,7 @@ func seedCoupons(ctx context.Context, tx *ent.Tx) error {
 				SetValue(d.value).
 				SetMinPlanPrice(d.minPlanPrice).
 				SetMaxUses(d.maxUses).
-				SetIsActive(true).
+				SetIsActive(false).
 				SetValidFrom(time.Now()).
 				SetNillableValidUntil(validUntil).
 				SetCreatedBy(adminUserID)
