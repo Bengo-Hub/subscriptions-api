@@ -39,16 +39,16 @@ func New(client *ent.Client, log *zap.Logger, treasuryClient *serviceclient.Clie
 
 // CreateInput defines the payload for creating a subscription.
 type CreateInput struct {
-	TenantID   uuid.UUID
-	PlanCode   string
-	BundleCode string
-	TrialDays  int
+	TenantID   uuid.UUID `json:"tenant_id"`
+	PlanCode   string    `json:"plan_code"`
+	BundleCode string    `json:"bundle_code,omitempty"`
+	TrialDays  int       `json:"trial_days,omitempty"`
 }
 
 // ChangePlanInput defines the payload for upgrading or downgrading.
 type ChangePlanInput struct {
-	TenantID    uuid.UUID
-	NewPlanCode string
+	TenantID    uuid.UUID `json:"tenant_id"`
+	NewPlanCode string    `json:"new_plan_code"`
 }
 
 // CancelInput defines the payload for cancellation.

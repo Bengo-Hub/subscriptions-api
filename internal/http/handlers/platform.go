@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bengobox/subscription-service/internal/ent"
+	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
@@ -196,7 +197,7 @@ func (h *PlatformHandler) ListAllSubscriptions(w http.ResponseWriter, r *http.Re
 			PlanCode:         planCode,
 			PlanName:         planName,
 			PlanTier:         planTier,
-			Status:           strings.ToLower(string(s.Status)),
+			Status:           strings.ToUpper(string(s.Status)),
 			StartDate:        s.CurrentPeriodStart.Format("2006-01-02T15:04:05Z"),
 			CurrentPeriodEnd: s.CurrentPeriodEnd.Format("2006-01-02T15:04:05Z"),
 			MonthlyRevenue:   monthlyRevenue,
@@ -375,20 +376,55 @@ func (h *PlatformHandler) UpdateSubscriptionStatus(w http.ResponseWriter, r *htt
 
 // ListTenants godoc
 // @Summary List all tenants (admin)
-// @Description Returns all tenants with their current subscription status. Requires platform owner.
+// @Description Returns paginated tenants with their current subscription status. Supports search and status filter.
 // @Tags Platform
 // @Produce json
 // @Security BearerAuth
+// @Param page query int false "Page number (default 1)"
+// @Param pageSize query int false "Page size (default 20, max 100)"
+// @Param search query string false "Search by tenant name or slug"
+// @Param status query string false "Filter by subscription status (ACTIVE, TRIAL, SUSPENDED, etc.)"
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} map[string]string
 // @Router /admin/tenants [get]
 func (h *PlatformHandler) ListTenants(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	tenants, err := h.client.Tenant.Query().
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	pageSize, _ := strconv.Atoi(r.URL.Query().Get("pageSize"))
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+	search := strings.TrimSpace(r.URL.Query().Get("search"))
+	statusFilter := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("status")))
+
+	query := h.client.Tenant.Query()
+	if search != "" {
+		query = query.Where(
+			enttenant.Or(
+				enttenant.NameContainsFold(search),
+				enttenant.SlugContainsFold(search),
+			),
+		)
+	}
+
+	total, err := query.Clone().Count(ctx)
+	if err != nil {
+		h.log.Error("failed to count tenants", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	offset := (page - 1) * pageSize
+	tenants, err := query.
 		WithSubscriptions(func(q *ent.TenantSubscriptionQuery) {
 			q.WithPlan()
 		}).
+		Offset(offset).
+		Limit(pageSize).
 		All(ctx)
 	if err != nil {
 		h.log.Error("failed to list tenants", zap.Error(err))
@@ -416,7 +452,12 @@ func (h *PlatformHandler) ListTenants(w http.ResponseWriter, r *http.Request) {
 		}
 		if len(t.Edges.Subscriptions) > 0 {
 			sub := t.Edges.Subscriptions[0]
-			row.SubscriptionStatus = string(sub.Status)
+			subStatus := strings.ToUpper(string(sub.Status))
+			// Apply status filter if provided
+			if statusFilter != "" && subStatus != statusFilter {
+				continue
+			}
+			row.SubscriptionStatus = subStatus
 			row.SubscriptionID = sub.ID.String()
 			if !sub.CurrentPeriodEnd.IsZero() {
 				row.CurrentPeriodEnd = sub.CurrentPeriodEnd.Format("2006-01-02T15:04:05Z")
@@ -425,13 +466,18 @@ func (h *PlatformHandler) ListTenants(w http.ResponseWriter, r *http.Request) {
 				row.PlanName = sub.Edges.Plan.Name
 				row.PlanCode = sub.Edges.Plan.PlanCode
 			}
+		} else if statusFilter != "" {
+			// Tenant has no subscription — skip if filtering by status
+			continue
 		}
 		data = append(data, row)
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"data":  data,
-		"total": len(data),
+		"data":     data,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
 	})
 }
 

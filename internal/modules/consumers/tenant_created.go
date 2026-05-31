@@ -95,6 +95,12 @@ func (c *TenantCreatedConsumer) handle(ctx context.Context, msg *nats.Msg) error
 		return nil
 	}
 
+	// Platform owner tenant never gets auto-provisioned — it has unrestricted access.
+	if payload.Slug == "codevertex" {
+		c.log.Info("skipping auto-provision for platform owner tenant", zap.String("slug", payload.Slug))
+		return nil
+	}
+
 	c.log.Info("provisioning starter subscription for new tenant",
 		zap.String("tenant_id", payload.TenantID.String()),
 		zap.String("slug", payload.Slug),
