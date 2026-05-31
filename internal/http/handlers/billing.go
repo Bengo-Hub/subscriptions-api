@@ -192,6 +192,12 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Read optional billing_email from request body (takes highest priority).
+	var body struct {
+		BillingEmail string `json:"billing_email"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
 	// Look up subscription to get billing details
 	sub, err := h.client.TenantSubscription.Query().
 		Where(tenantsubscription.TenantIDEQ(tenantID)).
@@ -206,24 +212,28 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 	currency := "KES"
 	planCode := "unknown"
 
-	// Resolve customer email: JWT claims → subscription billing_email.
-	customerEmail := ""
-	if claims, ok := authclient.ClaimsFromContext(r.Context()); ok && claims.Email != "" {
-		customerEmail = claims.Email
-	}
+	// Email resolution priority:
+	// 1. billing_email from request body (explicitly submitted by frontend)
+	// 2. billing_email stored in subscription metadata
+	// 3. JWT claims email
+	customerEmail := body.BillingEmail
 
 	if sub != nil {
 		if sub.Edges.Plan != nil {
 			currency = sub.Edges.Plan.Currency
 			planCode = sub.Edges.Plan.PlanCode
 		}
-		if sub.Metadata != nil {
+		if customerEmail == "" && sub.Metadata != nil {
 			if be, ok := sub.Metadata["billing_email"].(string); ok && be != "" {
 				customerEmail = be
 			}
 		}
 	}
-	// Ensure a non-empty email — fall back to a generic placeholder if JWT had none.
+	if customerEmail == "" {
+		if claims, ok := authclient.ClaimsFromContext(r.Context()); ok && claims.Email != "" {
+			customerEmail = claims.Email
+		}
+	}
 	if customerEmail == "" {
 		customerEmail = tenantIDStr + "@subscriptions.internal"
 	}
