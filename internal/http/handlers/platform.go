@@ -614,6 +614,119 @@ func (h *PlatformHandler) UpdateServiceConfig(w http.ResponseWriter, r *http.Req
 	writeJSON(w, http.StatusOK, cfg)
 }
 
+// UpdateSubscription godoc
+// @Summary Update subscription dates / plan / status (admin)
+// @Description Allows platform admin to set trial_ends_at, current_period_end, status, or plan_code
+// on any tenant subscription regardless of its current state. At least one field must be supplied.
+// Invalidates the tenant's feature cache on success.
+// @Tags Platform
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Subscription UUID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /admin/subscriptions/{id} [put]
+func (h *PlatformHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid subscription id"})
+		return
+	}
+
+	var body struct {
+		TrialEndsAt      *string `json:"trial_ends_at"`       // RFC3339 or null to clear
+		CurrentPeriodEnd *string `json:"current_period_end"`  // RFC3339
+		Status           *string `json:"status"`              // ACTIVE | TRIAL | EXPIRED | CANCELLED | SUSPENDED
+		PlanCode         *string `json:"plan_code"`           // switch plan
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if body.TrialEndsAt == nil && body.CurrentPeriodEnd == nil && body.Status == nil && body.PlanCode == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "at least one of trial_ends_at, current_period_end, status, plan_code is required"})
+		return
+	}
+
+	sub, err := h.client.TenantSubscription.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "subscription not found"})
+			return
+		}
+		h.log.Error("failed to get subscription", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	upd := h.client.TenantSubscription.UpdateOneID(id)
+
+	if body.TrialEndsAt != nil {
+		if *body.TrialEndsAt == "" {
+			upd = upd.ClearTrialEndsAt()
+		} else {
+			t, parseErr := time.Parse(time.RFC3339, *body.TrialEndsAt)
+			if parseErr != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "trial_ends_at must be RFC3339 (e.g. 2026-09-01T00:00:00Z) or empty string to clear"})
+				return
+			}
+			upd = upd.SetTrialEndsAt(t)
+		}
+	}
+
+	if body.CurrentPeriodEnd != nil {
+		t, parseErr := time.Parse(time.RFC3339, *body.CurrentPeriodEnd)
+		if parseErr != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "current_period_end must be RFC3339 (e.g. 2026-09-01T00:00:00Z)"})
+			return
+		}
+		upd = upd.SetCurrentPeriodEnd(t)
+	}
+
+	if body.Status != nil {
+		upd = upd.SetStatus(tenantsubscription.Status(*body.Status))
+	}
+
+	if body.PlanCode != nil {
+		plan, planErr := h.client.SubscriptionPlan.Query().
+			Where(subscriptionplan.PlanCode(*body.PlanCode)).
+			Only(ctx)
+		if planErr != nil {
+			if ent.IsNotFound(planErr) {
+				writeJSON(w, http.StatusNotFound, map[string]string{"error": "plan not found: " + *body.PlanCode})
+				return
+			}
+			h.log.Error("failed to find plan", zap.Error(planErr))
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+			return
+		}
+		upd = upd.SetPlanID(plan.ID)
+	}
+
+	updated, err := upd.Save(ctx)
+	if err != nil {
+		h.log.Error("failed to update subscription", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update subscription"})
+		return
+	}
+
+	if h.featureHandler != nil {
+		h.featureHandler.InvalidateCache(ctx, sub.TenantID)
+	}
+
+	h.log.Info("subscription updated by admin",
+		zap.String("subscription_id", id.String()),
+		zap.String("tenant_id", sub.TenantID.String()),
+	)
+	writeJSON(w, http.StatusOK, updated)
+}
+
 // derivePlanTier returns a human-readable tier label from the plan code or tier order.
 func derivePlanTier(planCode string, tierOrder int) string {
 	code := strings.ToLower(planCode)

@@ -263,6 +263,9 @@ func New(
 						})
 					})
 					r.Get("/", platformHandler.ListAllSubscriptions)
+					// Edit trial_ends_at, current_period_end, status, plan_code — any combination
+					r.Put("/{id}", platformHandler.UpdateSubscription)
+					// Convenience alias for status-only updates (kept for backward compatibility)
 					r.Put("/{id}/status", platformHandler.UpdateSubscriptionStatus)
 				})
 

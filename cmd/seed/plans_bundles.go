@@ -488,10 +488,10 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"multi_currency", "bulk_payouts", "escrow_management",
 				"payout_schedules", "reconciliation", "audit_trail",
 				"ar_tracking", "ap_tracking", "ledger_posting", "tax_codes",
-				// MarketFlow CRM Professional
+				// MarketFlow CRM Professional (webhooks already included from logistics section)
 				"contact_management", "lead_management", "unlimited_campaigns",
 				"landing_pages", "email_sequences", "ai_chat_agent",
-				"lead_scoring", "funnel_builder", "automation_workflows", "webhooks",
+				"lead_scoring", "funnel_builder", "automation_workflows",
 				"ticketing", "helpdesk", "sla_policies",
 				"knowledge_base", "testimonials", "shortlinks",
 				"white_label", "dedicated_account_manager",
