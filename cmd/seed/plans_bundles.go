@@ -306,6 +306,7 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch",
 				// Inventory Starter
 				"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports",
+				"bulk_import",
 				// Treasury Starter
 				"wallet_management", "payment_collection",
 				"payment_links", "transaction_reports", "invoice_generation",
@@ -390,7 +391,7 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"route_optimisation", "driver_analytics", "performance_reports",
 				// Inventory Growth additions
 				"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports",
-				"multi_warehouse", "batch_expiry_tracking", "supplier_portal",
+				"bulk_import", "multi_warehouse", "batch_expiry_tracking", "supplier_portal",
 				// Treasury Growth additions
 				"wallet_management", "payment_collection", "paystack_integration",
 				"payment_links", "transaction_reports", "invoice_generation",
@@ -545,6 +546,7 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"mpesa_pos", "order_management", "receipt_printing", "daily_reports", "kds",
 				"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch",
 				"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports",
+				"bulk_import",
 				"wallet_management", "payment_collection",
 				"payment_links", "transaction_reports", "invoice_generation",
 				"basic_reconciliation", "customer_management",
@@ -590,7 +592,7 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch",
 				"route_optimisation", "driver_analytics", "performance_reports",
 				"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports",
-				"multi_warehouse", "batch_expiry_tracking", "supplier_portal",
+				"bulk_import", "multi_warehouse", "batch_expiry_tracking", "supplier_portal",
 				"wallet_management", "payment_collection", "paystack_integration",
 				"payment_links", "transaction_reports", "invoice_generation",
 				"basic_reconciliation", "customer_management", "vendor_management",
