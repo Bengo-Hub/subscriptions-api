@@ -151,14 +151,17 @@ func (h *WebhookHandler) saveCardAuthorization(ctx context.Context, tenantID uui
 	for k, v := range sub.Metadata {
 		meta[k] = v
 	}
-	meta["paystack_auth_code"] = authCode
-	meta["payment_method"] = map[string]any{
-		"type":      "card",
-		"brand":     cardType,
-		"last4":     last4,
+	newMethod := map[string]any{
+		"type":        "card",
+		"brand":       cardType,
+		"last4":       last4,
 		"expiryMonth": expMonth,
 		"expiryYear":  expYear,
 	}
+	meta["paystack_auth_code"] = authCode
+	meta["payment_method"] = newMethod
+	// Maintain payment_methods array; append if not already present (deduplicate by last4).
+	meta["payment_methods"] = appendPaymentMethod(meta["payment_methods"], newMethod, last4)
 
 	_, err = h.orm.TenantSubscription.UpdateOneID(sub.ID).
 		SetMetadata(meta).
