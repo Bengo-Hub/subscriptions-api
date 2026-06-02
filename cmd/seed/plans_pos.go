@@ -74,8 +74,8 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			price:         6000.0,
 			tierOrder:     3,
 			freeTrialDays: 14,
-			tierLimits:    map[string]any{"max_devices": 10, "max_cashiers": -1, "max_tables": -1},
-			features:      append(allPOSFeatures, "multi_outlet", "advanced_analytics", "hotel_module"),
+			tierLimits:    map[string]any{"max_devices": 10, "max_cashiers": -1, "max_tables": -1, "max_rooms": 100, "max_conference_events": -1},
+			features:      append(allPOSFeatures, "multi_outlet", "advanced_analytics", "hotel_module", "conference_events", "happy_hour"),
 		},
 		// ── Annual device-seat subscriptions ───────────────────────────────
 		{
@@ -111,8 +111,8 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			price:         60000.0,
 			tierOrder:     3,
 			freeTrialDays: 14,
-			tierLimits:    map[string]any{"max_devices": 10, "max_cashiers": -1, "max_tables": -1},
-			features:      append(allPOSFeatures, "multi_outlet", "advanced_analytics", "hotel_module"),
+			tierLimits:    map[string]any{"max_devices": 10, "max_cashiers": -1, "max_tables": -1, "max_rooms": 100, "max_conference_events": -1},
+			features:      append(allPOSFeatures, "multi_outlet", "advanced_analytics", "hotel_module", "conference_events", "happy_hour"),
 		},
 		// ── One-time perpetual licenses ─────────────────────────────────────
 		{
@@ -136,8 +136,8 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 			price:         120000.0,
 			tierOrder:     11,
 			freeTrialDays: 0,
-			tierLimits:    map[string]any{"max_devices": -1, "max_cashiers": -1, "max_tables": -1},
-			features:      append(allPOSFeatures, "multi_outlet", "advanced_analytics", "hotel_module", "api_access"),
+			tierLimits:    map[string]any{"max_devices": -1, "max_cashiers": -1, "max_tables": -1, "max_rooms": -1, "max_conference_events": -1},
+			features:      append(allPOSFeatures, "multi_outlet", "advanced_analytics", "hotel_module", "conference_events", "happy_hour", "api_access"),
 		},
 	}
 
