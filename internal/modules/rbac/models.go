@@ -22,7 +22,7 @@ type SubscriptionsUser struct {
 // SubscriptionsRole represents a subscriptions service role.
 type SubscriptionsRole struct {
 	ID           uuid.UUID
-	TenantID     uuid.UUID
+	TenantID     *uuid.UUID // nil = global/system role shared platform-wide
 	RoleCode     string
 	Name         string
 	Description  *string

@@ -134,12 +134,16 @@ func (r *EntRepository) CreateRole(ctx context.Context, tenantID uuid.UUID, role
 	return nil
 }
 
-// GetRole retrieves a role by ID.
+// GetRole retrieves a role by ID. Roles are platform-wide: visible to a tenant if global (tenant_id
+// NULL) or owned by that tenant (custom role).
 func (r *EntRepository) GetRole(ctx context.Context, tenantID uuid.UUID, roleID uuid.UUID) (*SubscriptionsRole, error) {
 	entRole, err := r.client.SubscriptionsRole.Query().
 		Where(
 			subscriptionsrole.ID(roleID),
-			subscriptionsrole.TenantID(tenantID),
+			subscriptionsrole.Or(
+				subscriptionsrole.TenantID(tenantID),
+				subscriptionsrole.TenantIDIsNil(),
+			),
 		).
 		Only(ctx)
 	if err != nil {
@@ -152,39 +156,66 @@ func (r *EntRepository) GetRole(ctx context.Context, tenantID uuid.UUID, roleID 
 	return mapEntRole(entRole), nil
 }
 
-// GetRoleByCode retrieves a role by code.
+// GetRoleByCode retrieves a role by code, preferring a tenant-specific custom role over the shared
+// global/system role of the same code (hybrid: global system roles + optional per-tenant overrides).
 func (r *EntRepository) GetRoleByCode(ctx context.Context, tenantID uuid.UUID, roleCode string) (*SubscriptionsRole, error) {
-	entRole, err := r.client.SubscriptionsRole.Query().
+	entRoles, err := r.client.SubscriptionsRole.Query().
 		Where(
 			subscriptionsrole.RoleCode(roleCode),
-			subscriptionsrole.TenantID(tenantID),
+			subscriptionsrole.Or(
+				subscriptionsrole.TenantID(tenantID),
+				subscriptionsrole.TenantIDIsNil(),
+			),
 		).
-		Only(ctx)
+		All(ctx)
 	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, fmt.Errorf("role not found: %w", err)
-		}
 		return nil, fmt.Errorf("get role by code: %w", err)
 	}
+	if len(entRoles) == 0 {
+		return nil, fmt.Errorf("role not found: %s", roleCode)
+	}
 
-	return mapEntRole(entRole), nil
+	return mapEntRole(preferTenantRole(entRoles)), nil
 }
 
-// ListRoles lists all roles for a tenant.
+// ListRoles lists the roles visible to a tenant: global/system roles (shared) plus the tenant's own
+// custom roles, preferring a tenant override over the global role of the same code.
 func (r *EntRepository) ListRoles(ctx context.Context, tenantID uuid.UUID) ([]*SubscriptionsRole, error) {
 	entRoles, err := r.client.SubscriptionsRole.Query().
-		Where(subscriptionsrole.TenantID(tenantID)).
+		Where(subscriptionsrole.Or(
+			subscriptionsrole.TenantID(tenantID),
+			subscriptionsrole.TenantIDIsNil(),
+		)).
 		All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list roles: %w", err)
 	}
 
-	roles := make([]*SubscriptionsRole, len(entRoles))
-	for i, entRole := range entRoles {
-		roles[i] = mapEntRole(entRole)
+	byCode := make(map[string]*ent.SubscriptionsRole, len(entRoles))
+	for _, er := range entRoles {
+		existing, ok := byCode[er.RoleCode]
+		if !ok || (existing.TenantID == nil && er.TenantID != nil) {
+			byCode[er.RoleCode] = er
+		}
+	}
+
+	roles := make([]*SubscriptionsRole, 0, len(byCode))
+	for _, er := range byCode {
+		roles = append(roles, mapEntRole(er))
 	}
 
 	return roles, nil
+}
+
+// preferTenantRole returns the tenant-specific role if present, otherwise the first (global) role.
+func preferTenantRole(roles []*ent.SubscriptionsRole) *ent.SubscriptionsRole {
+	chosen := roles[0]
+	for _, er := range roles {
+		if er.TenantID != nil {
+			return er
+		}
+	}
+	return chosen
 }
 
 // CreatePermission persists a new permission.

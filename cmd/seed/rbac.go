@@ -12,6 +12,7 @@ import (
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionspermission"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
 )
 
 // ── RBAC Permissions ────────────────────────────────────────────────────────
@@ -58,13 +59,7 @@ func seedRBACPermissions(ctx context.Context, tx *ent.Tx) error {
 		}
 	}
 
-	// Seed system roles per existing tenant
-	// NOTE: Roles are tenant-scoped. We seed them for ALL tenants in the database.
-	tenants, err := tx.Tenant.Query().All(ctx)
-	if err != nil {
-		return fmt.Errorf("list tenants for role seeding: %w", err)
-	}
-
+	// Roles are PLATFORM-WIDE (shared across all tenants) — seeded once as global (tenant_id NULL).
 	type roleDef struct {
 		code        string
 		name        string
@@ -93,51 +88,59 @@ func seedRBACPermissions(ctx context.Context, tx *ent.Tx) error {
 		},
 	}
 
-	for _, t := range tenants {
-		for _, rd := range roles {
-			roleID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(fmt.Sprintf("%s:%s", t.ID, rd.code)))
-			err := tx.SubscriptionsRole.Create().
-				SetID(roleID).
-				SetTenantID(t.ID).
+	for _, rd := range roles {
+		// Global system role — shared platform-wide (tenant_id NULL), deterministic ID by code only.
+		globalID := uuid.NewSHA1(uuid.NameSpaceOID, []byte("global:"+rd.code))
+		exists, err := tx.SubscriptionsRole.Query().Where(subscriptionsrole.ID(globalID)).Exist(ctx)
+		if err != nil {
+			return fmt.Errorf("check global role %s: %w", rd.code, err)
+		}
+		if !exists {
+			// Do NOT set tenant_id — NULL marks this as a global/system role.
+			if err := tx.SubscriptionsRole.Create().
+				SetID(globalID).
 				SetRoleCode(rd.code).
 				SetName(rd.name).
 				SetDescription(rd.description).
 				SetIsSystemRole(true).
-				OnConflict(
-					entsql.ConflictColumns("tenant_id", "role_code"),
-				).
-				DoNothing().
-				Exec(ctx)
-			if err != nil && err.Error() != "sql: no rows in result set" {
-				return fmt.Errorf("create role %s for tenant %s: %w", rd.code, t.Slug, err)
+				Exec(ctx); err != nil {
+				return fmt.Errorf("create global role %s: %w", rd.code, err)
 			}
+		}
 
-			// Assign permissions to role
-			var permCodes []string
-			if rd.code == "viewer" {
-				for _, mod := range modules {
-					for _, act := range []string{"view", "view_own"} {
-						permCodes = append(permCodes, fmt.Sprintf("subscriptions.%s.%s", mod, act))
-					}
-				}
-			} else {
-				for _, mod := range rd.permModules {
-					for _, act := range actions {
-						permCodes = append(permCodes, fmt.Sprintf("subscriptions.%s.%s", mod, act))
-					}
+		// Compute the permission codes for this role.
+		var permCodes []string
+		if rd.code == "viewer" {
+			for _, mod := range modules {
+				for _, act := range []string{"view", "view_own"} {
+					permCodes = append(permCodes, fmt.Sprintf("subscriptions.%s.%s", mod, act))
 				}
 			}
+		} else {
+			for _, mod := range rd.permModules {
+				for _, act := range actions {
+					permCodes = append(permCodes, fmt.Sprintf("subscriptions.%s.%s", mod, act))
+				}
+			}
+		}
+
+		// Reconcile permissions onto EVERY role bearing this code (global + any tenant copies) so none
+		// is left under-permissioned.
+		matching, err := tx.SubscriptionsRole.Query().Where(subscriptionsrole.RoleCode(rd.code)).All(ctx)
+		if err != nil {
+			return fmt.Errorf("list roles for code %s: %w", rd.code, err)
+		}
+		for _, role := range matching {
 			for _, code := range permCodes {
 				permID := uuid.NewSHA1(uuid.NameSpaceOID, []byte(code))
-				err := tx.RolePermission.Create().
-					SetRoleID(roleID).
+				if err := tx.RolePermission.Create().
+					SetRoleID(role.ID).
 					SetPermissionID(permID).
 					OnConflict(
 						entsql.ConflictColumns("role_id", "permission_id"),
 					).
 					DoNothing().
-					Exec(ctx)
-				if err != nil && err.Error() != "sql: no rows in result set" {
+					Exec(ctx); err != nil && err.Error() != "sql: no rows in result set" {
 					return fmt.Errorf("assign permission %s to role %s: %w", code, rd.code, err)
 				}
 			}

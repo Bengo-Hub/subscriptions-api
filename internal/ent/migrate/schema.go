@@ -756,7 +756,7 @@ var (
 	// SubscriptionsRolesColumns holds the columns for the "subscriptions_roles" table.
 	SubscriptionsRolesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "role_code", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -779,6 +779,11 @@ var (
 				Name:    "subscriptionsrole_tenant_id_role_code",
 				Unique:  true,
 				Columns: []*schema.Column{SubscriptionsRolesColumns[1], SubscriptionsRolesColumns[2]},
+			},
+			{
+				Name:    "subscriptionsrole_role_code",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionsRolesColumns[2]},
 			},
 			{
 				Name:    "subscriptionsrole_is_system_role",

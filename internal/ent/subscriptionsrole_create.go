@@ -33,6 +33,14 @@ func (_c *SubscriptionsRoleCreate) SetTenantID(v uuid.UUID) *SubscriptionsRoleCr
 	return _c
 }
 
+// SetNillableTenantID sets the "tenant_id" field if the given value is not nil.
+func (_c *SubscriptionsRoleCreate) SetNillableTenantID(v *uuid.UUID) *SubscriptionsRoleCreate {
+	if v != nil {
+		_c.SetTenantID(*v)
+	}
+	return _c
+}
+
 // SetRoleCode sets the "role_code" field.
 func (_c *SubscriptionsRoleCreate) SetRoleCode(v string) *SubscriptionsRoleCreate {
 	_c.mutation.SetRoleCode(v)
@@ -215,9 +223,6 @@ func (_c *SubscriptionsRoleCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *SubscriptionsRoleCreate) check() error {
-	if _, ok := _c.mutation.TenantID(); !ok {
-		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "SubscriptionsRole.tenant_id"`)}
-	}
 	if _, ok := _c.mutation.RoleCode(); !ok {
 		return &ValidationError{Name: "role_code", err: errors.New(`ent: missing required field "SubscriptionsRole.role_code"`)}
 	}
@@ -281,7 +286,7 @@ func (_c *SubscriptionsRoleCreate) createSpec() (*SubscriptionsRole, *sqlgraph.C
 	}
 	if value, ok := _c.mutation.TenantID(); ok {
 		_spec.SetField(subscriptionsrole.FieldTenantID, field.TypeUUID, value)
-		_node.TenantID = value
+		_node.TenantID = &value
 	}
 	if value, ok := _c.mutation.RoleCode(); ok {
 		_spec.SetField(subscriptionsrole.FieldRoleCode, field.TypeString, value)
@@ -419,6 +424,12 @@ func (u *SubscriptionsRoleUpsert) UpdateTenantID() *SubscriptionsRoleUpsert {
 	return u
 }
 
+// ClearTenantID clears the value of the "tenant_id" field.
+func (u *SubscriptionsRoleUpsert) ClearTenantID() *SubscriptionsRoleUpsert {
+	u.SetNull(subscriptionsrole.FieldTenantID)
+	return u
+}
+
 // SetRoleCode sets the "role_code" field.
 func (u *SubscriptionsRoleUpsert) SetRoleCode(v string) *SubscriptionsRoleUpsert {
 	u.Set(subscriptionsrole.FieldRoleCode, v)
@@ -547,6 +558,13 @@ func (u *SubscriptionsRoleUpsertOne) SetTenantID(v uuid.UUID) *SubscriptionsRole
 func (u *SubscriptionsRoleUpsertOne) UpdateTenantID() *SubscriptionsRoleUpsertOne {
 	return u.Update(func(s *SubscriptionsRoleUpsert) {
 		s.UpdateTenantID()
+	})
+}
+
+// ClearTenantID clears the value of the "tenant_id" field.
+func (u *SubscriptionsRoleUpsertOne) ClearTenantID() *SubscriptionsRoleUpsertOne {
+	return u.Update(func(s *SubscriptionsRoleUpsert) {
+		s.ClearTenantID()
 	})
 }
 
@@ -856,6 +874,13 @@ func (u *SubscriptionsRoleUpsertBulk) SetTenantID(v uuid.UUID) *SubscriptionsRol
 func (u *SubscriptionsRoleUpsertBulk) UpdateTenantID() *SubscriptionsRoleUpsertBulk {
 	return u.Update(func(s *SubscriptionsRoleUpsert) {
 		s.UpdateTenantID()
+	})
+}
+
+// ClearTenantID clears the value of the "tenant_id" field.
+func (u *SubscriptionsRoleUpsertBulk) ClearTenantID() *SubscriptionsRoleUpsertBulk {
+	return u.Update(func(s *SubscriptionsRoleUpsert) {
+		s.ClearTenantID()
 	})
 }
 

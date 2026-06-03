@@ -131,6 +131,16 @@ func TenantIDLTE(v uuid.UUID) predicate.SubscriptionsRole {
 	return predicate.SubscriptionsRole(sql.FieldLTE(FieldTenantID, v))
 }
 
+// TenantIDIsNil applies the IsNil predicate on the "tenant_id" field.
+func TenantIDIsNil() predicate.SubscriptionsRole {
+	return predicate.SubscriptionsRole(sql.FieldIsNull(FieldTenantID))
+}
+
+// TenantIDNotNil applies the NotNil predicate on the "tenant_id" field.
+func TenantIDNotNil() predicate.SubscriptionsRole {
+	return predicate.SubscriptionsRole(sql.FieldNotNull(FieldTenantID))
+}
+
 // RoleCodeEQ applies the EQ predicate on the "role_code" field.
 func RoleCodeEQ(v string) predicate.SubscriptionsRole {
 	return predicate.SubscriptionsRole(sql.FieldEQ(FieldRoleCode, v))

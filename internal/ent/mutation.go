@@ -18387,7 +18387,7 @@ func (m *SubscriptionsRoleMutation) TenantID() (r uuid.UUID, exists bool) {
 // OldTenantID returns the old "tenant_id" field's value of the SubscriptionsRole entity.
 // If the SubscriptionsRole object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SubscriptionsRoleMutation) OldTenantID(ctx context.Context) (v uuid.UUID, err error) {
+func (m *SubscriptionsRoleMutation) OldTenantID(ctx context.Context) (v *uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldTenantID is only allowed on UpdateOne operations")
 	}
@@ -18401,9 +18401,22 @@ func (m *SubscriptionsRoleMutation) OldTenantID(ctx context.Context) (v uuid.UUI
 	return oldValue.TenantID, nil
 }
 
+// ClearTenantID clears the value of the "tenant_id" field.
+func (m *SubscriptionsRoleMutation) ClearTenantID() {
+	m.tenant_id = nil
+	m.clearedFields[subscriptionsrole.FieldTenantID] = struct{}{}
+}
+
+// TenantIDCleared returns if the "tenant_id" field was cleared in this mutation.
+func (m *SubscriptionsRoleMutation) TenantIDCleared() bool {
+	_, ok := m.clearedFields[subscriptionsrole.FieldTenantID]
+	return ok
+}
+
 // ResetTenantID resets all changes to the "tenant_id" field.
 func (m *SubscriptionsRoleMutation) ResetTenantID() {
 	m.tenant_id = nil
+	delete(m.clearedFields, subscriptionsrole.FieldTenantID)
 }
 
 // SetRoleCode sets the "role_code" field.
@@ -18986,6 +18999,9 @@ func (m *SubscriptionsRoleMutation) AddField(name string, value ent.Value) error
 // mutation.
 func (m *SubscriptionsRoleMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(subscriptionsrole.FieldTenantID) {
+		fields = append(fields, subscriptionsrole.FieldTenantID)
+	}
 	if m.FieldCleared(subscriptionsrole.FieldDescription) {
 		fields = append(fields, subscriptionsrole.FieldDescription)
 	}
@@ -19003,6 +19019,9 @@ func (m *SubscriptionsRoleMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *SubscriptionsRoleMutation) ClearField(name string) error {
 	switch name {
+	case subscriptionsrole.FieldTenantID:
+		m.ClearTenantID()
+		return nil
 	case subscriptionsrole.FieldDescription:
 		m.ClearDescription()
 		return nil
