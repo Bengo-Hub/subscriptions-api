@@ -35,10 +35,12 @@ var usageSubjectMappings = map[string]usageEventMapping{
 	"ordering.webhook.dispatched": {metric: "webhooks", service: "ordering"},
 
 	// ── POS ───────────────────────────────────────────────────────────────────
-	"pos.transaction.created": {metric: "transactions", service: "pos"},
-	"pos.sale.finalized":      {metric: "transactions", service: "pos"},
-	"pos.device.registered":   {metric: "devices", service: "pos"},
-	"pos.table.created":       {metric: "tables", service: "pos"},
+	"pos.transaction.created":     {metric: "transactions", service: "pos"},
+	"pos.sale.finalized":          {metric: "transactions", service: "pos"},
+	"pos.device.registered":       {metric: "devices", service: "pos"},
+	"pos.table.created":           {metric: "tables", service: "pos"},
+	"pos.room.created":            {metric: "rooms", service: "pos"},
+	"pos.conference.event.booked": {metric: "conference_events", service: "pos"},
 
 	// ── Inventory ─────────────────────────────────────────────────────────────
 	"inventory.product.created":   {metric: "products", service: "inventory"},
@@ -362,6 +364,8 @@ func usageFindLimitKey(metricType string, planLimits map[string]any) string {
 		"staff":            "max_staff",
 		"products":         "inventory_max_sku",
 		"warehouses":       "inventory_max_warehouses",
+		"rooms":            "max_rooms",
+		"conference_events": "max_conference_events",
 		"deliveries":       "max_orders_per_day",
 		"tracking_requests": "live_tracking_requests_per_day",
 		"sms_sent":         "sms_notifications_per_day",
