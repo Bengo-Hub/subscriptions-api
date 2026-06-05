@@ -112,8 +112,14 @@ func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Fetch invoices from Treasury-API (non-fatal on failure)
-	billing["invoices"] = h.fetchInvoices(ctx, tenantID)
+	// Invoice history: subscription invoices are owned by the platform tenant (not this
+	// tenant), so they won't appear in the tenant's own treasury list — surface the latest
+	// one from the subscription's stored markers, then any direct treasury invoices.
+	invoices := h.fetchInvoices(ctx, tenantID)
+	if row, ok := subscriptionInvoiceRow(sub); ok {
+		invoices = append([]invoiceRow{row}, invoices...)
+	}
+	billing["invoices"] = invoices
 
 	writeJSON(w, http.StatusOK, billing)
 }
@@ -126,6 +132,42 @@ type invoiceRow struct {
 	Status      string  `json:"status"`
 	Description string  `json:"description"`
 	PdfURL      string  `json:"pdfUrl,omitempty"`
+	PayURL      string  `json:"payUrl,omitempty"`
+}
+
+// subscriptionInvoiceRow builds an invoice-history row from the latest subscription invoice
+// recorded on the subscription metadata by the invoice generation flow.
+func subscriptionInvoiceRow(sub *ent.TenantSubscription) (invoiceRow, bool) {
+	m := sub.Metadata
+	if m == nil {
+		return invoiceRow{}, false
+	}
+	num, _ := m["last_invoice_number"].(string)
+	if num == "" {
+		return invoiceRow{}, false
+	}
+	total, _ := m["last_invoice_total"].(float64)
+	cur, _ := m["last_invoice_currency"].(string)
+	pdf, _ := m["last_invoice_pdf_url"].(string)
+	pay, _ := m["last_invoice_pay_url"].(string)
+	date, _ := m["last_invoice_period_end"].(string)
+	status := "pending"
+	if string(sub.Status) == "ACTIVE" {
+		if _, inGrace := m["grace_until"]; !inGrace {
+			// Active and not in grace → the latest invoice has effectively been settled.
+			status = "paid"
+		}
+	}
+	return invoiceRow{
+		ID:          num,
+		Date:        date,
+		Amount:      total,
+		Currency:    cur,
+		Status:      status,
+		Description: "Subscription invoice " + num,
+		PdfURL:      pdf,
+		PayURL:      pay,
+	}, true
 }
 
 func (h *BillingHandler) fetchInvoices(ctx context.Context, tenantID uuid.UUID) []invoiceRow {
