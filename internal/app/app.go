@@ -57,6 +57,7 @@ type App struct {
 	paymentConsumer  *consumers.TreasuryPaymentConsumer
 	subscriptionSvc  *subscriptions.Service
 	treasuryClient   *serviceclient.Client
+	invoiceSvc       *billing.InvoiceService
 }
 
 func New(ctx context.Context) (*App, error) {
@@ -221,6 +222,11 @@ func New(ctx context.Context) (*App, error) {
 	billingHandler := handlers.NewBillingHandler(log, ormClient, treasuryClient, cfg.Services.TreasuryAPIKey, cfg.Services.MarketflowAPI)
 	platformHandler := handlers.NewPlatformHandler(log, ormClient, featureHandler)
 
+	// Subscription invoice service (platform→tenant invoices via treasury S2S) — shared by
+	// the 7-day invoice job, grace events, and the manual platform-owner endpoints.
+	invoiceSvc := billing.NewInvoiceService(log, ormClient, subscriptionSvc, treasuryClient, cfg.Services.TreasuryAPIKey, cfg.Services.PlatformTenantID, cfg.Services.TreasuryUI, cfg.Services.TreasuryAPI)
+	platformHandler.WithInvoiceService(invoiceSvc)
+
 	// Inbound webhook handler (Treasury payment callbacks)
 	webhookHandler := handlers.NewWebhookHandler(log, ormClient, subscriptionSvc, cfg.Security.APIKey, featureHandler)
 
@@ -269,6 +275,7 @@ func New(ctx context.Context) (*App, error) {
 		paymentConsumer: paymentConsumer,
 		subscriptionSvc: subscriptionSvc,
 		treasuryClient:  treasuryClient,
+		invoiceSvc:      invoiceSvc,
 	}, nil
 }
 
@@ -293,6 +300,18 @@ func (a *App) Run(ctx context.Context) error {
 	if a.orm != nil && a.subscriptionSvc != nil {
 		go billing.StartDunningJob(ctx, a.log, a.orm, a.subscriptionSvc, a.treasuryClient, a.cfg.Services.TreasuryAPIKey)
 		a.log.Info("dunning job started")
+	}
+
+	// Start subscription invoice job (generates + emails invoices ~7 days before expiry)
+	if a.orm != nil && a.invoiceSvc != nil {
+		go jobs.StartInvoiceJob(ctx, a.log, a.orm, a.invoiceSvc)
+		a.log.Info("subscription invoice job started")
+	}
+
+	// Start grace reminder job (daily countdown emails while in the grace window)
+	if a.orm != nil && a.subscriptionSvc != nil {
+		go jobs.StartGraceReminderJob(ctx, a.log, a.orm, a.subscriptionSvc)
+		a.log.Info("grace reminder job started")
 	}
 
 	// Start auth.tenant.created consumer for auto-provisioning new tenants

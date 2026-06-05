@@ -32,8 +32,13 @@ type AppConfig struct {
 type ServicesConfig struct {
 	AuthAPI        string `envconfig:"AUTH_API_URL" default:"https://sso.codevertexitsolutions.com"`
 	TreasuryAPI    string `envconfig:"TREASURY_API_URL" default:"https://booksapi.codevertexitsolutions.com"`
+	TreasuryUI     string `envconfig:"TREASURY_UI_URL" default:"https://books.codevertexitsolutions.com"`
 	TreasuryAPIKey string `envconfig:"INTERNAL_SERVICE_KEY"`
 	MarketflowAPI  string `envconfig:"MARKETFLOW_API_URL" default:"https://marketflowapi.codevertexitsolutions.com"`
+	// PlatformTenantID is the treasury/auth tenant UUID that ISSUES subscription invoices
+	// (the platform org, e.g. codevertex). Subscription invoices are owned by this tenant
+	// with the billed tenant as the customer. Must be set in prod.
+	PlatformTenantID string `envconfig:"PLATFORM_TENANT_ID" default:"4414b8d9-6b00-4ad1-a0b4-3094cbc5e398"`
 }
 
 type HTTPConfig struct {

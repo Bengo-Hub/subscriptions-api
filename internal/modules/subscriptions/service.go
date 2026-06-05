@@ -95,6 +95,11 @@ type SubscriptionResult struct {
 	CancelReason       *string                  `json:"cancel_reason,omitempty"`
 	Features           []string                 `json:"features"`
 	Limits             map[string]int           `json:"limits"`
+	// AccessStatus is derived gating state for clients: "active" (full access),
+	// "grace" (past period end but within the grace window — still accessible, pay soon),
+	// or "blocked" (expired/cancelled/suspended). GraceEndsAt is set while in grace.
+	AccessStatus       string                   `json:"access_status"`
+	GraceEndsAt        *time.Time               `json:"grace_ends_at,omitempty"`
 }
 
 // --- State machine ---
@@ -509,14 +514,31 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 	}
 
 	now := time.Now().UTC()
+	// Pay-early stacking: extend from the later of now and the current period end so a
+	// tenant who pays before expiry keeps their remaining paid days instead of losing them.
+	base := now
+	if sub.CurrentPeriodEnd.After(now) {
+		base = sub.CurrentPeriodEnd
+	}
 	var periodEnd time.Time
 	switch sub.BillingCycle {
 	case tenantsubscription.BillingCycleANNUAL:
-		periodEnd = now.AddDate(1, 0, 0)
+		periodEnd = base.AddDate(1, 0, 0)
 	case tenantsubscription.BillingCycleQUARTERLY:
-		periodEnd = now.AddDate(0, 3, 0)
+		periodEnd = base.AddDate(0, 3, 0)
 	default: // MONTHLY and ONE_TIME
-		periodEnd = now.AddDate(0, 1, 0)
+		periodEnd = base.AddDate(0, 1, 0)
+	}
+
+	// Clear grace + invoice/reminder markers now that payment has been received.
+	cleanedMeta := make(map[string]any, len(sub.Metadata))
+	for k, v := range sub.Metadata {
+		switch k {
+		case "grace_until", "last_grace_reminder_date":
+			// drop — grace ended on payment
+		default:
+			cleanedMeta[k] = v
+		}
 	}
 
 	tx, err := s.client.Tx(ctx)
@@ -534,6 +556,7 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 		SetStatus(tenantsubscription.StatusACTIVE).
 		SetCurrentPeriodStart(now).
 		SetCurrentPeriodEnd(periodEnd).
+		SetMetadata(cleanedMeta).
 		ClearCancelledAt().
 		ClearCancelReason().
 		ClearTrialEndsAt().
@@ -872,6 +895,22 @@ func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.Subscriptio
 		CancelReason:       sub.CancelReason,
 		Features:           []string{},
 		Limits:             map[string]int{},
+	}
+
+	// Derive access status (grace keeps access alive while past-due but within window).
+	result.AccessStatus = "blocked"
+	switch sub.Status {
+	case tenantsubscription.StatusACTIVE, tenantsubscription.StatusTRIAL:
+		result.AccessStatus = "active"
+		if gu, ok := sub.Metadata["grace_until"].(string); ok && gu != "" {
+			if t, err := time.Parse(time.RFC3339, gu); err == nil {
+				tu := t.UTC()
+				result.GraceEndsAt = &tu
+				if time.Now().UTC().Before(tu) {
+					result.AccessStatus = "grace"
+				}
+			}
+		}
 	}
 
 	if plan != nil {

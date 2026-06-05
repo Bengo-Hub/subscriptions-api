@@ -66,11 +66,19 @@ func runRenewalJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *s
 	}
 }
 
-// expireSubscriptions marks all ACTIVE subscriptions past their period end as EXPIRED.
+// GraceDays is the post-expiry grace window during which services stay accessible
+// (status remains ACTIVE) while the tenant is reminded daily to pay. After it elapses
+// unpaid, the subscription is EXPIRED (total block).
+const GraceDays = 7
+
+// expireSubscriptions runs the grace lifecycle for ACTIVE subscriptions past their period
+// end. First pass: enter a GraceDays grace window (keep ACTIVE, set metadata.grace_until,
+// notify). Second pass: once grace_until elapses, mark EXPIRED (total block). Paying clears
+// grace via RenewSubscription.
 func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service) {
 	now := time.Now().UTC()
 
-	expired, err := orm.TenantSubscription.Query().
+	pastDue, err := orm.TenantSubscription.Query().
 		Where(
 			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
 			tenantsubscription.CurrentPeriodEndLT(now),
@@ -81,13 +89,44 @@ func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, 
 		return
 	}
 
-	for _, sub := range expired {
+	graceStarted, expiredCount := 0, 0
+	for _, sub := range pastDue {
+		graceUntil, inGrace := graceUntilOf(sub)
+
+		if !inGrace {
+			// Enter grace: keep ACTIVE, set grace_until, notify tenant.
+			gu := sub.CurrentPeriodEnd.UTC().AddDate(0, 0, GraceDays)
+			meta := mergeMeta(sub.Metadata, map[string]any{"grace_until": gu.Format(time.RFC3339)})
+			tx, err := orm.Tx(ctx)
+			if err != nil {
+				log.Error("expiry job: tx start failed", zap.String("sub_id", sub.ID.String()), zap.Error(err))
+				continue
+			}
+			if _, err := tx.TenantSubscription.UpdateOneID(sub.ID).SetMetadata(meta).Save(ctx); err != nil {
+				_ = tx.Rollback()
+				log.Error("expiry job: failed to enter grace", zap.String("sub_id", sub.ID.String()), zap.Error(err))
+				continue
+			}
+			svc.WriteOutboxEventPublic(ctx, tx, sub.TenantID, "subscription", sub.ID, "grace_started", graceEventPayload(sub, gu, now))
+			if err := tx.Commit(); err != nil {
+				log.Error("expiry job: grace commit failed", zap.String("sub_id", sub.ID.String()), zap.Error(err))
+				continue
+			}
+			graceStarted++
+			continue
+		}
+
+		if now.Before(graceUntil) {
+			// Still within grace — daily reminders are handled by the grace reminder job.
+			continue
+		}
+
+		// Grace elapsed unpaid → total block.
 		tx, err := orm.Tx(ctx)
 		if err != nil {
 			log.Error("expiry job: tx start failed", zap.String("sub_id", sub.ID.String()), zap.Error(err))
 			continue
 		}
-
 		updated, err := tx.TenantSubscription.UpdateOneID(sub.ID).
 			SetStatus(tenantsubscription.StatusEXPIRED).
 			Save(ctx)
@@ -96,7 +135,6 @@ func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, 
 			log.Error("expiry job: failed to expire subscription", zap.String("sub_id", sub.ID.String()), zap.Error(err))
 			continue
 		}
-
 		svc.WriteOutboxEventPublic(ctx, tx, updated.TenantID, "subscription", updated.ID, "expired", map[string]any{
 			"tenant_id": updated.TenantID.String(),
 			"status":    "EXPIRED",
@@ -104,17 +142,16 @@ func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, 
 				"target": "tenant_admin",
 			},
 		})
-
 		if err := tx.Commit(); err != nil {
 			log.Error("expiry job: commit failed", zap.String("sub_id", sub.ID.String()), zap.Error(err))
 			continue
 		}
-
-		log.Info("expiry job: subscription expired", zap.String("tenant_id", updated.TenantID.String()), zap.String("sub_id", updated.ID.String()))
+		expiredCount++
+		log.Info("expiry job: subscription blocked after grace", zap.String("tenant_id", updated.TenantID.String()), zap.String("sub_id", updated.ID.String()))
 	}
 
-	if len(expired) > 0 {
-		log.Info("expiry job: completed", zap.Int("expired_count", len(expired)))
+	if graceStarted > 0 || expiredCount > 0 {
+		log.Info("expiry job: completed", zap.Int("grace_started", graceStarted), zap.Int("expired", expiredCount))
 	}
 }
 

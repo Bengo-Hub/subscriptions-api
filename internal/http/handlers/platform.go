@@ -16,6 +16,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/billing"
 )
 
 // PlatformHandler handles platform admin endpoints.
@@ -23,6 +24,7 @@ type PlatformHandler struct {
 	log            *zap.Logger
 	client         *ent.Client
 	featureHandler *FeatureHandler
+	invoiceSvc     *billing.InvoiceService
 }
 
 // NewPlatformHandler creates a new platform handler.
@@ -32,6 +34,11 @@ func NewPlatformHandler(log *zap.Logger, client *ent.Client, featureHandler *Fea
 		client:         client,
 		featureHandler: featureHandler,
 	}
+}
+
+// WithInvoiceService wires the subscription invoice service for manual generation/resend.
+func (h *PlatformHandler) WithInvoiceService(svc *billing.InvoiceService) {
+	h.invoiceSvc = svc
 }
 
 // GetPlatformStats godoc
@@ -773,6 +780,128 @@ func (h *PlatformHandler) DeleteServiceConfig(w http.ResponseWriter, r *http.Req
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+// --- Subscription invoices (platform owner) ---
+
+func (h *PlatformHandler) parseTenantParam(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
+	if h.invoiceSvc == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "invoice service not configured"})
+		return uuid.Nil, false
+	}
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenant_id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return uuid.Nil, false
+	}
+	return tenantID, true
+}
+
+// GenerateSubscriptionInvoice godoc
+// @Summary Generate a subscription invoice for a tenant (platform owner)
+// @Description Creates + emails a subscription invoice with a durable pay link. Use ?force=true to regenerate for the current period.
+// @Tags Platform
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Param force query bool false "Bypass idempotency and regenerate"
+// @Success 201 {object} map[string]interface{}
+// @Router /admin/tenants/{tenant_id}/subscription/generate-invoice [post]
+func (h *PlatformHandler) GenerateSubscriptionInvoice(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := h.parseTenantParam(w, r)
+	if !ok {
+		return
+	}
+	force := r.URL.Query().Get("force") == "true"
+	res, err := h.invoiceSvc.GenerateForTenant(r.Context(), tenantID, force)
+	if err != nil {
+		h.log.Error("manual invoice generation failed", zap.String("tenant_id", tenantID.String()), zap.Error(err))
+		writeJSON(w, http.StatusBadGateway, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusCreated, res)
+}
+
+// ResendSubscriptionInvoice godoc
+// @Summary Resend the latest subscription invoice email (platform owner)
+// @Tags Platform
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Success 200 {object} map[string]interface{}
+// @Router /admin/tenants/{tenant_id}/subscription/invoice/resend [post]
+func (h *PlatformHandler) ResendSubscriptionInvoice(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := h.parseTenantParam(w, r)
+	if !ok {
+		return
+	}
+	res, err := h.invoiceSvc.ResendLast(r.Context(), tenantID)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+// GetSubscriptionInvoice godoc
+// @Summary Get the latest subscription invoice summary for a tenant (platform owner)
+// @Tags Platform
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Success 200 {object} map[string]interface{}
+// @Router /admin/tenants/{tenant_id}/subscription/invoice [get]
+func (h *PlatformHandler) GetSubscriptionInvoice(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := h.parseTenantParam(w, r)
+	if !ok {
+		return
+	}
+	res, err := h.invoiceSvc.LastInvoiceFor(r.Context(), tenantID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if res == nil {
+		writeJSON(w, http.StatusOK, map[string]any{"invoice": nil})
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+// DownloadSubscriptionInvoicePDF godoc
+// @Summary Download the latest subscription invoice PDF (platform owner)
+// @Description Proxies the treasury invoice PDF so the UI needs no treasury auth.
+// @Tags Platform
+// @Produce application/pdf
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Success 200 {file} binary
+// @Router /admin/tenants/{tenant_id}/subscription/invoice/pdf [get]
+func (h *PlatformHandler) DownloadSubscriptionInvoicePDF(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := h.parseTenantParam(w, r)
+	if !ok {
+		return
+	}
+	res, err := h.invoiceSvc.LastInvoiceFor(r.Context(), tenantID)
+	if err != nil || res == nil || res.InvoiceID == "" {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "no invoice found for tenant"})
+		return
+	}
+	data, err := h.invoiceSvc.FetchInvoicePDF(r.Context(), res.InvoiceID)
+	if err != nil {
+		h.log.Error("invoice pdf proxy failed", zap.String("tenant_id", tenantID.String()), zap.Error(err))
+		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "failed to fetch invoice pdf"})
+		return
+	}
+	w.Header().Set("Content-Type", "application/pdf")
+	disposition := "inline"
+	if r.URL.Query().Get("download") == "true" {
+		disposition = "attachment"
+	}
+	w.Header().Set("Content-Disposition", disposition+`; filename="`+res.InvoiceNumber+`.pdf"`)
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
 }
 
 

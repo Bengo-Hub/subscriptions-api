@@ -250,6 +250,11 @@ func New(
 					})
 					r.Get("/", platformHandler.ListTenants)
 					r.Post("/{tenant_id}/subscription", platformHandler.AssignPlanToTenant)
+					// Subscription invoices (generate / resend / view / download PDF)
+					r.Post("/{tenant_id}/subscription/generate-invoice", platformHandler.GenerateSubscriptionInvoice)
+					r.Post("/{tenant_id}/subscription/invoice/resend", platformHandler.ResendSubscriptionInvoice)
+					r.Get("/{tenant_id}/subscription/invoice", platformHandler.GetSubscriptionInvoice)
+					r.Get("/{tenant_id}/subscription/invoice/pdf", platformHandler.DownloadSubscriptionInvoicePDF)
 				})
 
 				r.Route("/admin/subscriptions", func(r chi.Router) {
