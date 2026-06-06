@@ -39,6 +39,9 @@ type ServicesConfig struct {
 	// (the platform org, e.g. codevertex). Subscription invoices are owned by this tenant
 	// with the billed tenant as the customer. Must be set in prod.
 	PlatformTenantID string `envconfig:"PLATFORM_TENANT_ID" default:"4414b8d9-6b00-4ad1-a0b4-3094cbc5e398"`
+	// VATRate is the default VAT percentage applied (exclusive) to subscription invoice
+	// lines, matching the platform-seeded VAT-16 tax code. Set 0 to disable.
+	VATRate float64 `envconfig:"PLATFORM_VAT_RATE" default:"16"`
 }
 
 type HTTPConfig struct {
