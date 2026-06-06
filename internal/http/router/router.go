@@ -311,7 +311,7 @@ func New(
 						r.Post("/", customAddonHandler.CreateCustomAddon)
 						r.Get("/", customAddonHandler.ListCustomAddonsByTenant)
 						r.Patch("/{id}", customAddonHandler.UpdateCustomAddon)
-						r.Delete("/{id}", customAddonHandler.CancelCustomAddon)
+						r.Delete("/{id}", customAddonHandler.DeleteCustomAddon)
 					})
 				}
 

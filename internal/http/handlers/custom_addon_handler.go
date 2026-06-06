@@ -183,8 +183,10 @@ func (h *CustomAddonHandler) UpdateCustomAddon(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, updated)
 }
 
-// CancelCustomAddon handles DELETE /admin/tenants/{tenant_id}/custom-addons/{id}
-func (h *CustomAddonHandler) CancelCustomAddon(w http.ResponseWriter, r *http.Request) {
+// DeleteCustomAddon handles DELETE /admin/tenants/{tenant_id}/custom-addons/{id}.
+// This permanently removes the add-on. To cancel/reactivate (soft state change),
+// use PATCH with {"status": "cancelled"|"active"|"paused"} instead.
+func (h *CustomAddonHandler) DeleteCustomAddon(w http.ResponseWriter, r *http.Request) {
 	tenantID, err := uuid.Parse(chi.URLParam(r, "tenant_id"))
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
@@ -196,17 +198,20 @@ func (h *CustomAddonHandler) CancelCustomAddon(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	n, err := h.client.CustomAddon.Update().
+	n, err := h.client.CustomAddon.Delete().
 		Where(customaddon.ID(addonID), customaddon.TenantIDEQ(tenantID)).
-		SetStatus(customaddon.StatusCancelled).
-		SetUpdatedAt(time.Now()).
-		Save(r.Context())
-	if err != nil || n == 0 {
+		Exec(r.Context())
+	if err != nil {
+		h.log.Error("delete custom addon failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "delete failed"})
+		return
+	}
+	if n == 0 {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "addon not found"})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"status": "cancelled"})
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 // ListMyCustomAddons handles GET /custom-addons (tenant read-only view)
