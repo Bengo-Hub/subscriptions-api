@@ -31,11 +31,12 @@ type InvoiceService struct {
 	platformTenantID string
 	treasuryUIBase   string // e.g. https://books.codevertexitsolutions.com (for /pay)
 	treasuryAPIBase  string // e.g. https://booksapi.codevertexitsolutions.com (for public PDF)
+	vatRate          float64
 	overage          *OverageService
 }
 
 // NewInvoiceService constructs the subscription invoice service.
-func NewInvoiceService(log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, treasury *serviceclient.Client, apiKey, platformTenantID, treasuryUIBase, treasuryAPIBase string) *InvoiceService {
+func NewInvoiceService(log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, treasury *serviceclient.Client, apiKey, platformTenantID, treasuryUIBase, treasuryAPIBase string, vatRate float64) *InvoiceService {
 	return &InvoiceService{
 		log:              log.Named("billing.invoice"),
 		orm:              orm,
@@ -45,6 +46,7 @@ func NewInvoiceService(log *zap.Logger, orm *ent.Client, svc *subscriptions.Serv
 		platformTenantID: platformTenantID,
 		treasuryUIBase:   treasuryUIBase,
 		treasuryAPIBase:  treasuryAPIBase,
+		vatRate:          vatRate,
 		overage:          NewOverageService(log, orm),
 	}
 }
@@ -85,15 +87,16 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 	}
 
 	lines := make([]map[string]any, 0, 4)
-	var total float64
+	var taxable float64 // sum of VAT-eligible line subtotals (base + overage + addons)
 
-	// Base plan line
+	// Base plan line (VAT applied exclusive per the platform-seeded VAT-16 default).
 	lines = append(lines, map[string]any{
 		"description": fmt.Sprintf("Subscription: %s (%s)", plan.Name, sub.BillingCycle),
 		"quantity":    1,
 		"unit_price":  plan.BasePrice,
+		"tax_rate":    s.vatRate,
 	})
-	total += plan.BasePrice
+	taxable += plan.BasePrice
 
 	// Pending overage charges
 	overages, err := s.overage.ListPendingByTenant(ctx, sub.TenantID)
@@ -101,13 +104,13 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 		s.log.Warn("invoice: overage query failed", zap.Error(err))
 	}
 	for _, o := range overages {
-		lineTotal := o.UnitsOver * o.UnitPriceKes
 		lines = append(lines, map[string]any{
 			"description": fmt.Sprintf("Overage: %s (%.0f units)", o.MetricType, o.UnitsOver),
 			"quantity":    o.UnitsOver,
 			"unit_price":  o.UnitPriceKes,
+			"tax_rate":    s.vatRate,
 		})
-		total += lineTotal
+		taxable += o.UnitsOver * o.UnitPriceKes
 	}
 
 	// Active custom addons
@@ -118,16 +121,19 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 		s.log.Warn("invoice: addon query failed", zap.Error(err))
 	}
 	for _, a := range addons {
-		lineTotal := float64(a.UnitPriceKes * a.Quantity)
 		lines = append(lines, map[string]any{
 			"description": a.Name,
 			"quantity":    a.Quantity,
 			"unit_price":  a.UnitPriceKes,
+			"tax_rate":    s.vatRate,
 		})
-		total += lineTotal
+		taxable += float64(a.UnitPriceKes * a.Quantity)
 	}
 
-	// Apply available credits (floored so the invoice total never goes negative)
+	// Grand total = taxable + VAT (exclusive).
+	total := taxable * (1 + s.vatRate/100)
+
+	// Apply available credits post-tax (untaxed line, floored so total never goes negative).
 	if credit, err := s.orm.SubscriptionCredit.Query().
 		Where(subscriptioncredit.TenantIDEQ(sub.TenantID)).Only(ctx); err == nil && credit.BalanceKes > 0 {
 		apply := float64(credit.BalanceKes)
@@ -139,6 +145,7 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 				"description": "Loyalty credit applied",
 				"quantity":    1,
 				"unit_price":  -apply,
+				"tax_rate":    0,
 			})
 			total -= apply
 		}
