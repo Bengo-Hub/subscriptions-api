@@ -19,6 +19,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
 	"github.com/bengobox/subscription-service/internal/ent/coupon"
 	"github.com/bengobox/subscription-service/internal/ent/customaddon"
+	"github.com/bengobox/subscription-service/internal/ent/featuredefinition"
 	"github.com/bengobox/subscription-service/internal/ent/outboxevent"
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
@@ -52,6 +53,8 @@ type Client struct {
 	Coupon *CouponClient
 	// CustomAddon is the client for interacting with the CustomAddon builders.
 	CustomAddon *CustomAddonClient
+	// FeatureDefinition is the client for interacting with the FeatureDefinition builders.
+	FeatureDefinition *FeatureDefinitionClient
 	// OutboxEvent is the client for interacting with the OutboxEvent builders.
 	OutboxEvent *OutboxEventClient
 	// OverageCharge is the client for interacting with the OverageCharge builders.
@@ -106,6 +109,7 @@ func (c *Client) init() {
 	c.Bundle = NewBundleClient(c.config)
 	c.Coupon = NewCouponClient(c.config)
 	c.CustomAddon = NewCustomAddonClient(c.config)
+	c.FeatureDefinition = NewFeatureDefinitionClient(c.config)
 	c.OutboxEvent = NewOutboxEventClient(c.config)
 	c.OverageCharge = NewOverageChargeClient(c.config)
 	c.PlanFeature = NewPlanFeatureClient(c.config)
@@ -221,6 +225,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Bundle:                        NewBundleClient(cfg),
 		Coupon:                        NewCouponClient(cfg),
 		CustomAddon:                   NewCustomAddonClient(cfg),
+		FeatureDefinition:             NewFeatureDefinitionClient(cfg),
 		OutboxEvent:                   NewOutboxEventClient(cfg),
 		OverageCharge:                 NewOverageChargeClient(cfg),
 		PlanFeature:                   NewPlanFeatureClient(cfg),
@@ -263,6 +268,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Bundle:                        NewBundleClient(cfg),
 		Coupon:                        NewCouponClient(cfg),
 		CustomAddon:                   NewCustomAddonClient(cfg),
+		FeatureDefinition:             NewFeatureDefinitionClient(cfg),
 		OutboxEvent:                   NewOutboxEventClient(cfg),
 		OverageCharge:                 NewOverageChargeClient(cfg),
 		PlanFeature:                   NewPlanFeatureClient(cfg),
@@ -312,12 +318,13 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Bundle, c.Coupon, c.CustomAddon, c.OutboxEvent, c.OverageCharge,
-		c.PlanFeature, c.PlanPricingHistory, c.Product, c.ProductSubscription,
-		c.RateLimitConfig, c.RolePermission, c.ServiceChargePlan, c.ServiceConfig,
-		c.SubscriptionCredit, c.SubscriptionCreditTransaction, c.SubscriptionPlan,
-		c.SubscriptionsPermission, c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant,
-		c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
+		c.Bundle, c.Coupon, c.CustomAddon, c.FeatureDefinition, c.OutboxEvent,
+		c.OverageCharge, c.PlanFeature, c.PlanPricingHistory, c.Product,
+		c.ProductSubscription, c.RateLimitConfig, c.RolePermission,
+		c.ServiceChargePlan, c.ServiceConfig, c.SubscriptionCredit,
+		c.SubscriptionCreditTransaction, c.SubscriptionPlan, c.SubscriptionsPermission,
+		c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant, c.TenantSubscription,
+		c.UsageEvent, c.UserRoleAssignment,
 	} {
 		n.Use(hooks...)
 	}
@@ -327,12 +334,13 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Bundle, c.Coupon, c.CustomAddon, c.OutboxEvent, c.OverageCharge,
-		c.PlanFeature, c.PlanPricingHistory, c.Product, c.ProductSubscription,
-		c.RateLimitConfig, c.RolePermission, c.ServiceChargePlan, c.ServiceConfig,
-		c.SubscriptionCredit, c.SubscriptionCreditTransaction, c.SubscriptionPlan,
-		c.SubscriptionsPermission, c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant,
-		c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
+		c.Bundle, c.Coupon, c.CustomAddon, c.FeatureDefinition, c.OutboxEvent,
+		c.OverageCharge, c.PlanFeature, c.PlanPricingHistory, c.Product,
+		c.ProductSubscription, c.RateLimitConfig, c.RolePermission,
+		c.ServiceChargePlan, c.ServiceConfig, c.SubscriptionCredit,
+		c.SubscriptionCreditTransaction, c.SubscriptionPlan, c.SubscriptionsPermission,
+		c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant, c.TenantSubscription,
+		c.UsageEvent, c.UserRoleAssignment,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -347,6 +355,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Coupon.mutate(ctx, m)
 	case *CustomAddonMutation:
 		return c.CustomAddon.mutate(ctx, m)
+	case *FeatureDefinitionMutation:
+		return c.FeatureDefinition.mutate(ctx, m)
 	case *OutboxEventMutation:
 		return c.OutboxEvent.mutate(ctx, m)
 	case *OverageChargeMutation:
@@ -788,6 +798,139 @@ func (c *CustomAddonClient) mutate(ctx context.Context, m *CustomAddonMutation) 
 		return (&CustomAddonDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CustomAddon mutation op: %q", m.Op())
+	}
+}
+
+// FeatureDefinitionClient is a client for the FeatureDefinition schema.
+type FeatureDefinitionClient struct {
+	config
+}
+
+// NewFeatureDefinitionClient returns a client for the FeatureDefinition from the given config.
+func NewFeatureDefinitionClient(c config) *FeatureDefinitionClient {
+	return &FeatureDefinitionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `featuredefinition.Hooks(f(g(h())))`.
+func (c *FeatureDefinitionClient) Use(hooks ...Hook) {
+	c.hooks.FeatureDefinition = append(c.hooks.FeatureDefinition, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `featuredefinition.Intercept(f(g(h())))`.
+func (c *FeatureDefinitionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FeatureDefinition = append(c.inters.FeatureDefinition, interceptors...)
+}
+
+// Create returns a builder for creating a FeatureDefinition entity.
+func (c *FeatureDefinitionClient) Create() *FeatureDefinitionCreate {
+	mutation := newFeatureDefinitionMutation(c.config, OpCreate)
+	return &FeatureDefinitionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FeatureDefinition entities.
+func (c *FeatureDefinitionClient) CreateBulk(builders ...*FeatureDefinitionCreate) *FeatureDefinitionCreateBulk {
+	return &FeatureDefinitionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FeatureDefinitionClient) MapCreateBulk(slice any, setFunc func(*FeatureDefinitionCreate, int)) *FeatureDefinitionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FeatureDefinitionCreateBulk{err: fmt.Errorf("calling to FeatureDefinitionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FeatureDefinitionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FeatureDefinitionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FeatureDefinition.
+func (c *FeatureDefinitionClient) Update() *FeatureDefinitionUpdate {
+	mutation := newFeatureDefinitionMutation(c.config, OpUpdate)
+	return &FeatureDefinitionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FeatureDefinitionClient) UpdateOne(_m *FeatureDefinition) *FeatureDefinitionUpdateOne {
+	mutation := newFeatureDefinitionMutation(c.config, OpUpdateOne, withFeatureDefinition(_m))
+	return &FeatureDefinitionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FeatureDefinitionClient) UpdateOneID(id uuid.UUID) *FeatureDefinitionUpdateOne {
+	mutation := newFeatureDefinitionMutation(c.config, OpUpdateOne, withFeatureDefinitionID(id))
+	return &FeatureDefinitionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FeatureDefinition.
+func (c *FeatureDefinitionClient) Delete() *FeatureDefinitionDelete {
+	mutation := newFeatureDefinitionMutation(c.config, OpDelete)
+	return &FeatureDefinitionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FeatureDefinitionClient) DeleteOne(_m *FeatureDefinition) *FeatureDefinitionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FeatureDefinitionClient) DeleteOneID(id uuid.UUID) *FeatureDefinitionDeleteOne {
+	builder := c.Delete().Where(featuredefinition.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FeatureDefinitionDeleteOne{builder}
+}
+
+// Query returns a query builder for FeatureDefinition.
+func (c *FeatureDefinitionClient) Query() *FeatureDefinitionQuery {
+	return &FeatureDefinitionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFeatureDefinition},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FeatureDefinition entity by its id.
+func (c *FeatureDefinitionClient) Get(ctx context.Context, id uuid.UUID) (*FeatureDefinition, error) {
+	return c.Query().Where(featuredefinition.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FeatureDefinitionClient) GetX(ctx context.Context, id uuid.UUID) *FeatureDefinition {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *FeatureDefinitionClient) Hooks() []Hook {
+	return c.hooks.FeatureDefinition
+}
+
+// Interceptors returns the client interceptors.
+func (c *FeatureDefinitionClient) Interceptors() []Interceptor {
+	return c.inters.FeatureDefinition
+}
+
+func (c *FeatureDefinitionClient) mutate(ctx context.Context, m *FeatureDefinitionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FeatureDefinitionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FeatureDefinitionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FeatureDefinitionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FeatureDefinitionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FeatureDefinition mutation op: %q", m.Op())
 	}
 }
 
@@ -3918,16 +4061,16 @@ func (c *UserRoleAssignmentClient) mutate(ctx context.Context, m *UserRoleAssign
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Bundle, Coupon, CustomAddon, OutboxEvent, OverageCharge, PlanFeature,
-		PlanPricingHistory, Product, ProductSubscription, RateLimitConfig,
+		Bundle, Coupon, CustomAddon, FeatureDefinition, OutboxEvent, OverageCharge,
+		PlanFeature, PlanPricingHistory, Product, ProductSubscription, RateLimitConfig,
 		RolePermission, ServiceChargePlan, ServiceConfig, SubscriptionCredit,
 		SubscriptionCreditTransaction, SubscriptionPlan, SubscriptionsPermission,
 		SubscriptionsRole, SubscriptionsUser, Tenant, TenantSubscription, UsageEvent,
 		UserRoleAssignment []ent.Hook
 	}
 	inters struct {
-		Bundle, Coupon, CustomAddon, OutboxEvent, OverageCharge, PlanFeature,
-		PlanPricingHistory, Product, ProductSubscription, RateLimitConfig,
+		Bundle, Coupon, CustomAddon, FeatureDefinition, OutboxEvent, OverageCharge,
+		PlanFeature, PlanPricingHistory, Product, ProductSubscription, RateLimitConfig,
 		RolePermission, ServiceChargePlan, ServiceConfig, SubscriptionCredit,
 		SubscriptionCreditTransaction, SubscriptionPlan, SubscriptionsPermission,
 		SubscriptionsRole, SubscriptionsUser, Tenant, TenantSubscription, UsageEvent,

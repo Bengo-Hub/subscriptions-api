@@ -14,6 +14,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
 	"github.com/bengobox/subscription-service/internal/ent/coupon"
 	"github.com/bengobox/subscription-service/internal/ent/customaddon"
+	"github.com/bengobox/subscription-service/internal/ent/featuredefinition"
 	"github.com/bengobox/subscription-service/internal/ent/outboxevent"
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
@@ -51,6 +52,7 @@ const (
 	TypeBundle                        = "Bundle"
 	TypeCoupon                        = "Coupon"
 	TypeCustomAddon                   = "CustomAddon"
+	TypeFeatureDefinition             = "FeatureDefinition"
 	TypeOutboxEvent                   = "OutboxEvent"
 	TypeOverageCharge                 = "OverageCharge"
 	TypePlanFeature                   = "PlanFeature"
@@ -3835,6 +3837,1243 @@ func (m *CustomAddonMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *CustomAddonMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown CustomAddon edge %s", name)
+}
+
+// FeatureDefinitionMutation represents an operation that mutates the FeatureDefinition nodes in the graph.
+type FeatureDefinitionMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	feature_code     *string
+	service_tag      *string
+	category         *string
+	label            *string
+	description      *string
+	kind             *featuredefinition.Kind
+	value_type       *featuredefinition.ValueType
+	default_limit    *int
+	adddefault_limit *int
+	is_rate_limited  *bool
+	unit             *string
+	nats_event       *string
+	sort_order       *int
+	addsort_order    *int
+	is_active        *bool
+	created_at       *time.Time
+	updated_at       *time.Time
+	clearedFields    map[string]struct{}
+	done             bool
+	oldValue         func(context.Context) (*FeatureDefinition, error)
+	predicates       []predicate.FeatureDefinition
+}
+
+var _ ent.Mutation = (*FeatureDefinitionMutation)(nil)
+
+// featuredefinitionOption allows management of the mutation configuration using functional options.
+type featuredefinitionOption func(*FeatureDefinitionMutation)
+
+// newFeatureDefinitionMutation creates new mutation for the FeatureDefinition entity.
+func newFeatureDefinitionMutation(c config, op Op, opts ...featuredefinitionOption) *FeatureDefinitionMutation {
+	m := &FeatureDefinitionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFeatureDefinition,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFeatureDefinitionID sets the ID field of the mutation.
+func withFeatureDefinitionID(id uuid.UUID) featuredefinitionOption {
+	return func(m *FeatureDefinitionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *FeatureDefinition
+		)
+		m.oldValue = func(ctx context.Context) (*FeatureDefinition, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().FeatureDefinition.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFeatureDefinition sets the old FeatureDefinition of the mutation.
+func withFeatureDefinition(node *FeatureDefinition) featuredefinitionOption {
+	return func(m *FeatureDefinitionMutation) {
+		m.oldValue = func(context.Context) (*FeatureDefinition, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FeatureDefinitionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FeatureDefinitionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of FeatureDefinition entities.
+func (m *FeatureDefinitionMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FeatureDefinitionMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FeatureDefinitionMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().FeatureDefinition.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetFeatureCode sets the "feature_code" field.
+func (m *FeatureDefinitionMutation) SetFeatureCode(s string) {
+	m.feature_code = &s
+}
+
+// FeatureCode returns the value of the "feature_code" field in the mutation.
+func (m *FeatureDefinitionMutation) FeatureCode() (r string, exists bool) {
+	v := m.feature_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFeatureCode returns the old "feature_code" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldFeatureCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFeatureCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFeatureCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFeatureCode: %w", err)
+	}
+	return oldValue.FeatureCode, nil
+}
+
+// ResetFeatureCode resets all changes to the "feature_code" field.
+func (m *FeatureDefinitionMutation) ResetFeatureCode() {
+	m.feature_code = nil
+}
+
+// SetServiceTag sets the "service_tag" field.
+func (m *FeatureDefinitionMutation) SetServiceTag(s string) {
+	m.service_tag = &s
+}
+
+// ServiceTag returns the value of the "service_tag" field in the mutation.
+func (m *FeatureDefinitionMutation) ServiceTag() (r string, exists bool) {
+	v := m.service_tag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldServiceTag returns the old "service_tag" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldServiceTag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldServiceTag is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldServiceTag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldServiceTag: %w", err)
+	}
+	return oldValue.ServiceTag, nil
+}
+
+// ResetServiceTag resets all changes to the "service_tag" field.
+func (m *FeatureDefinitionMutation) ResetServiceTag() {
+	m.service_tag = nil
+}
+
+// SetCategory sets the "category" field.
+func (m *FeatureDefinitionMutation) SetCategory(s string) {
+	m.category = &s
+}
+
+// Category returns the value of the "category" field in the mutation.
+func (m *FeatureDefinitionMutation) Category() (r string, exists bool) {
+	v := m.category
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCategory returns the old "category" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldCategory(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCategory is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCategory requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCategory: %w", err)
+	}
+	return oldValue.Category, nil
+}
+
+// ResetCategory resets all changes to the "category" field.
+func (m *FeatureDefinitionMutation) ResetCategory() {
+	m.category = nil
+}
+
+// SetLabel sets the "label" field.
+func (m *FeatureDefinitionMutation) SetLabel(s string) {
+	m.label = &s
+}
+
+// Label returns the value of the "label" field in the mutation.
+func (m *FeatureDefinitionMutation) Label() (r string, exists bool) {
+	v := m.label
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLabel returns the old "label" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldLabel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLabel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLabel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabel: %w", err)
+	}
+	return oldValue.Label, nil
+}
+
+// ResetLabel resets all changes to the "label" field.
+func (m *FeatureDefinitionMutation) ResetLabel() {
+	m.label = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *FeatureDefinitionMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *FeatureDefinitionMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *FeatureDefinitionMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[featuredefinition.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *FeatureDefinitionMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[featuredefinition.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *FeatureDefinitionMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, featuredefinition.FieldDescription)
+}
+
+// SetKind sets the "kind" field.
+func (m *FeatureDefinitionMutation) SetKind(f featuredefinition.Kind) {
+	m.kind = &f
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *FeatureDefinitionMutation) Kind() (r featuredefinition.Kind, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldKind(ctx context.Context) (v featuredefinition.Kind, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *FeatureDefinitionMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetValueType sets the "value_type" field.
+func (m *FeatureDefinitionMutation) SetValueType(ft featuredefinition.ValueType) {
+	m.value_type = &ft
+}
+
+// ValueType returns the value of the "value_type" field in the mutation.
+func (m *FeatureDefinitionMutation) ValueType() (r featuredefinition.ValueType, exists bool) {
+	v := m.value_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValueType returns the old "value_type" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldValueType(ctx context.Context) (v featuredefinition.ValueType, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValueType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValueType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValueType: %w", err)
+	}
+	return oldValue.ValueType, nil
+}
+
+// ResetValueType resets all changes to the "value_type" field.
+func (m *FeatureDefinitionMutation) ResetValueType() {
+	m.value_type = nil
+}
+
+// SetDefaultLimit sets the "default_limit" field.
+func (m *FeatureDefinitionMutation) SetDefaultLimit(i int) {
+	m.default_limit = &i
+	m.adddefault_limit = nil
+}
+
+// DefaultLimit returns the value of the "default_limit" field in the mutation.
+func (m *FeatureDefinitionMutation) DefaultLimit() (r int, exists bool) {
+	v := m.default_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDefaultLimit returns the old "default_limit" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldDefaultLimit(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDefaultLimit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDefaultLimit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDefaultLimit: %w", err)
+	}
+	return oldValue.DefaultLimit, nil
+}
+
+// AddDefaultLimit adds i to the "default_limit" field.
+func (m *FeatureDefinitionMutation) AddDefaultLimit(i int) {
+	if m.adddefault_limit != nil {
+		*m.adddefault_limit += i
+	} else {
+		m.adddefault_limit = &i
+	}
+}
+
+// AddedDefaultLimit returns the value that was added to the "default_limit" field in this mutation.
+func (m *FeatureDefinitionMutation) AddedDefaultLimit() (r int, exists bool) {
+	v := m.adddefault_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDefaultLimit clears the value of the "default_limit" field.
+func (m *FeatureDefinitionMutation) ClearDefaultLimit() {
+	m.default_limit = nil
+	m.adddefault_limit = nil
+	m.clearedFields[featuredefinition.FieldDefaultLimit] = struct{}{}
+}
+
+// DefaultLimitCleared returns if the "default_limit" field was cleared in this mutation.
+func (m *FeatureDefinitionMutation) DefaultLimitCleared() bool {
+	_, ok := m.clearedFields[featuredefinition.FieldDefaultLimit]
+	return ok
+}
+
+// ResetDefaultLimit resets all changes to the "default_limit" field.
+func (m *FeatureDefinitionMutation) ResetDefaultLimit() {
+	m.default_limit = nil
+	m.adddefault_limit = nil
+	delete(m.clearedFields, featuredefinition.FieldDefaultLimit)
+}
+
+// SetIsRateLimited sets the "is_rate_limited" field.
+func (m *FeatureDefinitionMutation) SetIsRateLimited(b bool) {
+	m.is_rate_limited = &b
+}
+
+// IsRateLimited returns the value of the "is_rate_limited" field in the mutation.
+func (m *FeatureDefinitionMutation) IsRateLimited() (r bool, exists bool) {
+	v := m.is_rate_limited
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsRateLimited returns the old "is_rate_limited" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldIsRateLimited(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsRateLimited is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsRateLimited requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsRateLimited: %w", err)
+	}
+	return oldValue.IsRateLimited, nil
+}
+
+// ResetIsRateLimited resets all changes to the "is_rate_limited" field.
+func (m *FeatureDefinitionMutation) ResetIsRateLimited() {
+	m.is_rate_limited = nil
+}
+
+// SetUnit sets the "unit" field.
+func (m *FeatureDefinitionMutation) SetUnit(s string) {
+	m.unit = &s
+}
+
+// Unit returns the value of the "unit" field in the mutation.
+func (m *FeatureDefinitionMutation) Unit() (r string, exists bool) {
+	v := m.unit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUnit returns the old "unit" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldUnit(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUnit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUnit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUnit: %w", err)
+	}
+	return oldValue.Unit, nil
+}
+
+// ClearUnit clears the value of the "unit" field.
+func (m *FeatureDefinitionMutation) ClearUnit() {
+	m.unit = nil
+	m.clearedFields[featuredefinition.FieldUnit] = struct{}{}
+}
+
+// UnitCleared returns if the "unit" field was cleared in this mutation.
+func (m *FeatureDefinitionMutation) UnitCleared() bool {
+	_, ok := m.clearedFields[featuredefinition.FieldUnit]
+	return ok
+}
+
+// ResetUnit resets all changes to the "unit" field.
+func (m *FeatureDefinitionMutation) ResetUnit() {
+	m.unit = nil
+	delete(m.clearedFields, featuredefinition.FieldUnit)
+}
+
+// SetNatsEvent sets the "nats_event" field.
+func (m *FeatureDefinitionMutation) SetNatsEvent(s string) {
+	m.nats_event = &s
+}
+
+// NatsEvent returns the value of the "nats_event" field in the mutation.
+func (m *FeatureDefinitionMutation) NatsEvent() (r string, exists bool) {
+	v := m.nats_event
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNatsEvent returns the old "nats_event" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldNatsEvent(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNatsEvent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNatsEvent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNatsEvent: %w", err)
+	}
+	return oldValue.NatsEvent, nil
+}
+
+// ClearNatsEvent clears the value of the "nats_event" field.
+func (m *FeatureDefinitionMutation) ClearNatsEvent() {
+	m.nats_event = nil
+	m.clearedFields[featuredefinition.FieldNatsEvent] = struct{}{}
+}
+
+// NatsEventCleared returns if the "nats_event" field was cleared in this mutation.
+func (m *FeatureDefinitionMutation) NatsEventCleared() bool {
+	_, ok := m.clearedFields[featuredefinition.FieldNatsEvent]
+	return ok
+}
+
+// ResetNatsEvent resets all changes to the "nats_event" field.
+func (m *FeatureDefinitionMutation) ResetNatsEvent() {
+	m.nats_event = nil
+	delete(m.clearedFields, featuredefinition.FieldNatsEvent)
+}
+
+// SetSortOrder sets the "sort_order" field.
+func (m *FeatureDefinitionMutation) SetSortOrder(i int) {
+	m.sort_order = &i
+	m.addsort_order = nil
+}
+
+// SortOrder returns the value of the "sort_order" field in the mutation.
+func (m *FeatureDefinitionMutation) SortOrder() (r int, exists bool) {
+	v := m.sort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSortOrder returns the old "sort_order" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldSortOrder(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSortOrder is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSortOrder requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSortOrder: %w", err)
+	}
+	return oldValue.SortOrder, nil
+}
+
+// AddSortOrder adds i to the "sort_order" field.
+func (m *FeatureDefinitionMutation) AddSortOrder(i int) {
+	if m.addsort_order != nil {
+		*m.addsort_order += i
+	} else {
+		m.addsort_order = &i
+	}
+}
+
+// AddedSortOrder returns the value that was added to the "sort_order" field in this mutation.
+func (m *FeatureDefinitionMutation) AddedSortOrder() (r int, exists bool) {
+	v := m.addsort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSortOrder resets all changes to the "sort_order" field.
+func (m *FeatureDefinitionMutation) ResetSortOrder() {
+	m.sort_order = nil
+	m.addsort_order = nil
+}
+
+// SetIsActive sets the "is_active" field.
+func (m *FeatureDefinitionMutation) SetIsActive(b bool) {
+	m.is_active = &b
+}
+
+// IsActive returns the value of the "is_active" field in the mutation.
+func (m *FeatureDefinitionMutation) IsActive() (r bool, exists bool) {
+	v := m.is_active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsActive returns the old "is_active" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldIsActive(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsActive: %w", err)
+	}
+	return oldValue.IsActive, nil
+}
+
+// ResetIsActive resets all changes to the "is_active" field.
+func (m *FeatureDefinitionMutation) ResetIsActive() {
+	m.is_active = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *FeatureDefinitionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *FeatureDefinitionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *FeatureDefinitionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *FeatureDefinitionMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *FeatureDefinitionMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the FeatureDefinition entity.
+// If the FeatureDefinition object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FeatureDefinitionMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *FeatureDefinitionMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// Where appends a list predicates to the FeatureDefinitionMutation builder.
+func (m *FeatureDefinitionMutation) Where(ps ...predicate.FeatureDefinition) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FeatureDefinitionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FeatureDefinitionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.FeatureDefinition, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FeatureDefinitionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FeatureDefinitionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (FeatureDefinition).
+func (m *FeatureDefinitionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FeatureDefinitionMutation) Fields() []string {
+	fields := make([]string, 0, 15)
+	if m.feature_code != nil {
+		fields = append(fields, featuredefinition.FieldFeatureCode)
+	}
+	if m.service_tag != nil {
+		fields = append(fields, featuredefinition.FieldServiceTag)
+	}
+	if m.category != nil {
+		fields = append(fields, featuredefinition.FieldCategory)
+	}
+	if m.label != nil {
+		fields = append(fields, featuredefinition.FieldLabel)
+	}
+	if m.description != nil {
+		fields = append(fields, featuredefinition.FieldDescription)
+	}
+	if m.kind != nil {
+		fields = append(fields, featuredefinition.FieldKind)
+	}
+	if m.value_type != nil {
+		fields = append(fields, featuredefinition.FieldValueType)
+	}
+	if m.default_limit != nil {
+		fields = append(fields, featuredefinition.FieldDefaultLimit)
+	}
+	if m.is_rate_limited != nil {
+		fields = append(fields, featuredefinition.FieldIsRateLimited)
+	}
+	if m.unit != nil {
+		fields = append(fields, featuredefinition.FieldUnit)
+	}
+	if m.nats_event != nil {
+		fields = append(fields, featuredefinition.FieldNatsEvent)
+	}
+	if m.sort_order != nil {
+		fields = append(fields, featuredefinition.FieldSortOrder)
+	}
+	if m.is_active != nil {
+		fields = append(fields, featuredefinition.FieldIsActive)
+	}
+	if m.created_at != nil {
+		fields = append(fields, featuredefinition.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, featuredefinition.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FeatureDefinitionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case featuredefinition.FieldFeatureCode:
+		return m.FeatureCode()
+	case featuredefinition.FieldServiceTag:
+		return m.ServiceTag()
+	case featuredefinition.FieldCategory:
+		return m.Category()
+	case featuredefinition.FieldLabel:
+		return m.Label()
+	case featuredefinition.FieldDescription:
+		return m.Description()
+	case featuredefinition.FieldKind:
+		return m.Kind()
+	case featuredefinition.FieldValueType:
+		return m.ValueType()
+	case featuredefinition.FieldDefaultLimit:
+		return m.DefaultLimit()
+	case featuredefinition.FieldIsRateLimited:
+		return m.IsRateLimited()
+	case featuredefinition.FieldUnit:
+		return m.Unit()
+	case featuredefinition.FieldNatsEvent:
+		return m.NatsEvent()
+	case featuredefinition.FieldSortOrder:
+		return m.SortOrder()
+	case featuredefinition.FieldIsActive:
+		return m.IsActive()
+	case featuredefinition.FieldCreatedAt:
+		return m.CreatedAt()
+	case featuredefinition.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FeatureDefinitionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case featuredefinition.FieldFeatureCode:
+		return m.OldFeatureCode(ctx)
+	case featuredefinition.FieldServiceTag:
+		return m.OldServiceTag(ctx)
+	case featuredefinition.FieldCategory:
+		return m.OldCategory(ctx)
+	case featuredefinition.FieldLabel:
+		return m.OldLabel(ctx)
+	case featuredefinition.FieldDescription:
+		return m.OldDescription(ctx)
+	case featuredefinition.FieldKind:
+		return m.OldKind(ctx)
+	case featuredefinition.FieldValueType:
+		return m.OldValueType(ctx)
+	case featuredefinition.FieldDefaultLimit:
+		return m.OldDefaultLimit(ctx)
+	case featuredefinition.FieldIsRateLimited:
+		return m.OldIsRateLimited(ctx)
+	case featuredefinition.FieldUnit:
+		return m.OldUnit(ctx)
+	case featuredefinition.FieldNatsEvent:
+		return m.OldNatsEvent(ctx)
+	case featuredefinition.FieldSortOrder:
+		return m.OldSortOrder(ctx)
+	case featuredefinition.FieldIsActive:
+		return m.OldIsActive(ctx)
+	case featuredefinition.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case featuredefinition.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown FeatureDefinition field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FeatureDefinitionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case featuredefinition.FieldFeatureCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFeatureCode(v)
+		return nil
+	case featuredefinition.FieldServiceTag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetServiceTag(v)
+		return nil
+	case featuredefinition.FieldCategory:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCategory(v)
+		return nil
+	case featuredefinition.FieldLabel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLabel(v)
+		return nil
+	case featuredefinition.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case featuredefinition.FieldKind:
+		v, ok := value.(featuredefinition.Kind)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case featuredefinition.FieldValueType:
+		v, ok := value.(featuredefinition.ValueType)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValueType(v)
+		return nil
+	case featuredefinition.FieldDefaultLimit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDefaultLimit(v)
+		return nil
+	case featuredefinition.FieldIsRateLimited:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsRateLimited(v)
+		return nil
+	case featuredefinition.FieldUnit:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUnit(v)
+		return nil
+	case featuredefinition.FieldNatsEvent:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNatsEvent(v)
+		return nil
+	case featuredefinition.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSortOrder(v)
+		return nil
+	case featuredefinition.FieldIsActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsActive(v)
+		return nil
+	case featuredefinition.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case featuredefinition.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FeatureDefinition field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FeatureDefinitionMutation) AddedFields() []string {
+	var fields []string
+	if m.adddefault_limit != nil {
+		fields = append(fields, featuredefinition.FieldDefaultLimit)
+	}
+	if m.addsort_order != nil {
+		fields = append(fields, featuredefinition.FieldSortOrder)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FeatureDefinitionMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case featuredefinition.FieldDefaultLimit:
+		return m.AddedDefaultLimit()
+	case featuredefinition.FieldSortOrder:
+		return m.AddedSortOrder()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FeatureDefinitionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case featuredefinition.FieldDefaultLimit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDefaultLimit(v)
+		return nil
+	case featuredefinition.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSortOrder(v)
+		return nil
+	}
+	return fmt.Errorf("unknown FeatureDefinition numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FeatureDefinitionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(featuredefinition.FieldDescription) {
+		fields = append(fields, featuredefinition.FieldDescription)
+	}
+	if m.FieldCleared(featuredefinition.FieldDefaultLimit) {
+		fields = append(fields, featuredefinition.FieldDefaultLimit)
+	}
+	if m.FieldCleared(featuredefinition.FieldUnit) {
+		fields = append(fields, featuredefinition.FieldUnit)
+	}
+	if m.FieldCleared(featuredefinition.FieldNatsEvent) {
+		fields = append(fields, featuredefinition.FieldNatsEvent)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FeatureDefinitionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FeatureDefinitionMutation) ClearField(name string) error {
+	switch name {
+	case featuredefinition.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case featuredefinition.FieldDefaultLimit:
+		m.ClearDefaultLimit()
+		return nil
+	case featuredefinition.FieldUnit:
+		m.ClearUnit()
+		return nil
+	case featuredefinition.FieldNatsEvent:
+		m.ClearNatsEvent()
+		return nil
+	}
+	return fmt.Errorf("unknown FeatureDefinition nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FeatureDefinitionMutation) ResetField(name string) error {
+	switch name {
+	case featuredefinition.FieldFeatureCode:
+		m.ResetFeatureCode()
+		return nil
+	case featuredefinition.FieldServiceTag:
+		m.ResetServiceTag()
+		return nil
+	case featuredefinition.FieldCategory:
+		m.ResetCategory()
+		return nil
+	case featuredefinition.FieldLabel:
+		m.ResetLabel()
+		return nil
+	case featuredefinition.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case featuredefinition.FieldKind:
+		m.ResetKind()
+		return nil
+	case featuredefinition.FieldValueType:
+		m.ResetValueType()
+		return nil
+	case featuredefinition.FieldDefaultLimit:
+		m.ResetDefaultLimit()
+		return nil
+	case featuredefinition.FieldIsRateLimited:
+		m.ResetIsRateLimited()
+		return nil
+	case featuredefinition.FieldUnit:
+		m.ResetUnit()
+		return nil
+	case featuredefinition.FieldNatsEvent:
+		m.ResetNatsEvent()
+		return nil
+	case featuredefinition.FieldSortOrder:
+		m.ResetSortOrder()
+		return nil
+	case featuredefinition.FieldIsActive:
+		m.ResetIsActive()
+		return nil
+	case featuredefinition.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case featuredefinition.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown FeatureDefinition field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FeatureDefinitionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FeatureDefinitionMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FeatureDefinitionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FeatureDefinitionMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FeatureDefinitionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FeatureDefinitionMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FeatureDefinitionMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown FeatureDefinition unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FeatureDefinitionMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown FeatureDefinition edge %s", name)
 }
 
 // OutboxEventMutation represents an operation that mutates the OutboxEvent nodes in the graph.

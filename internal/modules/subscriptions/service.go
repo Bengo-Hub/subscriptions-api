@@ -100,6 +100,16 @@ type SubscriptionResult struct {
 	// or "blocked" (expired/cancelled/suspended). GraceEndsAt is set while in grace.
 	AccessStatus       string                   `json:"access_status"`
 	GraceEndsAt        *time.Time               `json:"grace_ends_at,omitempty"`
+	// Scenario resolution — lets each service pick whichever plan scenario a tenant chose.
+	// BillingCycle mirrors the plan (MONTHLY/QUARTERLY/ANNUAL/ONE_TIME).
+	// BillingMode is the resolved scenario: "recurring" | "one_time" | "service_charge".
+	// PlanType mirrors the plan's plan_type (TIERED/STANDALONE_SERVICE/BUNDLE/CUSTOM).
+	// IsPerpetual is true for a paid ONE_TIME licence — non-expiring entitlement; auth
+	// omits the JWT expiry for these so the subscription gate never blocks them.
+	BillingCycle string `json:"billing_cycle"`
+	BillingMode  string `json:"billing_mode"`
+	PlanType     string `json:"plan_type,omitempty"`
+	IsPerpetual  bool   `json:"is_perpetual"`
 }
 
 // --- State machine ---
@@ -913,9 +923,14 @@ func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.Subscriptio
 		}
 	}
 
+	// Default scenario: recurring subscription gated by period end / grace.
+	result.BillingMode = "recurring"
+
 	if plan != nil {
 		result.PlanCode = plan.PlanCode
 		result.PlanName = plan.Name
+		result.BillingCycle = plan.BillingCycle
+		result.PlanType = string(plan.PlanType)
 		if plan.Edges.Features != nil {
 			for _, f := range plan.Edges.Features {
 				result.Features = append(result.Features, f.FeatureCode)
@@ -928,6 +943,17 @@ func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.Subscriptio
 				} else if intVal, ok := v.(int); ok {
 					result.Limits[k] = intVal
 				}
+			}
+		}
+
+		// One-time licence → perpetual entitlement: never expires. Force active access
+		// regardless of the stored period end so the gate and JWT treat it as permanent.
+		if plan.BillingCycle == "ONE_TIME" {
+			result.BillingMode = "one_time"
+			result.IsPerpetual = true
+			if sub.Status != tenantsubscription.StatusCANCELLED && sub.Status != tenantsubscription.StatusSUSPENDED {
+				result.AccessStatus = "active"
+				result.GraceEndsAt = nil
 			}
 		}
 	}

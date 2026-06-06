@@ -113,9 +113,13 @@ func seedPlanAddonFeatures(ctx context.Context, tx *ent.Tx) error {
 		}
 
 		for _, a := range p.addons {
+			code := canonicalFeatureCode(a.featureCode)
+			if !isInCatalog(code) {
+				log.Printf("WARN seed: addon feature %q is not in the feature catalog — add it to featureCatalog in feature_catalog.go", code)
+			}
 			b := tx.PlanFeature.Create().
 				SetPlanID(p.planID).
-				SetFeatureCode(a.featureCode).
+				SetFeatureCode(code).
 				SetIsIncluded(false).
 				SetOverageUnitPrice(a.overageUnitPrice)
 			if a.limitValue > 0 {

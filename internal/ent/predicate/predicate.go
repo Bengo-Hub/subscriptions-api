@@ -15,6 +15,9 @@ type Coupon func(*sql.Selector)
 // CustomAddon is the predicate function for customaddon builders.
 type CustomAddon func(*sql.Selector)
 
+// FeatureDefinition is the predicate function for featuredefinition builders.
+type FeatureDefinition func(*sql.Selector)
+
 // OutboxEvent is the predicate function for outboxevent builders.
 type OutboxEvent func(*sql.Selector)
 

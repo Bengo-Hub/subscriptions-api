@@ -45,6 +45,18 @@ func (f CustomAddonFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CustomAddonMutation", m)
 }
 
+// The FeatureDefinitionFunc type is an adapter to allow the use of ordinary
+// function as FeatureDefinition mutator.
+type FeatureDefinitionFunc func(context.Context, *ent.FeatureDefinitionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FeatureDefinitionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FeatureDefinitionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FeatureDefinitionMutation", m)
+}
+
 // The OutboxEventFunc type is an adapter to allow the use of ordinary
 // function as OutboxEvent mutator.
 type OutboxEventFunc func(context.Context, *ent.OutboxEventMutation) (ent.Value, error)

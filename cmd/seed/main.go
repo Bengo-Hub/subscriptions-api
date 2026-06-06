@@ -61,6 +61,12 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		err = tx.Commit()
 	}()
 
+	// 0. Seed the platform feature/limit catalog (single source of truth, per service).
+	// Must run before plan seeds so plan features can be validated against the catalog.
+	if err := seedFeatureCatalog(ctx, tx); err != nil {
+		return fmt.Errorf("seed feature catalog: %w", err)
+	}
+
 	// 1. Seed products (microservices)
 	if err := seedProducts(ctx, tx); err != nil {
 		return fmt.Errorf("seed products: %w", err)
@@ -216,17 +222,30 @@ func seedPlanFeaturesWithLimits(ctx context.Context, tx *ent.Tx, planID uuid.UUI
 		}
 	}
 
+	// Normalize aliases to canonical catalog codes, dedupe, and warn on codes
+	// that are not present in the feature catalog (keeps the catalog authoritative).
+	seen := make(map[string]bool, len(features))
 	for _, f := range features {
+		code := canonicalFeatureCode(f.code)
+		if seen[code] {
+			continue // duplicate after alias normalization (e.g. paystack_gateway + paystack_integration)
+		}
+		seen[code] = true
+
+		if !isInCatalog(code) {
+			log.Printf("WARN seed: plan feature %q is not in the feature catalog — add it to featureCatalog in feature_catalog.go", code)
+		}
+
 		builder := tx.PlanFeature.Create().
 			SetPlanID(planID).
-			SetFeatureCode(f.code).
+			SetFeatureCode(code).
 			SetIsIncluded(true).
 			SetOverageUnitPrice(f.overageUnitPrice)
 		if f.limitValue > 0 {
 			builder.SetLimitValue(f.limitValue)
 		}
 		if _, err := builder.Save(ctx); err != nil {
-			return fmt.Errorf("create feature %s: %w", f.code, err)
+			return fmt.Errorf("create feature %s: %w", code, err)
 		}
 	}
 

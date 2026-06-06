@@ -25,6 +25,7 @@ type SubscriptionPlan struct {
 	FreeTrialDays           int              `json:"freeTrialDays"`
 	Metadata                map[string]any   `json:"metadata,omitempty"`
 	ServiceTag              *string          `json:"serviceTag,omitempty"`
+	PlanType                string           `json:"planType,omitempty"`
 	CreatedAt               time.Time        `json:"createdAt"`
 	UpdatedAt               time.Time        `json:"updatedAt"`
 	Features                []*PlanFeature   `json:"features"`

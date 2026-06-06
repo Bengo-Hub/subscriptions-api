@@ -40,7 +40,7 @@ func (r *EntRepository) CreatePlan(ctx context.Context, plan *SubscriptionPlan) 
 		metadata = make(map[string]any)
 	}
 
-	_, err := r.client.SubscriptionPlan.Create().
+	create := r.client.SubscriptionPlan.Create().
 		SetID(plan.ID).
 		SetPlanCode(plan.PlanCode).
 		SetName(plan.Name).
@@ -57,8 +57,13 @@ func (r *EntRepository) CreatePlan(ctx context.Context, plan *SubscriptionPlan) 
 		SetFreeTrialDays(plan.FreeTrialDays).
 		SetDiscountRules(plan.DiscountRules).
 		SetNillableServiceTag(plan.ServiceTag).
-		SetMetadata(metadata).
-		Save(ctx)
+		SetMetadata(metadata)
+
+	if pt := normalizePlanType(plan.PlanType); pt != "" {
+		create = create.SetPlanType(subscriptionplan.PlanType(pt))
+	}
+
+	_, err := create.Save(ctx)
 
 	if err != nil {
 		return fmt.Errorf("plans: create plan: %w", err)
@@ -115,6 +120,10 @@ func (r *EntRepository) UpdatePlan(ctx context.Context, plan *SubscriptionPlan) 
 		update = update.SetDiscountRules(plan.DiscountRules)
 	}
 	update = update.SetNillableServiceTag(plan.ServiceTag)
+
+	if pt := normalizePlanType(plan.PlanType); pt != "" {
+		update = update.SetPlanType(subscriptionplan.PlanType(pt))
+	}
 
 	update = update.SetUpdatedAt(time.Now())
 
@@ -210,6 +219,18 @@ func (r *EntRepository) upsertFeatures(ctx context.Context, planID uuid.UUID, fe
 	}
 
 	return nil
+}
+
+// normalizePlanType validates an incoming plan_type string against the allowed
+// enum values. Returns "" (no-op) for empty or unrecognized values so callers
+// fall back to the schema default (TIERED) and never write an invalid enum.
+func normalizePlanType(pt string) string {
+	switch pt {
+	case "TIERED", "STANDALONE_SERVICE", "BUNDLE", "CUSTOM":
+		return pt
+	default:
+		return ""
+	}
 }
 
 // FindPlanByID retrieves a subscription plan by ID.
@@ -444,6 +465,7 @@ func mapEntPlan(entPlan *ent.SubscriptionPlan) *SubscriptionPlan {
 		UpdatedAt:    entPlan.UpdatedAt,
 		Description:  entPlan.Description,
 		DiscountRules: entPlan.DiscountRules,
+		PlanType:     string(entPlan.PlanType),
 	}
 
 	if entPlan.Edges.Features != nil {

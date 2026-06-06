@@ -15,6 +15,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
 	"github.com/bengobox/subscription-service/internal/ent/coupon"
 	"github.com/bengobox/subscription-service/internal/ent/customaddon"
+	"github.com/bengobox/subscription-service/internal/ent/featuredefinition"
 	"github.com/bengobox/subscription-service/internal/ent/outboxevent"
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
@@ -98,6 +99,7 @@ func checkColumn(t, c string) error {
 			bundle.Table:                        bundle.ValidColumn,
 			coupon.Table:                        coupon.ValidColumn,
 			customaddon.Table:                   customaddon.ValidColumn,
+			featuredefinition.Table:             featuredefinition.ValidColumn,
 			outboxevent.Table:                   outboxevent.ValidColumn,
 			overagecharge.Table:                 overagecharge.ValidColumn,
 			planfeature.Table:                   planfeature.ValidColumn,

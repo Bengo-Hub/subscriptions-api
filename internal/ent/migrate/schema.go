@@ -133,6 +133,48 @@ var (
 			},
 		},
 	}
+	// FeatureDefinitionsColumns holds the columns for the "feature_definitions" table.
+	FeatureDefinitionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "feature_code", Type: field.TypeString, Unique: true},
+		{Name: "service_tag", Type: field.TypeString},
+		{Name: "category", Type: field.TypeString, Default: "General"},
+		{Name: "label", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "kind", Type: field.TypeEnum, Enums: []string{"FEATURE", "LIMIT"}, Default: "FEATURE"},
+		{Name: "value_type", Type: field.TypeEnum, Enums: []string{"bool", "int", "unlimited"}, Default: "bool"},
+		{Name: "default_limit", Type: field.TypeInt, Nullable: true},
+		{Name: "is_rate_limited", Type: field.TypeBool, Default: false},
+		{Name: "unit", Type: field.TypeString, Nullable: true},
+		{Name: "nats_event", Type: field.TypeString, Nullable: true},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+		{Name: "is_active", Type: field.TypeBool, Default: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// FeatureDefinitionsTable holds the schema information for the "feature_definitions" table.
+	FeatureDefinitionsTable = &schema.Table{
+		Name:       "feature_definitions",
+		Columns:    FeatureDefinitionsColumns,
+		PrimaryKey: []*schema.Column{FeatureDefinitionsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "featuredefinition_feature_code",
+				Unique:  true,
+				Columns: []*schema.Column{FeatureDefinitionsColumns[1]},
+			},
+			{
+				Name:    "featuredefinition_service_tag",
+				Unique:  false,
+				Columns: []*schema.Column{FeatureDefinitionsColumns[2]},
+			},
+			{
+				Name:    "featuredefinition_kind",
+				Unique:  false,
+				Columns: []*schema.Column{FeatureDefinitionsColumns[6]},
+			},
+		},
+	}
 	// OutboxEventsColumns holds the columns for the "outbox_events" table.
 	OutboxEventsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1037,6 +1079,7 @@ var (
 		BundlesTable,
 		CouponsTable,
 		CustomAddonsTable,
+		FeatureDefinitionsTable,
 		OutboxEventsTable,
 		OverageChargesTable,
 		PlanFeaturesTable,

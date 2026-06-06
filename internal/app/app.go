@@ -247,7 +247,13 @@ func New(ctx context.Context) (*App, error) {
 	// Platform admin: coupon CRUD
 	couponAdminHandler := handlers.NewCouponAdminHandler(log, ormClient)
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
+	// Feature catalog handler (platform-wide feature/limit registry for the plan builder)
+	var featureCatalogHandler *handlers.FeatureCatalogHandler
+	if ormClient != nil {
+		featureCatalogHandler = handlers.NewFeatureCatalogHandler(log, ormClient)
+	}
+
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),

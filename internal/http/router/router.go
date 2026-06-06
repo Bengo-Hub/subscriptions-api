@@ -33,6 +33,7 @@ func New(
 	couponHandler *handlers.CouponHandler,
 	usageAdminHandler *handlers.UsageAdminHandler,
 	couponAdminHandler *handlers.CouponAdminHandler,
+	featureCatalogHandler *handlers.FeatureCatalogHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -179,6 +180,10 @@ func New(
 				r.Route("/features", func(r chi.Router) {
 					r.Get("/", featureHandler.GetEntitlements)
 					r.Get("/{code}/check", featureHandler.CheckFeature)
+					// Platform-wide feature/limit catalog — powers the admin plan builder.
+					if featureCatalogHandler != nil {
+						r.Get("/catalog", featureCatalogHandler.ListCatalog)
+					}
 				})
 			}
 
@@ -217,6 +222,23 @@ func New(
 				r.Put("/{id}", planHandler.UpdatePlan)
 				r.Delete("/{id}", planHandler.DeletePlan)
 			})
+
+			// Admin: feature catalog CRUD (platform owner only)
+			if featureCatalogHandler != nil {
+				r.Route("/admin/feature-catalog", func(r chi.Router) {
+					r.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							if !httpware.IsPlatformOwner(r.Context()) {
+								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+								return
+							}
+							next.ServeHTTP(w, r)
+						})
+					})
+					r.Post("/", featureCatalogHandler.UpsertCatalogEntry)
+					r.Delete("/{id}", featureCatalogHandler.DeleteCatalogEntry)
+				})
+			}
 
 			// Admin: service charge plan CRUD
 			if serviceChargeHandler != nil {

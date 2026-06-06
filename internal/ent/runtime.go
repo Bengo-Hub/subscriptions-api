@@ -8,6 +8,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
 	"github.com/bengobox/subscription-service/internal/ent/coupon"
 	"github.com/bengobox/subscription-service/internal/ent/customaddon"
+	"github.com/bengobox/subscription-service/internal/ent/featuredefinition"
 	"github.com/bengobox/subscription-service/internal/ent/outboxevent"
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
@@ -171,6 +172,50 @@ func init() {
 	customaddonDescID := customaddonFields[0].Descriptor()
 	// customaddon.DefaultID holds the default value on creation for the id field.
 	customaddon.DefaultID = customaddonDescID.Default.(func() uuid.UUID)
+	featuredefinitionFields := schema.FeatureDefinition{}.Fields()
+	_ = featuredefinitionFields
+	// featuredefinitionDescFeatureCode is the schema descriptor for feature_code field.
+	featuredefinitionDescFeatureCode := featuredefinitionFields[1].Descriptor()
+	// featuredefinition.FeatureCodeValidator is a validator for the "feature_code" field. It is called by the builders before save.
+	featuredefinition.FeatureCodeValidator = featuredefinitionDescFeatureCode.Validators[0].(func(string) error)
+	// featuredefinitionDescServiceTag is the schema descriptor for service_tag field.
+	featuredefinitionDescServiceTag := featuredefinitionFields[2].Descriptor()
+	// featuredefinition.ServiceTagValidator is a validator for the "service_tag" field. It is called by the builders before save.
+	featuredefinition.ServiceTagValidator = featuredefinitionDescServiceTag.Validators[0].(func(string) error)
+	// featuredefinitionDescCategory is the schema descriptor for category field.
+	featuredefinitionDescCategory := featuredefinitionFields[3].Descriptor()
+	// featuredefinition.DefaultCategory holds the default value on creation for the category field.
+	featuredefinition.DefaultCategory = featuredefinitionDescCategory.Default.(string)
+	// featuredefinitionDescLabel is the schema descriptor for label field.
+	featuredefinitionDescLabel := featuredefinitionFields[4].Descriptor()
+	// featuredefinition.LabelValidator is a validator for the "label" field. It is called by the builders before save.
+	featuredefinition.LabelValidator = featuredefinitionDescLabel.Validators[0].(func(string) error)
+	// featuredefinitionDescIsRateLimited is the schema descriptor for is_rate_limited field.
+	featuredefinitionDescIsRateLimited := featuredefinitionFields[9].Descriptor()
+	// featuredefinition.DefaultIsRateLimited holds the default value on creation for the is_rate_limited field.
+	featuredefinition.DefaultIsRateLimited = featuredefinitionDescIsRateLimited.Default.(bool)
+	// featuredefinitionDescSortOrder is the schema descriptor for sort_order field.
+	featuredefinitionDescSortOrder := featuredefinitionFields[12].Descriptor()
+	// featuredefinition.DefaultSortOrder holds the default value on creation for the sort_order field.
+	featuredefinition.DefaultSortOrder = featuredefinitionDescSortOrder.Default.(int)
+	// featuredefinitionDescIsActive is the schema descriptor for is_active field.
+	featuredefinitionDescIsActive := featuredefinitionFields[13].Descriptor()
+	// featuredefinition.DefaultIsActive holds the default value on creation for the is_active field.
+	featuredefinition.DefaultIsActive = featuredefinitionDescIsActive.Default.(bool)
+	// featuredefinitionDescCreatedAt is the schema descriptor for created_at field.
+	featuredefinitionDescCreatedAt := featuredefinitionFields[14].Descriptor()
+	// featuredefinition.DefaultCreatedAt holds the default value on creation for the created_at field.
+	featuredefinition.DefaultCreatedAt = featuredefinitionDescCreatedAt.Default.(func() time.Time)
+	// featuredefinitionDescUpdatedAt is the schema descriptor for updated_at field.
+	featuredefinitionDescUpdatedAt := featuredefinitionFields[15].Descriptor()
+	// featuredefinition.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	featuredefinition.DefaultUpdatedAt = featuredefinitionDescUpdatedAt.Default.(func() time.Time)
+	// featuredefinition.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	featuredefinition.UpdateDefaultUpdatedAt = featuredefinitionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// featuredefinitionDescID is the schema descriptor for id field.
+	featuredefinitionDescID := featuredefinitionFields[0].Descriptor()
+	// featuredefinition.DefaultID holds the default value on creation for the id field.
+	featuredefinition.DefaultID = featuredefinitionDescID.Default.(func() uuid.UUID)
 	outboxeventFields := schema.OutboxEvent{}.Fields()
 	_ = outboxeventFields
 	// outboxeventDescAggregateType is the schema descriptor for aggregate_type field.
