@@ -91,6 +91,18 @@ func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 		billing["amount"] = sub.Edges.Plan.BasePrice
 		billing["nextAmount"] = sub.Edges.Plan.BasePrice // alias for UI compatibility
 		billing["currency"] = sub.Edges.Plan.Currency
+		billing["planType"] = string(sub.Edges.Plan.PlanType)
+		// Resolve billing scenario so the UI can hide renewal/auto-renew for
+		// perpetual one-time licences and service-charge tenants.
+		isPerpetual := sub.Edges.Plan.BillingCycle == "ONE_TIME"
+		billing["isPerpetual"] = isPerpetual
+		switch {
+		case isPerpetual:
+			billing["billingMode"] = "one_time"
+			billing["nextRenewalDate"] = nil // perpetual licences never renew
+		default:
+			billing["billingMode"] = "recurring"
+		}
 	}
 
 	// Extract payment method from metadata if stored

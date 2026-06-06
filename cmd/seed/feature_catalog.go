@@ -222,6 +222,7 @@ var featureCatalog = func() []catalogEntry {
 		feat("case_management", truload, "Weighbridge", "Case Management"),
 		feat("invoicing", truload, "Weighbridge", "Weighbridge Invoicing"),
 		feat("reporting", truload, "Weighbridge", "Weighbridge Reporting"),
+		feat("transporter_portal", truload, "Weighbridge", "Transporter Portal Access"),
 		lim("max_stations", truload, "Limits", "Weighbridge Stations", ""),
 		lim("max_sites", truload, "Limits", "Weighbridge Sites", ""),
 		meteredLim("max_weighings_month", truload, "Limits", "Weighings", "/ month", "truload.weighing.created"),
