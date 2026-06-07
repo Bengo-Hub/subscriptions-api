@@ -32,7 +32,6 @@ import (
 	"github.com/bengobox/subscription-service/internal/jobs"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/consumers"
-	"github.com/bengobox/subscription-service/internal/modules/outbox"
 	"github.com/bengobox/subscription-service/internal/modules/plans"
 	"github.com/bengobox/subscription-service/internal/modules/rbac"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
@@ -192,7 +191,7 @@ func New(ctx context.Context) (*App, error) {
 			// Get underlying sql.DB for outbox repository
 			sqlDB, err := sql.Open("pgx", cfg.Postgres.URL)
 			if err == nil {
-				outboxRepo := outbox.NewRepository(sqlDB)
+				outboxRepo := eventslib.NewSQLOutboxRepository(sqlDB)
 				pubCfg := eventslib.DefaultPublisherConfig(js, outboxRepo, log)
 				outboxPublisher = eventslib.NewPublisher(pubCfg)
 				log.Info("outbox publisher initialized")
