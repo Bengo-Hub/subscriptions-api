@@ -17,6 +17,10 @@ import (
 	"go.uber.org/zap"
 )
 
+// s2sHTTPClient is the HTTP client used for service-to-service calls (e.g. CRM
+// upsert to marketflow). It enforces a timeout so calls cannot hang indefinitely.
+var s2sHTTPClient = &http.Client{Timeout: 15 * time.Second}
+
 // BillingHandler handles billing-related endpoints.
 type BillingHandler struct {
 	log            *zap.Logger
@@ -511,7 +515,7 @@ func (h *BillingHandler) upsertCRMContactByEmail(ctx context.Context, tenantID, 
 	if h.treasuryAPIKey != "" {
 		req.Header.Set("X-API-Key", h.treasuryAPIKey)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := s2sHTTPClient.Do(req)
 	if err != nil {
 		h.log.Warn("crm upsert call failed", zap.String("email", email), zap.Error(err))
 		return ""

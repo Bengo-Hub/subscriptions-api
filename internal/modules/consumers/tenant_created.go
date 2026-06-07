@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	eventslib "github.com/Bengo-Hub/shared-events"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
@@ -53,7 +54,9 @@ func NewTenantCreatedConsumer(log *zap.Logger, svc *subscriptions.Service) *Tena
 func (c *TenantCreatedConsumer) Start(ctx context.Context, js nats.JetStreamContext) error {
 	// Ensure the stream exists — if auth-service publishes to a shared stream we just subscribe.
 	// Use a durable consumer so we resume after restart without missing events.
-	sub, err := js.Subscribe(
+	eventslib.SubscribeWithRebind(
+		c.log,
+		js,
 		AuthTenantCreatedSubject,
 		func(msg *nats.Msg) {
 			if err := c.handle(ctx, msg); err != nil {
@@ -71,14 +74,10 @@ func (c *TenantCreatedConsumer) Start(ctx context.Context, js nats.JetStreamCont
 		nats.AckWait(30*time.Second),
 		nats.ManualAck(),
 	)
-	if err != nil {
-		return err
-	}
 
 	c.log.Info("tenant.created consumer started", zap.String("subject", AuthTenantCreatedSubject))
 
 	<-ctx.Done()
-	_ = sub.Unsubscribe()
 	return nil
 }
 

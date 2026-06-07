@@ -9,6 +9,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
+	eventslib "github.com/Bengo-Hub/shared-events"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
@@ -72,7 +73,9 @@ func (c *TreasuryPaymentConsumer) SetSubscriptionService(svc *subscriptions.Serv
 
 // Start subscribes to treasury.payment.succeeded and blocks until ctx is cancelled.
 func (c *TreasuryPaymentConsumer) Start(ctx context.Context, js nats.JetStreamContext) error {
-	sub, err := js.Subscribe(
+	eventslib.SubscribeWithRebind(
+		c.log,
+		js,
 		treasuryPaymentSucceededSubject,
 		func(msg *nats.Msg) {
 			if err := c.handle(ctx, msg); err != nil {
@@ -89,14 +92,10 @@ func (c *TreasuryPaymentConsumer) Start(ctx context.Context, js nats.JetStreamCo
 		nats.AckWait(30*time.Second),
 		nats.ManualAck(),
 	)
-	if err != nil {
-		return err
-	}
 
 	c.log.Info("treasury.payment.succeeded consumer started")
 
 	<-ctx.Done()
-	_ = sub.Unsubscribe()
 	return nil
 }
 
