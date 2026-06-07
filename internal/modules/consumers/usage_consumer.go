@@ -11,6 +11,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	eventslib "github.com/Bengo-Hub/shared-events"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go"
@@ -104,7 +105,6 @@ func NewUsageConsumer(log *zap.Logger, db *pgxpool.Pool, orm *ent.Client, cache 
 // Start subscribes to all billable event subjects and processes them until ctx is cancelled.
 func (c *UsageConsumer) Start(ctx context.Context, js nats.JetStreamContext) error {
 	c.js = js
-	subs := make([]*nats.Subscription, 0, len(usageSubjectMappings))
 
 	for subject, mapping := range usageSubjectMappings {
 		subj := subject // capture loop variable
@@ -112,7 +112,9 @@ func (c *UsageConsumer) Start(ctx context.Context, js nats.JetStreamContext) err
 		durableName := fmt.Sprintf("subscription-service-usage-%s",
 			strings.ReplaceAll(subj, ".", "-"))
 
-		sub, err := js.Subscribe(
+		eventslib.SubscribeWithRebind(
+			c.log,
+			js,
 			subj,
 			func(msg *nats.Msg) {
 				if err := c.handle(ctx, msg, m); err != nil {
@@ -132,21 +134,10 @@ func (c *UsageConsumer) Start(ctx context.Context, js nats.JetStreamContext) err
 			nats.AckWait(30*time.Second),
 			nats.ManualAck(),
 		)
-		if err != nil {
-			c.log.Warn("failed to subscribe to usage subject (non-fatal)",
-				zap.String("subject", subj),
-				zap.Error(err),
-			)
-			continue
-		}
-		subs = append(subs, sub)
 		c.log.Info("usage consumer subscribed", zap.String("subject", subj))
 	}
 
 	<-ctx.Done()
-	for _, sub := range subs {
-		_ = sub.Unsubscribe()
-	}
 	return nil
 }
 
