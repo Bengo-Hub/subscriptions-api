@@ -46,8 +46,6 @@ func seedLogisticsPlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:    1,
 			tierLimits: map[string]any{
 				"max_riders":                     5,
-				"max_outlets":                    1,
-				"max_orders_per_day":             200,
 				"live_tracking_requests_per_day": 1000,
 				"routing_requests_per_day":       100,
 				"api_calls_per_month":            10000,
@@ -64,8 +62,6 @@ func seedLogisticsPlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:    2,
 			tierLimits: map[string]any{
 				"max_riders":                     20,
-				"max_outlets":                    3,
-				"max_orders_per_day":             1000,
 				"live_tracking_requests_per_day": 5000,
 				"routing_requests_per_day":       500,
 				"api_calls_per_month":            60000,
@@ -82,8 +78,6 @@ func seedLogisticsPlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:    3,
 			tierLimits: map[string]any{
 				"max_riders":                     -1,
-				"max_outlets":                    -1,
-				"max_orders_per_day":             -1,
 				"live_tracking_requests_per_day": -1,
 				"routing_requests_per_day":       -1,
 				"api_calls_per_month":            -1,
@@ -102,8 +96,6 @@ func seedLogisticsPlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:    1,
 			tierLimits: map[string]any{
 				"max_riders":                     5,
-				"max_outlets":                    1,
-				"max_orders_per_day":             200,
 				"live_tracking_requests_per_day": 1000,
 				"routing_requests_per_day":       100,
 				"api_calls_per_month":            10000,
@@ -120,8 +112,6 @@ func seedLogisticsPlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:    2,
 			tierLimits: map[string]any{
 				"max_riders":                     20,
-				"max_outlets":                    3,
-				"max_orders_per_day":             1000,
 				"live_tracking_requests_per_day": 5000,
 				"routing_requests_per_day":       500,
 				"api_calls_per_month":            60000,
@@ -138,8 +128,6 @@ func seedLogisticsPlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:    3,
 			tierLimits: map[string]any{
 				"max_riders":                     -1,
-				"max_outlets":                    -1,
-				"max_orders_per_day":             -1,
 				"live_tracking_requests_per_day": -1,
 				"routing_requests_per_day":       -1,
 				"api_calls_per_month":            -1,
