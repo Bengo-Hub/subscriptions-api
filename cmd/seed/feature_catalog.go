@@ -313,9 +313,28 @@ var catalogCodeIndex = func() map[string]bool {
 	return m
 }()
 
+// catalogLimitIndex maps every LIMIT-kind catalog code to its owning service_tag.
+// It is the authoritative set of limit keys a plan's tier_limits_json may use, and
+// powers the seed-time validation that keeps plan limits linked to the catalog
+// instead of drifting as free-form strings. Built once from featureCatalog.
+var catalogLimitIndex = func() map[string]string {
+	m := make(map[string]string)
+	for _, e := range featureCatalog {
+		if e.kind == featuredefinition.KindLIMIT {
+			m[e.code] = e.service
+		}
+	}
+	return m
+}()
+
 // featureCodeAliases maps legacy / duplicate feature codes emitted by older plan
 // seeds to their canonical catalog code, eliminating feature-key drift. Extend
 // this when consolidating duplicate keys instead of editing every plans_*.go.
+//
+// NOTE: this table is shared by feature codes AND tier-limit keys (both pass
+// through canonicalFeatureCode). Do not add a limit-only alias whose key also
+// names a distinct FEATURE add-on (e.g. ai_credits_topup) — it would corrupt
+// seedPlanFeatures. Fix such drift at the plan-seed source instead.
 var featureCodeAliases = map[string]string{
 	"paystack_gateway": "paystack_integration", // duplicate online-gateway key
 	"paystack":         "paystack_integration",
@@ -333,6 +352,20 @@ func canonicalFeatureCode(code string) string {
 // IsInCatalog reports whether a (canonicalized) code exists in the catalog.
 func isInCatalog(code string) bool {
 	return catalogCodeIndex[canonicalFeatureCode(code)]
+}
+
+// isCatalogLimit reports whether a (canonicalized) code is a LIMIT-kind entry in
+// the catalog — i.e. a valid key for a plan's tier_limits_json.
+func isCatalogLimit(code string) bool {
+	_, ok := catalogLimitIndex[canonicalFeatureCode(code)]
+	return ok
+}
+
+// limitServiceTag returns the owning service_tag of a LIMIT code, and whether it
+// exists as a catalog LIMIT.
+func limitServiceTag(code string) (string, bool) {
+	s, ok := catalogLimitIndex[canonicalFeatureCode(code)]
+	return s, ok
 }
 
 // seedFeatureCatalog upserts every catalog entry by feature_code (idempotent).

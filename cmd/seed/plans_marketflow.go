@@ -220,7 +220,7 @@ func seedMarketFlowPlans(ctx context.Context, tx *ent.Tx) error {
 			billingCycle: "ONE_TIME",
 			price:        1000.0,
 			tierOrder:    10,
-			tierLimits:   map[string]any{"ai_credits_topup": 100},
+			tierLimits:   map[string]any{"ai_credits_monthly": 100},
 			features:     []string{"ai_chat_agent"},
 		},
 		{
@@ -231,7 +231,7 @@ func seedMarketFlowPlans(ctx context.Context, tx *ent.Tx) error {
 			billingCycle: "ONE_TIME",
 			price:        4000.0,
 			tierOrder:    11,
-			tierLimits:   map[string]any{"ai_credits_topup": 500},
+			tierLimits:   map[string]any{"ai_credits_monthly": 500},
 			features:     []string{"ai_chat_agent"},
 		},
 	}

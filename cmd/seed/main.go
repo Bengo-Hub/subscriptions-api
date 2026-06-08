@@ -15,6 +15,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/config"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 )
 
 func main() {
@@ -147,6 +148,14 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed service charge plans: %w", err)
 	}
 
+	// 3.55 Reconcile every plan's tier_limits_json keys against the feature catalog:
+	// canonicalize aliases and warn on any key that is not a catalog LIMIT (or, for
+	// standalone-service plans, belongs to a different service). Keeps plan limits
+	// linked to the catalog instead of drifting as free-form strings.
+	if err := reconcilePlanTierLimits(ctx, tx); err != nil {
+		return fmt.Errorf("reconcile plan tier limits: %w", err)
+	}
+
 	// 3.6 Seed subscription coupons (platform discount codes for tenant billing)
 	if err := seedCoupons(ctx, tx); err != nil {
 		return fmt.Errorf("seed coupons: %w", err)
@@ -249,5 +258,55 @@ func seedPlanFeaturesWithLimits(ctx context.Context, tx *ent.Tx, planID uuid.UUI
 		}
 	}
 
+	return nil
+}
+
+// reconcilePlanTierLimits links every plan's tier_limits_json keys back to the
+// feature catalog. For each plan it canonicalizes alias keys, warns on any key
+// that is not a catalog LIMIT, and — for standalone-service plans only — warns on
+// keys owned by a different service. It NEVER drops keys (that would corrupt the
+// flat Limits map emitted by buildResult into JWT sub_limits and the per-service
+// gates); unknown keys surface as warnings for manual follow-up. The row is only
+// rewritten when canonicalization actually changed a key, so it is idempotent and
+// a no-op on data that already uses canonical limit codes.
+func reconcilePlanTierLimits(ctx context.Context, tx *ent.Tx) error {
+	plans, err := tx.SubscriptionPlan.Query().All(ctx)
+	if err != nil {
+		return fmt.Errorf("query plans for tier-limit reconcile: %w", err)
+	}
+	for _, p := range plans {
+		if len(p.TierLimitsJSON) == 0 {
+			continue
+		}
+		planTag := ""
+		if p.ServiceTag != nil {
+			planTag = *p.ServiceTag
+		}
+		standalone := p.PlanType == subscriptionplan.PlanTypeSTANDALONE_SERVICE
+
+		rewritten := make(map[string]any, len(p.TierLimitsJSON))
+		changed := false
+		for k, v := range p.TierLimitsJSON {
+			canon := canonicalFeatureCode(k)
+			if canon != k {
+				changed = true
+			}
+			svc, ok := limitServiceTag(canon)
+			switch {
+			case !ok:
+				log.Printf("WARN seed: plan %q tier_limit %q is not a LIMIT in the feature catalog — add it to featureCatalog in feature_catalog.go", p.PlanCode, k)
+			case standalone && svc != "platform" && planTag != "" && svc != planTag:
+				log.Printf("WARN seed: plan %q (service=%s) tier_limit %q belongs to service %q", p.PlanCode, planTag, k, svc)
+			}
+			rewritten[canon] = v // last-writer-wins if an alias collides with its canonical form
+		}
+		if !changed {
+			continue
+		}
+		if _, err := tx.SubscriptionPlan.UpdateOneID(p.ID).SetTierLimitsJSON(rewritten).Save(ctx); err != nil {
+			return fmt.Errorf("rewrite tier limits for plan %s: %w", p.PlanCode, err)
+		}
+		log.Printf("  reconciled tier_limits for plan %s", p.PlanCode)
+	}
 	return nil
 }
