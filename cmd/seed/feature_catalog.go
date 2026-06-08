@@ -10,16 +10,16 @@ import (
 
 // catalogEntry is one row in the platform feature/limit catalog.
 type catalogEntry struct {
-	code        string
-	service     string // service_tag
-	category    string
-	label       string
-	kind        featuredefinition.Kind
-	valueType   featuredefinition.ValueType
-	metered     bool   // is_rate_limited
-	unit        string
-	nats        string
-	defaultLim  *int
+	code       string
+	service    string // service_tag
+	category   string
+	label      string
+	kind       featuredefinition.Kind
+	valueType  featuredefinition.ValueType
+	metered    bool // is_rate_limited
+	unit       string
+	nats       string
+	defaultLim *int
 }
 
 func feat(code, service, category, label string) catalogEntry {
@@ -111,7 +111,6 @@ var featureCatalog = func() []catalogEntry {
 		lim("max_staff", ordering, "Limits", "Staff Members", ""),
 		lim("max_outlets", ordering, "Limits", "Outlets / Branches", ""),
 		meteredLim("max_orders_per_day", ordering, "Limits", "Max Orders", "/ day", "ordering.order.created"),
-		meteredLim("api_calls_per_month", ordering, "Limits", "API Calls", "/ month", ""),
 		meteredLim("webhook_calls_per_day", ordering, "Limits", "Webhook Calls", "/ day", "ordering.webhook.dispatched"),
 		meteredLim("email_notifications_per_day", ordering, "Limits", "Emails", "/ day", "notifications.email.sent"),
 		meteredLim("sms_notifications_per_day", ordering, "Limits", "SMS", "/ day", "notifications.sms.sent"),
@@ -286,6 +285,7 @@ var featureCatalog = func() []catalogEntry {
 		feat("sms_notifications", platform, "Platform & API", "SMS Notifications"),
 		feat("push_notifications", platform, "Platform & API", "Push Notifications"),
 		lim("max_users", platform, "Limits", "Users", ""),
+		meteredLim("api_calls_per_month", platform, "Limits", "API Calls", "/ month", ""),
 
 		// ─── Purchasable Add-ons (is_included=false on plans) ─────────────────
 		feat("extra_rider_slot", ordering, "Add-ons", "Extra Rider Slot"),

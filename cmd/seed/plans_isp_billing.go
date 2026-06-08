@@ -50,10 +50,10 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			price:        500.0,
 			tierOrder:    1,
 			tierLimits: map[string]any{
-				"max_routers":           1,
-				"max_customers":         50,
-				"max_staff_users":       2,
-				"max_sms_per_month":     100,
+				"max_routers":            1,
+				"max_customers":          50,
+				"max_users":              2,
+				"max_sms_per_month":      100,
 				"max_vouchers_per_month": 200,
 			},
 			features: []string{
@@ -71,10 +71,10 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			price:        2000.0,
 			tierOrder:    2,
 			tierLimits: map[string]any{
-				"max_routers":           5,
-				"max_customers":         -1,
-				"max_staff_users":       5,
-				"max_sms_per_month":     500,
+				"max_routers":            5,
+				"max_customers":          -1,
+				"max_users":              5,
+				"max_sms_per_month":      500,
 				"max_vouchers_per_month": -1,
 			},
 			features: []string{
@@ -93,10 +93,10 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			price:        5000.0,
 			tierOrder:    3,
 			tierLimits: map[string]any{
-				"max_routers":           -1,
-				"max_customers":         -1,
-				"max_staff_users":       -1,
-				"max_sms_per_month":     -1,
+				"max_routers":            -1,
+				"max_customers":          -1,
+				"max_users":              -1,
+				"max_sms_per_month":      -1,
 				"max_vouchers_per_month": -1,
 			},
 			features: []string{
@@ -121,7 +121,7 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"max_routers":       1,
 				"max_customers":     50,
-				"max_staff_users":   2,
+				"max_users":         2,
 				"max_sms_per_month": 100,
 			},
 			features: []string{
@@ -141,7 +141,7 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"max_routers":       5,
 				"max_customers":     250,
-				"max_staff_users":   5,
+				"max_users":         5,
 				"max_sms_per_month": 500,
 			},
 			features: []string{
@@ -162,7 +162,7 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"max_routers":       -1,
 				"max_customers":     -1,
-				"max_staff_users":   -1,
+				"max_users":         -1,
 				"max_sms_per_month": -1,
 			},
 			features: []string{
@@ -185,10 +185,10 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			price:        5000.0,
 			tierOrder:    1,
 			tierLimits: map[string]any{
-				"max_routers":           1,
-				"max_customers":         50,
-				"max_staff_users":       2,
-				"max_sms_per_month":     100,
+				"max_routers":            1,
+				"max_customers":          50,
+				"max_users":              2,
+				"max_sms_per_month":      100,
 				"max_vouchers_per_month": 200,
 			},
 			features: []string{
@@ -206,10 +206,10 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			price:        20000.0,
 			tierOrder:    2,
 			tierLimits: map[string]any{
-				"max_routers":           5,
-				"max_customers":         -1,
-				"max_staff_users":       5,
-				"max_sms_per_month":     500,
+				"max_routers":            5,
+				"max_customers":          -1,
+				"max_users":              5,
+				"max_sms_per_month":      500,
 				"max_vouchers_per_month": -1,
 			},
 			features: []string{
@@ -228,10 +228,10 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			price:        50000.0,
 			tierOrder:    3,
 			tierLimits: map[string]any{
-				"max_routers":           -1,
-				"max_customers":         -1,
-				"max_staff_users":       -1,
-				"max_sms_per_month":     -1,
+				"max_routers":            -1,
+				"max_customers":          -1,
+				"max_users":              -1,
+				"max_sms_per_month":      -1,
 				"max_vouchers_per_month": -1,
 			},
 			features: []string{
@@ -254,7 +254,7 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"max_routers":       1,
 				"max_customers":     50,
-				"max_staff_users":   2,
+				"max_users":         2,
 				"max_sms_per_month": 100,
 			},
 			features: []string{
@@ -274,7 +274,7 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"max_routers":       5,
 				"max_customers":     250,
-				"max_staff_users":   5,
+				"max_users":         5,
 				"max_sms_per_month": 500,
 			},
 			features: []string{
@@ -295,7 +295,7 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"max_routers":       -1,
 				"max_customers":     -1,
-				"max_staff_users":   -1,
+				"max_users":         -1,
 				"max_sms_per_month": -1,
 			},
 			features: []string{
