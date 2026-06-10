@@ -10,6 +10,7 @@ import (
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -18,19 +19,21 @@ import (
 
 // UsageHandler accepts usage metric reports from microservices.
 type UsageHandler struct {
-	log   *zap.Logger
-	db    *pgxpool.Pool
-	orm   *ent.Client
-	cache *redis.Client
+	log     *zap.Logger
+	db      *pgxpool.Pool
+	orm     *ent.Client
+	cache   *redis.Client
+	overage *billing.OverageService
 }
 
 // NewUsageHandler creates a new UsageHandler.
-func NewUsageHandler(log *zap.Logger, db *pgxpool.Pool, orm *ent.Client, cache *redis.Client) *UsageHandler {
+func NewUsageHandler(log *zap.Logger, db *pgxpool.Pool, orm *ent.Client, cache *redis.Client, overage *billing.OverageService) *UsageHandler {
 	return &UsageHandler{
-		log:   log.Named("usage.handler"),
-		db:    db,
-		orm:   orm,
-		cache: cache,
+		log:     log.Named("usage.handler"),
+		db:      db,
+		orm:     orm,
+		cache:   cache,
+		overage: overage,
 	}
 }
 
@@ -83,23 +86,38 @@ func (h *UsageHandler) ReportUsage(w http.ResponseWriter, r *http.Request) {
 		req.Metadata = map[string]any{}
 	}
 
-	// Enforce plan limits via Redis counter before recording event
+	// Enforce plan limits via Redis counter before recording event. When the limit is
+	// exceeded we either soft-cap (allow + accrue overage) if the tenant opted in and the
+	// metric is overage-eligible with a seeded price, or hard-block with a structured body
+	// the UI limit-reached modal consumes.
 	if h.cache != nil && h.orm != nil {
-		if remaining, limit, exceeded := h.checkUsageLimit(ctx, tenantID, req.MetricType, req.Value); exceeded {
-			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", limit))
-			w.Header().Set("X-RateLimit-Remaining", "0")
-			w.Header().Set("X-RateLimit-Reset", time.Now().AddDate(0, 1, 0).Format(time.RFC3339))
-			writeJSON(w, http.StatusTooManyRequests, map[string]string{
-				"error":   "usage limit exceeded",
-				"metric":  req.MetricType,
-				"limit":   fmt.Sprintf("%d", limit),
-			})
-			return
-		} else {
-			// Set headers on allowed requests too (for observability)
-			if limit > 0 {
-				w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", limit))
-				w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
+		dec := h.evaluateUsage(ctx, tenantID, req.MetricType, req.Value)
+		if dec.limit > 0 {
+			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", dec.limit))
+			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", dec.remaining))
+		}
+		if dec.exceeded {
+			if dec.allowOverage {
+				// Soft-cap: permit the event; the daily OverageService accrues the charge.
+				w.Header().Set("X-Overage-Active", "true")
+			} else {
+				// Roll back the Redis increment so the rejected attempt isn't counted.
+				h.rollbackUsageCounter(ctx, tenantID, req.MetricType, req.Value)
+				w.Header().Set("X-RateLimit-Remaining", "0")
+				w.Header().Set("X-RateLimit-Reset", time.Now().AddDate(0, 1, 0).Format(time.RFC3339))
+				writeJSON(w, http.StatusPaymentRequired, map[string]any{
+					"code":                "usage_limit_exceeded",
+					"error":               "usage limit exceeded",
+					"metric":              req.MetricType,
+					"limit":               dec.limit,
+					"used":                dec.used,
+					"overage_eligible":    dec.overageEligible,
+					"overage_unit_price":  dec.overageUnitPrice,
+					"overage_unit":        dec.overageUnit,
+					"accrued_overage_kes": dec.accruedOverageKes,
+					"upgrade_url":         overageUpgradeURL,
+				})
+				return
 			}
 		}
 	}
@@ -163,11 +181,17 @@ var metricDisplayMap = map[string]metricMeta{
 }
 
 // limitKeyForMetric finds the plan limit key that corresponds to a metric type.
-// Plan limits use keys like "max_orders_per_day", "max_riders", etc.
+// Plan limits use keys like "max_orders_per_day", "max_riders", etc. Keys prefixed with
+// "overage_" are per-unit prices (e.g. "overage_orders_price_per_100_month"), NOT limits,
+// and must never be returned — map iteration is unordered, so without this guard a metric
+// like "orders" could resolve to its price key instead of "max_orders_per_day".
 func limitKeyForMetric(metricType string, planLimits map[string]any) (string, bool) {
 	mt := strings.ToLower(metricType)
 	for k := range planLimits {
 		kl := strings.ToLower(k)
+		if strings.HasPrefix(kl, "overage_") {
+			continue
+		}
 		// "max_orders_per_day" contains "orders", "max_riders" contains "riders"
 		if strings.Contains(kl, mt) {
 			return k, true
@@ -475,22 +499,44 @@ func (h *UsageHandler) queryUsageSummary(ctx context.Context, tenantID uuid.UUID
 	return result, rows.Err()
 }
 
-// checkUsageLimit checks the tenant's current usage against plan limits using Redis counters.
-// Returns (remaining, limit, exceeded). When limit == 0 the metric is unlimited.
-func (h *UsageHandler) checkUsageLimit(ctx context.Context, tenantID uuid.UUID, metricType string, value float64) (remaining, limit int, exceeded bool) {
-	// Fetch plan limits from ORM
+// overageUpgradeURL is the destination the limit-reached modal links its "Upgrade" CTA to.
+const overageUpgradeURL = "/settings?tab=subscription"
+
+// usageCounterKey is the Redis key holding a tenant's running monthly usage for a metric.
+func usageCounterKey(tenantID uuid.UUID, metricType string) string {
+	period := time.Now().UTC().Format("2006-01")
+	return fmt.Sprintf("usage:limit:%s:%s:%s", tenantID.String(), metricType, period)
+}
+
+// usageDecision captures the outcome of evaluating a usage report against plan limits.
+type usageDecision struct {
+	limit             int     // plan limit for the metric (0 = unlimited / not configured)
+	used              int     // running usage including this event
+	remaining         int     // limit - used, floored at 0
+	exceeded          bool    // used > limit
+	allowOverage      bool    // exceeded but permitted (opt-in + overage-eligible + priced)
+	overageEligible   bool    // metric is a metered overage-eligible throughput limit
+	overageUnitPrice  float64 // KES per overage unit (per quantum)
+	overageUnit       string  // human unit label, e.g. "per 100 orders"
+	accruedOverageKes float64 // sum of pending overage already accrued this period
+}
+
+// evaluateUsage atomically increments the tenant's usage counter and decides whether the
+// event is within limit, soft-capped (overage), or hard-blocked. Fails open on any error.
+func (h *UsageHandler) evaluateUsage(ctx context.Context, tenantID uuid.UUID, metricType string, value float64) usageDecision {
+	// Fetch subscription + plan limits + opt-in flag
 	sub, err := h.orm.TenantSubscription.Query().
 		Where(tenantsubscription.TenantIDEQ(tenantID)).
 		WithPlan().
 		Only(ctx)
 	if err != nil || sub.Edges.Plan == nil {
-		return 0, 0, false // no subscription or plan found — allow (don't block)
+		return usageDecision{} // no subscription/plan — allow (don't block)
 	}
 
 	planLimits := sub.Edges.Plan.TierLimitsJSON
 	limitKey, ok := limitKeyForMetric(metricType, planLimits)
 	if !ok {
-		return 0, 0, false // no limit configured for this metric
+		return usageDecision{} // no limit configured for this metric
 	}
 
 	var planLimit int
@@ -500,27 +546,23 @@ func (h *UsageHandler) checkUsageLimit(ctx context.Context, tenantID uuid.UUID, 
 	case int:
 		planLimit = v
 	default:
-		return 0, 0, false
+		return usageDecision{}
 	}
 	if planLimit <= 0 {
-		return 0, 0, false // unlimited
+		return usageDecision{} // unlimited (-1)
 	}
 
-	// Redis counter key: usage:limit:{tenantID}:{metricType}:{YYYY-MM}
-	period := time.Now().UTC().Format("2006-01")
-	cacheKey := fmt.Sprintf("usage:limit:%s:%s:%s", tenantID.String(), metricType, period)
-
 	// Increment atomically
+	cacheKey := usageCounterKey(tenantID, metricType)
 	newTotal, err := h.cache.IncrByFloat(ctx, cacheKey, value).Result()
 	if err != nil {
 		// Redis failure → allow the request (fail open)
 		h.log.Warn("redis usage counter failed, allowing request", zap.String("key", cacheKey), zap.Error(err))
-		return 0, planLimit, false
+		return usageDecision{limit: planLimit}
 	}
 
 	// Set TTL on first write: expire at end of next month
-	ttl, _ := h.cache.TTL(ctx, cacheKey).Result()
-	if ttl < 0 {
+	if ttl, _ := h.cache.TTL(ctx, cacheKey).Result(); ttl < 0 {
 		now := time.Now().UTC()
 		expiry := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, time.UTC)
 		_ = h.cache.ExpireAt(ctx, cacheKey, expiry).Err()
@@ -531,7 +573,58 @@ func (h *UsageHandler) checkUsageLimit(ctx context.Context, tenantID uuid.UUID, 
 	if rem < 0 {
 		rem = 0
 	}
-	return rem, planLimit, current > planLimit
+	dec := usageDecision{limit: planLimit, used: current, remaining: rem, exceeded: current > planLimit}
+	if !dec.exceeded {
+		return dec
+	}
+
+	// Over the limit — decide soft-cap vs hard-block.
+	meta, eligible := billing.MeteredMetricByType(metricType)
+	if !eligible {
+		// fall back to matching by the plan limit key (metric naming may differ)
+		meta, eligible = billing.MeteredMetricByLimitKey(limitKey)
+	}
+	dec.overageEligible = eligible
+	if eligible {
+		dec.overageUnit = meta.Unit
+		if v, ok := planLimits[meta.OveragePriceKey]; ok {
+			switch pv := v.(type) {
+			case float64:
+				dec.overageUnitPrice = pv
+			case int:
+				dec.overageUnitPrice = float64(pv)
+			}
+		}
+	}
+	dec.accruedOverageKes = h.pendingOverageTotal(ctx, tenantID)
+
+	// Soft-cap only when the tenant opted in, the metric is eligible, and a price is seeded.
+	if sub.AllowOverage && eligible && dec.overageUnitPrice > 0 {
+		dec.allowOverage = true
+	}
+	return dec
+}
+
+// rollbackUsageCounter decrements a usage counter after a hard-blocked attempt so the
+// rejected event isn't counted against the tenant.
+func (h *UsageHandler) rollbackUsageCounter(ctx context.Context, tenantID uuid.UUID, metricType string, value float64) {
+	if h.cache == nil {
+		return
+	}
+	_ = h.cache.IncrByFloat(ctx, usageCounterKey(tenantID, metricType), -value).Err()
+}
+
+// pendingOverageTotal sums the tenant's pending (not yet invoiced) overage charges,
+// reusing the billing OverageService accumulator.
+func (h *UsageHandler) pendingOverageTotal(ctx context.Context, tenantID uuid.UUID) float64 {
+	if h.overage == nil {
+		return 0
+	}
+	total, err := h.overage.GetAccumulatedOverage(ctx, tenantID)
+	if err != nil {
+		return 0
+	}
+	return total
 }
 
 // GetAlerts reads active usage threshold alerts from Redis and returns them to the caller.

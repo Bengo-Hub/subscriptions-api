@@ -218,6 +218,40 @@ func (_u *TenantSubscriptionUpdate) ClearBundleCode() *TenantSubscriptionUpdate 
 	return _u
 }
 
+// SetAllowOverage sets the "allow_overage" field.
+func (_u *TenantSubscriptionUpdate) SetAllowOverage(v bool) *TenantSubscriptionUpdate {
+	_u.mutation.SetAllowOverage(v)
+	return _u
+}
+
+// SetNillableAllowOverage sets the "allow_overage" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableAllowOverage(v *bool) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetAllowOverage(*v)
+	}
+	return _u
+}
+
+// SetOverageEnabledAt sets the "overage_enabled_at" field.
+func (_u *TenantSubscriptionUpdate) SetOverageEnabledAt(v time.Time) *TenantSubscriptionUpdate {
+	_u.mutation.SetOverageEnabledAt(v)
+	return _u
+}
+
+// SetNillableOverageEnabledAt sets the "overage_enabled_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableOverageEnabledAt(v *time.Time) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetOverageEnabledAt(*v)
+	}
+	return _u
+}
+
+// ClearOverageEnabledAt clears the value of the "overage_enabled_at" field.
+func (_u *TenantSubscriptionUpdate) ClearOverageEnabledAt() *TenantSubscriptionUpdate {
+	_u.mutation.ClearOverageEnabledAt()
+	return _u
+}
+
 // SetPaymentMethodID sets the "payment_method_id" field.
 func (_u *TenantSubscriptionUpdate) SetPaymentMethodID(v uuid.UUID) *TenantSubscriptionUpdate {
 	_u.mutation.SetPaymentMethodID(v)
@@ -465,6 +499,15 @@ func (_u *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err
 	}
 	if _u.mutation.BundleCodeCleared() {
 		_spec.ClearField(tenantsubscription.FieldBundleCode, field.TypeString)
+	}
+	if value, ok := _u.mutation.AllowOverage(); ok {
+		_spec.SetField(tenantsubscription.FieldAllowOverage, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.OverageEnabledAt(); ok {
+		_spec.SetField(tenantsubscription.FieldOverageEnabledAt, field.TypeTime, value)
+	}
+	if _u.mutation.OverageEnabledAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldOverageEnabledAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.PaymentMethodID(); ok {
 		_spec.SetField(tenantsubscription.FieldPaymentMethodID, field.TypeUUID, value)
@@ -834,6 +877,40 @@ func (_u *TenantSubscriptionUpdateOne) ClearBundleCode() *TenantSubscriptionUpda
 	return _u
 }
 
+// SetAllowOverage sets the "allow_overage" field.
+func (_u *TenantSubscriptionUpdateOne) SetAllowOverage(v bool) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetAllowOverage(v)
+	return _u
+}
+
+// SetNillableAllowOverage sets the "allow_overage" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableAllowOverage(v *bool) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetAllowOverage(*v)
+	}
+	return _u
+}
+
+// SetOverageEnabledAt sets the "overage_enabled_at" field.
+func (_u *TenantSubscriptionUpdateOne) SetOverageEnabledAt(v time.Time) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetOverageEnabledAt(v)
+	return _u
+}
+
+// SetNillableOverageEnabledAt sets the "overage_enabled_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableOverageEnabledAt(v *time.Time) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetOverageEnabledAt(*v)
+	}
+	return _u
+}
+
+// ClearOverageEnabledAt clears the value of the "overage_enabled_at" field.
+func (_u *TenantSubscriptionUpdateOne) ClearOverageEnabledAt() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearOverageEnabledAt()
+	return _u
+}
+
 // SetPaymentMethodID sets the "payment_method_id" field.
 func (_u *TenantSubscriptionUpdateOne) SetPaymentMethodID(v uuid.UUID) *TenantSubscriptionUpdateOne {
 	_u.mutation.SetPaymentMethodID(v)
@@ -1111,6 +1188,15 @@ func (_u *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Tena
 	}
 	if _u.mutation.BundleCodeCleared() {
 		_spec.ClearField(tenantsubscription.FieldBundleCode, field.TypeString)
+	}
+	if value, ok := _u.mutation.AllowOverage(); ok {
+		_spec.SetField(tenantsubscription.FieldAllowOverage, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.OverageEnabledAt(); ok {
+		_spec.SetField(tenantsubscription.FieldOverageEnabledAt, field.TypeTime, value)
+	}
+	if _u.mutation.OverageEnabledAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldOverageEnabledAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.PaymentMethodID(); ok {
 		_spec.SetField(tenantsubscription.FieldPaymentMethodID, field.TypeUUID, value)

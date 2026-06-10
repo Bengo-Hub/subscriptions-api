@@ -1,4 +1,4 @@
-h1:V6EzZ+Zww9Wg77h2e/+X1LO1nkz5N8SJum/9PLYCRO8=
+h1:Bm/uy3rCU5BDGXZ6yd+xs8eu/qZQN24kDpZ+wI2luhk=
 20260311014015_initial_schema_v3.sql h1:R/oJ+OKFJOqXXwALIht3GiwudlgIBhftlKYX/25Wqy8=
 20260320031754_add_service_charge_plan_and_per_service_overrides.sql h1:wZ7KKK7UG8v1MIGTS+E9YCd90AgoV2Ot/coMCgG4Pes=
 20260322100158_add_rbac_rate_limit_service_config.sql h1:OujNi4BaOL1hr7g5UtSgNSabahv1KL5m8HfY3rQP3ew=
@@ -8,3 +8,4 @@ h1:V6EzZ+Zww9Wg77h2e/+X1LO1nkz5N8SJum/9PLYCRO8=
 20260530113716_add_coupon_credit_overage_addon.sql h1:XacX0QzjbDiNRIp2DidLQHaEDLfZzPoqZM4COOirDTo=
 20260603160011_subscriptions_roles_global_nullable_tenant.sql h1:GXHh7sFJ8UgqoCOCoPPGfA6ZtEUgMXbQEnczICHRt6o=
 20260606120000_add_feature_definitions_catalog.sql h1:nK2eEIsvimF4BtCZ/zF3jNSTA0iNw59CqsWZGiO9gZs=
+20260610120000_add_allow_overage_to_tenant_subscriptions.sql h1:XW4hCPDsd4PUq/RrMr9lmITO2BCh6F9gLFsjGrXFSkQ=

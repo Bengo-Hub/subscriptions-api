@@ -38,6 +38,10 @@ const (
 	FieldAppliedDiscount = "applied_discount"
 	// FieldBundleCode holds the string denoting the bundle_code field in the database.
 	FieldBundleCode = "bundle_code"
+	// FieldAllowOverage holds the string denoting the allow_overage field in the database.
+	FieldAllowOverage = "allow_overage"
+	// FieldOverageEnabledAt holds the string denoting the overage_enabled_at field in the database.
+	FieldOverageEnabledAt = "overage_enabled_at"
 	// FieldPaymentMethodID holds the string denoting the payment_method_id field in the database.
 	FieldPaymentMethodID = "payment_method_id"
 	// FieldMetadata holds the string denoting the metadata field in the database.
@@ -100,6 +104,8 @@ var Columns = []string{
 	FieldBillingCycle,
 	FieldAppliedDiscount,
 	FieldBundleCode,
+	FieldAllowOverage,
+	FieldOverageEnabledAt,
 	FieldPaymentMethodID,
 	FieldMetadata,
 	FieldCreatedAt,
@@ -119,6 +125,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultAppliedDiscount holds the default value on creation for the "applied_discount" field.
 	DefaultAppliedDiscount float64
+	// DefaultAllowOverage holds the default value on creation for the "allow_overage" field.
+	DefaultAllowOverage bool
 	// DefaultMetadata holds the default value on creation for the "metadata" field.
 	DefaultMetadata map[string]interface{}
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -249,6 +257,16 @@ func ByAppliedDiscount(opts ...sql.OrderTermOption) OrderOption {
 // ByBundleCode orders the results by the bundle_code field.
 func ByBundleCode(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldBundleCode, opts...).ToFunc()
+}
+
+// ByAllowOverage orders the results by the allow_overage field.
+func ByAllowOverage(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAllowOverage, opts...).ToFunc()
+}
+
+// ByOverageEnabledAt orders the results by the overage_enabled_at field.
+func ByOverageEnabledAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOverageEnabledAt, opts...).ToFunc()
 }
 
 // ByPaymentMethodID orders the results by the payment_method_id field.

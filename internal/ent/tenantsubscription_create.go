@@ -150,6 +150,34 @@ func (_c *TenantSubscriptionCreate) SetNillableBundleCode(v *string) *TenantSubs
 	return _c
 }
 
+// SetAllowOverage sets the "allow_overage" field.
+func (_c *TenantSubscriptionCreate) SetAllowOverage(v bool) *TenantSubscriptionCreate {
+	_c.mutation.SetAllowOverage(v)
+	return _c
+}
+
+// SetNillableAllowOverage sets the "allow_overage" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableAllowOverage(v *bool) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetAllowOverage(*v)
+	}
+	return _c
+}
+
+// SetOverageEnabledAt sets the "overage_enabled_at" field.
+func (_c *TenantSubscriptionCreate) SetOverageEnabledAt(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetOverageEnabledAt(v)
+	return _c
+}
+
+// SetNillableOverageEnabledAt sets the "overage_enabled_at" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableOverageEnabledAt(v *time.Time) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetOverageEnabledAt(*v)
+	}
+	return _c
+}
+
 // SetPaymentMethodID sets the "payment_method_id" field.
 func (_c *TenantSubscriptionCreate) SetPaymentMethodID(v uuid.UUID) *TenantSubscriptionCreate {
 	_c.mutation.SetPaymentMethodID(v)
@@ -299,6 +327,10 @@ func (_c *TenantSubscriptionCreate) defaults() {
 		v := tenantsubscription.DefaultAppliedDiscount
 		_c.mutation.SetAppliedDiscount(v)
 	}
+	if _, ok := _c.mutation.AllowOverage(); !ok {
+		v := tenantsubscription.DefaultAllowOverage
+		_c.mutation.SetAllowOverage(v)
+	}
 	if _, ok := _c.mutation.Metadata(); !ok {
 		v := tenantsubscription.DefaultMetadata
 		_c.mutation.SetMetadata(v)
@@ -349,6 +381,9 @@ func (_c *TenantSubscriptionCreate) check() error {
 	}
 	if _, ok := _c.mutation.AppliedDiscount(); !ok {
 		return &ValidationError{Name: "applied_discount", err: errors.New(`ent: missing required field "TenantSubscription.applied_discount"`)}
+	}
+	if _, ok := _c.mutation.AllowOverage(); !ok {
+		return &ValidationError{Name: "allow_overage", err: errors.New(`ent: missing required field "TenantSubscription.allow_overage"`)}
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "TenantSubscription.created_at"`)}
@@ -433,6 +468,14 @@ func (_c *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgraph
 	if value, ok := _c.mutation.BundleCode(); ok {
 		_spec.SetField(tenantsubscription.FieldBundleCode, field.TypeString, value)
 		_node.BundleCode = &value
+	}
+	if value, ok := _c.mutation.AllowOverage(); ok {
+		_spec.SetField(tenantsubscription.FieldAllowOverage, field.TypeBool, value)
+		_node.AllowOverage = value
+	}
+	if value, ok := _c.mutation.OverageEnabledAt(); ok {
+		_spec.SetField(tenantsubscription.FieldOverageEnabledAt, field.TypeTime, value)
+		_node.OverageEnabledAt = &value
 	}
 	if value, ok := _c.mutation.PaymentMethodID(); ok {
 		_spec.SetField(tenantsubscription.FieldPaymentMethodID, field.TypeUUID, value)
@@ -730,6 +773,36 @@ func (u *TenantSubscriptionUpsert) ClearBundleCode() *TenantSubscriptionUpsert {
 	return u
 }
 
+// SetAllowOverage sets the "allow_overage" field.
+func (u *TenantSubscriptionUpsert) SetAllowOverage(v bool) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldAllowOverage, v)
+	return u
+}
+
+// UpdateAllowOverage sets the "allow_overage" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateAllowOverage() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldAllowOverage)
+	return u
+}
+
+// SetOverageEnabledAt sets the "overage_enabled_at" field.
+func (u *TenantSubscriptionUpsert) SetOverageEnabledAt(v time.Time) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldOverageEnabledAt, v)
+	return u
+}
+
+// UpdateOverageEnabledAt sets the "overage_enabled_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateOverageEnabledAt() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldOverageEnabledAt)
+	return u
+}
+
+// ClearOverageEnabledAt clears the value of the "overage_enabled_at" field.
+func (u *TenantSubscriptionUpsert) ClearOverageEnabledAt() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldOverageEnabledAt)
+	return u
+}
+
 // SetPaymentMethodID sets the "payment_method_id" field.
 func (u *TenantSubscriptionUpsert) SetPaymentMethodID(v uuid.UUID) *TenantSubscriptionUpsert {
 	u.Set(tenantsubscription.FieldPaymentMethodID, v)
@@ -1015,6 +1088,41 @@ func (u *TenantSubscriptionUpsertOne) UpdateBundleCode() *TenantSubscriptionUpse
 func (u *TenantSubscriptionUpsertOne) ClearBundleCode() *TenantSubscriptionUpsertOne {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.ClearBundleCode()
+	})
+}
+
+// SetAllowOverage sets the "allow_overage" field.
+func (u *TenantSubscriptionUpsertOne) SetAllowOverage(v bool) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetAllowOverage(v)
+	})
+}
+
+// UpdateAllowOverage sets the "allow_overage" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateAllowOverage() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateAllowOverage()
+	})
+}
+
+// SetOverageEnabledAt sets the "overage_enabled_at" field.
+func (u *TenantSubscriptionUpsertOne) SetOverageEnabledAt(v time.Time) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetOverageEnabledAt(v)
+	})
+}
+
+// UpdateOverageEnabledAt sets the "overage_enabled_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateOverageEnabledAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateOverageEnabledAt()
+	})
+}
+
+// ClearOverageEnabledAt clears the value of the "overage_enabled_at" field.
+func (u *TenantSubscriptionUpsertOne) ClearOverageEnabledAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearOverageEnabledAt()
 	})
 }
 
@@ -1478,6 +1586,41 @@ func (u *TenantSubscriptionUpsertBulk) UpdateBundleCode() *TenantSubscriptionUps
 func (u *TenantSubscriptionUpsertBulk) ClearBundleCode() *TenantSubscriptionUpsertBulk {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.ClearBundleCode()
+	})
+}
+
+// SetAllowOverage sets the "allow_overage" field.
+func (u *TenantSubscriptionUpsertBulk) SetAllowOverage(v bool) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetAllowOverage(v)
+	})
+}
+
+// UpdateAllowOverage sets the "allow_overage" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateAllowOverage() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateAllowOverage()
+	})
+}
+
+// SetOverageEnabledAt sets the "overage_enabled_at" field.
+func (u *TenantSubscriptionUpsertBulk) SetOverageEnabledAt(v time.Time) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetOverageEnabledAt(v)
+	})
+}
+
+// UpdateOverageEnabledAt sets the "overage_enabled_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateOverageEnabledAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateOverageEnabledAt()
+	})
+}
+
+// ClearOverageEnabledAt clears the value of the "overage_enabled_at" field.
+func (u *TenantSubscriptionUpsertBulk) ClearOverageEnabledAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearOverageEnabledAt()
 	})
 }
 
