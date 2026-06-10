@@ -134,6 +134,10 @@ func New(
 				r.Post("/initiate", subscriptionHandler.Initiate)
 				r.Get("/settings", subscriptionHandler.GetSettings)
 				r.Put("/settings", subscriptionHandler.UpdateSettings)
+				// Opt-in extra usage (overage) master switch + pending-overage view.
+				r.Get("/overage", subscriptionHandler.GetOverage)
+				r.Post("/overage/enable", subscriptionHandler.EnableOverage)
+				r.Post("/overage/disable", subscriptionHandler.DisableOverage)
 			})
 
 			// Billing

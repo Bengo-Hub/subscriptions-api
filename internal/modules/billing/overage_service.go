@@ -60,18 +60,6 @@ func (s *OverageService) CalculateDailyOverages(ctx context.Context, date time.T
 	return nil
 }
 
-// overageMetrics maps plan limit keys to the metric_type names used in usage_events.
-var overageMetrics = map[string]struct {
-	limitKey    string
-	unitPrice   string // key in tierLimitsJSON for per-unit overage price; "" = no overage billing
-}{
-	"orders":        {limitKey: "max_orders_per_day", unitPrice: "overage_orders_price_per_100_month"},
-	"riders_active": {limitKey: "max_riders", unitPrice: "overage_rider_price_per_month"},
-	"transactions":  {limitKey: "max_transactions_per_month", unitPrice: ""},
-	"products":      {limitKey: "inventory_max_sku", unitPrice: ""},
-	"deliveries":    {limitKey: "max_orders_per_day", unitPrice: ""},
-}
-
 func (s *OverageService) processSubscriptionOverages(
 	ctx context.Context,
 	sub *ent.TenantSubscription,
@@ -79,8 +67,14 @@ func (s *OverageService) processSubscriptionOverages(
 ) error {
 	limits := sub.Edges.Plan.TierLimitsJSON
 
-	for metricType, meta := range overageMetrics {
-		rawLimit, ok := limits[meta.limitKey]
+	// Overage is only accrued for tenants that have opted in to extra usage, and only
+	// for the canonical metered throughput metrics (structural caps hard-block instead).
+	if !sub.AllowOverage {
+		return nil
+	}
+
+	for metricType, meta := range meteredMetrics {
+		rawLimit, ok := limits[meta.PlanLimitKey]
 		if !ok {
 			continue
 		}
@@ -119,10 +113,10 @@ func (s *OverageService) processSubscriptionOverages(
 
 		unitsOver := totalUsage - float64(planLimit)
 
-		// Determine unit price
+		// Determine unit price (price is quoted per PriceQuantum units, e.g. per 100 orders).
 		var unitPriceKes float64
-		if meta.unitPrice != "" {
-			if v, ok := limits[meta.unitPrice]; ok {
+		if meta.OveragePriceKey != "" {
+			if v, ok := limits[meta.OveragePriceKey]; ok {
 				switch pv := v.(type) {
 				case float64:
 					unitPriceKes = pv
@@ -131,8 +125,17 @@ func (s *OverageService) processSubscriptionOverages(
 				}
 			}
 		}
+		if unitPriceKes <= 0 {
+			// No price seeded for this metered metric → cannot bill overage; skip
+			// (the soft-cap path hard-blocks these instead of silently allowing free usage).
+			continue
+		}
 
-		totalChargeKes := unitsOver * unitPriceKes
+		quantum := meta.PriceQuantum
+		if quantum <= 0 {
+			quantum = 1
+		}
+		totalChargeKes := (unitsOver / quantum) * unitPriceKes
 
 		// Upsert the overage charge (unique index: sub_id + metric_type + period_date)
 		existing, err := s.orm.OverageCharge.Query().

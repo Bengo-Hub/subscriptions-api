@@ -110,6 +110,10 @@ type SubscriptionResult struct {
 	BillingMode  string `json:"billing_mode"`
 	PlanType     string `json:"plan_type,omitempty"`
 	IsPerpetual  bool   `json:"is_perpetual"`
+	// AllowOverage is the tenant's opt-in master switch for pay-as-you-go extra usage.
+	// When true, metered throughput limits may be exceeded and the excess accrues as
+	// OverageCharge billed on the next renewal.
+	AllowOverage bool `json:"allow_overage"`
 }
 
 // --- State machine ---
@@ -892,6 +896,53 @@ func (s *Service) getSubscription(ctx context.Context, tenantID uuid.UUID) (*ent
 	return sub, nil
 }
 
+// SetAllowOverage flips the tenant's opt-in extra-usage master switch and publishes a
+// tenant.subscription.updated event so auth-api refreshes the cached claim. Returns the
+// rebuilt subscription result.
+func (s *Service) SetAllowOverage(ctx context.Context, tenantID uuid.UUID, enabled bool) (*SubscriptionResult, error) {
+	sub, err := s.getSubscription(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("start transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	upd := tx.TenantSubscription.UpdateOneID(sub.ID).SetAllowOverage(enabled)
+	if enabled {
+		upd = upd.SetOverageEnabledAt(time.Now().UTC())
+	}
+	sub, err = upd.Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("update allow_overage: %w", err)
+	}
+
+	tenantSlug := ""
+	if t, terr := tx.Tenant.Get(ctx, sub.TenantID); terr == nil {
+		tenantSlug = t.Slug
+	}
+	eventPayload := map[string]any{
+		"tenant_id":     sub.TenantID.String(),
+		"tenant_slug":   tenantSlug,
+		"allow_overage": enabled,
+		"direction":     "changed",
+	}
+	s.writeOutboxEvent(ctx, tx, sub.TenantID, "tenant", sub.TenantID, "subscription.updated", eventPayload)
+
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit: %w", err)
+	}
+
+	return s.GetSubscriptionResult(ctx, tenantID)
+}
+
 func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.SubscriptionPlan) *SubscriptionResult {
 	result := &SubscriptionResult{
 		ID:                 sub.ID,
@@ -905,6 +956,7 @@ func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.Subscriptio
 		CancelReason:       sub.CancelReason,
 		Features:           []string{},
 		Limits:             map[string]int{},
+		AllowOverage:       sub.AllowOverage,
 	}
 
 	// Derive access status (grace keeps access alive while past-due but within window).

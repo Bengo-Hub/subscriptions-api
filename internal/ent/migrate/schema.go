@@ -921,6 +921,8 @@ var (
 		{Name: "billing_cycle", Type: field.TypeEnum, Enums: []string{"MONTHLY", "QUARTERLY", "ANNUAL", "ONE_TIME"}, Default: "MONTHLY"},
 		{Name: "applied_discount", Type: field.TypeFloat64, Default: 0},
 		{Name: "bundle_code", Type: field.TypeString, Nullable: true},
+		{Name: "allow_overage", Type: field.TypeBool, Default: false},
+		{Name: "overage_enabled_at", Type: field.TypeTime, Nullable: true},
 		{Name: "payment_method_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
@@ -936,13 +938,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "tenant_subscriptions_subscription_plans_subscriptions",
-				Columns:    []*schema.Column{TenantSubscriptionsColumns[14]},
+				Columns:    []*schema.Column{TenantSubscriptionsColumns[16]},
 				RefColumns: []*schema.Column{SubscriptionPlansColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "tenant_subscriptions_tenants_subscriptions",
-				Columns:    []*schema.Column{TenantSubscriptionsColumns[15]},
+				Columns:    []*schema.Column{TenantSubscriptionsColumns[17]},
 				RefColumns: []*schema.Column{TenantsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -951,7 +953,7 @@ var (
 			{
 				Name:    "tenantsubscription_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{TenantSubscriptionsColumns[15]},
+				Columns: []*schema.Column{TenantSubscriptionsColumns[17]},
 			},
 			{
 				Name:    "tenantsubscription_status",

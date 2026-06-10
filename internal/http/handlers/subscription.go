@@ -10,6 +10,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -24,15 +25,17 @@ type SubscriptionHandler struct {
 	db             *pgxpool.Pool
 	service        *subscriptions.Service
 	featureHandler *FeatureHandler
+	overage        *billing.OverageService
 }
 
-func NewSubscriptionHandler(log *zap.Logger, client *ent.Client, db *pgxpool.Pool, svc *subscriptions.Service, featureHandler *FeatureHandler) *SubscriptionHandler {
+func NewSubscriptionHandler(log *zap.Logger, client *ent.Client, db *pgxpool.Pool, svc *subscriptions.Service, featureHandler *FeatureHandler, overage *billing.OverageService) *SubscriptionHandler {
 	return &SubscriptionHandler{
 		log:            log.Named("subscription.handler"),
 		client:         client,
 		db:             db,
 		service:        svc,
 		featureHandler: featureHandler,
+		overage:        overage,
 	}
 }
 
@@ -522,6 +525,108 @@ func (h *SubscriptionHandler) ListExpiring(w http.ResponseWriter, r *http.Reques
 	}
 
 	h.respondWithJSON(w, http.StatusOK, results)
+}
+
+// EnableOverage godoc
+// @Summary Enable extra usage (overage)
+// @Description Opt the tenant in to pay-as-you-go extra usage. Once enabled, metered
+// throughput limits may be exceeded and the excess accrues to the next renewal invoice.
+// @Tags Subscriptions
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Router /subscription/overage/enable [post]
+func (h *SubscriptionHandler) EnableOverage(w http.ResponseWriter, r *http.Request) {
+	h.setOverage(w, r, true)
+}
+
+// DisableOverage godoc
+// @Summary Disable extra usage (overage)
+// @Tags Subscriptions
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Router /subscription/overage/disable [post]
+func (h *SubscriptionHandler) DisableOverage(w http.ResponseWriter, r *http.Request) {
+	h.setOverage(w, r, false)
+}
+
+func (h *SubscriptionHandler) setOverage(w http.ResponseWriter, r *http.Request, enabled bool) {
+	ctx := r.Context()
+	tenantIDStr := resolveTenantID(r)
+	if tenantIDStr == "" {
+		h.respondWithError(w, http.StatusBadRequest, "tenant_id required")
+		return
+	}
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid tenant id")
+		return
+	}
+
+	res, err := h.service.SetAllowOverage(ctx, tenantID, enabled)
+	if err != nil {
+		// Demo/platform tenants have no real subscription — treat as a no-op success.
+		if h.isDemoTenant(ctx, tenantID) || httpware.IsPlatformOwner(ctx) {
+			h.respondWithJSON(w, http.StatusOK, map[string]any{"allow_overage": enabled, "is_bypass": true})
+			return
+		}
+		h.log.Error("failed to set allow_overage", zap.Error(err))
+		h.respondWithError(w, http.StatusNotFound, "subscription not found")
+		return
+	}
+	h.respondWithJSON(w, http.StatusOK, res)
+}
+
+// GetOverage godoc
+// @Summary Get extra-usage status and pending overage
+// @Description Returns the allow_overage flag, the total pending (un-invoiced) overage in
+// KES, and a per-metric breakdown for the current period.
+// @Tags Subscriptions
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Router /subscription/overage [get]
+func (h *SubscriptionHandler) GetOverage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	tenantIDStr := resolveTenantID(r)
+	if tenantIDStr == "" {
+		h.respondWithError(w, http.StatusBadRequest, "tenant_id required")
+		return
+	}
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid tenant id")
+		return
+	}
+
+	allowOverage := false
+	if sub, serr := h.service.GetSubscriptionResult(ctx, tenantID); serr == nil {
+		allowOverage = sub.AllowOverage
+	}
+
+	pendingTotal := 0.0
+	breakdown := []map[string]any{}
+	if h.overage != nil {
+		if total, terr := h.overage.GetAccumulatedOverage(ctx, tenantID); terr == nil {
+			pendingTotal = total
+		}
+		if charges, cerr := h.overage.ListPendingByTenant(ctx, tenantID); cerr == nil {
+			for _, c := range charges {
+				breakdown = append(breakdown, map[string]any{
+					"metric_type":      c.MetricType,
+					"period_date":      c.PeriodDate.Format("2006-01-02"),
+					"units_over":       c.UnitsOver,
+					"plan_limit":       c.PlanLimit,
+					"unit_price_kes":   c.UnitPriceKes,
+					"total_charge_kes": c.TotalChargeKes,
+				})
+			}
+		}
+	}
+
+	h.respondWithJSON(w, http.StatusOK, map[string]any{
+		"allow_overage":    allowOverage,
+		"pending_total_kes": pendingTotal,
+		"breakdown":        breakdown,
+	})
 }
 
 // isDemoTenant returns true if the local tenant record for tenantID has slug "codevertex-demo".

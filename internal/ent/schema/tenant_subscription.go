@@ -57,6 +57,13 @@ func (TenantSubscription) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("Bundle code if subscribed via bundle (delivery, pos-suite, complete)"),
+		field.Bool("allow_overage").
+			Default(false).
+			Comment("Opt-in master switch: when true, metered throughput limits may be exceeded and the excess accrues as OverageCharge billed on the next renewal"),
+		field.Time("overage_enabled_at").
+			Optional().
+			Nillable().
+			Comment("When the tenant last enabled extra usage (allow_overage)"),
 		field.UUID("payment_method_id", uuid.UUID{}).
 			Optional().
 			Nillable().

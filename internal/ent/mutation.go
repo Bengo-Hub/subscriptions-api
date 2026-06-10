@@ -22025,6 +22025,8 @@ type TenantSubscriptionMutation struct {
 	applied_discount             *float64
 	addapplied_discount          *float64
 	bundle_code                  *string
+	allow_overage                *bool
+	overage_enabled_at           *time.Time
 	payment_method_id            *uuid.UUID
 	metadata                     *map[string]interface{}
 	created_at                   *time.Time
@@ -22617,6 +22619,91 @@ func (m *TenantSubscriptionMutation) ResetBundleCode() {
 	delete(m.clearedFields, tenantsubscription.FieldBundleCode)
 }
 
+// SetAllowOverage sets the "allow_overage" field.
+func (m *TenantSubscriptionMutation) SetAllowOverage(b bool) {
+	m.allow_overage = &b
+}
+
+// AllowOverage returns the value of the "allow_overage" field in the mutation.
+func (m *TenantSubscriptionMutation) AllowOverage() (r bool, exists bool) {
+	v := m.allow_overage
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAllowOverage returns the old "allow_overage" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldAllowOverage(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAllowOverage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAllowOverage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAllowOverage: %w", err)
+	}
+	return oldValue.AllowOverage, nil
+}
+
+// ResetAllowOverage resets all changes to the "allow_overage" field.
+func (m *TenantSubscriptionMutation) ResetAllowOverage() {
+	m.allow_overage = nil
+}
+
+// SetOverageEnabledAt sets the "overage_enabled_at" field.
+func (m *TenantSubscriptionMutation) SetOverageEnabledAt(t time.Time) {
+	m.overage_enabled_at = &t
+}
+
+// OverageEnabledAt returns the value of the "overage_enabled_at" field in the mutation.
+func (m *TenantSubscriptionMutation) OverageEnabledAt() (r time.Time, exists bool) {
+	v := m.overage_enabled_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOverageEnabledAt returns the old "overage_enabled_at" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldOverageEnabledAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOverageEnabledAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOverageEnabledAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOverageEnabledAt: %w", err)
+	}
+	return oldValue.OverageEnabledAt, nil
+}
+
+// ClearOverageEnabledAt clears the value of the "overage_enabled_at" field.
+func (m *TenantSubscriptionMutation) ClearOverageEnabledAt() {
+	m.overage_enabled_at = nil
+	m.clearedFields[tenantsubscription.FieldOverageEnabledAt] = struct{}{}
+}
+
+// OverageEnabledAtCleared returns if the "overage_enabled_at" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) OverageEnabledAtCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldOverageEnabledAt]
+	return ok
+}
+
+// ResetOverageEnabledAt resets all changes to the "overage_enabled_at" field.
+func (m *TenantSubscriptionMutation) ResetOverageEnabledAt() {
+	m.overage_enabled_at = nil
+	delete(m.clearedFields, tenantsubscription.FieldOverageEnabledAt)
+}
+
 // SetPaymentMethodID sets the "payment_method_id" field.
 func (m *TenantSubscriptionMutation) SetPaymentMethodID(u uuid.UUID) {
 	m.payment_method_id = &u
@@ -22983,7 +23070,7 @@ func (m *TenantSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TenantSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 17)
 	if m.tenant != nil {
 		fields = append(fields, tenantsubscription.FieldTenantID)
 	}
@@ -23016,6 +23103,12 @@ func (m *TenantSubscriptionMutation) Fields() []string {
 	}
 	if m.bundle_code != nil {
 		fields = append(fields, tenantsubscription.FieldBundleCode)
+	}
+	if m.allow_overage != nil {
+		fields = append(fields, tenantsubscription.FieldAllowOverage)
+	}
+	if m.overage_enabled_at != nil {
+		fields = append(fields, tenantsubscription.FieldOverageEnabledAt)
 	}
 	if m.payment_method_id != nil {
 		fields = append(fields, tenantsubscription.FieldPaymentMethodID)
@@ -23059,6 +23152,10 @@ func (m *TenantSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.AppliedDiscount()
 	case tenantsubscription.FieldBundleCode:
 		return m.BundleCode()
+	case tenantsubscription.FieldAllowOverage:
+		return m.AllowOverage()
+	case tenantsubscription.FieldOverageEnabledAt:
+		return m.OverageEnabledAt()
 	case tenantsubscription.FieldPaymentMethodID:
 		return m.PaymentMethodID()
 	case tenantsubscription.FieldMetadata:
@@ -23098,6 +23195,10 @@ func (m *TenantSubscriptionMutation) OldField(ctx context.Context, name string) 
 		return m.OldAppliedDiscount(ctx)
 	case tenantsubscription.FieldBundleCode:
 		return m.OldBundleCode(ctx)
+	case tenantsubscription.FieldAllowOverage:
+		return m.OldAllowOverage(ctx)
+	case tenantsubscription.FieldOverageEnabledAt:
+		return m.OldOverageEnabledAt(ctx)
 	case tenantsubscription.FieldPaymentMethodID:
 		return m.OldPaymentMethodID(ctx)
 	case tenantsubscription.FieldMetadata:
@@ -23192,6 +23293,20 @@ func (m *TenantSubscriptionMutation) SetField(name string, value ent.Value) erro
 		}
 		m.SetBundleCode(v)
 		return nil
+	case tenantsubscription.FieldAllowOverage:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAllowOverage(v)
+		return nil
+	case tenantsubscription.FieldOverageEnabledAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOverageEnabledAt(v)
+		return nil
 	case tenantsubscription.FieldPaymentMethodID:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -23277,6 +23392,9 @@ func (m *TenantSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(tenantsubscription.FieldBundleCode) {
 		fields = append(fields, tenantsubscription.FieldBundleCode)
 	}
+	if m.FieldCleared(tenantsubscription.FieldOverageEnabledAt) {
+		fields = append(fields, tenantsubscription.FieldOverageEnabledAt)
+	}
 	if m.FieldCleared(tenantsubscription.FieldPaymentMethodID) {
 		fields = append(fields, tenantsubscription.FieldPaymentMethodID)
 	}
@@ -23308,6 +23426,9 @@ func (m *TenantSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case tenantsubscription.FieldBundleCode:
 		m.ClearBundleCode()
+		return nil
+	case tenantsubscription.FieldOverageEnabledAt:
+		m.ClearOverageEnabledAt()
 		return nil
 	case tenantsubscription.FieldPaymentMethodID:
 		m.ClearPaymentMethodID()
@@ -23355,6 +23476,12 @@ func (m *TenantSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case tenantsubscription.FieldBundleCode:
 		m.ResetBundleCode()
+		return nil
+	case tenantsubscription.FieldAllowOverage:
+		m.ResetAllowOverage()
+		return nil
+	case tenantsubscription.FieldOverageEnabledAt:
+		m.ResetOverageEnabledAt()
 		return nil
 	case tenantsubscription.FieldPaymentMethodID:
 		m.ResetPaymentMethodID()

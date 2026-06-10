@@ -101,6 +101,16 @@ func BundleCode(v string) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldBundleCode, v))
 }
 
+// AllowOverage applies equality check predicate on the "allow_overage" field. It's identical to AllowOverageEQ.
+func AllowOverage(v bool) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldAllowOverage, v))
+}
+
+// OverageEnabledAt applies equality check predicate on the "overage_enabled_at" field. It's identical to OverageEnabledAtEQ.
+func OverageEnabledAt(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldOverageEnabledAt, v))
+}
+
 // PaymentMethodID applies equality check predicate on the "payment_method_id" field. It's identical to PaymentMethodIDEQ.
 func PaymentMethodID(v uuid.UUID) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldPaymentMethodID, v))
@@ -564,6 +574,66 @@ func BundleCodeEqualFold(v string) predicate.TenantSubscription {
 // BundleCodeContainsFold applies the ContainsFold predicate on the "bundle_code" field.
 func BundleCodeContainsFold(v string) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldContainsFold(FieldBundleCode, v))
+}
+
+// AllowOverageEQ applies the EQ predicate on the "allow_overage" field.
+func AllowOverageEQ(v bool) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldAllowOverage, v))
+}
+
+// AllowOverageNEQ applies the NEQ predicate on the "allow_overage" field.
+func AllowOverageNEQ(v bool) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldAllowOverage, v))
+}
+
+// OverageEnabledAtEQ applies the EQ predicate on the "overage_enabled_at" field.
+func OverageEnabledAtEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldOverageEnabledAt, v))
+}
+
+// OverageEnabledAtNEQ applies the NEQ predicate on the "overage_enabled_at" field.
+func OverageEnabledAtNEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldOverageEnabledAt, v))
+}
+
+// OverageEnabledAtIn applies the In predicate on the "overage_enabled_at" field.
+func OverageEnabledAtIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldOverageEnabledAt, vs...))
+}
+
+// OverageEnabledAtNotIn applies the NotIn predicate on the "overage_enabled_at" field.
+func OverageEnabledAtNotIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldOverageEnabledAt, vs...))
+}
+
+// OverageEnabledAtGT applies the GT predicate on the "overage_enabled_at" field.
+func OverageEnabledAtGT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldOverageEnabledAt, v))
+}
+
+// OverageEnabledAtGTE applies the GTE predicate on the "overage_enabled_at" field.
+func OverageEnabledAtGTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldOverageEnabledAt, v))
+}
+
+// OverageEnabledAtLT applies the LT predicate on the "overage_enabled_at" field.
+func OverageEnabledAtLT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldOverageEnabledAt, v))
+}
+
+// OverageEnabledAtLTE applies the LTE predicate on the "overage_enabled_at" field.
+func OverageEnabledAtLTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldOverageEnabledAt, v))
+}
+
+// OverageEnabledAtIsNil applies the IsNil predicate on the "overage_enabled_at" field.
+func OverageEnabledAtIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldOverageEnabledAt))
+}
+
+// OverageEnabledAtNotNil applies the NotNil predicate on the "overage_enabled_at" field.
+func OverageEnabledAtNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldOverageEnabledAt))
 }
 
 // PaymentMethodIDEQ applies the EQ predicate on the "payment_method_id" field.

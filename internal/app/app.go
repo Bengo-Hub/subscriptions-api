@@ -207,12 +207,15 @@ func New(ctx context.Context) (*App, error) {
 	// Feature gate handler with Redis caching (constructed first — injected into mutation handlers)
 	featureHandler := handlers.NewFeatureHandler(log, subscriptionSvc, redisClient)
 
+	// Overage accrual service — shared by the usage + subscription handlers for pending-overage reads.
+	overageSvc := billing.NewOverageService(log, ormClient)
+
 	// Subscription, addon, and platform handlers (featureHandler injected for cache invalidation)
-	subscriptionHandler := handlers.NewSubscriptionHandler(log, ormClient, dbPool, subscriptionSvc, featureHandler)
+	subscriptionHandler := handlers.NewSubscriptionHandler(log, ormClient, dbPool, subscriptionSvc, featureHandler, overageSvc)
 	addonHandler := handlers.NewAddonHandler(log, ormClient, subscriptionSvc, treasuryClient, cfg.Services.TreasuryAPIKey, featureHandler)
 
 	// Usage tracking handler (raw SQL — requires UsageEvent Ent schema codegen to create table)
-	usageHandler := handlers.NewUsageHandler(log, dbPool, ormClient, redisClient)
+	usageHandler := handlers.NewUsageHandler(log, dbPool, ormClient, redisClient, overageSvc)
 
 	// Service charge plan handler
 	serviceChargeHandler := handlers.NewServiceChargeHandler(log, ormClient)

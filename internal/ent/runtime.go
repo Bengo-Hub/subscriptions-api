@@ -724,16 +724,20 @@ func init() {
 	tenantsubscriptionDescAppliedDiscount := tenantsubscriptionFields[10].Descriptor()
 	// tenantsubscription.DefaultAppliedDiscount holds the default value on creation for the applied_discount field.
 	tenantsubscription.DefaultAppliedDiscount = tenantsubscriptionDescAppliedDiscount.Default.(float64)
+	// tenantsubscriptionDescAllowOverage is the schema descriptor for allow_overage field.
+	tenantsubscriptionDescAllowOverage := tenantsubscriptionFields[12].Descriptor()
+	// tenantsubscription.DefaultAllowOverage holds the default value on creation for the allow_overage field.
+	tenantsubscription.DefaultAllowOverage = tenantsubscriptionDescAllowOverage.Default.(bool)
 	// tenantsubscriptionDescMetadata is the schema descriptor for metadata field.
-	tenantsubscriptionDescMetadata := tenantsubscriptionFields[13].Descriptor()
+	tenantsubscriptionDescMetadata := tenantsubscriptionFields[15].Descriptor()
 	// tenantsubscription.DefaultMetadata holds the default value on creation for the metadata field.
 	tenantsubscription.DefaultMetadata = tenantsubscriptionDescMetadata.Default.(map[string]interface{})
 	// tenantsubscriptionDescCreatedAt is the schema descriptor for created_at field.
-	tenantsubscriptionDescCreatedAt := tenantsubscriptionFields[14].Descriptor()
+	tenantsubscriptionDescCreatedAt := tenantsubscriptionFields[16].Descriptor()
 	// tenantsubscription.DefaultCreatedAt holds the default value on creation for the created_at field.
 	tenantsubscription.DefaultCreatedAt = tenantsubscriptionDescCreatedAt.Default.(func() time.Time)
 	// tenantsubscriptionDescUpdatedAt is the schema descriptor for updated_at field.
-	tenantsubscriptionDescUpdatedAt := tenantsubscriptionFields[15].Descriptor()
+	tenantsubscriptionDescUpdatedAt := tenantsubscriptionFields[17].Descriptor()
 	// tenantsubscription.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	tenantsubscription.DefaultUpdatedAt = tenantsubscriptionDescUpdatedAt.Default.(func() time.Time)
 	// tenantsubscription.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

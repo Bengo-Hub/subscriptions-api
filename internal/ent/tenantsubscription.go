@@ -43,6 +43,10 @@ type TenantSubscription struct {
 	AppliedDiscount float64 `json:"applied_discount,omitempty"`
 	// Bundle code if subscribed via bundle (delivery, pos-suite, complete)
 	BundleCode *string `json:"bundle_code,omitempty"`
+	// Opt-in master switch: when true, metered throughput limits may be exceeded and the excess accrues as OverageCharge billed on the next renewal
+	AllowOverage bool `json:"allow_overage,omitempty"`
+	// When the tenant last enabled extra usage (allow_overage)
+	OverageEnabledAt *time.Time `json:"overage_enabled_at,omitempty"`
 	// Reference to treasury payment method
 	PaymentMethodID *uuid.UUID `json:"payment_method_id,omitempty"`
 	// Metadata holds the value of the "metadata" field.
@@ -121,11 +125,13 @@ func (*TenantSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case tenantsubscription.FieldMetadata:
 			values[i] = new([]byte)
+		case tenantsubscription.FieldAllowOverage:
+			values[i] = new(sql.NullBool)
 		case tenantsubscription.FieldAppliedDiscount:
 			values[i] = new(sql.NullFloat64)
 		case tenantsubscription.FieldStatus, tenantsubscription.FieldCancelReason, tenantsubscription.FieldBillingCycle, tenantsubscription.FieldBundleCode:
 			values[i] = new(sql.NullString)
-		case tenantsubscription.FieldTrialEndsAt, tenantsubscription.FieldCurrentPeriodStart, tenantsubscription.FieldCurrentPeriodEnd, tenantsubscription.FieldCancelledAt, tenantsubscription.FieldCreatedAt, tenantsubscription.FieldUpdatedAt:
+		case tenantsubscription.FieldTrialEndsAt, tenantsubscription.FieldCurrentPeriodStart, tenantsubscription.FieldCurrentPeriodEnd, tenantsubscription.FieldCancelledAt, tenantsubscription.FieldOverageEnabledAt, tenantsubscription.FieldCreatedAt, tenantsubscription.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		case tenantsubscription.FieldID, tenantsubscription.FieldTenantID, tenantsubscription.FieldPlanID:
 			values[i] = new(uuid.UUID)
@@ -219,6 +225,19 @@ func (_m *TenantSubscription) assignValues(columns []string, values []any) error
 			} else if value.Valid {
 				_m.BundleCode = new(string)
 				*_m.BundleCode = value.String
+			}
+		case tenantsubscription.FieldAllowOverage:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field allow_overage", values[i])
+			} else if value.Valid {
+				_m.AllowOverage = value.Bool
+			}
+		case tenantsubscription.FieldOverageEnabledAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field overage_enabled_at", values[i])
+			} else if value.Valid {
+				_m.OverageEnabledAt = new(time.Time)
+				*_m.OverageEnabledAt = value.Time
 			}
 		case tenantsubscription.FieldPaymentMethodID:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -342,6 +361,14 @@ func (_m *TenantSubscription) String() string {
 	if v := _m.BundleCode; v != nil {
 		builder.WriteString("bundle_code=")
 		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	builder.WriteString("allow_overage=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AllowOverage))
+	builder.WriteString(", ")
+	if v := _m.OverageEnabledAt; v != nil {
+		builder.WriteString("overage_enabled_at=")
+		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
 	if v := _m.PaymentMethodID; v != nil {
