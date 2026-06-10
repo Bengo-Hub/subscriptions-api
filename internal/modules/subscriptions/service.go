@@ -39,10 +39,11 @@ func New(client *ent.Client, log *zap.Logger, treasuryClient *serviceclient.Clie
 
 // CreateInput defines the payload for creating a subscription.
 type CreateInput struct {
-	TenantID   uuid.UUID `json:"tenant_id"`
-	PlanCode   string    `json:"plan_code"`
-	BundleCode string    `json:"bundle_code,omitempty"`
-	TrialDays  int       `json:"trial_days,omitempty"`
+	TenantID       uuid.UUID `json:"tenant_id"`
+	PlanCode       string    `json:"plan_code"`
+	BundleCode     string    `json:"bundle_code,omitempty"`
+	TrialDays      int       `json:"trial_days,omitempty"`
+	ReferredByCode string    `json:"referred_by_code,omitempty"` // Type-A referral: code of the referrer
 }
 
 // ChangePlanInput defines the payload for upgrading or downgrading.
@@ -190,7 +191,7 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 		"payment_method": "pending", // User selects method on Treasury-UI
 		"reference_id":   fmt.Sprintf("SUB-%s-%d", in.TenantID.String()[:8], time.Now().Unix()),
 		"reference_type": "subscription",
-		"source_service": "subscription-service",
+		"source_service": "subscriptions",
 		"description":    fmt.Sprintf("Subscription for %s plan", plan.Name),
 		"callback_url":   in.ReturnURL,
 		"metadata": map[string]any{
@@ -294,13 +295,23 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 		SetPlanID(plan.ID).
 		SetStatus(status).
 		SetCurrentPeriodStart(now).
-		SetCurrentPeriodEnd(periodEnd)
+		SetCurrentPeriodEnd(periodEnd).
+		// Every subscription gets its own shareable referral code on creation.
+		SetReferralCode(generateReferralCode())
 
 	if trialEndsAt != nil {
 		create.SetTrialEndsAt(*trialEndsAt)
 	}
 	if in.BundleCode != "" {
 		create.SetBundleCode(in.BundleCode)
+	}
+
+	// Type-A referral attribution: if the tenant signed up via a referral code, record the
+	// referrer so they are credited when this tenant pays. A tenant cannot refer itself.
+	if in.ReferredByCode != "" {
+		if referrerID, ok := s.resolveReferrer(ctx, in.ReferredByCode); ok && referrerID != in.TenantID {
+			create.SetReferredBy(referrerID)
+		}
 	}
 
 	sub, err := create.Save(ctx)

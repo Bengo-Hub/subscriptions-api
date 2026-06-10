@@ -22028,6 +22028,8 @@ type TenantSubscriptionMutation struct {
 	allow_overage                *bool
 	overage_enabled_at           *time.Time
 	payment_method_id            *uuid.UUID
+	referred_by                  *uuid.UUID
+	referral_code                *string
 	metadata                     *map[string]interface{}
 	created_at                   *time.Time
 	updated_at                   *time.Time
@@ -22753,6 +22755,104 @@ func (m *TenantSubscriptionMutation) ResetPaymentMethodID() {
 	delete(m.clearedFields, tenantsubscription.FieldPaymentMethodID)
 }
 
+// SetReferredBy sets the "referred_by" field.
+func (m *TenantSubscriptionMutation) SetReferredBy(u uuid.UUID) {
+	m.referred_by = &u
+}
+
+// ReferredBy returns the value of the "referred_by" field in the mutation.
+func (m *TenantSubscriptionMutation) ReferredBy() (r uuid.UUID, exists bool) {
+	v := m.referred_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReferredBy returns the old "referred_by" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldReferredBy(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReferredBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReferredBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReferredBy: %w", err)
+	}
+	return oldValue.ReferredBy, nil
+}
+
+// ClearReferredBy clears the value of the "referred_by" field.
+func (m *TenantSubscriptionMutation) ClearReferredBy() {
+	m.referred_by = nil
+	m.clearedFields[tenantsubscription.FieldReferredBy] = struct{}{}
+}
+
+// ReferredByCleared returns if the "referred_by" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) ReferredByCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldReferredBy]
+	return ok
+}
+
+// ResetReferredBy resets all changes to the "referred_by" field.
+func (m *TenantSubscriptionMutation) ResetReferredBy() {
+	m.referred_by = nil
+	delete(m.clearedFields, tenantsubscription.FieldReferredBy)
+}
+
+// SetReferralCode sets the "referral_code" field.
+func (m *TenantSubscriptionMutation) SetReferralCode(s string) {
+	m.referral_code = &s
+}
+
+// ReferralCode returns the value of the "referral_code" field in the mutation.
+func (m *TenantSubscriptionMutation) ReferralCode() (r string, exists bool) {
+	v := m.referral_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReferralCode returns the old "referral_code" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldReferralCode(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReferralCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReferralCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReferralCode: %w", err)
+	}
+	return oldValue.ReferralCode, nil
+}
+
+// ClearReferralCode clears the value of the "referral_code" field.
+func (m *TenantSubscriptionMutation) ClearReferralCode() {
+	m.referral_code = nil
+	m.clearedFields[tenantsubscription.FieldReferralCode] = struct{}{}
+}
+
+// ReferralCodeCleared returns if the "referral_code" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) ReferralCodeCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldReferralCode]
+	return ok
+}
+
+// ResetReferralCode resets all changes to the "referral_code" field.
+func (m *TenantSubscriptionMutation) ResetReferralCode() {
+	m.referral_code = nil
+	delete(m.clearedFields, tenantsubscription.FieldReferralCode)
+}
+
 // SetMetadata sets the "metadata" field.
 func (m *TenantSubscriptionMutation) SetMetadata(value map[string]interface{}) {
 	m.metadata = &value
@@ -23070,7 +23170,7 @@ func (m *TenantSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TenantSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 17)
+	fields := make([]string, 0, 19)
 	if m.tenant != nil {
 		fields = append(fields, tenantsubscription.FieldTenantID)
 	}
@@ -23112,6 +23212,12 @@ func (m *TenantSubscriptionMutation) Fields() []string {
 	}
 	if m.payment_method_id != nil {
 		fields = append(fields, tenantsubscription.FieldPaymentMethodID)
+	}
+	if m.referred_by != nil {
+		fields = append(fields, tenantsubscription.FieldReferredBy)
+	}
+	if m.referral_code != nil {
+		fields = append(fields, tenantsubscription.FieldReferralCode)
 	}
 	if m.metadata != nil {
 		fields = append(fields, tenantsubscription.FieldMetadata)
@@ -23158,6 +23264,10 @@ func (m *TenantSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.OverageEnabledAt()
 	case tenantsubscription.FieldPaymentMethodID:
 		return m.PaymentMethodID()
+	case tenantsubscription.FieldReferredBy:
+		return m.ReferredBy()
+	case tenantsubscription.FieldReferralCode:
+		return m.ReferralCode()
 	case tenantsubscription.FieldMetadata:
 		return m.Metadata()
 	case tenantsubscription.FieldCreatedAt:
@@ -23201,6 +23311,10 @@ func (m *TenantSubscriptionMutation) OldField(ctx context.Context, name string) 
 		return m.OldOverageEnabledAt(ctx)
 	case tenantsubscription.FieldPaymentMethodID:
 		return m.OldPaymentMethodID(ctx)
+	case tenantsubscription.FieldReferredBy:
+		return m.OldReferredBy(ctx)
+	case tenantsubscription.FieldReferralCode:
+		return m.OldReferralCode(ctx)
 	case tenantsubscription.FieldMetadata:
 		return m.OldMetadata(ctx)
 	case tenantsubscription.FieldCreatedAt:
@@ -23314,6 +23428,20 @@ func (m *TenantSubscriptionMutation) SetField(name string, value ent.Value) erro
 		}
 		m.SetPaymentMethodID(v)
 		return nil
+	case tenantsubscription.FieldReferredBy:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReferredBy(v)
+		return nil
+	case tenantsubscription.FieldReferralCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReferralCode(v)
+		return nil
 	case tenantsubscription.FieldMetadata:
 		v, ok := value.(map[string]interface{})
 		if !ok {
@@ -23398,6 +23526,12 @@ func (m *TenantSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(tenantsubscription.FieldPaymentMethodID) {
 		fields = append(fields, tenantsubscription.FieldPaymentMethodID)
 	}
+	if m.FieldCleared(tenantsubscription.FieldReferredBy) {
+		fields = append(fields, tenantsubscription.FieldReferredBy)
+	}
+	if m.FieldCleared(tenantsubscription.FieldReferralCode) {
+		fields = append(fields, tenantsubscription.FieldReferralCode)
+	}
 	if m.FieldCleared(tenantsubscription.FieldMetadata) {
 		fields = append(fields, tenantsubscription.FieldMetadata)
 	}
@@ -23432,6 +23566,12 @@ func (m *TenantSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case tenantsubscription.FieldPaymentMethodID:
 		m.ClearPaymentMethodID()
+		return nil
+	case tenantsubscription.FieldReferredBy:
+		m.ClearReferredBy()
+		return nil
+	case tenantsubscription.FieldReferralCode:
+		m.ClearReferralCode()
 		return nil
 	case tenantsubscription.FieldMetadata:
 		m.ClearMetadata()
@@ -23485,6 +23625,12 @@ func (m *TenantSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case tenantsubscription.FieldPaymentMethodID:
 		m.ResetPaymentMethodID()
+		return nil
+	case tenantsubscription.FieldReferredBy:
+		m.ResetReferredBy()
+		return nil
+	case tenantsubscription.FieldReferralCode:
+		m.ResetReferralCode()
 		return nil
 	case tenantsubscription.FieldMetadata:
 		m.ResetMetadata()

@@ -116,6 +116,16 @@ func PaymentMethodID(v uuid.UUID) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldPaymentMethodID, v))
 }
 
+// ReferredBy applies equality check predicate on the "referred_by" field. It's identical to ReferredByEQ.
+func ReferredBy(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldReferredBy, v))
+}
+
+// ReferralCode applies equality check predicate on the "referral_code" field. It's identical to ReferralCodeEQ.
+func ReferralCode(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldReferralCode, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldCreatedAt, v))
@@ -684,6 +694,131 @@ func PaymentMethodIDIsNil() predicate.TenantSubscription {
 // PaymentMethodIDNotNil applies the NotNil predicate on the "payment_method_id" field.
 func PaymentMethodIDNotNil() predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldNotNull(FieldPaymentMethodID))
+}
+
+// ReferredByEQ applies the EQ predicate on the "referred_by" field.
+func ReferredByEQ(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldReferredBy, v))
+}
+
+// ReferredByNEQ applies the NEQ predicate on the "referred_by" field.
+func ReferredByNEQ(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldReferredBy, v))
+}
+
+// ReferredByIn applies the In predicate on the "referred_by" field.
+func ReferredByIn(vs ...uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldReferredBy, vs...))
+}
+
+// ReferredByNotIn applies the NotIn predicate on the "referred_by" field.
+func ReferredByNotIn(vs ...uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldReferredBy, vs...))
+}
+
+// ReferredByGT applies the GT predicate on the "referred_by" field.
+func ReferredByGT(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldReferredBy, v))
+}
+
+// ReferredByGTE applies the GTE predicate on the "referred_by" field.
+func ReferredByGTE(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldReferredBy, v))
+}
+
+// ReferredByLT applies the LT predicate on the "referred_by" field.
+func ReferredByLT(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldReferredBy, v))
+}
+
+// ReferredByLTE applies the LTE predicate on the "referred_by" field.
+func ReferredByLTE(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldReferredBy, v))
+}
+
+// ReferredByIsNil applies the IsNil predicate on the "referred_by" field.
+func ReferredByIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldReferredBy))
+}
+
+// ReferredByNotNil applies the NotNil predicate on the "referred_by" field.
+func ReferredByNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldReferredBy))
+}
+
+// ReferralCodeEQ applies the EQ predicate on the "referral_code" field.
+func ReferralCodeEQ(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldReferralCode, v))
+}
+
+// ReferralCodeNEQ applies the NEQ predicate on the "referral_code" field.
+func ReferralCodeNEQ(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldReferralCode, v))
+}
+
+// ReferralCodeIn applies the In predicate on the "referral_code" field.
+func ReferralCodeIn(vs ...string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldReferralCode, vs...))
+}
+
+// ReferralCodeNotIn applies the NotIn predicate on the "referral_code" field.
+func ReferralCodeNotIn(vs ...string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldReferralCode, vs...))
+}
+
+// ReferralCodeGT applies the GT predicate on the "referral_code" field.
+func ReferralCodeGT(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldReferralCode, v))
+}
+
+// ReferralCodeGTE applies the GTE predicate on the "referral_code" field.
+func ReferralCodeGTE(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldReferralCode, v))
+}
+
+// ReferralCodeLT applies the LT predicate on the "referral_code" field.
+func ReferralCodeLT(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldReferralCode, v))
+}
+
+// ReferralCodeLTE applies the LTE predicate on the "referral_code" field.
+func ReferralCodeLTE(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldReferralCode, v))
+}
+
+// ReferralCodeContains applies the Contains predicate on the "referral_code" field.
+func ReferralCodeContains(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldContains(FieldReferralCode, v))
+}
+
+// ReferralCodeHasPrefix applies the HasPrefix predicate on the "referral_code" field.
+func ReferralCodeHasPrefix(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldHasPrefix(FieldReferralCode, v))
+}
+
+// ReferralCodeHasSuffix applies the HasSuffix predicate on the "referral_code" field.
+func ReferralCodeHasSuffix(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldHasSuffix(FieldReferralCode, v))
+}
+
+// ReferralCodeIsNil applies the IsNil predicate on the "referral_code" field.
+func ReferralCodeIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldReferralCode))
+}
+
+// ReferralCodeNotNil applies the NotNil predicate on the "referral_code" field.
+func ReferralCodeNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldReferralCode))
+}
+
+// ReferralCodeEqualFold applies the EqualFold predicate on the "referral_code" field.
+func ReferralCodeEqualFold(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEqualFold(FieldReferralCode, v))
+}
+
+// ReferralCodeContainsFold applies the ContainsFold predicate on the "referral_code" field.
+func ReferralCodeContainsFold(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldContainsFold(FieldReferralCode, v))
 }
 
 // MetadataIsNil applies the IsNil predicate on the "metadata" field.

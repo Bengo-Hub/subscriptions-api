@@ -233,7 +233,7 @@ func (h *AddonHandler) PurchaseAddon(w http.ResponseWriter, r *http.Request) {
 		"payment_method": "pending",
 		"reference_id":   fmt.Sprintf("ADDON-%s-%s", tenantID.String()[:8], featureCode),
 		"reference_type": "addon_purchase",
-		"source_service": "subscription-service",
+		"source_service": "subscriptions",
 		"description":    "Add-on: " + featureCode,
 		"callback_url":   body.ReturnURL,
 		"metadata": map[string]any{

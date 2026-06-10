@@ -191,6 +191,16 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 		if err := c.creditService.EarnLoyaltyCredits(ctx, tenantID, amountKes, refID); err != nil {
 			c.log.Warn("failed to earn loyalty credits", zap.String("tenant_id", tenantIDStr), zap.Error(err))
 		}
+
+		// Type-A referral reward: if this paying tenant was referred by another tenant,
+		// credit the referrer's wallet a share of the payment (idempotent on the payment ref).
+		if sub, err := c.orm.TenantSubscription.Query().
+			Where(tenantsubscription.TenantIDEQ(tenantID)).
+			Only(ctx); err == nil && sub.ReferredBy != nil {
+			if err := c.creditService.EarnReferralBonus(ctx, *sub.ReferredBy, tenantID, amountKes, refID); err != nil {
+				c.log.Warn("failed to credit referral bonus", zap.String("tenant_id", tenantIDStr), zap.Error(err))
+			}
+		}
 	}
 
 	return nil

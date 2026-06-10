@@ -156,6 +156,45 @@ func (s *CreditService) EarnLoyaltyCredits(ctx context.Context, tenantID uuid.UU
 	return s.AddCredits(ctx, tenantID, earnKes, "earned", paymentRefID, "payment")
 }
 
+// ReferralBonusRate is the share of a referred tenant's payment credited to the referrer's
+// subscription wallet (Type-A referral reward). 0.10 = 10%.
+const ReferralBonusRate = 0.10
+
+// EarnReferralBonus credits a Type-A referral bonus to the REFERRER's wallet when one of the
+// tenants they referred makes a successful subscription payment. The bonus is a share of that
+// payment. Idempotent on paymentRefID so NATS redelivery cannot double-credit.
+func (s *CreditService) EarnReferralBonus(ctx context.Context, referrerTenantID, referredTenantID uuid.UUID, paymentAmountKes int, paymentRefID uuid.UUID) error {
+	bonusKes := int(float64(paymentAmountKes) * ReferralBonusRate)
+	if bonusKes <= 0 {
+		return nil
+	}
+
+	// Idempotency: skip if this payment already produced a referral bonus for this referrer.
+	already, err := s.orm.SubscriptionCreditTransaction.Query().
+		Where(
+			subscriptioncredittransaction.TenantIDEQ(referrerTenantID),
+			subscriptioncredittransaction.TypeEQ(subscriptioncredittransaction.TypeReferralBonus),
+			subscriptioncredittransaction.RefIDEQ(paymentRefID),
+		).
+		Exist(ctx)
+	if err != nil {
+		return fmt.Errorf("check referral bonus idempotency: %w", err)
+	}
+	if already {
+		return nil
+	}
+
+	if err := s.AddCredits(ctx, referrerTenantID, bonusKes, "referral_bonus", paymentRefID, "referral"); err != nil {
+		return err
+	}
+	s.log.Info("referral bonus credited",
+		zap.String("referrer_tenant_id", referrerTenantID.String()),
+		zap.String("referred_tenant_id", referredTenantID.String()),
+		zap.Int("bonus_kes", bonusKes),
+	)
+	return nil
+}
+
 // GetTransactions returns recent credit transactions for a tenant (newest first, limit 50).
 func (s *CreditService) GetTransactions(ctx context.Context, tenantID uuid.UUID) ([]*ent.SubscriptionCreditTransaction, error) {
 	return s.orm.SubscriptionCreditTransaction.Query().

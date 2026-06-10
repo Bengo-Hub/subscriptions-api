@@ -272,6 +272,46 @@ func (_u *TenantSubscriptionUpdate) ClearPaymentMethodID() *TenantSubscriptionUp
 	return _u
 }
 
+// SetReferredBy sets the "referred_by" field.
+func (_u *TenantSubscriptionUpdate) SetReferredBy(v uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.SetReferredBy(v)
+	return _u
+}
+
+// SetNillableReferredBy sets the "referred_by" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableReferredBy(v *uuid.UUID) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetReferredBy(*v)
+	}
+	return _u
+}
+
+// ClearReferredBy clears the value of the "referred_by" field.
+func (_u *TenantSubscriptionUpdate) ClearReferredBy() *TenantSubscriptionUpdate {
+	_u.mutation.ClearReferredBy()
+	return _u
+}
+
+// SetReferralCode sets the "referral_code" field.
+func (_u *TenantSubscriptionUpdate) SetReferralCode(v string) *TenantSubscriptionUpdate {
+	_u.mutation.SetReferralCode(v)
+	return _u
+}
+
+// SetNillableReferralCode sets the "referral_code" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableReferralCode(v *string) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetReferralCode(*v)
+	}
+	return _u
+}
+
+// ClearReferralCode clears the value of the "referral_code" field.
+func (_u *TenantSubscriptionUpdate) ClearReferralCode() *TenantSubscriptionUpdate {
+	_u.mutation.ClearReferralCode()
+	return _u
+}
+
 // SetMetadata sets the "metadata" field.
 func (_u *TenantSubscriptionUpdate) SetMetadata(v map[string]interface{}) *TenantSubscriptionUpdate {
 	_u.mutation.SetMetadata(v)
@@ -514,6 +554,18 @@ func (_u *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err
 	}
 	if _u.mutation.PaymentMethodIDCleared() {
 		_spec.ClearField(tenantsubscription.FieldPaymentMethodID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ReferredBy(); ok {
+		_spec.SetField(tenantsubscription.FieldReferredBy, field.TypeUUID, value)
+	}
+	if _u.mutation.ReferredByCleared() {
+		_spec.ClearField(tenantsubscription.FieldReferredBy, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ReferralCode(); ok {
+		_spec.SetField(tenantsubscription.FieldReferralCode, field.TypeString, value)
+	}
+	if _u.mutation.ReferralCodeCleared() {
+		_spec.ClearField(tenantsubscription.FieldReferralCode, field.TypeString)
 	}
 	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(tenantsubscription.FieldMetadata, field.TypeJSON, value)
@@ -931,6 +983,46 @@ func (_u *TenantSubscriptionUpdateOne) ClearPaymentMethodID() *TenantSubscriptio
 	return _u
 }
 
+// SetReferredBy sets the "referred_by" field.
+func (_u *TenantSubscriptionUpdateOne) SetReferredBy(v uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetReferredBy(v)
+	return _u
+}
+
+// SetNillableReferredBy sets the "referred_by" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableReferredBy(v *uuid.UUID) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetReferredBy(*v)
+	}
+	return _u
+}
+
+// ClearReferredBy clears the value of the "referred_by" field.
+func (_u *TenantSubscriptionUpdateOne) ClearReferredBy() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearReferredBy()
+	return _u
+}
+
+// SetReferralCode sets the "referral_code" field.
+func (_u *TenantSubscriptionUpdateOne) SetReferralCode(v string) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetReferralCode(v)
+	return _u
+}
+
+// SetNillableReferralCode sets the "referral_code" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableReferralCode(v *string) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetReferralCode(*v)
+	}
+	return _u
+}
+
+// ClearReferralCode clears the value of the "referral_code" field.
+func (_u *TenantSubscriptionUpdateOne) ClearReferralCode() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearReferralCode()
+	return _u
+}
+
 // SetMetadata sets the "metadata" field.
 func (_u *TenantSubscriptionUpdateOne) SetMetadata(v map[string]interface{}) *TenantSubscriptionUpdateOne {
 	_u.mutation.SetMetadata(v)
@@ -1203,6 +1295,18 @@ func (_u *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Tena
 	}
 	if _u.mutation.PaymentMethodIDCleared() {
 		_spec.ClearField(tenantsubscription.FieldPaymentMethodID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ReferredBy(); ok {
+		_spec.SetField(tenantsubscription.FieldReferredBy, field.TypeUUID, value)
+	}
+	if _u.mutation.ReferredByCleared() {
+		_spec.ClearField(tenantsubscription.FieldReferredBy, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ReferralCode(); ok {
+		_spec.SetField(tenantsubscription.FieldReferralCode, field.TypeString, value)
+	}
+	if _u.mutation.ReferralCodeCleared() {
+		_spec.ClearField(tenantsubscription.FieldReferralCode, field.TypeString)
 	}
 	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(tenantsubscription.FieldMetadata, field.TypeJSON, value)

@@ -192,6 +192,34 @@ func (_c *TenantSubscriptionCreate) SetNillablePaymentMethodID(v *uuid.UUID) *Te
 	return _c
 }
 
+// SetReferredBy sets the "referred_by" field.
+func (_c *TenantSubscriptionCreate) SetReferredBy(v uuid.UUID) *TenantSubscriptionCreate {
+	_c.mutation.SetReferredBy(v)
+	return _c
+}
+
+// SetNillableReferredBy sets the "referred_by" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableReferredBy(v *uuid.UUID) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetReferredBy(*v)
+	}
+	return _c
+}
+
+// SetReferralCode sets the "referral_code" field.
+func (_c *TenantSubscriptionCreate) SetReferralCode(v string) *TenantSubscriptionCreate {
+	_c.mutation.SetReferralCode(v)
+	return _c
+}
+
+// SetNillableReferralCode sets the "referral_code" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableReferralCode(v *string) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetReferralCode(*v)
+	}
+	return _c
+}
+
 // SetMetadata sets the "metadata" field.
 func (_c *TenantSubscriptionCreate) SetMetadata(v map[string]interface{}) *TenantSubscriptionCreate {
 	_c.mutation.SetMetadata(v)
@@ -480,6 +508,14 @@ func (_c *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgraph
 	if value, ok := _c.mutation.PaymentMethodID(); ok {
 		_spec.SetField(tenantsubscription.FieldPaymentMethodID, field.TypeUUID, value)
 		_node.PaymentMethodID = &value
+	}
+	if value, ok := _c.mutation.ReferredBy(); ok {
+		_spec.SetField(tenantsubscription.FieldReferredBy, field.TypeUUID, value)
+		_node.ReferredBy = &value
+	}
+	if value, ok := _c.mutation.ReferralCode(); ok {
+		_spec.SetField(tenantsubscription.FieldReferralCode, field.TypeString, value)
+		_node.ReferralCode = &value
 	}
 	if value, ok := _c.mutation.Metadata(); ok {
 		_spec.SetField(tenantsubscription.FieldMetadata, field.TypeJSON, value)
@@ -821,6 +857,42 @@ func (u *TenantSubscriptionUpsert) ClearPaymentMethodID() *TenantSubscriptionUps
 	return u
 }
 
+// SetReferredBy sets the "referred_by" field.
+func (u *TenantSubscriptionUpsert) SetReferredBy(v uuid.UUID) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldReferredBy, v)
+	return u
+}
+
+// UpdateReferredBy sets the "referred_by" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateReferredBy() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldReferredBy)
+	return u
+}
+
+// ClearReferredBy clears the value of the "referred_by" field.
+func (u *TenantSubscriptionUpsert) ClearReferredBy() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldReferredBy)
+	return u
+}
+
+// SetReferralCode sets the "referral_code" field.
+func (u *TenantSubscriptionUpsert) SetReferralCode(v string) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldReferralCode, v)
+	return u
+}
+
+// UpdateReferralCode sets the "referral_code" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateReferralCode() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldReferralCode)
+	return u
+}
+
+// ClearReferralCode clears the value of the "referral_code" field.
+func (u *TenantSubscriptionUpsert) ClearReferralCode() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldReferralCode)
+	return u
+}
+
 // SetMetadata sets the "metadata" field.
 func (u *TenantSubscriptionUpsert) SetMetadata(v map[string]interface{}) *TenantSubscriptionUpsert {
 	u.Set(tenantsubscription.FieldMetadata, v)
@@ -1144,6 +1216,48 @@ func (u *TenantSubscriptionUpsertOne) UpdatePaymentMethodID() *TenantSubscriptio
 func (u *TenantSubscriptionUpsertOne) ClearPaymentMethodID() *TenantSubscriptionUpsertOne {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.ClearPaymentMethodID()
+	})
+}
+
+// SetReferredBy sets the "referred_by" field.
+func (u *TenantSubscriptionUpsertOne) SetReferredBy(v uuid.UUID) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetReferredBy(v)
+	})
+}
+
+// UpdateReferredBy sets the "referred_by" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateReferredBy() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateReferredBy()
+	})
+}
+
+// ClearReferredBy clears the value of the "referred_by" field.
+func (u *TenantSubscriptionUpsertOne) ClearReferredBy() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearReferredBy()
+	})
+}
+
+// SetReferralCode sets the "referral_code" field.
+func (u *TenantSubscriptionUpsertOne) SetReferralCode(v string) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetReferralCode(v)
+	})
+}
+
+// UpdateReferralCode sets the "referral_code" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateReferralCode() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateReferralCode()
+	})
+}
+
+// ClearReferralCode clears the value of the "referral_code" field.
+func (u *TenantSubscriptionUpsertOne) ClearReferralCode() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearReferralCode()
 	})
 }
 
@@ -1642,6 +1756,48 @@ func (u *TenantSubscriptionUpsertBulk) UpdatePaymentMethodID() *TenantSubscripti
 func (u *TenantSubscriptionUpsertBulk) ClearPaymentMethodID() *TenantSubscriptionUpsertBulk {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.ClearPaymentMethodID()
+	})
+}
+
+// SetReferredBy sets the "referred_by" field.
+func (u *TenantSubscriptionUpsertBulk) SetReferredBy(v uuid.UUID) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetReferredBy(v)
+	})
+}
+
+// UpdateReferredBy sets the "referred_by" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateReferredBy() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateReferredBy()
+	})
+}
+
+// ClearReferredBy clears the value of the "referred_by" field.
+func (u *TenantSubscriptionUpsertBulk) ClearReferredBy() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearReferredBy()
+	})
+}
+
+// SetReferralCode sets the "referral_code" field.
+func (u *TenantSubscriptionUpsertBulk) SetReferralCode(v string) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetReferralCode(v)
+	})
+}
+
+// UpdateReferralCode sets the "referral_code" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateReferralCode() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateReferralCode()
+	})
+}
+
+// ClearReferralCode clears the value of the "referral_code" field.
+func (u *TenantSubscriptionUpsertBulk) ClearReferralCode() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearReferralCode()
 	})
 }
 

@@ -44,6 +44,10 @@ const (
 	FieldOverageEnabledAt = "overage_enabled_at"
 	// FieldPaymentMethodID holds the string denoting the payment_method_id field in the database.
 	FieldPaymentMethodID = "payment_method_id"
+	// FieldReferredBy holds the string denoting the referred_by field in the database.
+	FieldReferredBy = "referred_by"
+	// FieldReferralCode holds the string denoting the referral_code field in the database.
+	FieldReferralCode = "referral_code"
 	// FieldMetadata holds the string denoting the metadata field in the database.
 	FieldMetadata = "metadata"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -107,6 +111,8 @@ var Columns = []string{
 	FieldAllowOverage,
 	FieldOverageEnabledAt,
 	FieldPaymentMethodID,
+	FieldReferredBy,
+	FieldReferralCode,
 	FieldMetadata,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -272,6 +278,16 @@ func ByOverageEnabledAt(opts ...sql.OrderTermOption) OrderOption {
 // ByPaymentMethodID orders the results by the payment_method_id field.
 func ByPaymentMethodID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPaymentMethodID, opts...).ToFunc()
+}
+
+// ByReferredBy orders the results by the referred_by field.
+func ByReferredBy(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReferredBy, opts...).ToFunc()
+}
+
+// ByReferralCode orders the results by the referral_code field.
+func ByReferralCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReferralCode, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

@@ -68,6 +68,14 @@ func (TenantSubscription) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("Reference to treasury payment method"),
+		field.UUID("referred_by", uuid.UUID{}).
+			Optional().
+			Nillable().
+			Comment("Tenant that referred this tenant (Type-A referral); credited when this tenant pays"),
+		field.String("referral_code").
+			Optional().
+			Nillable().
+			Comment("This tenant's own shareable referral code; others sign up with it to attribute the referral"),
 		field.JSON("metadata", map[string]any{}).
 			Optional().
 			Default(map[string]any{}),
@@ -108,5 +116,8 @@ func (TenantSubscription) Indexes() []ent.Index {
 		index.Fields("status"),
 		// Query subscriptions expiring soon
 		index.Fields("current_period_end"),
+		// A referral code uniquely identifies one referrer tenant.
+		index.Fields("referral_code").
+			Unique(),
 	}
 }

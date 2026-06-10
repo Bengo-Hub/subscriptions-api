@@ -32,6 +32,7 @@ func (SubscriptionCreditTransaction) Fields() []ent.Field {
 				"auto_applied",    // auto-deducted at renewal
 				"expired",         // balance expiry sweep
 				"manual_adjusted", // platform admin correction
+				"referral_bonus",  // credit earned for referring another tenant who paid
 			),
 		field.Int("amount_kes").
 			Comment("Positive = credit added; negative = credit deducted"),

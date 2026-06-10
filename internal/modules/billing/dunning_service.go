@@ -146,7 +146,7 @@ func initiateAutoCharge(ctx context.Context, log *zap.Logger, sub *ent.TenantSub
 		"payment_method": "auto",
 		"reference_id":   sub.ID.String(),
 		"reference_type": "subscription_renewal",
-		"source_service": "subscription-service",
+		"source_service": "subscriptions",
 		"description":    fmt.Sprintf("Subscription renewal (dunning) — %s", plan.Name),
 		"metadata": map[string]any{
 			"tenant_id":          sub.TenantID.String(),
