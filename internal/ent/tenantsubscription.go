@@ -49,6 +49,10 @@ type TenantSubscription struct {
 	OverageEnabledAt *time.Time `json:"overage_enabled_at,omitempty"`
 	// Reference to treasury payment method
 	PaymentMethodID *uuid.UUID `json:"payment_method_id,omitempty"`
+	// Tenant that referred this tenant (Type-A referral); credited when this tenant pays
+	ReferredBy *uuid.UUID `json:"referred_by,omitempty"`
+	// This tenant's own shareable referral code; others sign up with it to attribute the referral
+	ReferralCode *string `json:"referral_code,omitempty"`
 	// Metadata holds the value of the "metadata" field.
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -121,7 +125,7 @@ func (*TenantSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case tenantsubscription.FieldPaymentMethodID:
+		case tenantsubscription.FieldPaymentMethodID, tenantsubscription.FieldReferredBy:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case tenantsubscription.FieldMetadata:
 			values[i] = new([]byte)
@@ -129,7 +133,7 @@ func (*TenantSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case tenantsubscription.FieldAppliedDiscount:
 			values[i] = new(sql.NullFloat64)
-		case tenantsubscription.FieldStatus, tenantsubscription.FieldCancelReason, tenantsubscription.FieldBillingCycle, tenantsubscription.FieldBundleCode:
+		case tenantsubscription.FieldStatus, tenantsubscription.FieldCancelReason, tenantsubscription.FieldBillingCycle, tenantsubscription.FieldBundleCode, tenantsubscription.FieldReferralCode:
 			values[i] = new(sql.NullString)
 		case tenantsubscription.FieldTrialEndsAt, tenantsubscription.FieldCurrentPeriodStart, tenantsubscription.FieldCurrentPeriodEnd, tenantsubscription.FieldCancelledAt, tenantsubscription.FieldOverageEnabledAt, tenantsubscription.FieldCreatedAt, tenantsubscription.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -245,6 +249,20 @@ func (_m *TenantSubscription) assignValues(columns []string, values []any) error
 			} else if value.Valid {
 				_m.PaymentMethodID = new(uuid.UUID)
 				*_m.PaymentMethodID = *value.S.(*uuid.UUID)
+			}
+		case tenantsubscription.FieldReferredBy:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field referred_by", values[i])
+			} else if value.Valid {
+				_m.ReferredBy = new(uuid.UUID)
+				*_m.ReferredBy = *value.S.(*uuid.UUID)
+			}
+		case tenantsubscription.FieldReferralCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field referral_code", values[i])
+			} else if value.Valid {
+				_m.ReferralCode = new(string)
+				*_m.ReferralCode = value.String
 			}
 		case tenantsubscription.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -374,6 +392,16 @@ func (_m *TenantSubscription) String() string {
 	if v := _m.PaymentMethodID; v != nil {
 		builder.WriteString("payment_method_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.ReferredBy; v != nil {
+		builder.WriteString("referred_by=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.ReferralCode; v != nil {
+		builder.WriteString("referral_code=")
+		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")

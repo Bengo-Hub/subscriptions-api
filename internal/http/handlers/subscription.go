@@ -79,6 +79,36 @@ func (h *SubscriptionHandler) Get(w http.ResponseWriter, r *http.Request) {
 	h.respondWithJSON(w, http.StatusOK, sub)
 }
 
+// GetReferralCode godoc
+// @Summary Get the tenant's referral code
+// @Description Returns (creating if needed) the calling tenant's shareable Type-A referral code.
+// @Tags Subscriptions
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /subscription/referral-code [get]
+func (h *SubscriptionHandler) GetReferralCode(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	tenantIDStr := resolveTenantID(r)
+	if tenantIDStr == "" {
+		h.respondWithError(w, http.StatusBadRequest, "tenant_id required")
+		return
+	}
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid tenant id")
+		return
+	}
+	code, err := h.service.GetOrCreateReferralCode(ctx, tenantID)
+	if err != nil {
+		h.respondWithError(w, http.StatusNotFound, "no subscription for tenant")
+		return
+	}
+	h.respondWithJSON(w, http.StatusOK, map[string]any{"referral_code": code})
+}
+
 // Create godoc
 // @Summary Create subscription
 // @Description Provisions a new subscription for the tenant (starts trial if applicable)

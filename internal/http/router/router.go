@@ -134,6 +134,8 @@ func New(
 				r.Post("/initiate", subscriptionHandler.Initiate)
 				r.Get("/settings", subscriptionHandler.GetSettings)
 				r.Put("/settings", subscriptionHandler.UpdateSettings)
+				// Type-A referral: the tenant's own shareable referral code.
+				r.Get("/referral-code", subscriptionHandler.GetReferralCode)
 				// Opt-in extra usage (overage) master switch + pending-overage view.
 				r.Get("/overage", subscriptionHandler.GetOverage)
 				r.Post("/overage/enable", subscriptionHandler.EnableOverage)

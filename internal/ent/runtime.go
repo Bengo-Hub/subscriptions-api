@@ -729,15 +729,15 @@ func init() {
 	// tenantsubscription.DefaultAllowOverage holds the default value on creation for the allow_overage field.
 	tenantsubscription.DefaultAllowOverage = tenantsubscriptionDescAllowOverage.Default.(bool)
 	// tenantsubscriptionDescMetadata is the schema descriptor for metadata field.
-	tenantsubscriptionDescMetadata := tenantsubscriptionFields[15].Descriptor()
+	tenantsubscriptionDescMetadata := tenantsubscriptionFields[17].Descriptor()
 	// tenantsubscription.DefaultMetadata holds the default value on creation for the metadata field.
 	tenantsubscription.DefaultMetadata = tenantsubscriptionDescMetadata.Default.(map[string]interface{})
 	// tenantsubscriptionDescCreatedAt is the schema descriptor for created_at field.
-	tenantsubscriptionDescCreatedAt := tenantsubscriptionFields[16].Descriptor()
+	tenantsubscriptionDescCreatedAt := tenantsubscriptionFields[18].Descriptor()
 	// tenantsubscription.DefaultCreatedAt holds the default value on creation for the created_at field.
 	tenantsubscription.DefaultCreatedAt = tenantsubscriptionDescCreatedAt.Default.(func() time.Time)
 	// tenantsubscriptionDescUpdatedAt is the schema descriptor for updated_at field.
-	tenantsubscriptionDescUpdatedAt := tenantsubscriptionFields[17].Descriptor()
+	tenantsubscriptionDescUpdatedAt := tenantsubscriptionFields[19].Descriptor()
 	// tenantsubscription.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	tenantsubscription.DefaultUpdatedAt = tenantsubscriptionDescUpdatedAt.Default.(func() time.Time)
 	// tenantsubscription.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

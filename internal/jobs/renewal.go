@@ -252,7 +252,7 @@ func initiatePaymentRenewal(ctx context.Context, log *zap.Logger, orm *ent.Clien
 		"payment_method": "auto",
 		"reference_id":   sub.ID.String(),
 		"reference_type": "subscription_renewal",
-		"source_service": "subscription-service",
+		"source_service": "subscriptions",
 		"description":    "Auto-renewal: " + plan.Name,
 		"metadata": map[string]any{
 			"tenant_id":   sub.TenantID.String(),
