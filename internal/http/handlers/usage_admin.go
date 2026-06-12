@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	authclient "github.com/Bengo-Hub/shared-auth-client"
 	httpware "github.com/Bengo-Hub/httpware"
+	authclient "github.com/Bengo-Hub/shared-auth-client"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/go-chi/chi/v5"
@@ -171,10 +171,26 @@ func (h *UsageAdminHandler) OverrideMetric(w http.ResponseWriter, r *http.Reques
 	}
 
 	period := time.Now().UTC().Format("2006-01")
+	now := time.Now().UTC()
+	periodStart := now.AddDate(0, -1, 0)
 
-	// Read old Redis value for audit
+	// Current summed usage for this metric in the active window. The override sets
+	// the metric to an ABSOLUTE value, so we insert a corrective delta
+	// (req.Value - currentSum) — usage_events is summed by the usage/overage readers,
+	// so a raw absolute row would double-count.
+	currentSum := 0.0
+	if err := h.db.QueryRow(ctx, `
+		SELECT COALESCE(SUM(value), 0) FROM usage_events
+		WHERE tenant_id = $1 AND metric_type = $2 AND created_at >= $3 AND created_at <= $4
+	`, tenantID, req.MetricType, periodStart, now).Scan(&currentSum); err != nil {
+		h.log.Warn("usage override: failed to read current sum, assuming 0",
+			zap.String("tenant_id", tenantIDStr), zap.String("metric", req.MetricType), zap.Error(err))
+	}
+	correctiveDelta := req.Value - currentSum
+
+	// Read old Redis value for audit, then set the fast-path counter to the absolute value.
 	cacheKey := fmt.Sprintf("usage:limit:%s:%s:%s", tenantID.String(), req.MetricType, period)
-	oldVal := 0.0
+	oldVal := currentSum
 	if h.cache != nil {
 		if v, err := h.cache.Get(ctx, cacheKey).Float64(); err == nil {
 			oldVal = v
@@ -185,25 +201,26 @@ func (h *UsageAdminHandler) OverrideMetric(w http.ResponseWriter, r *http.Reques
 			h.log.Warn("usage override: failed to update redis counter", zap.String("key", cacheKey), zap.Error(err))
 		}
 		// Re-apply TTL
-		now := time.Now().UTC()
 		expiry := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, time.UTC)
 		_ = h.cache.ExpireAt(ctx, cacheKey, expiry).Err()
 	}
 
-	// Insert a corrective usage_event row with audit metadata
+	// Insert a corrective usage_event row with audit metadata. The row's value is the
+	// delta so SUM(value) lands exactly on req.Value.
 	meta, _ := json.Marshal(map[string]any{
-		"override":       true,
-		"admin_user_id":  adminUserID,
-		"reason":         req.Reason,
-		"old_value":      oldVal,
-		"new_value":      req.Value,
-		"overridden_at":  time.Now().UTC().Format(time.RFC3339),
+		"override":         true,
+		"admin_user_id":    adminUserID,
+		"reason":           req.Reason,
+		"old_value":        oldVal,
+		"new_value":        req.Value,
+		"current_sum":      currentSum,
+		"corrective_delta": correctiveDelta,
+		"overridden_at":    now.Format(time.RFC3339),
 	})
-	now := time.Now().UTC()
 	_, err = h.db.Exec(ctx, `
 		INSERT INTO usage_events (id, tenant_id, metric_type, service_name, value, period_start, period_end, metadata, created_at)
 		VALUES ($1, $2, $3, 'admin_override', $4, $5, $6, $7, $8)
-	`, uuid.New(), tenantID, req.MetricType, req.Value, now.AddDate(0, -1, 0), now, meta, now)
+	`, uuid.New(), tenantID, req.MetricType, correctiveDelta, periodStart, now, meta, now)
 	if err != nil {
 		h.log.Error("usage override: failed to insert event", zap.String("tenant_id", tenantIDStr), zap.Error(err))
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to record override"})
