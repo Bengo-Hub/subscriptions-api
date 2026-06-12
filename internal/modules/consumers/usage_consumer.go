@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
+	eventslib "github.com/Bengo-Hub/shared-events"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
-	eventslib "github.com/Bengo-Hub/shared-events"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go"
@@ -23,6 +23,9 @@ import (
 type usageEventMapping struct {
 	metric  string
 	service string
+	// delta is the amount to add to usage per event. Defaults to +1 when zero.
+	// Deletion/release events use -1 to keep structural counts (e.g. tables) in sync.
+	delta float64
 	// roleMetrics maps role strings to metric overrides for auth.user.created events
 	roleMetrics map[string]string
 }
@@ -31,8 +34,8 @@ type usageEventMapping struct {
 // Subjects marked with roleMetrics require parsing the "roles" array from the payload.
 var usageSubjectMappings = map[string]usageEventMapping{
 	// ── Ordering ──────────────────────────────────────────────────────────────
-	"ordering.order.created":     {metric: "orders", service: "ordering"},
-	"cafe.order.created":         {metric: "orders", service: "cafe"},
+	"ordering.order.created":      {metric: "orders", service: "ordering"},
+	"cafe.order.created":          {metric: "orders", service: "cafe"},
 	"ordering.webhook.dispatched": {metric: "webhooks", service: "ordering"},
 
 	// ── POS ───────────────────────────────────────────────────────────────────
@@ -40,6 +43,7 @@ var usageSubjectMappings = map[string]usageEventMapping{
 	"pos.sale.finalized":          {metric: "transactions", service: "pos"},
 	"pos.device.registered":       {metric: "devices", service: "pos"},
 	"pos.table.created":           {metric: "tables", service: "pos"},
+	"pos.table.deleted":           {metric: "tables", service: "pos", delta: -1},
 	"pos.room.created":            {metric: "rooms", service: "pos"},
 	"pos.conference.event.booked": {metric: "conference_events", service: "pos"},
 
@@ -49,22 +53,22 @@ var usageSubjectMappings = map[string]usageEventMapping{
 	"inventory.warehouse.created": {metric: "warehouses", service: "inventory"},
 
 	// ── Logistics ─────────────────────────────────────────────────────────────
-	"logistics.delivery.created":      {metric: "deliveries", service: "logistics"},
-	"logistics.task.completed":        {metric: "deliveries", service: "logistics"},
-	"logistics.fleet.member_invited":  {metric: "riders", service: "logistics"},
-	"logistics.task.eta_updated":      {metric: "tracking_requests", service: "logistics"},
-	"truload.shipment.created":        {metric: "deliveries", service: "truload"},
+	"logistics.delivery.created":     {metric: "deliveries", service: "logistics"},
+	"logistics.task.completed":       {metric: "deliveries", service: "logistics"},
+	"logistics.fleet.member_invited": {metric: "riders", service: "logistics"},
+	"logistics.task.eta_updated":     {metric: "tracking_requests", service: "logistics"},
+	"truload.shipment.created":       {metric: "deliveries", service: "truload"},
 
 	// ── Auth / Staff ──────────────────────────────────────────────────────────
 	// Role-aware: roles[] array inspected to route to correct metric bucket
-	"auth.user.created":  {metric: "staff", service: "auth", roleMetrics: map[string]string{
-		"admin":        "admins",
-		"outlet_admin": "admins",
-		"cashier":      "cashiers",
-		"staff":        "staff",
-		"waiter":       "staff",
+	"auth.user.created": {metric: "staff", service: "auth", roleMetrics: map[string]string{
+		"admin":         "admins",
+		"outlet_admin":  "admins",
+		"cashier":       "cashiers",
+		"staff":         "staff",
+		"waiter":        "staff",
 		"kitchen_staff": "staff",
-		"rider":        "riders",
+		"rider":         "riders",
 	}},
 	"auth.outlet.created": {metric: "outlets", service: "auth"},
 
@@ -174,8 +178,13 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 		}
 	}
 
+	delta := m.delta
+	if delta == 0 {
+		delta = 1.0
+	}
+
 	for _, metric := range metrics {
-		if err := c.recordUsage(ctx, tenantID, metric, m.service, 1.0); err != nil {
+		if err := c.recordUsage(ctx, tenantID, metric, m.service, delta); err != nil {
 			return err
 		}
 	}
@@ -184,7 +193,9 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 
 func (c *UsageConsumer) recordUsage(ctx context.Context, tenantID uuid.UUID, metric, service string, value float64) error {
 	// Check quota and threshold before recording — fail open on Redis/ORM errors.
-	if c.cache != nil && c.orm != nil {
+	// Only run the limit/threshold path for positive deltas; decrements (e.g. table
+	// deletions) just adjust the counters below and never trigger a warning.
+	if value > 0 && c.cache != nil && c.orm != nil {
 		exceeded, atThreshold, planLimit, currentTotal := c.checkLimitAndThreshold(ctx, tenantID, metric, value)
 		if atThreshold && !exceeded {
 			c.publishThresholdWarning(ctx, tenantID, metric, planLimit, currentTotal)
@@ -195,6 +206,10 @@ func (c *UsageConsumer) recordUsage(ctx context.Context, tenantID uuid.UUID, met
 				zap.String("metric", metric),
 			)
 		}
+	} else if value < 0 && c.cache != nil {
+		// Decrement the fast-path counter so structural limits (e.g. tables) reflect
+		// the deletion. Floor at 0 to avoid drift from out-of-order/replayed events.
+		c.decrementCounter(ctx, tenantID, metric, value)
 	}
 
 	now := time.Now()
@@ -268,6 +283,22 @@ func (c *UsageConsumer) checkLimitAndThreshold(ctx context.Context, tenantID uui
 	return exceeded, atThreshold, limit, newTotal
 }
 
+// decrementCounter reduces the Redis fast-path usage counter by |value|, flooring
+// at 0. Used for structural decrements (e.g. table deletions). Best-effort: any
+// Redis error is ignored since the usage_events sum is the billing source of truth.
+func (c *UsageConsumer) decrementCounter(ctx context.Context, tenantID uuid.UUID, metricType string, value float64) {
+	period := time.Now().UTC().Format("2006-01")
+	cacheKey := fmt.Sprintf("usage:limit:%s:%s:%s", tenantID.String(), metricType, period)
+
+	newTotal, err := c.cache.IncrByFloat(ctx, cacheKey, value).Result() // value is negative
+	if err != nil {
+		return
+	}
+	if newTotal < 0 {
+		_ = c.cache.Set(ctx, cacheKey, 0, redis.KeepTTL).Err()
+	}
+}
+
 // getThreshold returns the configured warning threshold (default 0.80 = 80%).
 func (c *UsageConsumer) getThreshold(ctx context.Context, tenantID uuid.UUID) float64 {
 	_ = tenantID // future: per-tenant threshold from service_configs
@@ -288,18 +319,18 @@ func (c *UsageConsumer) getThreshold(ctx context.Context, tenantID uuid.UUID) fl
 func (c *UsageConsumer) publishThresholdWarning(ctx context.Context, tenantID uuid.UUID, metric string, planLimit int, currentUsage float64) {
 	pct := int(currentUsage / float64(planLimit) * 100)
 	payload := map[string]any{
-		"id":            uuid.New().String(),
-		"tenant_id":     tenantID.String(),
+		"id":             uuid.New().String(),
+		"tenant_id":      tenantID.String(),
 		"aggregate_type": "usage",
-		"aggregate_id":  tenantID.String(),
-		"event_type":    "usage.threshold_exceeded",
+		"aggregate_id":   tenantID.String(),
+		"event_type":     "usage.threshold_exceeded",
 		"payload": map[string]any{
-			"tenant_id":      tenantID.String(),
-			"metric_type":    metric,
-			"plan_limit":     planLimit,
-			"current_usage":  currentUsage,
-			"threshold_pct":  pct,
-			"period":         time.Now().UTC().Format("2006-01"),
+			"tenant_id":     tenantID.String(),
+			"metric_type":   metric,
+			"plan_limit":    planLimit,
+			"current_usage": currentUsage,
+			"threshold_pct": pct,
+			"period":        time.Now().UTC().Format("2006-01"),
 			"notification": map[string]any{
 				"target": "tenant_admin",
 			},
@@ -344,25 +375,25 @@ func (c *UsageConsumer) isLimitExceeded(ctx context.Context, tenantID uuid.UUID,
 func usageFindLimitKey(metricType string, planLimits map[string]any) string {
 	mt := strings.ToLower(metricType)
 	candidates := map[string]string{
-		"orders":           "max_orders_per_day",
-		"transactions":     "max_transactions_per_month",
-		"riders":           "max_riders",
-		"devices":          "max_devices",
-		"cashiers":         "max_cashiers",
-		"tables":           "max_tables",
-		"outlets":          "max_outlets",
-		"admins":           "max_admins",
-		"staff":            "max_staff",
-		"products":         "inventory_max_sku",
-		"warehouses":       "inventory_max_warehouses",
-		"rooms":            "max_rooms",
+		"orders":            "max_orders_per_day",
+		"transactions":      "max_transactions_per_month",
+		"riders":            "max_riders",
+		"devices":           "max_devices",
+		"cashiers":          "max_cashiers",
+		"tables":            "max_tables",
+		"outlets":           "max_outlets",
+		"admins":            "max_admins",
+		"staff":             "max_staff",
+		"products":          "inventory_max_sku",
+		"warehouses":        "inventory_max_warehouses",
+		"rooms":             "max_rooms",
 		"conference_events": "max_conference_events",
-		"deliveries":       "max_orders_per_day",
+		"deliveries":        "max_orders_per_day",
 		"tracking_requests": "live_tracking_requests_per_day",
-		"sms_sent":         "sms_notifications_per_day",
-		"emails_sent":      "email_notifications_per_day",
-		"push_sent":        "sms_notifications_per_day",
-		"webhooks":         "webhook_calls_per_day",
+		"sms_sent":          "sms_notifications_per_day",
+		"emails_sent":       "email_notifications_per_day",
+		"push_sent":         "sms_notifications_per_day",
+		"webhooks":          "webhook_calls_per_day",
 	}
 
 	if key, ok := candidates[mt]; ok {
