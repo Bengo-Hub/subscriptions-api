@@ -23,21 +23,23 @@ var s2sHTTPClient = &http.Client{Timeout: 15 * time.Second}
 
 // BillingHandler handles billing-related endpoints.
 type BillingHandler struct {
-	log            *zap.Logger
-	client         *ent.Client
-	treasuryClient *serviceclient.Client
-	treasuryAPIKey string
-	marketflowURL  string
+	log              *zap.Logger
+	client           *ent.Client
+	treasuryClient   *serviceclient.Client
+	treasuryAPIKey   string
+	marketflowURL    string
+	platformTenantID string // issuer tenant for subscription invoices (owns the invoice doc in treasury)
 }
 
 // NewBillingHandler creates a new billing handler.
-func NewBillingHandler(log *zap.Logger, client *ent.Client, treasuryClient *serviceclient.Client, treasuryAPIKey string, marketflowURL string) *BillingHandler {
+func NewBillingHandler(log *zap.Logger, client *ent.Client, treasuryClient *serviceclient.Client, treasuryAPIKey, marketflowURL, platformTenantID string) *BillingHandler {
 	return &BillingHandler{
-		log:            log.Named("billing.handler"),
-		client:         client,
-		treasuryClient: treasuryClient,
-		treasuryAPIKey: treasuryAPIKey,
-		marketflowURL:  marketflowURL,
+		log:              log.Named("billing.handler"),
+		client:           client,
+		treasuryClient:   treasuryClient,
+		treasuryAPIKey:   treasuryAPIKey,
+		marketflowURL:    marketflowURL,
+		platformTenantID: platformTenantID,
 	}
 }
 
@@ -133,6 +135,21 @@ func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 	// one from the subscription's stored markers, then any direct treasury invoices.
 	invoices := h.fetchInvoices(ctx, tenantID)
 	if row, ok := subscriptionInvoiceRow(sub); ok {
+		// Prefer treasury's authoritative invoice (status + amount + currency) over the local
+		// sub-status heuristic / stored markers, so a manually-recorded payment is reflected
+		// immediately, the row can't show a stale "pending"/false "paid", and the amount always
+		// matches the treasury invoice document. Falls back to the local values on error.
+		if invID, _ := sub.Metadata["last_invoice_id"].(string); invID != "" {
+			if auth, ok := h.fetchSubscriptionInvoice(ctx, invID); ok {
+				row.Status = auth.Status
+				if auth.Amount > 0 {
+					row.Amount = auth.Amount
+				}
+				if auth.Currency != "" {
+					row.Currency = auth.Currency
+				}
+			}
+		}
 		invoices = append([]invoiceRow{row}, invoices...)
 	}
 	billing["invoices"] = invoices
@@ -237,6 +254,56 @@ func (h *BillingHandler) fetchInvoices(ctx context.Context, tenantID uuid.UUID) 
 		})
 	}
 	return rows
+}
+
+// authoritativeInvoice is the subset of a treasury invoice the billing page trusts as the
+// source of truth for the subscription invoice row.
+type authoritativeInvoice struct {
+	Status   string
+	Amount   float64
+	Currency string
+}
+
+// fetchSubscriptionInvoice returns the authoritative invoice (status + amount + currency)
+// for a platform-owned subscription invoice, fetched by id from treasury S2S. Subscription
+// invoices are issued by the platform tenant, so they aren't in the billed tenant's own list —
+// this resolves them directly. Returns (_, false) when it can't be determined so callers fall
+// back to the local sub-status heuristic / stored markers.
+func (h *BillingHandler) fetchSubscriptionInvoice(ctx context.Context, invoiceID string) (authoritativeInvoice, bool) {
+	if h.treasuryClient == nil || h.platformTenantID == "" || invoiceID == "" {
+		return authoritativeInvoice{}, false
+	}
+	headers := map[string]string{}
+	if h.treasuryAPIKey != "" {
+		headers["X-API-Key"] = h.treasuryAPIKey
+	}
+	resp, err := h.treasuryClient.Get(ctx, fmt.Sprintf("/api/v1/s2s/%s/invoices/%s", h.platformTenantID, invoiceID), headers)
+	if err != nil || !resp.IsSuccess() {
+		return authoritativeInvoice{}, false
+	}
+	// total_amount is a decimal serialized as a JSON string (e.g. "2500") or number — json.Number handles both.
+	var inv struct {
+		Status        string      `json:"status"`
+		PaymentStatus string      `json:"payment_status"`
+		TotalAmount   json.Number `json:"total_amount"`
+		Currency      string      `json:"currency"`
+	}
+	if err := resp.DecodeJSON(&inv); err != nil {
+		return authoritativeInvoice{}, false
+	}
+	amount, _ := inv.TotalAmount.Float64()
+	out := authoritativeInvoice{Amount: amount, Currency: inv.Currency}
+	switch {
+	case inv.Status == "paid" || inv.PaymentStatus == "paid":
+		out.Status = "paid"
+	case inv.PaymentStatus == "partial":
+		out.Status = "partial"
+	case inv.Status == "void" || inv.Status == "cancelled":
+		out.Status = "void"
+	default:
+		out.Status = "pending"
+	}
+	return out, true
 }
 
 // ConfirmPaymentMethod godoc

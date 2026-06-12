@@ -221,7 +221,7 @@ func New(ctx context.Context) (*App, error) {
 	serviceChargeHandler := handlers.NewServiceChargeHandler(log, ormClient)
 
 	// Billing and platform admin handlers
-	billingHandler := handlers.NewBillingHandler(log, ormClient, treasuryClient, cfg.Services.TreasuryAPIKey, cfg.Services.MarketflowAPI)
+	billingHandler := handlers.NewBillingHandler(log, ormClient, treasuryClient, cfg.Services.TreasuryAPIKey, cfg.Services.MarketflowAPI, cfg.Services.PlatformTenantID)
 	platformHandler := handlers.NewPlatformHandler(log, ormClient, featureHandler)
 
 	// Subscription invoice service (platform→tenant invoices via treasury S2S) — shared by
