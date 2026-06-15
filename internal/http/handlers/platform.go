@@ -277,6 +277,14 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 	now := time.Now()
 	periodEnd := now.AddDate(0, 1, 0)
 
+	// When starting a trial, set trial_ends_at from the plan's free_trial_days so
+	// the trial actually expires (otherwise it never ends — a free-forever leak).
+	var trialEndsPtr *time.Time
+	if body.StartTrial && plan.FreeTrialDays > 0 {
+		te := now.AddDate(0, 0, plan.FreeTrialDays)
+		trialEndsPtr = &te
+	}
+
 	// Check if subscription already exists for tenant
 	existing, err := h.client.TenantSubscription.Query().
 		Where(tenantsubscription.TenantID(tenantID)).
@@ -295,6 +303,7 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 			SetStatus(status).
 			SetCurrentPeriodStart(now).
 			SetCurrentPeriodEnd(periodEnd).
+			SetNillableTrialEndsAt(trialEndsPtr).
 			Save(ctx)
 		if err != nil {
 			h.log.Error("failed to update tenant subscription", zap.Error(err))
@@ -310,6 +319,7 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 			SetStatus(status).
 			SetCurrentPeriodStart(now).
 			SetCurrentPeriodEnd(periodEnd).
+			SetNillableTrialEndsAt(trialEndsPtr).
 			Save(ctx)
 		if err != nil {
 			h.log.Error("failed to create tenant subscription", zap.Error(err))
