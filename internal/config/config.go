@@ -21,6 +21,16 @@ type Config struct {
 	Telemetry TelemetryConfig
 	Security  SecurityConfig
 	Services  ServicesConfig
+	Backup    BackupConfig
+}
+
+// BackupConfig controls the tenant-scoped backup scheduler + retention churn. Artifacts are
+// written to a local directory (Dir) — typically a PVC.
+type BackupConfig struct {
+	Dir             string `envconfig:"BACKUP_DIR" default:"/app/backups/subscriptions"`
+	ScheduleEnabled bool   `envconfig:"BACKUP_SCHEDULE_ENABLED" default:"true"`
+	ScheduleHour    int    `envconfig:"BACKUP_SCHEDULE_HOUR" default:"2"`
+	RetentionDays   int    `envconfig:"BACKUP_RETENTION_DAYS" default:"4"`
 }
 
 type AppConfig struct {

@@ -31,6 +31,7 @@ import (
 	handlers "github.com/bengobox/subscription-service/internal/http/handlers"
 	router "github.com/bengobox/subscription-service/internal/http/router"
 	"github.com/bengobox/subscription-service/internal/jobs"
+	backupmod "github.com/bengobox/subscription-service/internal/modules/backup"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/consumers"
 	"github.com/bengobox/subscription-service/internal/modules/plans"
@@ -260,7 +261,16 @@ func New(ctx context.Context) (*App, error) {
 		featureCatalogHandler = handlers.NewFeatureCatalogHandler(log, ormClient)
 	}
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
+	// Tenant-scoped backups + daily 02:00 auto-backup scheduler + retention churn.
+	backupSvc := backupmod.NewService(sqlDB, ormClient, cfg.Backup.Dir, log)
+	backupHandler := handlers.NewBackupHandler(log, backupSvc, cfg.Backup.RetentionDays)
+	backupmod.NewScheduler(backupSvc, backupmod.SchedulerConfig{
+		Enabled:       cfg.Backup.ScheduleEnabled,
+		Hour:          cfg.Backup.ScheduleHour,
+		RetentionDays: cfg.Backup.RetentionDays,
+	}, log).Start(ctx)
+
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, backupHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/bengobox/subscription-service/internal/ent/backup"
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
 	"github.com/bengobox/subscription-service/internal/ent/coupon"
 	"github.com/bengobox/subscription-service/internal/ent/customaddon"
@@ -96,6 +97,7 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			backup.Table:                        backup.ValidColumn,
 			bundle.Table:                        bundle.ValidColumn,
 			coupon.Table:                        coupon.ValidColumn,
 			customaddon.Table:                   customaddon.ValidColumn,

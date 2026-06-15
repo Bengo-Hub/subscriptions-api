@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Backup is the predicate function for backup builders.
+type Backup func(*sql.Selector)
+
 // Bundle is the predicate function for bundle builders.
 type Bundle func(*sql.Selector)
 

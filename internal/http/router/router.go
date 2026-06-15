@@ -34,6 +34,7 @@ func New(
 	usageAdminHandler *handlers.UsageAdminHandler,
 	couponAdminHandler *handlers.CouponAdminHandler,
 	featureCatalogHandler *handlers.FeatureCatalogHandler,
+	backupHandler *handlers.BackupHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -211,6 +212,32 @@ func New(
 			// RBAC routes
 			if rbacHandler != nil {
 				rbacHandler.RegisterRoutes(r)
+			}
+
+			// Tenant-scoped backups (this tenant's data only) — admin-gated: platform owner
+			// or a tenant admin holding subscriptions.config.manage.
+			if backupHandler != nil {
+				r.Group(func(r chi.Router) {
+					r.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+							ctx := req.Context()
+							allowed := httpware.IsPlatformOwner(ctx)
+							if !allowed {
+								if claims, ok := authclient.ClaimsFromContext(ctx); ok {
+									allowed = claims.HasAnyPermission("subscriptions.config.manage", "subscriptions.config.view")
+								}
+							}
+							if !allowed {
+								w.Header().Set("Content-Type", "application/json")
+								w.WriteHeader(http.StatusForbidden)
+								_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+								return
+							}
+							next.ServeHTTP(w, req)
+						})
+					})
+					backupHandler.RegisterRoutes(r)
+				})
 			}
 
 			// Admin routes for plans (platform admin only)
