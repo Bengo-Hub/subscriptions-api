@@ -23,15 +23,21 @@ type Service struct {
 	log               *zap.Logger
 	treasuryClient    *serviceclient.Client
 	treasuryAPIKey    string
+	// platformTenantID is the platform owner tenant that issues subscription invoices.
+	// It is exempt from subscriptions alongside the demo/codevertex tenants. See exemption.go.
+	platformTenantID  uuid.UUID
 }
 
-// New creates a subscription lifecycle service.
-func New(client *ent.Client, log *zap.Logger, treasuryClient *serviceclient.Client, treasuryAPIKey string) *Service {
+// New creates a subscription lifecycle service. platformTenantID is the operating
+// platform-owner tenant UUID (PLATFORM_TENANT_ID); pass uuid.Nil to disable id-based
+// exemption (slug-based exemption still applies).
+func New(client *ent.Client, log *zap.Logger, treasuryClient *serviceclient.Client, treasuryAPIKey string, platformTenantID uuid.UUID) *Service {
 	return &Service{
-		client:         client,
-		log:            log.Named("subscriptions.service"),
-		treasuryClient: treasuryClient,
-		treasuryAPIKey: treasuryAPIKey,
+		client:           client,
+		log:              log.Named("subscriptions.service"),
+		treasuryClient:   treasuryClient,
+		treasuryAPIKey:   treasuryAPIKey,
+		platformTenantID: platformTenantID,
 	}
 }
 
@@ -143,28 +149,16 @@ func canTransition(from, to tenantsubscription.Status) bool {
 
 // --- Lifecycle operations ---
 
-// GetSubscriptionResult returns the subscription result for a tenant.
-func (s *Service) GetSubscriptionResult(ctx context.Context, tenantID uuid.UUID) (*SubscriptionResult, error) {
-	sub, err := s.getSubscription(ctx, tenantID)
-	if err != nil {
-		return nil, err
-	}
-
-	plan, err := s.client.SubscriptionPlan.Query().
-		Where(subscriptionplan.IDEQ(sub.PlanID)).
-		WithFeatures(func(q *ent.PlanFeatureQuery) {
-			q.Where(planfeature.IsIncludedEQ(true))
-		}).
-		Only(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("lookup plan: %w", err)
-	}
-
-	return s.buildResult(sub, plan), nil
-}
+// GetSubscriptionResult is implemented in entitlements.go (composite resolution across the
+// main plan + active per-product subscriptions).
 
 // InitiateSubscription initiates the payment flow for a new or changed subscription.
 func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscriptionInput) (*InitiateSubscriptionResult, error) {
+	// Demo + platform-owner tenants never own a subscription record.
+	if err := s.guardExempt(ctx, in.TenantID); err != nil {
+		return nil, err
+	}
+
 	// 1. Lookup plan
 	plan, err := s.client.SubscriptionPlan.Query().
 		Where(
@@ -238,6 +232,11 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 
 // CreateSubscription provisions a new subscription for a tenant.
 func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*SubscriptionResult, error) {
+	// Demo + platform-owner tenants never own a subscription record.
+	if err := s.guardExempt(ctx, in.TenantID); err != nil {
+		return nil, err
+	}
+
 	// Verify tenant doesn't already have a subscription
 	exists, err := s.client.TenantSubscription.Query().
 		Where(tenantsubscription.TenantIDEQ(in.TenantID)).
@@ -341,6 +340,11 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 
 // ChangePlan upgrades or downgrades a tenant's subscription plan.
 func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*SubscriptionResult, error) {
+	// Demo + platform-owner tenants never own a subscription record.
+	if err := s.guardExempt(ctx, in.TenantID); err != nil {
+		return nil, err
+	}
+
 	sub, err := s.getSubscription(ctx, in.TenantID)
 	if err != nil {
 		return nil, err
@@ -629,43 +633,94 @@ func (s *Service) SwitchPlanByID(ctx context.Context, subscriptionID uuid.UUID, 
 
 // ActivateProduct enables a product subscription within a tenant subscription.
 func (s *Service) ActivateProduct(ctx context.Context, tenantID uuid.UUID, productCode string) error {
+	return s.AssignProductPlan(ctx, tenantID, productCode, "")
+}
+
+// AssignProductPlan activates a per-product subscription for a tenant and, when planCode is
+// non-empty, points it at that plan via override_plan_id so the plan's features/limits are
+// merged into the tenant's COMPOSITE entitlements (multi-use-case: e.g. POS main plan + a
+// TruLoad product line). Emits tenant.subscription.updated so caches/JWTs refresh.
+func (s *Service) AssignProductPlan(ctx context.Context, tenantID uuid.UUID, productCode, planCode string) error {
+	// Demo + platform-owner tenants never own a subscription record.
+	if err := s.guardExempt(ctx, tenantID); err != nil {
+		return err
+	}
+
 	sub, err := s.getSubscription(ctx, tenantID)
 	if err != nil {
 		return err
 	}
-
 	if sub.Status != tenantsubscription.StatusACTIVE && sub.Status != tenantsubscription.StatusTRIAL {
 		return fmt.Errorf("cannot activate products in %s status", sub.Status)
 	}
 
-	// Check if product subscription already exists
-	existing, err := s.client.ProductSubscription.Query().
+	// Resolve the override plan (if a plan code was supplied) and its owning product.
+	var overridePlanID *uuid.UUID
+	if planCode != "" {
+		plan, perr := s.client.SubscriptionPlan.Query().
+			Where(subscriptionplan.PlanCodeEQ(planCode), subscriptionplan.IsActiveEQ(true)).
+			Only(ctx)
+		if perr != nil {
+			if ent.IsNotFound(perr) {
+				return fmt.Errorf("plan not found: %s", planCode)
+			}
+			return fmt.Errorf("lookup plan: %w", perr)
+		}
+		overridePlanID = &plan.ID
+	}
+
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("start transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	existing, qerr := tx.ProductSubscription.Query().
 		Where(
 			productsubscription.TenantSubscriptionIDEQ(sub.ID),
 			productsubscription.ProductCodeEQ(productCode),
 		).
 		Only(ctx)
-	if err == nil {
-		// Already exists, update status
-		return s.client.ProductSubscription.UpdateOneID(existing.ID).
+	switch {
+	case qerr == nil:
+		upd := tx.ProductSubscription.UpdateOneID(existing.ID).
 			SetStatus(productsubscription.StatusActive).
-			Exec(ctx)
-	}
-	if !ent.IsNotFound(err) {
-		return fmt.Errorf("check product subscription: %w", err)
+			ClearDeactivatedAt()
+		if overridePlanID != nil {
+			upd = upd.SetOverridePlanID(*overridePlanID)
+		}
+		if _, err = upd.Save(ctx); err != nil {
+			return fmt.Errorf("update product subscription: %w", err)
+		}
+	case ent.IsNotFound(qerr):
+		create := tx.ProductSubscription.Create().
+			SetTenantSubscriptionID(sub.ID).
+			SetProductCode(productCode).
+			SetStatus(productsubscription.StatusActive).
+			SetActivatedAt(time.Now().UTC())
+		if overridePlanID != nil {
+			create = create.SetOverridePlanID(*overridePlanID)
+		}
+		if _, err = create.Save(ctx); err != nil {
+			return fmt.Errorf("create product subscription: %w", err)
+		}
+	default:
+		err = fmt.Errorf("check product subscription: %w", qerr)
+		return err
 	}
 
-	// Create new product subscription
-	_, err = s.client.ProductSubscription.Create().
-		SetTenantSubscriptionID(sub.ID).
-		SetProductCode(productCode).
-		SetStatus(productsubscription.StatusActive).
-		SetActivatedAt(time.Now().UTC()).
-		Save(ctx)
-	return err
+	s.emitSubscriptionUpdatedTx(ctx, tx, sub, "product_activated")
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
+	return nil
 }
 
-// DeactivateProduct disables a product subscription.
+// DeactivateProduct disables a product subscription and refreshes composite entitlements.
 func (s *Service) DeactivateProduct(ctx context.Context, tenantID uuid.UUID, productCode string) error {
 	sub, err := s.getSubscription(ctx, tenantID)
 	if err != nil {
@@ -685,11 +740,44 @@ func (s *Service) DeactivateProduct(ctx context.Context, tenantID uuid.UUID, pro
 		return fmt.Errorf("lookup product subscription: %w", err)
 	}
 
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("start transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
 	now := time.Now().UTC()
-	return s.client.ProductSubscription.UpdateOneID(existing.ID).
+	if err = tx.ProductSubscription.UpdateOneID(existing.ID).
 		SetStatus(productsubscription.StatusInactive).
 		SetNillableDeactivatedAt(&now).
-		Exec(ctx)
+		Exec(ctx); err != nil {
+		return fmt.Errorf("deactivate product subscription: %w", err)
+	}
+
+	s.emitSubscriptionUpdatedTx(ctx, tx, sub, "product_deactivated")
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
+	return nil
+}
+
+// emitSubscriptionUpdatedTx writes the tenant.subscription.updated outbox event (with the
+// tenant slug so downstream subscribers can invalidate slug-keyed Redis caches) inside tx.
+// Used after product-subscription changes so auth re-mints JWTs with the new composite set.
+func (s *Service) emitSubscriptionUpdatedTx(ctx context.Context, tx *ent.Tx, sub *ent.TenantSubscription, direction string) {
+	tenantSlug := ""
+	if t, terr := tx.Tenant.Get(ctx, sub.TenantID); terr == nil {
+		tenantSlug = t.Slug
+	}
+	s.writeOutboxEvent(ctx, tx, sub.TenantID, "tenant", sub.TenantID, "subscription.updated", map[string]any{
+		"tenant_id":   sub.TenantID.String(),
+		"tenant_slug": tenantSlug,
+		"direction":   direction,
+	})
 }
 
 // ListProducts returns all product subscriptions for a tenant.
@@ -755,18 +843,18 @@ func (s *Service) GetServiceSubscriptions(ctx context.Context, tenantID uuid.UUI
 
 	result := &ServiceSubscriptionsResult{TenantID: tenantID}
 
-	var activeServiceTag string
+	// Composite: a tenant is ACTIVE for every service tag covered by its main plan AND by
+	// any active per-product subscription's override plan (multi-use-case tenants).
+	activeTags := map[string]bool{}
 	if sub != nil && sub.Edges.Plan != nil {
 		result.Subscription = s.buildResult(sub, sub.Edges.Plan)
-		if sub.Edges.Plan.ServiceTag != nil {
-			activeServiceTag = *sub.Edges.Plan.ServiceTag
-		}
+		activeTags = s.activeServiceTags(ctx, sub, sub.Edges.Plan)
 	}
 
 	services := make([]ServiceSubscriptionEntry, 0, len(domain.AllServiceTags))
 	for _, tag := range domain.AllServiceTags {
 		entry := ServiceSubscriptionEntry{ServiceTag: tag, Status: "NONE"}
-		if sub != nil && tag == activeServiceTag {
+		if sub != nil && activeTags[tag] {
 			entry.Status = string(sub.Status)
 			if sub.Edges.Plan != nil {
 				code := sub.Edges.Plan.PlanCode

@@ -17,6 +17,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 )
 
 // PlatformHandler handles platform admin endpoints.
@@ -25,6 +26,7 @@ type PlatformHandler struct {
 	client         *ent.Client
 	featureHandler *FeatureHandler
 	invoiceSvc     *billing.InvoiceService
+	subSvc         *subscriptions.Service
 }
 
 // NewPlatformHandler creates a new platform handler.
@@ -39,6 +41,12 @@ func NewPlatformHandler(log *zap.Logger, client *ent.Client, featureHandler *Fea
 // WithInvoiceService wires the subscription invoice service for manual generation/resend.
 func (h *PlatformHandler) WithInvoiceService(svc *billing.InvoiceService) {
 	h.invoiceSvc = svc
+}
+
+// WithSubscriptionService wires the subscription service so admin assignment can honor
+// the demo/platform tenant exemption (those tenants must never own a subscription).
+func (h *PlatformHandler) WithSubscriptionService(svc *subscriptions.Service) {
+	h.subSvc = svc
 }
 
 // GetPlatformStats godoc
@@ -256,6 +264,15 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Demo + platform-owner tenants are exempt and must never own a subscription record.
+	if h.subSvc != nil && h.subSvc.IsExemptTenant(ctx, tenantID) {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"is_bypass": true,
+			"message":   "tenant is exempt from subscriptions; no plan assigned",
+		})
+		return
+	}
+
 	plan, err := h.client.SubscriptionPlan.Query().
 		Where(subscriptionplan.PlanCode(body.PlanCode)).
 		Only(ctx)
@@ -334,6 +351,114 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 	}
 
 	writeJSON(w, http.StatusOK, sub)
+}
+
+// ListTenantProducts godoc
+// @Summary List a tenant's per-product subscription lines (admin)
+// @Description Returns the product subscriptions attached to the tenant's main subscription.
+// @Tags Platform
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Success 200 {object} map[string]interface{}
+// @Router /admin/tenants/{tenant_id}/products [get]
+func (h *PlatformHandler) ListTenantProducts(w http.ResponseWriter, r *http.Request) {
+	if h.subSvc == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "subscription service unavailable"})
+		return
+	}
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenant_id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+	prods, err := h.subSvc.ListProducts(r.Context(), tenantID)
+	if err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{"products": []any{}})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"products": prods})
+}
+
+// AssignProductToTenant godoc
+// @Summary Assign a per-product subscription line to a tenant (admin)
+// @Description Adds/activates a product line for a multi-use-case tenant. When planCode is
+// supplied the line's features/limits are merged into the tenant's composite entitlements.
+// @Tags Platform
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Success 200 {object} map[string]interface{}
+// @Router /admin/tenants/{tenant_id}/products [post]
+func (h *PlatformHandler) AssignProductToTenant(w http.ResponseWriter, r *http.Request) {
+	if h.subSvc == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "subscription service unavailable"})
+		return
+	}
+	ctx := r.Context()
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenant_id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+	var body struct {
+		ProductCode string `json:"productCode"`
+		PlanCode    string `json:"planCode"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ProductCode == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "productCode is required"})
+		return
+	}
+	if err := h.subSvc.AssignProductPlan(ctx, tenantID, body.ProductCode, body.PlanCode); err != nil {
+		if subscriptions.IsExemptErr(err) {
+			writeJSON(w, http.StatusOK, map[string]any{"is_bypass": true, "message": "tenant is exempt from subscriptions"})
+			return
+		}
+		h.log.Error("failed to assign product plan", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if h.featureHandler != nil {
+		h.featureHandler.InvalidateCache(ctx, tenantID)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// RemoveProductFromTenant godoc
+// @Summary Remove a per-product subscription line from a tenant (admin)
+// @Tags Platform
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Param product_code path string true "Product code"
+// @Success 200 {object} map[string]interface{}
+// @Router /admin/tenants/{tenant_id}/products/{product_code} [delete]
+func (h *PlatformHandler) RemoveProductFromTenant(w http.ResponseWriter, r *http.Request) {
+	if h.subSvc == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "subscription service unavailable"})
+		return
+	}
+	ctx := r.Context()
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenant_id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+	productCode := chi.URLParam(r, "product_code")
+	if productCode == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "product_code is required"})
+		return
+	}
+	if err := h.subSvc.DeactivateProduct(ctx, tenantID, productCode); err != nil {
+		h.log.Error("failed to remove product", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if h.featureHandler != nil {
+		h.featureHandler.InvalidateCache(ctx, tenantID)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
 }
 
 // UpdateSubscriptionStatus godoc

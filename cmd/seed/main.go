@@ -162,6 +162,19 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("reconcile plan tier limits: %w", err)
 	}
 
+	// 3.555 Inject BASIC cross-service integration features into every plan by service tag
+	// (e.g. POS plans get basic_inventory_access + basic_treasury_access). Additive + idempotent.
+	if err := injectIntegrationFeatures(ctx, tx); err != nil {
+		return fmt.Errorf("inject integration features: %w", err)
+	}
+
+	// 3.56 STRICT validation (fail-closed): abort the seed if any plan feature code or
+	// tier-limit key is not in the catalog. Keeps the catalog the single source of truth
+	// so backends/UI never gate on a code the catalog never defined.
+	if err := validateCatalogLinkage(ctx, tx); err != nil {
+		return fmt.Errorf("validate catalog linkage: %w", err)
+	}
+
 	// 3.6 Seed subscription coupons (platform discount codes for tenant billing)
 	if err := seedCoupons(ctx, tx); err != nil {
 		return fmt.Errorf("seed coupons: %w", err)

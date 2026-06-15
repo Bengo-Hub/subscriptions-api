@@ -221,6 +221,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/feature-catalog": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Upsert feature catalog entry (admin)",
+                "responses": {}
+            }
+        },
+        "/admin/feature-catalog/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Delete feature catalog entry (admin)",
+                "responses": {}
+            }
+        },
         "/admin/plans": {
             "post": {
                 "security": [
@@ -243,25 +277,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.planResponse"
+                            "$ref": "#/definitions/internal_http_handlers.planResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     }
                 }
@@ -298,25 +332,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.planResponse"
+                            "$ref": "#/definitions/internal_http_handlers.planResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     }
                 }
@@ -348,19 +382,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     }
                 }
@@ -580,6 +614,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/subscriptions/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Allows platform admin to set trial_ends_at, current_period_end, status, or plan_code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Update subscription dates / plan / status (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Subscription UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/admin/subscriptions/{id}/status": {
             "put": {
                 "security": [
@@ -652,7 +751,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns all tenants with their current subscription status. Requires platform owner.",
+                "description": "Returns paginated tenants with their current subscription status. Supports search and status filter.",
                 "produces": [
                     "application/json"
                 ],
@@ -660,6 +759,32 @@ const docTemplate = `{
                     "Platform"
                 ],
                 "summary": "List all tenants (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 20, max 100)",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by tenant name or slug",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by subscription status (ACTIVE, TRIAL, SUSPENDED, etc.)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -675,6 +800,118 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenants/{tenant_id}/products": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the product subscriptions attached to the tenant's main subscription.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "List a tenant's per-product subscription lines (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adds/activates a product line for a multi-use-case tenant. When planCode is",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Assign a per-product subscription line to a tenant (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenants/{tenant_id}/products/{product_code}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Remove a per-product subscription line from a tenant (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Product code",
+                        "name": "product_code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -745,6 +982,149 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/tenants/{tenant_id}/subscription/generate-invoice": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates + emails a subscription invoice with a durable pay link. Use ?force=true to regenerate for the current period.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Generate a subscription invoice for a tenant (platform owner)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Bypass idempotency and regenerate",
+                        "name": "force",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenants/{tenant_id}/subscription/invoice": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Get the latest subscription invoice summary for a tenant (platform owner)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenants/{tenant_id}/subscription/invoice/pdf": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Proxies the treasury invoice PDF so the UI needs no treasury auth.",
+                "produces": [
+                    "application/pdf"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Download the latest subscription invoice PDF (platform owner)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenants/{tenant_id}/subscription/invoice/resend": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Resend the latest subscription invoice email (platform owner)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/billing": {
             "get": {
                 "security": [
@@ -786,6 +1166,41 @@ const docTemplate = `{
                     "Features"
                 ],
                 "summary": "Get all feature entitlements",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/features/catalog": {
+            "get": {
+                "description": "Returns the platform-wide feature \u0026 limit catalog, optionally filtered by service or kind. Powers the admin plan builder.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "List feature catalog",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by service_tag (ordering, pos, inventory, treasury, ...)",
+                        "name": "service",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by kind (FEATURE | LIMIT)",
+                        "name": "kind",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -892,13 +1307,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.listPlansResponse"
+                            "$ref": "#/definitions/internal_http_handlers.listPlansResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     }
                 }
@@ -927,19 +1342,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.planResponse"
+                            "$ref": "#/definitions/internal_http_handlers.planResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     }
                 }
@@ -968,19 +1383,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.planResponse"
+                            "$ref": "#/definitions/internal_http_handlers.planResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     }
                 }
@@ -1196,6 +1611,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/subscription/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Cancel subscription at period end",
+                "responses": {}
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Undo subscription cancellation",
+                "responses": {}
+            }
+        },
         "/subscription/initiate": {
             "post": {
                 "security": [
@@ -1217,6 +1664,214 @@ const docTemplate = `{
                 "responses": {
                     "201": {
                         "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/overage": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the allow_overage flag, the total pending (un-invoiced) overage in",
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Get extra-usage status and pending overage",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/overage/disable": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Disable extra usage (overage)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/overage/enable": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Opt the tenant in to pay-as-you-go extra usage. Once enabled, metered",
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Enable extra usage (overage)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/payment-method/confirm": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Called after successful card_setup payment. Reads the authorization_code from the",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Confirm payment method after card setup",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/payment-method/default": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Set default payment method",
+                "responses": {}
+            }
+        },
+        "/subscription/payment-method/setup": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a Paystack payment intent so the tenant can register a card for subscription auto-renewal",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Setup payment method for auto-renewal",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/payment-method/{last4}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes a payment method by last4 from the subscription metadata.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Delete a saved payment method",
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1262,6 +1917,50 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/referral-code": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns (creating if needed) the calling tenant's shareable Type-A referral code.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Get the tenant's referral code",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1590,37 +2289,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handlers.errorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.listPlansResponse": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "plans": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/plans.SubscriptionPlan"
-                    }
-                }
-            }
-        },
-        "handlers.planResponse": {
-            "type": "object",
-            "properties": {
-                "plan": {
-                    "$ref": "#/definitions/plans.SubscriptionPlan"
-                }
-            }
-        },
-        "plans.PlanFeature": {
+        "github_com_bengobox_subscription-service_internal_modules_plans.PlanFeature": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -1650,7 +2319,7 @@ const docTemplate = `{
                 }
             }
         },
-        "plans.SubscriptionPlan": {
+        "github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan": {
             "type": "object",
             "properties": {
                 "basePrice": {
@@ -1678,8 +2347,11 @@ const docTemplate = `{
                 "features": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/plans.PlanFeature"
+                        "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.PlanFeature"
                     }
+                },
+                "freeTrialDays": {
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
@@ -1703,6 +2375,9 @@ const docTemplate = `{
                 "planCode": {
                     "type": "string"
                 },
+                "planType": {
+                    "type": "string"
+                },
                 "serviceTag": {
                     "type": "string"
                 },
@@ -1718,6 +2393,36 @@ const docTemplate = `{
                 },
                 "useSumBasedPricing": {
                     "type": "boolean"
+                }
+            }
+        },
+        "internal_http_handlers.errorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.listPlansResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "plans": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan"
+                    }
+                }
+            }
+        },
+        "internal_http_handlers.planResponse": {
+            "type": "object",
+            "properties": {
+                "plan": {
+                    "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan"
                 }
             }
         }

@@ -278,6 +278,10 @@ func New(
 					})
 					r.Get("/", platformHandler.ListTenants)
 					r.Post("/{tenant_id}/subscription", platformHandler.AssignPlanToTenant)
+					// Multi-use-case: per-product subscription lines (composite entitlements).
+					r.Get("/{tenant_id}/products", platformHandler.ListTenantProducts)
+					r.Post("/{tenant_id}/products", platformHandler.AssignProductToTenant)
+					r.Delete("/{tenant_id}/products/{product_code}", platformHandler.RemoveProductFromTenant)
 					// Subscription invoices (generate / resend / view / download PDF)
 					r.Post("/{tenant_id}/subscription/generate-invoice", platformHandler.GenerateSubscriptionInvoice)
 					r.Post("/{tenant_id}/subscription/invoice/resend", platformHandler.ResendSubscriptionInvoice)

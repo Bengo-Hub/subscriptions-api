@@ -112,6 +112,7 @@ func sendGraceReminders(ctx context.Context, log *zap.Logger, orm *ent.Client, s
 			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
 			tenantsubscription.CurrentPeriodEndLT(now),
 		).
+		WithTenant().
 		All(ctx)
 	if err != nil {
 		log.Error("grace reminder: query failed", zap.Error(err))
@@ -120,6 +121,10 @@ func sendGraceReminders(ctx context.Context, log *zap.Logger, orm *ent.Client, s
 
 	sent := 0
 	for _, sub := range subs {
+		// Defensive: never send grace reminders to exempt (demo/platform) tenants.
+		if sub.Edges.Tenant != nil && exemptTenantSlug(sub.Edges.Tenant.Slug) {
+			continue
+		}
 		graceUntil, inGrace := graceUntilOf(sub)
 		if !inGrace || !now.Before(graceUntil) {
 			continue // not in grace, or grace elapsed (expiry job handles blocking)

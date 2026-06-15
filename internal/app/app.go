@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/schema"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/nats-io/nats.go"
@@ -201,8 +202,11 @@ func New(ctx context.Context) (*App, error) {
 		}
 	}
 
-	// Create subscription service
-	subscriptionSvc := subscriptions.New(ormClient, log, treasuryClient, cfg.Services.TreasuryAPIKey)
+	// Create subscription service. The platform tenant id is parsed once here so the
+	// service can exempt the platform owner (alongside the demo/codevertex slugs) from
+	// ever owning a subscription record.
+	platformTenantID, _ := uuid.Parse(cfg.Services.PlatformTenantID)
+	subscriptionSvc := subscriptions.New(ormClient, log, treasuryClient, cfg.Services.TreasuryAPIKey, platformTenantID)
 
 	// Feature gate handler with Redis caching (constructed first — injected into mutation handlers)
 	featureHandler := handlers.NewFeatureHandler(log, subscriptionSvc, redisClient)
@@ -223,6 +227,7 @@ func New(ctx context.Context) (*App, error) {
 	// Billing and platform admin handlers
 	billingHandler := handlers.NewBillingHandler(log, ormClient, treasuryClient, cfg.Services.TreasuryAPIKey, cfg.Services.MarketflowAPI, cfg.Services.PlatformTenantID)
 	platformHandler := handlers.NewPlatformHandler(log, ormClient, featureHandler)
+	platformHandler.WithSubscriptionService(subscriptionSvc)
 
 	// Subscription invoice service (platform→tenant invoices via treasury S2S) — shared by
 	// the 7-day invoice job, grace events, and the manual platform-owner endpoints.

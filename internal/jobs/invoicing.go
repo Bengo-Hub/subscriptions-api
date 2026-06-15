@@ -66,6 +66,11 @@ func generateUpcomingInvoices(ctx context.Context, log *zap.Logger, orm *ent.Cli
 
 	generated := 0
 	for _, sub := range upcoming {
+		// Defensive: demo + platform-owner tenants are exempt and should never be invoiced.
+		// They normally carry no subscription row at all, but skip by slug just in case.
+		if sub.Edges.Tenant != nil && exemptTenantSlug(sub.Edges.Tenant.Slug) {
+			continue
+		}
 		if sub.Edges.Plan == nil || sub.Edges.Plan.BasePrice == 0 {
 			continue // free plans are extended directly by the renewal job
 		}

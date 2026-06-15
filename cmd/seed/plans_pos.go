@@ -37,7 +37,7 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 		"pos_terminal", "order_management", "receipt_printing", "daily_reports",
 		"mpesa_pos", "shift_reports", "table_management", "kds", "offline_sync",
 	}
-	allPOSFeatures := append(basePOSFeatures, "multi_cashier")
+	allPOSFeatures := append(append([]string{}, basePOSFeatures...), "multi_cashier")
 
 	plans := []planDef{
 		// ── Monthly device-seat subscriptions ──────────────────────────────

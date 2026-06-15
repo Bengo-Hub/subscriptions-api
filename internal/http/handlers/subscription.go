@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/bengobox/subscription-service/internal/ent"
-	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
@@ -66,8 +65,8 @@ func (h *SubscriptionHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	sub, err := h.service.GetSubscriptionResult(ctx, tenantID)
 	if err != nil {
-		// Check if this is the demo tenant — bypass subscription gating entirely
-		if h.isDemoTenant(ctx, tenantID) {
+		// Demo + platform-owner tenants bypass subscription gating entirely.
+		if h.service.IsExemptTenant(ctx, tenantID) {
 			h.respondWithJSON(w, http.StatusOK, demoBypasResponse(tenantIDStr))
 			return
 		}
@@ -141,6 +140,10 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	sub, err := h.service.CreateSubscription(ctx, in)
 	if err != nil {
+		if subscriptions.IsExemptErr(err) {
+			h.respondWithJSON(w, http.StatusOK, demoBypasResponse(in.TenantID.String()))
+			return
+		}
 		h.log.Error("failed to create subscription", zap.Error(err))
 		h.respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -185,6 +188,10 @@ func (h *SubscriptionHandler) ChangePlan(w http.ResponseWriter, r *http.Request)
 
 	sub, err := h.service.ChangePlan(ctx, in)
 	if err != nil {
+		if subscriptions.IsExemptErr(err) {
+			h.respondWithJSON(w, http.StatusOK, demoBypasResponse(in.TenantID.String()))
+			return
+		}
 		h.log.Error("failed to change plan", zap.Error(err))
 		h.respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -229,6 +236,11 @@ func (h *SubscriptionHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.service.InitiateSubscription(ctx, in)
 	if err != nil {
+		if subscriptions.IsExemptErr(err) {
+			// Demo/platform tenants never check out — report an already-active no-op.
+			h.respondWithJSON(w, http.StatusOK, map[string]any{"status": "active", "is_bypass": true})
+			return
+		}
 		h.log.Error("failed to initiate subscription", zap.Error(err))
 		h.respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -267,7 +279,7 @@ func (h *SubscriptionHandler) GetByTenantID(w http.ResponseWriter, r *http.Reque
 
 	sub, err := h.service.GetSubscriptionResult(r.Context(), tenantID)
 	if err != nil {
-		if h.isDemoTenant(r.Context(), tenantID) {
+		if h.service.IsExemptTenant(r.Context(), tenantID) {
 			resp := demoBypasResponse(tenantIDStr)
 			resp["usage_limits"] = map[string]any{}
 			h.respondWithJSON(w, http.StatusOK, resp)
@@ -595,7 +607,7 @@ func (h *SubscriptionHandler) setOverage(w http.ResponseWriter, r *http.Request,
 	res, err := h.service.SetAllowOverage(ctx, tenantID, enabled)
 	if err != nil {
 		// Demo/platform tenants have no real subscription — treat as a no-op success.
-		if h.isDemoTenant(ctx, tenantID) || httpware.IsPlatformOwner(ctx) {
+		if h.service.IsExemptTenant(ctx, tenantID) || httpware.IsPlatformOwner(ctx) {
 			h.respondWithJSON(w, http.StatusOK, map[string]any{"allow_overage": enabled, "is_bypass": true})
 			return
 		}
@@ -659,19 +671,8 @@ func (h *SubscriptionHandler) GetOverage(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-// isDemoTenant returns true if the local tenant record for tenantID has slug "codevertex-demo".
-// The codevertex-demo tenant has no subscription record and bypasses all subscription gating.
-func (h *SubscriptionHandler) isDemoTenant(ctx context.Context, tenantID uuid.UUID) bool {
-	t, err := h.client.Tenant.Query().
-		Where(enttenant.IDEQ(tenantID)).
-		Only(ctx)
-	if err != nil {
-		return false
-	}
-	return t.Slug == "codevertex-demo"
-}
-
-// demoBypasResponse returns a synthetic always-active subscription for the demo tenant.
+// demoBypasResponse returns a synthetic always-active subscription for an exempt
+// (demo / platform-owner) tenant that owns no real subscription record.
 func demoBypasResponse(tenantIDStr string) map[string]any {
 	now := time.Now()
 	return map[string]any{
