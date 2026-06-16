@@ -355,6 +355,11 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 	if in.BundleCode != "" {
 		create.SetBundleCode(in.BundleCode)
 	}
+	// Snapshot the plan's one-time setup fee onto the subscription; billed once on the
+	// first invoice (guarded by setup_fee_charged_at), never on renewal.
+	if plan.SetupFee > 0 {
+		create.SetSetupFeeAmount(plan.SetupFee)
+	}
 
 	// Type-A referral attribution: if the tenant signed up via a referral code, record the
 	// referrer so they are credited when this tenant pays. A tenant cannot refer itself.

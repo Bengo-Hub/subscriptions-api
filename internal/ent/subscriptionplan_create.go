@@ -74,6 +74,20 @@ func (_c *SubscriptionPlanCreate) SetBasePrice(v float64) *SubscriptionPlanCreat
 	return _c
 }
 
+// SetSetupFee sets the "setup_fee" field.
+func (_c *SubscriptionPlanCreate) SetSetupFee(v float64) *SubscriptionPlanCreate {
+	_c.mutation.SetSetupFee(v)
+	return _c
+}
+
+// SetNillableSetupFee sets the "setup_fee" field if the given value is not nil.
+func (_c *SubscriptionPlanCreate) SetNillableSetupFee(v *float64) *SubscriptionPlanCreate {
+	if v != nil {
+		_c.SetSetupFee(*v)
+	}
+	return _c
+}
+
 // SetOnetimeAllProductsPrice sets the "onetime_all_products_price" field.
 func (_c *SubscriptionPlanCreate) SetOnetimeAllProductsPrice(v float64) *SubscriptionPlanCreate {
 	_c.mutation.SetOnetimeAllProductsPrice(v)
@@ -351,6 +365,10 @@ func (_c *SubscriptionPlanCreate) defaults() {
 		v := subscriptionplan.DefaultBillingCycle
 		_c.mutation.SetBillingCycle(v)
 	}
+	if _, ok := _c.mutation.SetupFee(); !ok {
+		v := subscriptionplan.DefaultSetupFee
+		_c.mutation.SetSetupFee(v)
+	}
 	if _, ok := _c.mutation.UseSumBasedPricing(); !ok {
 		v := subscriptionplan.DefaultUseSumBasedPricing
 		_c.mutation.SetUseSumBasedPricing(v)
@@ -429,6 +447,9 @@ func (_c *SubscriptionPlanCreate) check() error {
 	}
 	if _, ok := _c.mutation.BasePrice(); !ok {
 		return &ValidationError{Name: "base_price", err: errors.New(`ent: missing required field "SubscriptionPlan.base_price"`)}
+	}
+	if _, ok := _c.mutation.SetupFee(); !ok {
+		return &ValidationError{Name: "setup_fee", err: errors.New(`ent: missing required field "SubscriptionPlan.setup_fee"`)}
 	}
 	if _, ok := _c.mutation.UseSumBasedPricing(); !ok {
 		return &ValidationError{Name: "use_sum_based_pricing", err: errors.New(`ent: missing required field "SubscriptionPlan.use_sum_based_pricing"`)}
@@ -523,6 +544,10 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 	if value, ok := _c.mutation.BasePrice(); ok {
 		_spec.SetField(subscriptionplan.FieldBasePrice, field.TypeFloat64, value)
 		_node.BasePrice = value
+	}
+	if value, ok := _c.mutation.SetupFee(); ok {
+		_spec.SetField(subscriptionplan.FieldSetupFee, field.TypeFloat64, value)
+		_node.SetupFee = value
 	}
 	if value, ok := _c.mutation.OnetimeAllProductsPrice(); ok {
 		_spec.SetField(subscriptionplan.FieldOnetimeAllProductsPrice, field.TypeFloat64, value)
@@ -765,6 +790,24 @@ func (u *SubscriptionPlanUpsert) UpdateBasePrice() *SubscriptionPlanUpsert {
 // AddBasePrice adds v to the "base_price" field.
 func (u *SubscriptionPlanUpsert) AddBasePrice(v float64) *SubscriptionPlanUpsert {
 	u.Add(subscriptionplan.FieldBasePrice, v)
+	return u
+}
+
+// SetSetupFee sets the "setup_fee" field.
+func (u *SubscriptionPlanUpsert) SetSetupFee(v float64) *SubscriptionPlanUpsert {
+	u.Set(subscriptionplan.FieldSetupFee, v)
+	return u
+}
+
+// UpdateSetupFee sets the "setup_fee" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsert) UpdateSetupFee() *SubscriptionPlanUpsert {
+	u.SetExcluded(subscriptionplan.FieldSetupFee)
+	return u
+}
+
+// AddSetupFee adds v to the "setup_fee" field.
+func (u *SubscriptionPlanUpsert) AddSetupFee(v float64) *SubscriptionPlanUpsert {
+	u.Add(subscriptionplan.FieldSetupFee, v)
 	return u
 }
 
@@ -1092,6 +1135,27 @@ func (u *SubscriptionPlanUpsertOne) AddBasePrice(v float64) *SubscriptionPlanUps
 func (u *SubscriptionPlanUpsertOne) UpdateBasePrice() *SubscriptionPlanUpsertOne {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.UpdateBasePrice()
+	})
+}
+
+// SetSetupFee sets the "setup_fee" field.
+func (u *SubscriptionPlanUpsertOne) SetSetupFee(v float64) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetSetupFee(v)
+	})
+}
+
+// AddSetupFee adds v to the "setup_fee" field.
+func (u *SubscriptionPlanUpsertOne) AddSetupFee(v float64) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddSetupFee(v)
+	})
+}
+
+// UpdateSetupFee sets the "setup_fee" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertOne) UpdateSetupFee() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateSetupFee()
 	})
 }
 
@@ -1618,6 +1682,27 @@ func (u *SubscriptionPlanUpsertBulk) AddBasePrice(v float64) *SubscriptionPlanUp
 func (u *SubscriptionPlanUpsertBulk) UpdateBasePrice() *SubscriptionPlanUpsertBulk {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.UpdateBasePrice()
+	})
+}
+
+// SetSetupFee sets the "setup_fee" field.
+func (u *SubscriptionPlanUpsertBulk) SetSetupFee(v float64) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetSetupFee(v)
+	})
+}
+
+// AddSetupFee adds v to the "setup_fee" field.
+func (u *SubscriptionPlanUpsertBulk) AddSetupFee(v float64) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddSetupFee(v)
+	})
+}
+
+// UpdateSetupFee sets the "setup_fee" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertBulk) UpdateSetupFee() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateSetupFee()
 	})
 }
 

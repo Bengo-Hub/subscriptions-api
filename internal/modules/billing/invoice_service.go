@@ -98,6 +98,18 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 	})
 	taxable += plan.BasePrice
 
+	// One-time setup/onboarding fee — billed once on the first invoice only.
+	// Guarded by setup_fee_charged_at (nil = not yet charged); never recurs on renewal.
+	if sub.SetupFeeAmount > 0 && sub.SetupFeeChargedAt == nil {
+		lines = append(lines, map[string]any{
+			"description": fmt.Sprintf("One-time setup fee: %s", plan.Name),
+			"quantity":    1,
+			"unit_price":  sub.SetupFeeAmount,
+			"tax_rate":    s.vatRate,
+		})
+		taxable += sub.SetupFeeAmount
+	}
+
 	// Pending overage charges
 	overages, err := s.overage.ListPendingByTenant(ctx, sub.TenantID)
 	if err != nil {
@@ -238,6 +250,16 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 	}
 	if err := json.Unmarshal(resp.Body, &inv); err != nil {
 		return nil, fmt.Errorf("decode invoice: %w", err)
+	}
+
+	// Mark the one-time setup fee as charged so it is never billed again (renewals skip it).
+	if sub.SetupFeeAmount > 0 && sub.SetupFeeChargedAt == nil {
+		chargedAt := now
+		if _, err := s.orm.TenantSubscription.UpdateOneID(sub.ID).SetSetupFeeChargedAt(chargedAt).Save(ctx); err != nil {
+			s.log.Warn("invoice: failed to mark setup fee charged", zap.String("subscription_id", sub.ID.String()), zap.Error(err))
+		} else {
+			sub.SetupFeeChargedAt = &chargedAt
+		}
 	}
 
 	// 2. Send it (status→sent, posts AR journal). No email is emitted by treasury for

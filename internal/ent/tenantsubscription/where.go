@@ -96,6 +96,16 @@ func AppliedDiscount(v float64) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldAppliedDiscount, v))
 }
 
+// SetupFeeAmount applies equality check predicate on the "setup_fee_amount" field. It's identical to SetupFeeAmountEQ.
+func SetupFeeAmount(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldSetupFeeAmount, v))
+}
+
+// SetupFeeChargedAt applies equality check predicate on the "setup_fee_charged_at" field. It's identical to SetupFeeChargedAtEQ.
+func SetupFeeChargedAt(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldSetupFeeChargedAt, v))
+}
+
 // BundleCode applies equality check predicate on the "bundle_code" field. It's identical to BundleCodeEQ.
 func BundleCode(v string) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldBundleCode, v))
@@ -509,6 +519,96 @@ func AppliedDiscountLT(v float64) predicate.TenantSubscription {
 // AppliedDiscountLTE applies the LTE predicate on the "applied_discount" field.
 func AppliedDiscountLTE(v float64) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldLTE(FieldAppliedDiscount, v))
+}
+
+// SetupFeeAmountEQ applies the EQ predicate on the "setup_fee_amount" field.
+func SetupFeeAmountEQ(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldSetupFeeAmount, v))
+}
+
+// SetupFeeAmountNEQ applies the NEQ predicate on the "setup_fee_amount" field.
+func SetupFeeAmountNEQ(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldSetupFeeAmount, v))
+}
+
+// SetupFeeAmountIn applies the In predicate on the "setup_fee_amount" field.
+func SetupFeeAmountIn(vs ...float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldSetupFeeAmount, vs...))
+}
+
+// SetupFeeAmountNotIn applies the NotIn predicate on the "setup_fee_amount" field.
+func SetupFeeAmountNotIn(vs ...float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldSetupFeeAmount, vs...))
+}
+
+// SetupFeeAmountGT applies the GT predicate on the "setup_fee_amount" field.
+func SetupFeeAmountGT(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldSetupFeeAmount, v))
+}
+
+// SetupFeeAmountGTE applies the GTE predicate on the "setup_fee_amount" field.
+func SetupFeeAmountGTE(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldSetupFeeAmount, v))
+}
+
+// SetupFeeAmountLT applies the LT predicate on the "setup_fee_amount" field.
+func SetupFeeAmountLT(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldSetupFeeAmount, v))
+}
+
+// SetupFeeAmountLTE applies the LTE predicate on the "setup_fee_amount" field.
+func SetupFeeAmountLTE(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldSetupFeeAmount, v))
+}
+
+// SetupFeeChargedAtEQ applies the EQ predicate on the "setup_fee_charged_at" field.
+func SetupFeeChargedAtEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldSetupFeeChargedAt, v))
+}
+
+// SetupFeeChargedAtNEQ applies the NEQ predicate on the "setup_fee_charged_at" field.
+func SetupFeeChargedAtNEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldSetupFeeChargedAt, v))
+}
+
+// SetupFeeChargedAtIn applies the In predicate on the "setup_fee_charged_at" field.
+func SetupFeeChargedAtIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldSetupFeeChargedAt, vs...))
+}
+
+// SetupFeeChargedAtNotIn applies the NotIn predicate on the "setup_fee_charged_at" field.
+func SetupFeeChargedAtNotIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldSetupFeeChargedAt, vs...))
+}
+
+// SetupFeeChargedAtGT applies the GT predicate on the "setup_fee_charged_at" field.
+func SetupFeeChargedAtGT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldSetupFeeChargedAt, v))
+}
+
+// SetupFeeChargedAtGTE applies the GTE predicate on the "setup_fee_charged_at" field.
+func SetupFeeChargedAtGTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldSetupFeeChargedAt, v))
+}
+
+// SetupFeeChargedAtLT applies the LT predicate on the "setup_fee_charged_at" field.
+func SetupFeeChargedAtLT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldSetupFeeChargedAt, v))
+}
+
+// SetupFeeChargedAtLTE applies the LTE predicate on the "setup_fee_charged_at" field.
+func SetupFeeChargedAtLTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldSetupFeeChargedAt, v))
+}
+
+// SetupFeeChargedAtIsNil applies the IsNil predicate on the "setup_fee_charged_at" field.
+func SetupFeeChargedAtIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldSetupFeeChargedAt))
+}
+
+// SetupFeeChargedAtNotNil applies the NotNil predicate on the "setup_fee_charged_at" field.
+func SetupFeeChargedAtNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldSetupFeeChargedAt))
 }
 
 // BundleCodeEQ applies the EQ predicate on the "bundle_code" field.

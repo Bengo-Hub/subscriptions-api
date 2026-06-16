@@ -15,6 +15,7 @@ type SubscriptionPlan struct {
 	Description             string           `json:"description"`
 	BillingCycle            string           `json:"billingCycle"`
 	BasePrice               float64          `json:"basePrice"`
+	SetupFee                float64          `json:"setupFee"`
 	OnetimeAllProductsPrice *float64         `json:"onetimeAllProductsPrice,omitempty"`
 	UseSumBasedPricing      bool             `json:"useSumBasedPricing"`
 	Currency                string           `json:"currency"`

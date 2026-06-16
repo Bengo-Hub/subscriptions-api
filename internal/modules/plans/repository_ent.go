@@ -47,6 +47,7 @@ func (r *EntRepository) CreatePlan(ctx context.Context, plan *SubscriptionPlan) 
 		SetNillableDescription(&plan.Description).
 		SetBillingCycle(plan.BillingCycle).
 		SetBasePrice(plan.BasePrice).
+		SetSetupFee(plan.SetupFee).
 		SetNillableOnetimeAllProductsPrice(plan.OnetimeAllProductsPrice).
 		SetUseSumBasedPricing(plan.UseSumBasedPricing).
 		SetCurrency(plan.Currency).
@@ -98,6 +99,9 @@ func (r *EntRepository) UpdatePlan(ctx context.Context, plan *SubscriptionPlan) 
 	}
 	if plan.BasePrice >= 0 {
 		update = update.SetBasePrice(plan.BasePrice)
+	}
+	if plan.SetupFee >= 0 {
+		update = update.SetSetupFee(plan.SetupFee)
 	}
 	update = update.SetNillableOnetimeAllProductsPrice(plan.OnetimeAllProductsPrice)
 	update = update.SetUseSumBasedPricing(plan.UseSumBasedPricing)
@@ -451,6 +455,7 @@ func mapEntPlan(entPlan *ent.SubscriptionPlan) *SubscriptionPlan {
 		Name:         entPlan.Name,
 		BillingCycle: entPlan.BillingCycle,
 		BasePrice:    entPlan.BasePrice,
+		SetupFee:     entPlan.SetupFee,
 		OnetimeAllProductsPrice: entPlan.OnetimeAllProductsPrice,
 		UseSumBasedPricing:     entPlan.UseSumBasedPricing,
 		Currency:     entPlan.Currency,

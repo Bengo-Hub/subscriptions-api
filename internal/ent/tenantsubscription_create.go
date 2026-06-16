@@ -136,6 +136,34 @@ func (_c *TenantSubscriptionCreate) SetNillableAppliedDiscount(v *float64) *Tena
 	return _c
 }
 
+// SetSetupFeeAmount sets the "setup_fee_amount" field.
+func (_c *TenantSubscriptionCreate) SetSetupFeeAmount(v float64) *TenantSubscriptionCreate {
+	_c.mutation.SetSetupFeeAmount(v)
+	return _c
+}
+
+// SetNillableSetupFeeAmount sets the "setup_fee_amount" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableSetupFeeAmount(v *float64) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetSetupFeeAmount(*v)
+	}
+	return _c
+}
+
+// SetSetupFeeChargedAt sets the "setup_fee_charged_at" field.
+func (_c *TenantSubscriptionCreate) SetSetupFeeChargedAt(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetSetupFeeChargedAt(v)
+	return _c
+}
+
+// SetNillableSetupFeeChargedAt sets the "setup_fee_charged_at" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableSetupFeeChargedAt(v *time.Time) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetSetupFeeChargedAt(*v)
+	}
+	return _c
+}
+
 // SetBundleCode sets the "bundle_code" field.
 func (_c *TenantSubscriptionCreate) SetBundleCode(v string) *TenantSubscriptionCreate {
 	_c.mutation.SetBundleCode(v)
@@ -355,6 +383,10 @@ func (_c *TenantSubscriptionCreate) defaults() {
 		v := tenantsubscription.DefaultAppliedDiscount
 		_c.mutation.SetAppliedDiscount(v)
 	}
+	if _, ok := _c.mutation.SetupFeeAmount(); !ok {
+		v := tenantsubscription.DefaultSetupFeeAmount
+		_c.mutation.SetSetupFeeAmount(v)
+	}
 	if _, ok := _c.mutation.AllowOverage(); !ok {
 		v := tenantsubscription.DefaultAllowOverage
 		_c.mutation.SetAllowOverage(v)
@@ -409,6 +441,9 @@ func (_c *TenantSubscriptionCreate) check() error {
 	}
 	if _, ok := _c.mutation.AppliedDiscount(); !ok {
 		return &ValidationError{Name: "applied_discount", err: errors.New(`ent: missing required field "TenantSubscription.applied_discount"`)}
+	}
+	if _, ok := _c.mutation.SetupFeeAmount(); !ok {
+		return &ValidationError{Name: "setup_fee_amount", err: errors.New(`ent: missing required field "TenantSubscription.setup_fee_amount"`)}
 	}
 	if _, ok := _c.mutation.AllowOverage(); !ok {
 		return &ValidationError{Name: "allow_overage", err: errors.New(`ent: missing required field "TenantSubscription.allow_overage"`)}
@@ -492,6 +527,14 @@ func (_c *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgraph
 	if value, ok := _c.mutation.AppliedDiscount(); ok {
 		_spec.SetField(tenantsubscription.FieldAppliedDiscount, field.TypeFloat64, value)
 		_node.AppliedDiscount = value
+	}
+	if value, ok := _c.mutation.SetupFeeAmount(); ok {
+		_spec.SetField(tenantsubscription.FieldSetupFeeAmount, field.TypeFloat64, value)
+		_node.SetupFeeAmount = value
+	}
+	if value, ok := _c.mutation.SetupFeeChargedAt(); ok {
+		_spec.SetField(tenantsubscription.FieldSetupFeeChargedAt, field.TypeTime, value)
+		_node.SetupFeeChargedAt = &value
 	}
 	if value, ok := _c.mutation.BundleCode(); ok {
 		_spec.SetField(tenantsubscription.FieldBundleCode, field.TypeString, value)
@@ -788,6 +831,42 @@ func (u *TenantSubscriptionUpsert) UpdateAppliedDiscount() *TenantSubscriptionUp
 // AddAppliedDiscount adds v to the "applied_discount" field.
 func (u *TenantSubscriptionUpsert) AddAppliedDiscount(v float64) *TenantSubscriptionUpsert {
 	u.Add(tenantsubscription.FieldAppliedDiscount, v)
+	return u
+}
+
+// SetSetupFeeAmount sets the "setup_fee_amount" field.
+func (u *TenantSubscriptionUpsert) SetSetupFeeAmount(v float64) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldSetupFeeAmount, v)
+	return u
+}
+
+// UpdateSetupFeeAmount sets the "setup_fee_amount" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateSetupFeeAmount() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldSetupFeeAmount)
+	return u
+}
+
+// AddSetupFeeAmount adds v to the "setup_fee_amount" field.
+func (u *TenantSubscriptionUpsert) AddSetupFeeAmount(v float64) *TenantSubscriptionUpsert {
+	u.Add(tenantsubscription.FieldSetupFeeAmount, v)
+	return u
+}
+
+// SetSetupFeeChargedAt sets the "setup_fee_charged_at" field.
+func (u *TenantSubscriptionUpsert) SetSetupFeeChargedAt(v time.Time) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldSetupFeeChargedAt, v)
+	return u
+}
+
+// UpdateSetupFeeChargedAt sets the "setup_fee_charged_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateSetupFeeChargedAt() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldSetupFeeChargedAt)
+	return u
+}
+
+// ClearSetupFeeChargedAt clears the value of the "setup_fee_charged_at" field.
+func (u *TenantSubscriptionUpsert) ClearSetupFeeChargedAt() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldSetupFeeChargedAt)
 	return u
 }
 
@@ -1139,6 +1218,48 @@ func (u *TenantSubscriptionUpsertOne) AddAppliedDiscount(v float64) *TenantSubsc
 func (u *TenantSubscriptionUpsertOne) UpdateAppliedDiscount() *TenantSubscriptionUpsertOne {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.UpdateAppliedDiscount()
+	})
+}
+
+// SetSetupFeeAmount sets the "setup_fee_amount" field.
+func (u *TenantSubscriptionUpsertOne) SetSetupFeeAmount(v float64) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetSetupFeeAmount(v)
+	})
+}
+
+// AddSetupFeeAmount adds v to the "setup_fee_amount" field.
+func (u *TenantSubscriptionUpsertOne) AddSetupFeeAmount(v float64) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.AddSetupFeeAmount(v)
+	})
+}
+
+// UpdateSetupFeeAmount sets the "setup_fee_amount" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateSetupFeeAmount() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateSetupFeeAmount()
+	})
+}
+
+// SetSetupFeeChargedAt sets the "setup_fee_charged_at" field.
+func (u *TenantSubscriptionUpsertOne) SetSetupFeeChargedAt(v time.Time) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetSetupFeeChargedAt(v)
+	})
+}
+
+// UpdateSetupFeeChargedAt sets the "setup_fee_charged_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateSetupFeeChargedAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateSetupFeeChargedAt()
+	})
+}
+
+// ClearSetupFeeChargedAt clears the value of the "setup_fee_charged_at" field.
+func (u *TenantSubscriptionUpsertOne) ClearSetupFeeChargedAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearSetupFeeChargedAt()
 	})
 }
 
@@ -1679,6 +1800,48 @@ func (u *TenantSubscriptionUpsertBulk) AddAppliedDiscount(v float64) *TenantSubs
 func (u *TenantSubscriptionUpsertBulk) UpdateAppliedDiscount() *TenantSubscriptionUpsertBulk {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.UpdateAppliedDiscount()
+	})
+}
+
+// SetSetupFeeAmount sets the "setup_fee_amount" field.
+func (u *TenantSubscriptionUpsertBulk) SetSetupFeeAmount(v float64) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetSetupFeeAmount(v)
+	})
+}
+
+// AddSetupFeeAmount adds v to the "setup_fee_amount" field.
+func (u *TenantSubscriptionUpsertBulk) AddSetupFeeAmount(v float64) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.AddSetupFeeAmount(v)
+	})
+}
+
+// UpdateSetupFeeAmount sets the "setup_fee_amount" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateSetupFeeAmount() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateSetupFeeAmount()
+	})
+}
+
+// SetSetupFeeChargedAt sets the "setup_fee_charged_at" field.
+func (u *TenantSubscriptionUpsertBulk) SetSetupFeeChargedAt(v time.Time) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetSetupFeeChargedAt(v)
+	})
+}
+
+// UpdateSetupFeeChargedAt sets the "setup_fee_charged_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateSetupFeeChargedAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateSetupFeeChargedAt()
+	})
+}
+
+// ClearSetupFeeChargedAt clears the value of the "setup_fee_charged_at" field.
+func (u *TenantSubscriptionUpsertBulk) ClearSetupFeeChargedAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearSetupFeeChargedAt()
 	})
 }
 

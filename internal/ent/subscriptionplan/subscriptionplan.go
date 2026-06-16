@@ -26,6 +26,8 @@ const (
 	FieldBillingCycle = "billing_cycle"
 	// FieldBasePrice holds the string denoting the base_price field in the database.
 	FieldBasePrice = "base_price"
+	// FieldSetupFee holds the string denoting the setup_fee field in the database.
+	FieldSetupFee = "setup_fee"
 	// FieldOnetimeAllProductsPrice holds the string denoting the onetime_all_products_price field in the database.
 	FieldOnetimeAllProductsPrice = "onetime_all_products_price"
 	// FieldUseSumBasedPricing holds the string denoting the use_sum_based_pricing field in the database.
@@ -102,6 +104,7 @@ var Columns = []string{
 	FieldDescription,
 	FieldBillingCycle,
 	FieldBasePrice,
+	FieldSetupFee,
 	FieldOnetimeAllProductsPrice,
 	FieldUseSumBasedPricing,
 	FieldCurrency,
@@ -137,6 +140,8 @@ var (
 	DefaultBillingCycle string
 	// BillingCycleValidator is a validator for the "billing_cycle" field. It is called by the builders before save.
 	BillingCycleValidator func(string) error
+	// DefaultSetupFee holds the default value on creation for the "setup_fee" field.
+	DefaultSetupFee float64
 	// DefaultUseSumBasedPricing holds the default value on creation for the "use_sum_based_pricing" field.
 	DefaultUseSumBasedPricing bool
 	// DefaultCurrency holds the default value on creation for the "currency" field.
@@ -222,6 +227,11 @@ func ByBillingCycle(opts ...sql.OrderTermOption) OrderOption {
 // ByBasePrice orders the results by the base_price field.
 func ByBasePrice(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldBasePrice, opts...).ToFunc()
+}
+
+// BySetupFee orders the results by the setup_fee field.
+func BySetupFee(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSetupFee, opts...).ToFunc()
 }
 
 // ByOnetimeAllProductsPrice orders the results by the onetime_all_products_price field.

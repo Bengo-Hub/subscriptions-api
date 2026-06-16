@@ -36,6 +36,10 @@ const (
 	FieldBillingCycle = "billing_cycle"
 	// FieldAppliedDiscount holds the string denoting the applied_discount field in the database.
 	FieldAppliedDiscount = "applied_discount"
+	// FieldSetupFeeAmount holds the string denoting the setup_fee_amount field in the database.
+	FieldSetupFeeAmount = "setup_fee_amount"
+	// FieldSetupFeeChargedAt holds the string denoting the setup_fee_charged_at field in the database.
+	FieldSetupFeeChargedAt = "setup_fee_charged_at"
 	// FieldBundleCode holds the string denoting the bundle_code field in the database.
 	FieldBundleCode = "bundle_code"
 	// FieldAllowOverage holds the string denoting the allow_overage field in the database.
@@ -107,6 +111,8 @@ var Columns = []string{
 	FieldCancelReason,
 	FieldBillingCycle,
 	FieldAppliedDiscount,
+	FieldSetupFeeAmount,
+	FieldSetupFeeChargedAt,
 	FieldBundleCode,
 	FieldAllowOverage,
 	FieldOverageEnabledAt,
@@ -131,6 +137,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultAppliedDiscount holds the default value on creation for the "applied_discount" field.
 	DefaultAppliedDiscount float64
+	// DefaultSetupFeeAmount holds the default value on creation for the "setup_fee_amount" field.
+	DefaultSetupFeeAmount float64
 	// DefaultAllowOverage holds the default value on creation for the "allow_overage" field.
 	DefaultAllowOverage bool
 	// DefaultMetadata holds the default value on creation for the "metadata" field.
@@ -258,6 +266,16 @@ func ByBillingCycle(opts ...sql.OrderTermOption) OrderOption {
 // ByAppliedDiscount orders the results by the applied_discount field.
 func ByAppliedDiscount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAppliedDiscount, opts...).ToFunc()
+}
+
+// BySetupFeeAmount orders the results by the setup_fee_amount field.
+func BySetupFeeAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSetupFeeAmount, opts...).ToFunc()
+}
+
+// BySetupFeeChargedAt orders the results by the setup_fee_charged_at field.
+func BySetupFeeChargedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSetupFeeChargedAt, opts...).ToFunc()
 }
 
 // ByBundleCode orders the results by the bundle_code field.

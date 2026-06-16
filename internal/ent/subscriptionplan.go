@@ -29,6 +29,8 @@ type SubscriptionPlan struct {
 	BillingCycle string `json:"billing_cycle,omitempty"`
 	// Base subscription price
 	BasePrice float64 `json:"base_price,omitempty"`
+	// One-time onboarding/setup fee charged once at subscription creation (never on renewal). 0 = none. E.g. POS device onboarding, TruLoad/ISP/ERP implementation.
+	SetupFee float64 `json:"setup_fee,omitempty"`
 	// Applicable for ONE_TIME custom plans. If set, this overrides product-summation.
 	OnetimeAllProductsPrice *float64 `json:"onetime_all_products_price,omitempty"`
 	// If true, plan price is calculated as sum of individual products (standard for Custom/One-time)
@@ -123,7 +125,7 @@ func (*SubscriptionPlan) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case subscriptionplan.FieldUseSumBasedPricing, subscriptionplan.FieldIsActive, subscriptionplan.FieldIsPublic:
 			values[i] = new(sql.NullBool)
-		case subscriptionplan.FieldBasePrice, subscriptionplan.FieldOnetimeAllProductsPrice:
+		case subscriptionplan.FieldBasePrice, subscriptionplan.FieldSetupFee, subscriptionplan.FieldOnetimeAllProductsPrice:
 			values[i] = new(sql.NullFloat64)
 		case subscriptionplan.FieldTierOrder, subscriptionplan.FieldFreeTrialDays:
 			values[i] = new(sql.NullInt64)
@@ -183,6 +185,12 @@ func (_m *SubscriptionPlan) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field base_price", values[i])
 			} else if value.Valid {
 				_m.BasePrice = value.Float64
+			}
+		case subscriptionplan.FieldSetupFee:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field setup_fee", values[i])
+			} else if value.Valid {
+				_m.SetupFee = value.Float64
 			}
 		case subscriptionplan.FieldOnetimeAllProductsPrice:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -346,6 +354,9 @@ func (_m *SubscriptionPlan) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("base_price=")
 	builder.WriteString(fmt.Sprintf("%v", _m.BasePrice))
+	builder.WriteString(", ")
+	builder.WriteString("setup_fee=")
+	builder.WriteString(fmt.Sprintf("%v", _m.SetupFee))
 	builder.WriteString(", ")
 	if v := _m.OnetimeAllProductsPrice; v != nil {
 		builder.WriteString("onetime_all_products_price=")

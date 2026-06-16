@@ -757,6 +757,7 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "billing_cycle", Type: field.TypeString, Default: "MONTHLY"},
 		{Name: "base_price", Type: field.TypeFloat64},
+		{Name: "setup_fee", Type: field.TypeFloat64, Default: 0},
 		{Name: "onetime_all_products_price", Type: field.TypeFloat64, Nullable: true},
 		{Name: "use_sum_based_pricing", Type: field.TypeBool, Default: false},
 		{Name: "currency", Type: field.TypeString, Default: "KES"},
@@ -786,17 +787,17 @@ var (
 			{
 				Name:    "subscriptionplan_is_active",
 				Unique:  false,
-				Columns: []*schema.Column{SubscriptionPlansColumns[9]},
+				Columns: []*schema.Column{SubscriptionPlansColumns[10]},
 			},
 			{
 				Name:    "subscriptionplan_tier_order",
 				Unique:  false,
-				Columns: []*schema.Column{SubscriptionPlansColumns[11]},
+				Columns: []*schema.Column{SubscriptionPlansColumns[12]},
 			},
 			{
 				Name:    "subscriptionplan_service_tag",
 				Unique:  false,
-				Columns: []*schema.Column{SubscriptionPlansColumns[14]},
+				Columns: []*schema.Column{SubscriptionPlansColumns[15]},
 			},
 		},
 	}
@@ -964,6 +965,8 @@ var (
 		{Name: "cancel_reason", Type: field.TypeString, Nullable: true},
 		{Name: "billing_cycle", Type: field.TypeEnum, Enums: []string{"MONTHLY", "QUARTERLY", "ANNUAL", "ONE_TIME"}, Default: "MONTHLY"},
 		{Name: "applied_discount", Type: field.TypeFloat64, Default: 0},
+		{Name: "setup_fee_amount", Type: field.TypeFloat64, Default: 0},
+		{Name: "setup_fee_charged_at", Type: field.TypeTime, Nullable: true},
 		{Name: "bundle_code", Type: field.TypeString, Nullable: true},
 		{Name: "allow_overage", Type: field.TypeBool, Default: false},
 		{Name: "overage_enabled_at", Type: field.TypeTime, Nullable: true},
@@ -984,13 +987,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "tenant_subscriptions_subscription_plans_subscriptions",
-				Columns:    []*schema.Column{TenantSubscriptionsColumns[18]},
+				Columns:    []*schema.Column{TenantSubscriptionsColumns[20]},
 				RefColumns: []*schema.Column{SubscriptionPlansColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "tenant_subscriptions_tenants_subscriptions",
-				Columns:    []*schema.Column{TenantSubscriptionsColumns[19]},
+				Columns:    []*schema.Column{TenantSubscriptionsColumns[21]},
 				RefColumns: []*schema.Column{TenantsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -999,7 +1002,7 @@ var (
 			{
 				Name:    "tenantsubscription_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{TenantSubscriptionsColumns[19]},
+				Columns: []*schema.Column{TenantSubscriptionsColumns[21]},
 			},
 			{
 				Name:    "tenantsubscription_status",
@@ -1014,7 +1017,7 @@ var (
 			{
 				Name:    "tenantsubscription_referral_code",
 				Unique:  true,
-				Columns: []*schema.Column{TenantSubscriptionsColumns[14]},
+				Columns: []*schema.Column{TenantSubscriptionsColumns[16]},
 			},
 		},
 	}

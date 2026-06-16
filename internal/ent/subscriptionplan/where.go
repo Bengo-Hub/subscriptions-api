@@ -81,6 +81,11 @@ func BasePrice(v float64) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldBasePrice, v))
 }
 
+// SetupFee applies equality check predicate on the "setup_fee" field. It's identical to SetupFeeEQ.
+func SetupFee(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldSetupFee, v))
+}
+
 // OnetimeAllProductsPrice applies equality check predicate on the "onetime_all_products_price" field. It's identical to OnetimeAllProductsPriceEQ.
 func OnetimeAllProductsPrice(v float64) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldOnetimeAllProductsPrice, v))
@@ -439,6 +444,46 @@ func BasePriceLT(v float64) predicate.SubscriptionPlan {
 // BasePriceLTE applies the LTE predicate on the "base_price" field.
 func BasePriceLTE(v float64) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldLTE(FieldBasePrice, v))
+}
+
+// SetupFeeEQ applies the EQ predicate on the "setup_fee" field.
+func SetupFeeEQ(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldSetupFee, v))
+}
+
+// SetupFeeNEQ applies the NEQ predicate on the "setup_fee" field.
+func SetupFeeNEQ(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldSetupFee, v))
+}
+
+// SetupFeeIn applies the In predicate on the "setup_fee" field.
+func SetupFeeIn(vs ...float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldSetupFee, vs...))
+}
+
+// SetupFeeNotIn applies the NotIn predicate on the "setup_fee" field.
+func SetupFeeNotIn(vs ...float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldSetupFee, vs...))
+}
+
+// SetupFeeGT applies the GT predicate on the "setup_fee" field.
+func SetupFeeGT(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGT(FieldSetupFee, v))
+}
+
+// SetupFeeGTE applies the GTE predicate on the "setup_fee" field.
+func SetupFeeGTE(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGTE(FieldSetupFee, v))
+}
+
+// SetupFeeLT applies the LT predicate on the "setup_fee" field.
+func SetupFeeLT(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLT(FieldSetupFee, v))
+}
+
+// SetupFeeLTE applies the LTE predicate on the "setup_fee" field.
+func SetupFeeLTE(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLTE(FieldSetupFee, v))
 }
 
 // OnetimeAllProductsPriceEQ applies the EQ predicate on the "onetime_all_products_price" field.

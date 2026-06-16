@@ -53,6 +53,13 @@ func (TenantSubscription) Fields() []ent.Field {
 		field.Float("applied_discount").
 			Default(0).
 			Comment("Discount applied to this subscription based on rules (e.g., 20% for yearly)"),
+		field.Float("setup_fee_amount").
+			Default(0).
+			Comment("One-time setup fee charged for this subscription (snapshot of plan.setup_fee at creation). 0 = none/waived"),
+		field.Time("setup_fee_charged_at").
+			Optional().
+			Nillable().
+			Comment("When the one-time setup fee was charged. Nil = not yet charged; set once, never re-charged on renewal"),
 		field.String("bundle_code").
 			Optional().
 			Nillable().

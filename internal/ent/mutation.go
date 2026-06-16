@@ -18051,6 +18051,8 @@ type SubscriptionPlanMutation struct {
 	billing_cycle                         *string
 	base_price                            *float64
 	addbase_price                         *float64
+	setup_fee                             *float64
+	addsetup_fee                          *float64
 	onetime_all_products_price            *float64
 	addonetime_all_products_price         *float64
 	use_sum_based_pricing                 *bool
@@ -18402,6 +18404,62 @@ func (m *SubscriptionPlanMutation) AddedBasePrice() (r float64, exists bool) {
 func (m *SubscriptionPlanMutation) ResetBasePrice() {
 	m.base_price = nil
 	m.addbase_price = nil
+}
+
+// SetSetupFee sets the "setup_fee" field.
+func (m *SubscriptionPlanMutation) SetSetupFee(f float64) {
+	m.setup_fee = &f
+	m.addsetup_fee = nil
+}
+
+// SetupFee returns the value of the "setup_fee" field in the mutation.
+func (m *SubscriptionPlanMutation) SetupFee() (r float64, exists bool) {
+	v := m.setup_fee
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSetupFee returns the old "setup_fee" field's value of the SubscriptionPlan entity.
+// If the SubscriptionPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionPlanMutation) OldSetupFee(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSetupFee is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSetupFee requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSetupFee: %w", err)
+	}
+	return oldValue.SetupFee, nil
+}
+
+// AddSetupFee adds f to the "setup_fee" field.
+func (m *SubscriptionPlanMutation) AddSetupFee(f float64) {
+	if m.addsetup_fee != nil {
+		*m.addsetup_fee += f
+	} else {
+		m.addsetup_fee = &f
+	}
+}
+
+// AddedSetupFee returns the value that was added to the "setup_fee" field in this mutation.
+func (m *SubscriptionPlanMutation) AddedSetupFee() (r float64, exists bool) {
+	v := m.addsetup_fee
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSetupFee resets all changes to the "setup_fee" field.
+func (m *SubscriptionPlanMutation) ResetSetupFee() {
+	m.setup_fee = nil
+	m.addsetup_fee = nil
 }
 
 // SetOnetimeAllProductsPrice sets the "onetime_all_products_price" field.
@@ -19274,7 +19332,7 @@ func (m *SubscriptionPlanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SubscriptionPlanMutation) Fields() []string {
-	fields := make([]string, 0, 19)
+	fields := make([]string, 0, 20)
 	if m.plan_code != nil {
 		fields = append(fields, subscriptionplan.FieldPlanCode)
 	}
@@ -19289,6 +19347,9 @@ func (m *SubscriptionPlanMutation) Fields() []string {
 	}
 	if m.base_price != nil {
 		fields = append(fields, subscriptionplan.FieldBasePrice)
+	}
+	if m.setup_fee != nil {
+		fields = append(fields, subscriptionplan.FieldSetupFee)
 	}
 	if m.onetime_all_products_price != nil {
 		fields = append(fields, subscriptionplan.FieldOnetimeAllProductsPrice)
@@ -19350,6 +19411,8 @@ func (m *SubscriptionPlanMutation) Field(name string) (ent.Value, bool) {
 		return m.BillingCycle()
 	case subscriptionplan.FieldBasePrice:
 		return m.BasePrice()
+	case subscriptionplan.FieldSetupFee:
+		return m.SetupFee()
 	case subscriptionplan.FieldOnetimeAllProductsPrice:
 		return m.OnetimeAllProductsPrice()
 	case subscriptionplan.FieldUseSumBasedPricing:
@@ -19397,6 +19460,8 @@ func (m *SubscriptionPlanMutation) OldField(ctx context.Context, name string) (e
 		return m.OldBillingCycle(ctx)
 	case subscriptionplan.FieldBasePrice:
 		return m.OldBasePrice(ctx)
+	case subscriptionplan.FieldSetupFee:
+		return m.OldSetupFee(ctx)
 	case subscriptionplan.FieldOnetimeAllProductsPrice:
 		return m.OldOnetimeAllProductsPrice(ctx)
 	case subscriptionplan.FieldUseSumBasedPricing:
@@ -19468,6 +19533,13 @@ func (m *SubscriptionPlanMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetBasePrice(v)
+		return nil
+	case subscriptionplan.FieldSetupFee:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSetupFee(v)
 		return nil
 	case subscriptionplan.FieldOnetimeAllProductsPrice:
 		v, ok := value.(float64)
@@ -19578,6 +19650,9 @@ func (m *SubscriptionPlanMutation) AddedFields() []string {
 	if m.addbase_price != nil {
 		fields = append(fields, subscriptionplan.FieldBasePrice)
 	}
+	if m.addsetup_fee != nil {
+		fields = append(fields, subscriptionplan.FieldSetupFee)
+	}
 	if m.addonetime_all_products_price != nil {
 		fields = append(fields, subscriptionplan.FieldOnetimeAllProductsPrice)
 	}
@@ -19597,6 +19672,8 @@ func (m *SubscriptionPlanMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case subscriptionplan.FieldBasePrice:
 		return m.AddedBasePrice()
+	case subscriptionplan.FieldSetupFee:
+		return m.AddedSetupFee()
 	case subscriptionplan.FieldOnetimeAllProductsPrice:
 		return m.AddedOnetimeAllProductsPrice()
 	case subscriptionplan.FieldTierOrder:
@@ -19618,6 +19695,13 @@ func (m *SubscriptionPlanMutation) AddField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddBasePrice(v)
+		return nil
+	case subscriptionplan.FieldSetupFee:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSetupFee(v)
 		return nil
 	case subscriptionplan.FieldOnetimeAllProductsPrice:
 		v, ok := value.(float64)
@@ -19708,6 +19792,9 @@ func (m *SubscriptionPlanMutation) ResetField(name string) error {
 		return nil
 	case subscriptionplan.FieldBasePrice:
 		m.ResetBasePrice()
+		return nil
+	case subscriptionplan.FieldSetupFee:
+		m.ResetSetupFee()
 		return nil
 	case subscriptionplan.FieldOnetimeAllProductsPrice:
 		m.ResetOnetimeAllProductsPrice()
@@ -23337,6 +23424,9 @@ type TenantSubscriptionMutation struct {
 	billing_cycle                *tenantsubscription.BillingCycle
 	applied_discount             *float64
 	addapplied_discount          *float64
+	setup_fee_amount             *float64
+	addsetup_fee_amount          *float64
+	setup_fee_charged_at         *time.Time
 	bundle_code                  *string
 	allow_overage                *bool
 	overage_enabled_at           *time.Time
@@ -23883,6 +23973,111 @@ func (m *TenantSubscriptionMutation) AddedAppliedDiscount() (r float64, exists b
 func (m *TenantSubscriptionMutation) ResetAppliedDiscount() {
 	m.applied_discount = nil
 	m.addapplied_discount = nil
+}
+
+// SetSetupFeeAmount sets the "setup_fee_amount" field.
+func (m *TenantSubscriptionMutation) SetSetupFeeAmount(f float64) {
+	m.setup_fee_amount = &f
+	m.addsetup_fee_amount = nil
+}
+
+// SetupFeeAmount returns the value of the "setup_fee_amount" field in the mutation.
+func (m *TenantSubscriptionMutation) SetupFeeAmount() (r float64, exists bool) {
+	v := m.setup_fee_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSetupFeeAmount returns the old "setup_fee_amount" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldSetupFeeAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSetupFeeAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSetupFeeAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSetupFeeAmount: %w", err)
+	}
+	return oldValue.SetupFeeAmount, nil
+}
+
+// AddSetupFeeAmount adds f to the "setup_fee_amount" field.
+func (m *TenantSubscriptionMutation) AddSetupFeeAmount(f float64) {
+	if m.addsetup_fee_amount != nil {
+		*m.addsetup_fee_amount += f
+	} else {
+		m.addsetup_fee_amount = &f
+	}
+}
+
+// AddedSetupFeeAmount returns the value that was added to the "setup_fee_amount" field in this mutation.
+func (m *TenantSubscriptionMutation) AddedSetupFeeAmount() (r float64, exists bool) {
+	v := m.addsetup_fee_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSetupFeeAmount resets all changes to the "setup_fee_amount" field.
+func (m *TenantSubscriptionMutation) ResetSetupFeeAmount() {
+	m.setup_fee_amount = nil
+	m.addsetup_fee_amount = nil
+}
+
+// SetSetupFeeChargedAt sets the "setup_fee_charged_at" field.
+func (m *TenantSubscriptionMutation) SetSetupFeeChargedAt(t time.Time) {
+	m.setup_fee_charged_at = &t
+}
+
+// SetupFeeChargedAt returns the value of the "setup_fee_charged_at" field in the mutation.
+func (m *TenantSubscriptionMutation) SetupFeeChargedAt() (r time.Time, exists bool) {
+	v := m.setup_fee_charged_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSetupFeeChargedAt returns the old "setup_fee_charged_at" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldSetupFeeChargedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSetupFeeChargedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSetupFeeChargedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSetupFeeChargedAt: %w", err)
+	}
+	return oldValue.SetupFeeChargedAt, nil
+}
+
+// ClearSetupFeeChargedAt clears the value of the "setup_fee_charged_at" field.
+func (m *TenantSubscriptionMutation) ClearSetupFeeChargedAt() {
+	m.setup_fee_charged_at = nil
+	m.clearedFields[tenantsubscription.FieldSetupFeeChargedAt] = struct{}{}
+}
+
+// SetupFeeChargedAtCleared returns if the "setup_fee_charged_at" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) SetupFeeChargedAtCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldSetupFeeChargedAt]
+	return ok
+}
+
+// ResetSetupFeeChargedAt resets all changes to the "setup_fee_charged_at" field.
+func (m *TenantSubscriptionMutation) ResetSetupFeeChargedAt() {
+	m.setup_fee_charged_at = nil
+	delete(m.clearedFields, tenantsubscription.FieldSetupFeeChargedAt)
 }
 
 // SetBundleCode sets the "bundle_code" field.
@@ -24483,7 +24678,7 @@ func (m *TenantSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TenantSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 19)
+	fields := make([]string, 0, 21)
 	if m.tenant != nil {
 		fields = append(fields, tenantsubscription.FieldTenantID)
 	}
@@ -24513,6 +24708,12 @@ func (m *TenantSubscriptionMutation) Fields() []string {
 	}
 	if m.applied_discount != nil {
 		fields = append(fields, tenantsubscription.FieldAppliedDiscount)
+	}
+	if m.setup_fee_amount != nil {
+		fields = append(fields, tenantsubscription.FieldSetupFeeAmount)
+	}
+	if m.setup_fee_charged_at != nil {
+		fields = append(fields, tenantsubscription.FieldSetupFeeChargedAt)
 	}
 	if m.bundle_code != nil {
 		fields = append(fields, tenantsubscription.FieldBundleCode)
@@ -24569,6 +24770,10 @@ func (m *TenantSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.BillingCycle()
 	case tenantsubscription.FieldAppliedDiscount:
 		return m.AppliedDiscount()
+	case tenantsubscription.FieldSetupFeeAmount:
+		return m.SetupFeeAmount()
+	case tenantsubscription.FieldSetupFeeChargedAt:
+		return m.SetupFeeChargedAt()
 	case tenantsubscription.FieldBundleCode:
 		return m.BundleCode()
 	case tenantsubscription.FieldAllowOverage:
@@ -24616,6 +24821,10 @@ func (m *TenantSubscriptionMutation) OldField(ctx context.Context, name string) 
 		return m.OldBillingCycle(ctx)
 	case tenantsubscription.FieldAppliedDiscount:
 		return m.OldAppliedDiscount(ctx)
+	case tenantsubscription.FieldSetupFeeAmount:
+		return m.OldSetupFeeAmount(ctx)
+	case tenantsubscription.FieldSetupFeeChargedAt:
+		return m.OldSetupFeeChargedAt(ctx)
 	case tenantsubscription.FieldBundleCode:
 		return m.OldBundleCode(ctx)
 	case tenantsubscription.FieldAllowOverage:
@@ -24713,6 +24922,20 @@ func (m *TenantSubscriptionMutation) SetField(name string, value ent.Value) erro
 		}
 		m.SetAppliedDiscount(v)
 		return nil
+	case tenantsubscription.FieldSetupFeeAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSetupFeeAmount(v)
+		return nil
+	case tenantsubscription.FieldSetupFeeChargedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSetupFeeChargedAt(v)
+		return nil
 	case tenantsubscription.FieldBundleCode:
 		v, ok := value.(string)
 		if !ok {
@@ -24787,6 +25010,9 @@ func (m *TenantSubscriptionMutation) AddedFields() []string {
 	if m.addapplied_discount != nil {
 		fields = append(fields, tenantsubscription.FieldAppliedDiscount)
 	}
+	if m.addsetup_fee_amount != nil {
+		fields = append(fields, tenantsubscription.FieldSetupFeeAmount)
+	}
 	return fields
 }
 
@@ -24797,6 +25023,8 @@ func (m *TenantSubscriptionMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case tenantsubscription.FieldAppliedDiscount:
 		return m.AddedAppliedDiscount()
+	case tenantsubscription.FieldSetupFeeAmount:
+		return m.AddedSetupFeeAmount()
 	}
 	return nil, false
 }
@@ -24812,6 +25040,13 @@ func (m *TenantSubscriptionMutation) AddField(name string, value ent.Value) erro
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddAppliedDiscount(v)
+		return nil
+	case tenantsubscription.FieldSetupFeeAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSetupFeeAmount(v)
 		return nil
 	}
 	return fmt.Errorf("unknown TenantSubscription numeric field %s", name)
@@ -24829,6 +25064,9 @@ func (m *TenantSubscriptionMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(tenantsubscription.FieldCancelReason) {
 		fields = append(fields, tenantsubscription.FieldCancelReason)
+	}
+	if m.FieldCleared(tenantsubscription.FieldSetupFeeChargedAt) {
+		fields = append(fields, tenantsubscription.FieldSetupFeeChargedAt)
 	}
 	if m.FieldCleared(tenantsubscription.FieldBundleCode) {
 		fields = append(fields, tenantsubscription.FieldBundleCode)
@@ -24870,6 +25108,9 @@ func (m *TenantSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case tenantsubscription.FieldCancelReason:
 		m.ClearCancelReason()
+		return nil
+	case tenantsubscription.FieldSetupFeeChargedAt:
+		m.ClearSetupFeeChargedAt()
 		return nil
 	case tenantsubscription.FieldBundleCode:
 		m.ClearBundleCode()
@@ -24926,6 +25167,12 @@ func (m *TenantSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case tenantsubscription.FieldAppliedDiscount:
 		m.ResetAppliedDiscount()
+		return nil
+	case tenantsubscription.FieldSetupFeeAmount:
+		m.ResetSetupFeeAmount()
+		return nil
+	case tenantsubscription.FieldSetupFeeChargedAt:
+		m.ResetSetupFeeChargedAt()
 		return nil
 	case tenantsubscription.FieldBundleCode:
 		m.ResetBundleCode()

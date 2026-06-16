@@ -198,6 +198,47 @@ func (_u *TenantSubscriptionUpdate) AddAppliedDiscount(v float64) *TenantSubscri
 	return _u
 }
 
+// SetSetupFeeAmount sets the "setup_fee_amount" field.
+func (_u *TenantSubscriptionUpdate) SetSetupFeeAmount(v float64) *TenantSubscriptionUpdate {
+	_u.mutation.ResetSetupFeeAmount()
+	_u.mutation.SetSetupFeeAmount(v)
+	return _u
+}
+
+// SetNillableSetupFeeAmount sets the "setup_fee_amount" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableSetupFeeAmount(v *float64) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetSetupFeeAmount(*v)
+	}
+	return _u
+}
+
+// AddSetupFeeAmount adds value to the "setup_fee_amount" field.
+func (_u *TenantSubscriptionUpdate) AddSetupFeeAmount(v float64) *TenantSubscriptionUpdate {
+	_u.mutation.AddSetupFeeAmount(v)
+	return _u
+}
+
+// SetSetupFeeChargedAt sets the "setup_fee_charged_at" field.
+func (_u *TenantSubscriptionUpdate) SetSetupFeeChargedAt(v time.Time) *TenantSubscriptionUpdate {
+	_u.mutation.SetSetupFeeChargedAt(v)
+	return _u
+}
+
+// SetNillableSetupFeeChargedAt sets the "setup_fee_charged_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableSetupFeeChargedAt(v *time.Time) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetSetupFeeChargedAt(*v)
+	}
+	return _u
+}
+
+// ClearSetupFeeChargedAt clears the value of the "setup_fee_charged_at" field.
+func (_u *TenantSubscriptionUpdate) ClearSetupFeeChargedAt() *TenantSubscriptionUpdate {
+	_u.mutation.ClearSetupFeeChargedAt()
+	return _u
+}
+
 // SetBundleCode sets the "bundle_code" field.
 func (_u *TenantSubscriptionUpdate) SetBundleCode(v string) *TenantSubscriptionUpdate {
 	_u.mutation.SetBundleCode(v)
@@ -533,6 +574,18 @@ func (_u *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err
 	}
 	if value, ok := _u.mutation.AddedAppliedDiscount(); ok {
 		_spec.AddField(tenantsubscription.FieldAppliedDiscount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.SetupFeeAmount(); ok {
+		_spec.SetField(tenantsubscription.FieldSetupFeeAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSetupFeeAmount(); ok {
+		_spec.AddField(tenantsubscription.FieldSetupFeeAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.SetupFeeChargedAt(); ok {
+		_spec.SetField(tenantsubscription.FieldSetupFeeChargedAt, field.TypeTime, value)
+	}
+	if _u.mutation.SetupFeeChargedAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldSetupFeeChargedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.BundleCode(); ok {
 		_spec.SetField(tenantsubscription.FieldBundleCode, field.TypeString, value)
@@ -909,6 +962,47 @@ func (_u *TenantSubscriptionUpdateOne) AddAppliedDiscount(v float64) *TenantSubs
 	return _u
 }
 
+// SetSetupFeeAmount sets the "setup_fee_amount" field.
+func (_u *TenantSubscriptionUpdateOne) SetSetupFeeAmount(v float64) *TenantSubscriptionUpdateOne {
+	_u.mutation.ResetSetupFeeAmount()
+	_u.mutation.SetSetupFeeAmount(v)
+	return _u
+}
+
+// SetNillableSetupFeeAmount sets the "setup_fee_amount" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableSetupFeeAmount(v *float64) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetSetupFeeAmount(*v)
+	}
+	return _u
+}
+
+// AddSetupFeeAmount adds value to the "setup_fee_amount" field.
+func (_u *TenantSubscriptionUpdateOne) AddSetupFeeAmount(v float64) *TenantSubscriptionUpdateOne {
+	_u.mutation.AddSetupFeeAmount(v)
+	return _u
+}
+
+// SetSetupFeeChargedAt sets the "setup_fee_charged_at" field.
+func (_u *TenantSubscriptionUpdateOne) SetSetupFeeChargedAt(v time.Time) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetSetupFeeChargedAt(v)
+	return _u
+}
+
+// SetNillableSetupFeeChargedAt sets the "setup_fee_charged_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableSetupFeeChargedAt(v *time.Time) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetSetupFeeChargedAt(*v)
+	}
+	return _u
+}
+
+// ClearSetupFeeChargedAt clears the value of the "setup_fee_charged_at" field.
+func (_u *TenantSubscriptionUpdateOne) ClearSetupFeeChargedAt() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearSetupFeeChargedAt()
+	return _u
+}
+
 // SetBundleCode sets the "bundle_code" field.
 func (_u *TenantSubscriptionUpdateOne) SetBundleCode(v string) *TenantSubscriptionUpdateOne {
 	_u.mutation.SetBundleCode(v)
@@ -1274,6 +1368,18 @@ func (_u *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Tena
 	}
 	if value, ok := _u.mutation.AddedAppliedDiscount(); ok {
 		_spec.AddField(tenantsubscription.FieldAppliedDiscount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.SetupFeeAmount(); ok {
+		_spec.SetField(tenantsubscription.FieldSetupFeeAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSetupFeeAmount(); ok {
+		_spec.AddField(tenantsubscription.FieldSetupFeeAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.SetupFeeChargedAt(); ok {
+		_spec.SetField(tenantsubscription.FieldSetupFeeChargedAt, field.TypeTime, value)
+	}
+	if _u.mutation.SetupFeeChargedAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldSetupFeeChargedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.BundleCode(); ok {
 		_spec.SetField(tenantsubscription.FieldBundleCode, field.TypeString, value)

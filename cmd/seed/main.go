@@ -154,6 +154,11 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed service charge plans: %w", err)
 	}
 
+	// 3.52 Apply one-time setup/onboarding fees to recurring plans by service.
+	if err := seedSetupFees(ctx, tx); err != nil {
+		return fmt.Errorf("seed setup fees: %w", err)
+	}
+
 	// 3.55 Reconcile every plan's tier_limits_json keys against the feature catalog:
 	// canonicalize aliases and warn on any key that is not a catalog LIMIT (or, for
 	// standalone-service plans, belongs to a different service). Keeps plan limits

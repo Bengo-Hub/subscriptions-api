@@ -117,6 +117,27 @@ func (_u *SubscriptionPlanUpdate) AddBasePrice(v float64) *SubscriptionPlanUpdat
 	return _u
 }
 
+// SetSetupFee sets the "setup_fee" field.
+func (_u *SubscriptionPlanUpdate) SetSetupFee(v float64) *SubscriptionPlanUpdate {
+	_u.mutation.ResetSetupFee()
+	_u.mutation.SetSetupFee(v)
+	return _u
+}
+
+// SetNillableSetupFee sets the "setup_fee" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillableSetupFee(v *float64) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetSetupFee(*v)
+	}
+	return _u
+}
+
+// AddSetupFee adds value to the "setup_fee" field.
+func (_u *SubscriptionPlanUpdate) AddSetupFee(v float64) *SubscriptionPlanUpdate {
+	_u.mutation.AddSetupFee(v)
+	return _u
+}
+
 // SetOnetimeAllProductsPrice sets the "onetime_all_products_price" field.
 func (_u *SubscriptionPlanUpdate) SetOnetimeAllProductsPrice(v float64) *SubscriptionPlanUpdate {
 	_u.mutation.ResetOnetimeAllProductsPrice()
@@ -555,6 +576,12 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 	if value, ok := _u.mutation.AddedBasePrice(); ok {
 		_spec.AddField(subscriptionplan.FieldBasePrice, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.SetupFee(); ok {
+		_spec.SetField(subscriptionplan.FieldSetupFee, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSetupFee(); ok {
+		_spec.AddField(subscriptionplan.FieldSetupFee, field.TypeFloat64, value)
+	}
 	if value, ok := _u.mutation.OnetimeAllProductsPrice(); ok {
 		_spec.SetField(subscriptionplan.FieldOnetimeAllProductsPrice, field.TypeFloat64, value)
 	}
@@ -897,6 +924,27 @@ func (_u *SubscriptionPlanUpdateOne) SetNillableBasePrice(v *float64) *Subscript
 // AddBasePrice adds value to the "base_price" field.
 func (_u *SubscriptionPlanUpdateOne) AddBasePrice(v float64) *SubscriptionPlanUpdateOne {
 	_u.mutation.AddBasePrice(v)
+	return _u
+}
+
+// SetSetupFee sets the "setup_fee" field.
+func (_u *SubscriptionPlanUpdateOne) SetSetupFee(v float64) *SubscriptionPlanUpdateOne {
+	_u.mutation.ResetSetupFee()
+	_u.mutation.SetSetupFee(v)
+	return _u
+}
+
+// SetNillableSetupFee sets the "setup_fee" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillableSetupFee(v *float64) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetSetupFee(*v)
+	}
+	return _u
+}
+
+// AddSetupFee adds value to the "setup_fee" field.
+func (_u *SubscriptionPlanUpdateOne) AddSetupFee(v float64) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddSetupFee(v)
 	return _u
 }
 
@@ -1367,6 +1415,12 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 	}
 	if value, ok := _u.mutation.AddedBasePrice(); ok {
 		_spec.AddField(subscriptionplan.FieldBasePrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.SetupFee(); ok {
+		_spec.SetField(subscriptionplan.FieldSetupFee, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSetupFee(); ok {
+		_spec.AddField(subscriptionplan.FieldSetupFee, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.OnetimeAllProductsPrice(); ok {
 		_spec.SetField(subscriptionplan.FieldOnetimeAllProductsPrice, field.TypeFloat64, value)

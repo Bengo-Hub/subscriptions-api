@@ -41,6 +41,10 @@ type TenantSubscription struct {
 	BillingCycle tenantsubscription.BillingCycle `json:"billing_cycle,omitempty"`
 	// Discount applied to this subscription based on rules (e.g., 20% for yearly)
 	AppliedDiscount float64 `json:"applied_discount,omitempty"`
+	// One-time setup fee charged for this subscription (snapshot of plan.setup_fee at creation). 0 = none/waived
+	SetupFeeAmount float64 `json:"setup_fee_amount,omitempty"`
+	// When the one-time setup fee was charged. Nil = not yet charged; set once, never re-charged on renewal
+	SetupFeeChargedAt *time.Time `json:"setup_fee_charged_at,omitempty"`
 	// Bundle code if subscribed via bundle (delivery, pos-suite, complete)
 	BundleCode *string `json:"bundle_code,omitempty"`
 	// Opt-in master switch: when true, metered throughput limits may be exceeded and the excess accrues as OverageCharge billed on the next renewal
@@ -131,11 +135,11 @@ func (*TenantSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case tenantsubscription.FieldAllowOverage:
 			values[i] = new(sql.NullBool)
-		case tenantsubscription.FieldAppliedDiscount:
+		case tenantsubscription.FieldAppliedDiscount, tenantsubscription.FieldSetupFeeAmount:
 			values[i] = new(sql.NullFloat64)
 		case tenantsubscription.FieldStatus, tenantsubscription.FieldCancelReason, tenantsubscription.FieldBillingCycle, tenantsubscription.FieldBundleCode, tenantsubscription.FieldReferralCode:
 			values[i] = new(sql.NullString)
-		case tenantsubscription.FieldTrialEndsAt, tenantsubscription.FieldCurrentPeriodStart, tenantsubscription.FieldCurrentPeriodEnd, tenantsubscription.FieldCancelledAt, tenantsubscription.FieldOverageEnabledAt, tenantsubscription.FieldCreatedAt, tenantsubscription.FieldUpdatedAt:
+		case tenantsubscription.FieldTrialEndsAt, tenantsubscription.FieldCurrentPeriodStart, tenantsubscription.FieldCurrentPeriodEnd, tenantsubscription.FieldCancelledAt, tenantsubscription.FieldSetupFeeChargedAt, tenantsubscription.FieldOverageEnabledAt, tenantsubscription.FieldCreatedAt, tenantsubscription.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		case tenantsubscription.FieldID, tenantsubscription.FieldTenantID, tenantsubscription.FieldPlanID:
 			values[i] = new(uuid.UUID)
@@ -222,6 +226,19 @@ func (_m *TenantSubscription) assignValues(columns []string, values []any) error
 				return fmt.Errorf("unexpected type %T for field applied_discount", values[i])
 			} else if value.Valid {
 				_m.AppliedDiscount = value.Float64
+			}
+		case tenantsubscription.FieldSetupFeeAmount:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field setup_fee_amount", values[i])
+			} else if value.Valid {
+				_m.SetupFeeAmount = value.Float64
+			}
+		case tenantsubscription.FieldSetupFeeChargedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field setup_fee_charged_at", values[i])
+			} else if value.Valid {
+				_m.SetupFeeChargedAt = new(time.Time)
+				*_m.SetupFeeChargedAt = value.Time
 			}
 		case tenantsubscription.FieldBundleCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -375,6 +392,14 @@ func (_m *TenantSubscription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("applied_discount=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AppliedDiscount))
+	builder.WriteString(", ")
+	builder.WriteString("setup_fee_amount=")
+	builder.WriteString(fmt.Sprintf("%v", _m.SetupFeeAmount))
+	builder.WriteString(", ")
+	if v := _m.SetupFeeChargedAt; v != nil {
+		builder.WriteString("setup_fee_charged_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	if v := _m.BundleCode; v != nil {
 		builder.WriteString("bundle_code=")

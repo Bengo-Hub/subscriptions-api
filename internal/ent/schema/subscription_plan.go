@@ -36,6 +36,9 @@ func (SubscriptionPlan) Fields() []ent.Field {
 			Comment("MONTHLY, QUARTERLY, ANNUAL, ONE_TIME"),
 		field.Float("base_price").
 			Comment("Base subscription price"),
+		field.Float("setup_fee").
+			Default(0).
+			Comment("One-time onboarding/setup fee charged once at subscription creation (never on renewal). 0 = none. E.g. POS device onboarding, TruLoad/ISP/ERP implementation."),
 		field.Float("onetime_all_products_price").
 			Optional().
 			Nillable().
