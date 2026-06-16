@@ -84,7 +84,7 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed ordering plans: %w", err)
 	}
 
-	// 2.1 Seed bundle-specific plans (POS_SUITE_*, COMPLETE_*, ORDERING_SETUP_FEE)
+	// 2.1 Seed bundle-specific plans (POS_SUITE_*, POWERSUITE_*, ORDERING_SETUP_FEE)
 	if err := seedBundlePlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed bundle plans: %w", err)
 	}

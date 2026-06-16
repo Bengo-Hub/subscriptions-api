@@ -116,7 +116,7 @@ var featureCatalog = func() []catalogEntry {
 		meteredLim("sms_notifications_per_day", ordering, "Limits", "SMS", "/ day", "notifications.sms.sent"),
 		lim("overage_rider_price_per_month", ordering, "Overage", "Extra Rider Overage", "KES / rider / month"),
 		lim("overage_orders_price_per_100_month", ordering, "Overage", "Orders Overage (per 100)", "KES / month"),
-		// Bundle (COMPLETE_*) overage pricing — stored in tier_limits_json alongside caps.
+		// Bundle (POWERSUITE_*) overage pricing — stored in tier_limits_json alongside caps.
 		lim("overage_transactions_price_per_100_month", treasury, "Overage", "Transactions Overage (per 100)", "KES / month"),
 		lim("overage_sms_price_per_100", platform, "Overage", "SMS Overage (per 100)", "KES / 100 SMS"),
 

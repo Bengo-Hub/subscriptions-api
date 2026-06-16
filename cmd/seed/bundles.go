@@ -67,8 +67,8 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 		},
 		{
 			id:          uuid.MustParse("20000000-0000-0000-0000-000000000003"),
-			code:        "complete",
-			name:        "BengoBox Complete",
+			code:        "powersuite",
+			name:        "BengoBox PowerSuite",
 			description: "Everything included: online ordering, delivery logistics, POS, payments, and storefront. Best value for full-service operations.",
 			products: []schema.BundleProduct{
 				{ProductCode: "ordering"},
@@ -78,9 +78,9 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 				{ProductCode: "storefront"},
 			},
 			tiers: []schema.BundleTier{
-				{PlanCode: "COMPLETE_STARTER", MonthlyPrice: 4000, YearlyPrice: 44000},
-				{PlanCode: "COMPLETE_GROWTH", MonthlyPrice: 9500, YearlyPrice: 104500},
-				{PlanCode: "COMPLETE_PROFESSIONAL", MonthlyPrice: 18000, YearlyPrice: 198000},
+				{PlanCode: "POWERSUITE_STARTER", MonthlyPrice: 4000, YearlyPrice: 44000},
+				{PlanCode: "POWERSUITE_GROWTH", MonthlyPrice: 9500, YearlyPrice: 104500},
+				{PlanCode: "POWERSUITE_PROFESSIONAL", MonthlyPrice: 18000, YearlyPrice: 198000},
 			},
 			sortOrder: 3,
 		},

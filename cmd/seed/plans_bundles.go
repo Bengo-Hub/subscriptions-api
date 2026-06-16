@@ -12,16 +12,23 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 )
 
-// seedBundlePlans seeds dedicated plan codes for the POS Suite and Complete bundles.
+// seedBundlePlans seeds dedicated plan codes for the POS Suite and PowerSuite bundles.
 //
 // POS Suite: POS terminal + Treasury payments (in-store commerce).
 //
-// Complete Bundle: Every service in the Codevertex ecosystem bundled into 3 tiers.
-// Features are the UNION of all Starter/Growth/Pro service plans at the matching tier
-// — a Complete Starter tenant gets exactly the features available in each service's
-// Starter plan, Complete Growth gets Growth-level features, etc.
+// PowerSuite Bundle (formerly "Complete"): Every service in the Codevertex ecosystem
+// bundled into 3 tiers. Features are the UNION of all Starter/Growth/Pro service plans
+// at the matching tier — a PowerSuite Starter tenant gets exactly the features
+// available in each service's Starter plan, PowerSuite Growth gets Growth-level
+// features, etc.
 //
-// Services covered by Complete plans:
+// NOTE: the deterministic seed ids below intentionally keep their historical
+// "plan:COMPLETE_*" namespace strings so the plan UUIDs (and every FK that references
+// them — plan features, tenant subscriptions) stay stable across the rename. Only the
+// plan_code / name / description values change; the upsert matches by id and updates
+// the existing rows in place.
+//
+// Services covered by PowerSuite plans:
 //   - Ordering (online ordering, riders, outlets, promotions)
 //   - POS (terminal, KDS, table management, shift reports)
 //   - Logistics (rider management, live tracking, route optimisation)
@@ -234,8 +241,8 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 			},
 		},
 
-		// ── Complete Bundle — Monthly ────────────────────────────────────────
-		// COMPLETE_STARTER = UNION of all *_STARTER service plans at starter limits.
+		// ── PowerSuite Bundle — Monthly ──────────────────────────────────────
+		// POWERSUITE_STARTER = UNION of all *_STARTER service plans at starter limits.
 		// Includes: Ordering Starter + POS Device-1 + Logistics Starter +
 		//           Inventory Starter + Treasury Starter + MarketFlow Starter
 		//
@@ -247,8 +254,8 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 		//   - max_transactions_per_month: 5000 (300 orders/day × 30 days × 50% digital)
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:COMPLETE_STARTER")),
-			planCode:     "COMPLETE_STARTER",
-			name:         "Complete Starter",
+			planCode:     "POWERSUITE_STARTER",
+			name:         "PowerSuite Starter",
 			description:  "Every Codevertex service at starter level: online ordering, POS, logistics, inventory, payments, CRM, and storefront for a single outlet.",
 			billingCycle: "MONTHLY",
 			price:        4000.0,
@@ -320,13 +327,13 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"basic_inventory_access", "basic_logistics_access", "basic_treasury_access",
 			},
 		},
-		// COMPLETE_GROWTH = COMPLETE_STARTER features + all *_GROWTH additions
+		// POWERSUITE_GROWTH = POWERSUITE_STARTER features + all *_GROWTH additions
 		// Includes MarketFlow Growth (funnels, automation, ticketing, lead scoring) +
 		//          ERP Starter (HR, payroll, procurement, leave)
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:COMPLETE_GROWTH")),
-			planCode:     "COMPLETE_GROWTH",
-			name:         "Complete Growth",
+			planCode:     "POWERSUITE_GROWTH",
+			name:         "PowerSuite Growth",
 			description:  "Every Codevertex service at growth level: multi-outlet ordering, advanced analytics, route optimisation, multi-warehouse, multi-currency, CRM automation, ticketing, and HR management.",
 			billingCycle: "MONTHLY",
 			price:        9500.0,
@@ -416,12 +423,12 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				"basic_inventory_access", "basic_logistics_access", "basic_treasury_access",
 			},
 		},
-		// COMPLETE_PROFESSIONAL = COMPLETE_GROWTH features + all *_PROFESSIONAL additions
+		// POWERSUITE_PROFESSIONAL = POWERSUITE_GROWTH features + all *_PROFESSIONAL additions
 		// All operational limits are unlimited; api_calls capped at 500K/month.
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:COMPLETE_PROFESSIONAL")),
-			planCode:     "COMPLETE_PROFESSIONAL",
-			name:         "Complete Professional",
+			planCode:     "POWERSUITE_PROFESSIONAL",
+			name:         "PowerSuite Professional",
 			description:  "Every Codevertex service at enterprise level: unlimited outlets, hotel module, API access, barcode scanning, audit trail, CRM automation, full ERP, and priority support.",
 			billingCycle: "MONTHLY",
 			price:        18000.0,
@@ -518,11 +525,11 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 			},
 		},
 
-		// ── Complete Bundle — Annual ─────────────────────────────────────────
+		// ── PowerSuite Bundle — Annual ───────────────────────────────────────
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:COMPLETE_STARTER_YEARLY")),
-			planCode:     "COMPLETE_STARTER_YEARLY",
-			name:         "Complete Starter — Annual",
+			planCode:     "POWERSUITE_STARTER_YEARLY",
+			name:         "PowerSuite Starter — Annual",
 			description:  "Every Codevertex service at starter level for a single outlet. Save with annual billing.",
 			billingCycle: "ANNUAL",
 			price:        44000.0,
@@ -564,8 +571,8 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 		},
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:COMPLETE_GROWTH_YEARLY")),
-			planCode:     "COMPLETE_GROWTH_YEARLY",
-			name:         "Complete Growth — Annual",
+			planCode:     "POWERSUITE_GROWTH_YEARLY",
+			name:         "PowerSuite Growth — Annual",
 			description:  "Every Codevertex service at growth level — multi-outlet, route optimisation, multi-currency, CRM automation, HR. Save with annual billing.",
 			billingCycle: "ANNUAL",
 			price:        104500.0,
@@ -618,8 +625,8 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 		},
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:COMPLETE_PROFESSIONAL_YEARLY")),
-			planCode:     "COMPLETE_PROFESSIONAL_YEARLY",
-			name:         "Complete Professional — Annual",
+			planCode:     "POWERSUITE_PROFESSIONAL_YEARLY",
+			name:         "PowerSuite Professional — Annual",
 			description:  "Every Codevertex service at enterprise level — unlimited scale, API access, hotel module, full CRM, full ERP, audit trail. Save with annual billing.",
 			billingCycle: "ANNUAL",
 			price:        198000.0,
