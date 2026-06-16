@@ -110,6 +110,8 @@ func (c *TenantCreatedConsumer) handle(ctx context.Context, msg *nats.Msg) error
 		PlanCode:   DefaultStarterPlanCode,
 		BundleCode: DefaultStarterBundle,
 		TrialDays:  DefaultTrialDays,
+		TenantSlug: payload.Slug,
+		TenantName: payload.Name,
 	})
 	if err != nil {
 		// If subscription already exists, that's fine — idempotent.

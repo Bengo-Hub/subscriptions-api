@@ -10,6 +10,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -50,6 +51,11 @@ type CreateInput struct {
 	BundleCode     string    `json:"bundle_code,omitempty"`
 	TrialDays      int       `json:"trial_days,omitempty"`
 	ReferredByCode string    `json:"referred_by_code,omitempty"` // Type-A referral: code of the referrer
+	// TenantSlug/TenantName let the creator (auth-api S2S at signup, or the
+	// auth.tenant.created consumer) seed the local tenant projection on demand,
+	// avoiding an FK violation when the async tenant sync has not run yet.
+	TenantSlug string `json:"tenant_slug,omitempty"`
+	TenantName string `json:"tenant_name,omitempty"`
 }
 
 // ChangePlanInput defines the payload for upgrading or downgrading.
@@ -231,10 +237,55 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 }
 
 // CreateSubscription provisions a new subscription for a tenant.
+// ensureTenant lazily seeds the local tenant projection if it does not exist yet.
+// auth is the source of truth; the full record arrives later via the auth.tenant
+// sync, which upserts over this minimal row. Without a slug we cannot create a
+// valid projection (slug is NOT NULL/unique), so we let the caller proceed and
+// surface the underlying FK error. Constraint errors (concurrent create) are
+// treated as success.
+func (s *Service) ensureTenant(ctx context.Context, id uuid.UUID, slug, name string) error {
+	if id == uuid.Nil {
+		return nil
+	}
+	exists, err := s.client.Tenant.Query().Where(enttenant.IDEQ(id)).Exist(ctx)
+	if err != nil {
+		return fmt.Errorf("check tenant: %w", err)
+	}
+	if exists {
+		return nil
+	}
+	if slug == "" {
+		// Nothing we can seed with; the downstream FK will report the missing tenant.
+		return nil
+	}
+	if name == "" {
+		name = slug
+	}
+	if _, err := s.client.Tenant.Create().
+		SetID(id).
+		SetName(name).
+		SetSlug(slug).
+		SetStatus("active").
+		SetSyncStatus("pending").
+		Save(ctx); err != nil && !ent.IsConstraintError(err) {
+		return err
+	}
+	s.log.Info("seeded tenant projection for subscription", zap.String("tenant_id", id.String()), zap.String("slug", slug))
+	return nil
+}
+
 func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*SubscriptionResult, error) {
 	// Demo + platform-owner tenants never own a subscription record.
 	if err := s.guardExempt(ctx, in.TenantID); err != nil {
 		return nil, err
+	}
+
+	// Ensure the local tenant projection exists before inserting the subscription.
+	// At signup, auth-api calls this S2S immediately after creating the tenant —
+	// before the async auth.tenant.created projection has run — so without this the
+	// insert fails the tenant_subscriptions → tenants foreign key (SQLSTATE 23503).
+	if err := s.ensureTenant(ctx, in.TenantID, in.TenantSlug, in.TenantName); err != nil {
+		return nil, fmt.Errorf("ensure tenant projection: %w", err)
 	}
 
 	// Verify tenant doesn't already have a subscription
