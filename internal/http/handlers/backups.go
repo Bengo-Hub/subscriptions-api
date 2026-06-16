@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,6 +36,8 @@ func (h *BackupHandler) RegisterRoutes(r chi.Router) {
 	r.Route("/backups", func(br chi.Router) {
 		br.Get("/", h.List)
 		br.Post("/", h.Create)
+		br.Get("/settings", h.GetSettings)
+		br.Put("/settings", h.UpdateSettings)
 		br.Post("/churn", h.Churn)
 		br.Get("/{name}/download", h.Download)
 		br.Delete("/{name}", h.Delete)
@@ -81,6 +84,44 @@ func (h *BackupHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, info)
+}
+
+// GetSettings returns the tenant's auto-backup settings (auto_enabled defaults to false
+// when the tenant has never activated it).
+func (h *BackupHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := tenantUUID(r)
+	if !ok {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant context required"})
+		return
+	}
+	settings, err := h.svc.GetSettings(r.Context(), tenantID)
+	if err != nil {
+		h.log.Error("get backup settings", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load backup settings"})
+		return
+	}
+	writeJSON(w, http.StatusOK, settings)
+}
+
+// UpdateSettings activates/deactivates auto-backup + sets schedule hour + retention.
+func (h *BackupHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := tenantUUID(r)
+	if !ok {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant context required"})
+		return
+	}
+	var b backup.Settings
+	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	settings, err := h.svc.UpsertSettings(r.Context(), tenantID, b)
+	if err != nil {
+		h.log.Error("update backup settings", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save backup settings"})
+		return
+	}
+	writeJSON(w, http.StatusOK, settings)
 }
 
 // Churn manually triggers retention cleanup (deletes files + tracking rows older than the
