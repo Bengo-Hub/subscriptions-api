@@ -28,9 +28,11 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 
 	minCharge50 := 50.0
 	minCharge5 := 5.0
+	minCharge2 := 2.0
 	maxCharge5000 := 5000.0
 	maxCharge2000 := 2000.0
 	maxCharge500 := 500.0
+	maxCharge50 := 50.0
 
 	plans := []scPlan{
 		{
@@ -72,6 +74,21 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 			maxCharge:   &maxCharge2000,
 			services:    []string{"pos"},
 			isDefault:   true,
+		},
+		{
+			// Micro-business PAYG: 1% of each sale, floored at KES 2, capped at KES 50.
+			// Replaces a subscription for tenants too small for monthly/license pricing.
+			// Sits below every Kenyan gateway fee the merchant already pays. Tenants on this
+			// plan are restricted to platform-collectable online rails (no cash/offline) so the
+			// commission can be netted at settlement. Applies to all POS lines (POS/Duka/Dawa).
+			code:        "SC_POS_MICRO_1PCT",
+			name:        "POS Micro PAYG — 1% Service Charge",
+			description: "Pay-as-you-go for micro shops, kiosks & stalls: 1% of each sale, minimum KES 2, capped at KES 50 per transaction. No monthly fee. Online payment methods only.",
+			chargeType:  servicechargeplan.ChargeTypePERCENTAGE,
+			chargeValue: 1.0,
+			minCharge:   &minCharge2,
+			maxCharge:   &maxCharge50,
+			services:    []string{"pos"},
 		},
 		{
 			code:        "SC_UNIVERSAL_FLAT_50",

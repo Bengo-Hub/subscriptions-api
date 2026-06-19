@@ -119,6 +119,11 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed pos license plans: %w", err)
 	}
 
+	// 2.10b Seed POS industry product-line plans (Codevertex POS / Duka / Dawa tiers)
+	if err := seedPOSProductLinePlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed pos product-line plans: %w", err)
+	}
+
 	// 2.11 Seed MarketFlow CRM plans
 	if err := seedMarketFlowPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed marketflow plans: %w", err)

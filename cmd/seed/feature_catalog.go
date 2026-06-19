@@ -133,6 +133,11 @@ var featureCatalog = func() []catalogEntry {
 		feat("mpesa_pos", pos, "POS", "M-Pesa POS Payments"),
 		feat("happy_hour", pos, "POS", "Happy Hour Pricing"),
 		feat("conference_events", pos, "POS", "Conference & Events Module"),
+		// Pharmacy (Codevertex Dawa) — clinical & compliance features served by pos-api.
+		feat("prescription_management", pos, "Pharmacy", "Prescription Management & Dispensing"),
+		feat("patient_history", pos, "Pharmacy", "Patient History & Records"),
+		feat("insurance_claims", pos, "Pharmacy", "Insurance Claims (NHIF / Private)"),
+		feat("label_printing", pos, "Pharmacy", "Dispensing Label Printing"),
 		lim("max_devices", pos, "Limits", "POS Devices", ""),
 		lim("max_cashiers", pos, "Limits", "Cashiers", ""),
 		lim("max_tables", pos, "Limits", "Tables", ""),
