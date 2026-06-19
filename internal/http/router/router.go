@@ -35,6 +35,7 @@ func New(
 	couponAdminHandler *handlers.CouponAdminHandler,
 	featureCatalogHandler *handlers.FeatureCatalogHandler,
 	backupHandler *handlers.BackupHandler,
+	backupDestHandler *handlers.BackupDestinationHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -237,6 +238,28 @@ func New(
 						})
 					})
 					backupHandler.RegisterRoutes(r)
+					// Per-tenant backup-destination override (mirrors backups off the
+					// PVC) — same admin/config gate as the tenant backups routes.
+					if backupDestHandler != nil {
+						backupDestHandler.RegisterRoutes(r)
+					}
+				})
+			}
+
+			// Platform-default backup destination (OneDrive/GDrive/S3/WebDAV/SFTP/SMB)
+			// — platform owner only. Mounted at /api/v1/platform/backups/destination.
+			if backupDestHandler != nil {
+				r.Route("/platform", func(r chi.Router) {
+					r.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							if !httpware.IsPlatformOwner(r.Context()) {
+								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+								return
+							}
+							next.ServeHTTP(w, r)
+						})
+					})
+					backupDestHandler.RegisterPlatformRoutes(r)
 				})
 			}
 
