@@ -85,7 +85,7 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 			// lines (POS/Duka/Dawa). See the dormancy clause in the pricing doc (>60 days idle).
 			code:        "SC_POS_FLEX",
 			name:        "Codevertex Flex — POS Service Charge",
-			description: "Pay-as-you-grow for micro shops, kiosks & stalls: 1.5% of each sale, minimum KES 2, capped at KES 250 per transaction. No monthly subscription. One-time setup KES 3,000. Online payment methods only.",
+			description: "Pay-as-you-grow for micro shops, kiosks & stalls: 1.5% of each sale, minimum KES 2, capped at KES 250 per transaction. No monthly subscription. One-time setup KES 5,000. Online payment methods only.",
 			chargeType:  servicechargeplan.ChargeTypePERCENTAGE,
 			chargeValue: 1.5,
 			minCharge:   &minCharge2,

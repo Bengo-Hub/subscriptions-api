@@ -172,3 +172,28 @@ func seedPOSLicensePlans(ctx context.Context, tx *ent.Tx) error {
 	}
 	return nil
 }
+
+// retireLegacyPOSPlans deactivates the old per-device/seat POS plans (POS_DEVICE_* and the
+// POS_LICENSE_* perpetual licenses). They are superseded by the industry product-line tiers
+// (POS_HOSP_*/POS_DUKA_*/POS_DAWA_*). Deactivated (is_active=false, is_public=false) rather than
+// hard-deleted so any tenant still pointed at one keeps resolving; they just drop out of the
+// public catalog. Idempotent.
+func retireLegacyPOSPlans(ctx context.Context, tx *ent.Tx) error {
+	legacy := []string{
+		"POS_DEVICE_1", "POS_DEVICE_5", "POS_DEVICE_10",
+		"POS_DEVICE_1_YEARLY", "POS_DEVICE_5_YEARLY", "POS_DEVICE_10_YEARLY",
+		"POS_LICENSE_PER_DEVICE", "POS_LICENSE_COMPLETE",
+	}
+	n, err := tx.SubscriptionPlan.Update().
+		Where(subscriptionplan.PlanCodeIn(legacy...), subscriptionplan.IsActiveEQ(true)).
+		SetIsActive(false).
+		SetIsPublic(false).
+		Save(ctx)
+	if err != nil {
+		return fmt.Errorf("retire legacy pos plans: %w", err)
+	}
+	if n > 0 {
+		log.Printf("  ✓ Retired %d legacy POS device/license plans (superseded by POS_HOSP/DUKA/DAWA tiers)", n)
+	}
+	return nil
+}

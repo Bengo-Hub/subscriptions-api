@@ -114,14 +114,15 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed erp plans: %w", err)
 	}
 
-	// 2.10 Seed POS per-device license plans
-	if err := seedPOSLicensePlans(ctx, tx); err != nil {
-		return fmt.Errorf("seed pos license plans: %w", err)
-	}
-
-	// 2.10b Seed POS industry product-line plans (Codevertex POS / Duka / Dawa tiers)
+	// 2.10 Seed POS industry product-line plans (Codevertex POS / Duka / Dawa tiers)
 	if err := seedPOSProductLinePlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed pos product-line plans: %w", err)
+	}
+
+	// 2.10b Retire the legacy per-device/seat POS plans (POS_DEVICE_*, POS_LICENSE_*) — superseded
+	// by the product-line tiers above. Deactivated, not deleted, so existing subscriptions resolve.
+	if err := retireLegacyPOSPlans(ctx, tx); err != nil {
+		return fmt.Errorf("retire legacy pos plans: %w", err)
 	}
 
 	// 2.11 Seed MarketFlow CRM plans
