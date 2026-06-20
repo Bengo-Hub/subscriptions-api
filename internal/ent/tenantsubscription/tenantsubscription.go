@@ -52,6 +52,20 @@ const (
 	FieldReferredBy = "referred_by"
 	// FieldReferralCode holds the string denoting the referral_code field in the database.
 	FieldReferralCode = "referral_code"
+	// FieldTermsVersion holds the string denoting the terms_version field in the database.
+	FieldTermsVersion = "terms_version"
+	// FieldTermsAcceptedAt holds the string denoting the terms_accepted_at field in the database.
+	FieldTermsAcceptedAt = "terms_accepted_at"
+	// FieldTermsAcceptedBy holds the string denoting the terms_accepted_by field in the database.
+	FieldTermsAcceptedBy = "terms_accepted_by"
+	// FieldLastActivityAt holds the string denoting the last_activity_at field in the database.
+	FieldLastActivityAt = "last_activity_at"
+	// FieldDormantAt holds the string denoting the dormant_at field in the database.
+	FieldDormantAt = "dormant_at"
+	// FieldPurgeGraceEndsAt holds the string denoting the purge_grace_ends_at field in the database.
+	FieldPurgeGraceEndsAt = "purge_grace_ends_at"
+	// FieldPendingPurge holds the string denoting the pending_purge field in the database.
+	FieldPendingPurge = "pending_purge"
 	// FieldMetadata holds the string denoting the metadata field in the database.
 	FieldMetadata = "metadata"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -119,6 +133,13 @@ var Columns = []string{
 	FieldPaymentMethodID,
 	FieldReferredBy,
 	FieldReferralCode,
+	FieldTermsVersion,
+	FieldTermsAcceptedAt,
+	FieldTermsAcceptedBy,
+	FieldLastActivityAt,
+	FieldDormantAt,
+	FieldPurgeGraceEndsAt,
+	FieldPendingPurge,
 	FieldMetadata,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -141,6 +162,8 @@ var (
 	DefaultSetupFeeAmount float64
 	// DefaultAllowOverage holds the default value on creation for the "allow_overage" field.
 	DefaultAllowOverage bool
+	// DefaultPendingPurge holds the default value on creation for the "pending_purge" field.
+	DefaultPendingPurge bool
 	// DefaultMetadata holds the default value on creation for the "metadata" field.
 	DefaultMetadata map[string]interface{}
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -166,6 +189,7 @@ const (
 	StatusEXPIRED   Status = "EXPIRED"
 	StatusCANCELLED Status = "CANCELLED"
 	StatusSUSPENDED Status = "SUSPENDED"
+	StatusDORMANT   Status = "DORMANT"
 )
 
 func (s Status) String() string {
@@ -175,7 +199,7 @@ func (s Status) String() string {
 // StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
 func StatusValidator(s Status) error {
 	switch s {
-	case StatusACTIVE, StatusTRIAL, StatusEXPIRED, StatusCANCELLED, StatusSUSPENDED:
+	case StatusACTIVE, StatusTRIAL, StatusEXPIRED, StatusCANCELLED, StatusSUSPENDED, StatusDORMANT:
 		return nil
 	default:
 		return fmt.Errorf("tenantsubscription: invalid enum value for status field: %q", s)
@@ -306,6 +330,41 @@ func ByReferredBy(opts ...sql.OrderTermOption) OrderOption {
 // ByReferralCode orders the results by the referral_code field.
 func ByReferralCode(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldReferralCode, opts...).ToFunc()
+}
+
+// ByTermsVersion orders the results by the terms_version field.
+func ByTermsVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTermsVersion, opts...).ToFunc()
+}
+
+// ByTermsAcceptedAt orders the results by the terms_accepted_at field.
+func ByTermsAcceptedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTermsAcceptedAt, opts...).ToFunc()
+}
+
+// ByTermsAcceptedBy orders the results by the terms_accepted_by field.
+func ByTermsAcceptedBy(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTermsAcceptedBy, opts...).ToFunc()
+}
+
+// ByLastActivityAt orders the results by the last_activity_at field.
+func ByLastActivityAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastActivityAt, opts...).ToFunc()
+}
+
+// ByDormantAt orders the results by the dormant_at field.
+func ByDormantAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDormantAt, opts...).ToFunc()
+}
+
+// ByPurgeGraceEndsAt orders the results by the purge_grace_ends_at field.
+func ByPurgeGraceEndsAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPurgeGraceEndsAt, opts...).ToFunc()
+}
+
+// ByPendingPurge orders the results by the pending_purge field.
+func ByPendingPurge(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPendingPurge, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

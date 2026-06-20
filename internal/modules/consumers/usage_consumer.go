@@ -221,6 +221,24 @@ func (c *UsageConsumer) recordUsage(ctx context.Context, tenantID uuid.UUID, met
 		return fmt.Errorf("insert usage_events: %w", err)
 	}
 
+	// Stamp business activity for dormancy tracking, and auto-reactivate a DORMANT
+	// (warned-but-not-yet-suspended) account the instant it trades again. Cheap single
+	// UPDATE; best-effort — never fail the usage event on a stamp error. SUSPENDED/
+	// pending-purge accounts are left for payment or admin to clear, not mere usage.
+	if value > 0 {
+		if _, aerr := c.db.Exec(ctx, `
+			UPDATE tenant_subscriptions
+			SET last_activity_at = $2,
+			    dormant_at = CASE WHEN status = 'DORMANT' THEN NULL ELSE dormant_at END,
+			    purge_grace_ends_at = CASE WHEN status = 'DORMANT' THEN NULL ELSE purge_grace_ends_at END,
+			    status = CASE WHEN status = 'DORMANT' THEN 'ACTIVE' ELSE status END,
+			    updated_at = $2
+			WHERE tenant_id = $1
+		`, tenantID, now); aerr != nil {
+			c.log.Warn("failed to stamp last_activity_at", zap.String("tenant_id", tenantID.String()), zap.Error(aerr))
+		}
+	}
+
 	c.log.Debug("usage event recorded",
 		zap.String("tenant_id", tenantID.String()),
 		zap.String("metric", metric),

@@ -25,7 +25,7 @@ type TenantSubscription struct {
 	TenantID uuid.UUID `json:"tenant_id,omitempty"`
 	// Reference to subscription_plans
 	PlanID uuid.UUID `json:"plan_id,omitempty"`
-	// Current subscription status
+	// Current subscription status. DORMANT = no activity >60d and unpaid; awaiting suspend/purge
 	Status tenantsubscription.Status `json:"status,omitempty"`
 	// End of trial period
 	TrialEndsAt *time.Time `json:"trial_ends_at,omitempty"`
@@ -57,6 +57,20 @@ type TenantSubscription struct {
 	ReferredBy *uuid.UUID `json:"referred_by,omitempty"`
 	// This tenant's own shareable referral code; others sign up with it to attribute the referral
 	ReferralCode *string `json:"referral_code,omitempty"`
+	// Version of the subscription T&C the tenant accepted (e.g. 2026-06-20)
+	TermsVersion *string `json:"terms_version,omitempty"`
+	// When the subscription T&C were accepted
+	TermsAcceptedAt *time.Time `json:"terms_accepted_at,omitempty"`
+	// User who accepted the subscription T&C
+	TermsAcceptedBy *uuid.UUID `json:"terms_accepted_by,omitempty"`
+	// Last billable usage event for this tenant; drives >60-day dormancy detection
+	LastActivityAt *time.Time `json:"last_activity_at,omitempty"`
+	// When the account was first flagged dormant (>60d idle, unpaid). Cleared on reactivation
+	DormantAt *time.Time `json:"dormant_at,omitempty"`
+	// End of the 7-day grace window after a dormancy notice; at expiry the account is suspended + queued for purge
+	PurgeGraceEndsAt *time.Time `json:"purge_grace_ends_at,omitempty"`
+	// True once the grace window elapsed unpaid: account suspended and awaiting platform-owner-confirmed data purge
+	PendingPurge bool `json:"pending_purge,omitempty"`
 	// Metadata holds the value of the "metadata" field.
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -129,17 +143,17 @@ func (*TenantSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case tenantsubscription.FieldPaymentMethodID, tenantsubscription.FieldReferredBy:
+		case tenantsubscription.FieldPaymentMethodID, tenantsubscription.FieldReferredBy, tenantsubscription.FieldTermsAcceptedBy:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case tenantsubscription.FieldMetadata:
 			values[i] = new([]byte)
-		case tenantsubscription.FieldAllowOverage:
+		case tenantsubscription.FieldAllowOverage, tenantsubscription.FieldPendingPurge:
 			values[i] = new(sql.NullBool)
 		case tenantsubscription.FieldAppliedDiscount, tenantsubscription.FieldSetupFeeAmount:
 			values[i] = new(sql.NullFloat64)
-		case tenantsubscription.FieldStatus, tenantsubscription.FieldCancelReason, tenantsubscription.FieldBillingCycle, tenantsubscription.FieldBundleCode, tenantsubscription.FieldReferralCode:
+		case tenantsubscription.FieldStatus, tenantsubscription.FieldCancelReason, tenantsubscription.FieldBillingCycle, tenantsubscription.FieldBundleCode, tenantsubscription.FieldReferralCode, tenantsubscription.FieldTermsVersion:
 			values[i] = new(sql.NullString)
-		case tenantsubscription.FieldTrialEndsAt, tenantsubscription.FieldCurrentPeriodStart, tenantsubscription.FieldCurrentPeriodEnd, tenantsubscription.FieldCancelledAt, tenantsubscription.FieldSetupFeeChargedAt, tenantsubscription.FieldOverageEnabledAt, tenantsubscription.FieldCreatedAt, tenantsubscription.FieldUpdatedAt:
+		case tenantsubscription.FieldTrialEndsAt, tenantsubscription.FieldCurrentPeriodStart, tenantsubscription.FieldCurrentPeriodEnd, tenantsubscription.FieldCancelledAt, tenantsubscription.FieldSetupFeeChargedAt, tenantsubscription.FieldOverageEnabledAt, tenantsubscription.FieldTermsAcceptedAt, tenantsubscription.FieldLastActivityAt, tenantsubscription.FieldDormantAt, tenantsubscription.FieldPurgeGraceEndsAt, tenantsubscription.FieldCreatedAt, tenantsubscription.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		case tenantsubscription.FieldID, tenantsubscription.FieldTenantID, tenantsubscription.FieldPlanID:
 			values[i] = new(uuid.UUID)
@@ -280,6 +294,54 @@ func (_m *TenantSubscription) assignValues(columns []string, values []any) error
 			} else if value.Valid {
 				_m.ReferralCode = new(string)
 				*_m.ReferralCode = value.String
+			}
+		case tenantsubscription.FieldTermsVersion:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field terms_version", values[i])
+			} else if value.Valid {
+				_m.TermsVersion = new(string)
+				*_m.TermsVersion = value.String
+			}
+		case tenantsubscription.FieldTermsAcceptedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field terms_accepted_at", values[i])
+			} else if value.Valid {
+				_m.TermsAcceptedAt = new(time.Time)
+				*_m.TermsAcceptedAt = value.Time
+			}
+		case tenantsubscription.FieldTermsAcceptedBy:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field terms_accepted_by", values[i])
+			} else if value.Valid {
+				_m.TermsAcceptedBy = new(uuid.UUID)
+				*_m.TermsAcceptedBy = *value.S.(*uuid.UUID)
+			}
+		case tenantsubscription.FieldLastActivityAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_activity_at", values[i])
+			} else if value.Valid {
+				_m.LastActivityAt = new(time.Time)
+				*_m.LastActivityAt = value.Time
+			}
+		case tenantsubscription.FieldDormantAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field dormant_at", values[i])
+			} else if value.Valid {
+				_m.DormantAt = new(time.Time)
+				*_m.DormantAt = value.Time
+			}
+		case tenantsubscription.FieldPurgeGraceEndsAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field purge_grace_ends_at", values[i])
+			} else if value.Valid {
+				_m.PurgeGraceEndsAt = new(time.Time)
+				*_m.PurgeGraceEndsAt = value.Time
+			}
+		case tenantsubscription.FieldPendingPurge:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field pending_purge", values[i])
+			} else if value.Valid {
+				_m.PendingPurge = value.Bool
 			}
 		case tenantsubscription.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -428,6 +490,39 @@ func (_m *TenantSubscription) String() string {
 		builder.WriteString("referral_code=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", ")
+	if v := _m.TermsVersion; v != nil {
+		builder.WriteString("terms_version=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.TermsAcceptedAt; v != nil {
+		builder.WriteString("terms_accepted_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.TermsAcceptedBy; v != nil {
+		builder.WriteString("terms_accepted_by=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.LastActivityAt; v != nil {
+		builder.WriteString("last_activity_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.DormantAt; v != nil {
+		builder.WriteString("dormant_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.PurgeGraceEndsAt; v != nil {
+		builder.WriteString("purge_grace_ends_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("pending_purge=")
+	builder.WriteString(fmt.Sprintf("%v", _m.PendingPurge))
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))

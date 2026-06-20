@@ -957,7 +957,7 @@ var (
 	// TenantSubscriptionsColumns holds the columns for the "tenant_subscriptions" table.
 	TenantSubscriptionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"ACTIVE", "TRIAL", "EXPIRED", "CANCELLED", "SUSPENDED"}, Default: "TRIAL"},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"ACTIVE", "TRIAL", "EXPIRED", "CANCELLED", "SUSPENDED", "DORMANT"}, Default: "TRIAL"},
 		{Name: "trial_ends_at", Type: field.TypeTime, Nullable: true},
 		{Name: "current_period_start", Type: field.TypeTime},
 		{Name: "current_period_end", Type: field.TypeTime},
@@ -973,6 +973,13 @@ var (
 		{Name: "payment_method_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "referred_by", Type: field.TypeUUID, Nullable: true},
 		{Name: "referral_code", Type: field.TypeString, Nullable: true},
+		{Name: "terms_version", Type: field.TypeString, Nullable: true},
+		{Name: "terms_accepted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "terms_accepted_by", Type: field.TypeUUID, Nullable: true},
+		{Name: "last_activity_at", Type: field.TypeTime, Nullable: true},
+		{Name: "dormant_at", Type: field.TypeTime, Nullable: true},
+		{Name: "purge_grace_ends_at", Type: field.TypeTime, Nullable: true},
+		{Name: "pending_purge", Type: field.TypeBool, Default: false},
 		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
@@ -987,13 +994,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "tenant_subscriptions_subscription_plans_subscriptions",
-				Columns:    []*schema.Column{TenantSubscriptionsColumns[20]},
+				Columns:    []*schema.Column{TenantSubscriptionsColumns[27]},
 				RefColumns: []*schema.Column{SubscriptionPlansColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "tenant_subscriptions_tenants_subscriptions",
-				Columns:    []*schema.Column{TenantSubscriptionsColumns[21]},
+				Columns:    []*schema.Column{TenantSubscriptionsColumns[28]},
 				RefColumns: []*schema.Column{TenantsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1002,7 +1009,7 @@ var (
 			{
 				Name:    "tenantsubscription_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{TenantSubscriptionsColumns[21]},
+				Columns: []*schema.Column{TenantSubscriptionsColumns[28]},
 			},
 			{
 				Name:    "tenantsubscription_status",
@@ -1013,6 +1020,11 @@ var (
 				Name:    "tenantsubscription_current_period_end",
 				Unique:  false,
 				Columns: []*schema.Column{TenantSubscriptionsColumns[4]},
+			},
+			{
+				Name:    "tenantsubscription_last_activity_at",
+				Unique:  false,
+				Columns: []*schema.Column{TenantSubscriptionsColumns[20]},
 			},
 			{
 				Name:    "tenantsubscription_referral_code",

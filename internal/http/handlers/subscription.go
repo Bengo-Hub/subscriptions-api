@@ -3,10 +3,13 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
 
+	httpware "github.com/Bengo-Hub/httpware"
+	authclient "github.com/Bengo-Hub/shared-auth-client"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
@@ -15,7 +18,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
-	httpware "github.com/Bengo-Hub/httpware"
 )
 
 type SubscriptionHandler struct {
@@ -138,10 +140,23 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Stamp the accepting user from the JWT when the client didn't supply one.
+	if in.TermsAcceptedBy == uuid.Nil {
+		if claims, ok := authclient.ClaimsFromContext(ctx); ok {
+			if uid, uerr := claims.UserID(); uerr == nil {
+				in.TermsAcceptedBy = uid
+			}
+		}
+	}
+
 	sub, err := h.service.CreateSubscription(ctx, in)
 	if err != nil {
 		if subscriptions.IsExemptErr(err) {
 			h.respondWithJSON(w, http.StatusOK, demoBypasResponse(in.TenantID.String()))
+			return
+		}
+		if errors.Is(err, subscriptions.ErrTermsNotAccepted) {
+			h.respondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 		h.log.Error("failed to create subscription", zap.Error(err))
@@ -154,6 +169,15 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.respondWithJSON(w, http.StatusCreated, sub)
+}
+
+// GetTerms returns the current subscription Terms & Conditions (version + text) for the
+// subscribe flow to display. Public — no subscription required to read the terms.
+func (h *SubscriptionHandler) GetTerms(w http.ResponseWriter, r *http.Request) {
+	h.respondWithJSON(w, http.StatusOK, map[string]any{
+		"version": subscriptions.CurrentTermsVersion,
+		"content": subscriptions.SubscriptionTerms,
+	})
 }
 
 // ChangePlan upgrades or downgrades the subscription.
@@ -665,9 +689,9 @@ func (h *SubscriptionHandler) GetOverage(w http.ResponseWriter, r *http.Request)
 	}
 
 	h.respondWithJSON(w, http.StatusOK, map[string]any{
-		"allow_overage":    allowOverage,
+		"allow_overage":     allowOverage,
 		"pending_total_kes": pendingTotal,
-		"breakdown":        breakdown,
+		"breakdown":         breakdown,
 	})
 }
 

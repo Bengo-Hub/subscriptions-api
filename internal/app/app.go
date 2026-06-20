@@ -344,6 +344,12 @@ func (a *App) Run(ctx context.Context) error {
 		a.log.Info("grace reminder job started")
 	}
 
+	// Start dormancy job (daily: flag >60d-idle accounts, 7-day grace, then suspend + queue purge)
+	if a.orm != nil && a.subscriptionSvc != nil {
+		go jobs.StartDormancyJob(ctx, a.log, a.orm, a.subscriptionSvc)
+		a.log.Info("dormancy job started")
+	}
+
 	// Start auth.tenant.created consumer for auto-provisioning new tenants
 	if a.tenantConsumer != nil && a.events != nil {
 		js, err := a.events.JetStream()

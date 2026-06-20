@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	serviceclient "github.com/Bengo-Hub/shared-service-client"
 	"github.com/bengobox/subscription-service/internal/domain"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
@@ -15,18 +16,17 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
-	serviceclient "github.com/Bengo-Hub/shared-service-client"
 )
 
 // Service handles subscription lifecycle operations with state machine validation.
 type Service struct {
-	client            *ent.Client
-	log               *zap.Logger
-	treasuryClient    *serviceclient.Client
-	treasuryAPIKey    string
+	client         *ent.Client
+	log            *zap.Logger
+	treasuryClient *serviceclient.Client
+	treasuryAPIKey string
 	// platformTenantID is the platform owner tenant that issues subscription invoices.
 	// It is exempt from subscriptions alongside the demo/codevertex tenants. See exemption.go.
-	platformTenantID  uuid.UUID
+	platformTenantID uuid.UUID
 }
 
 // New creates a subscription lifecycle service. platformTenantID is the operating
@@ -56,6 +56,11 @@ type CreateInput struct {
 	// avoiding an FK violation when the async tenant sync has not run yet.
 	TenantSlug string `json:"tenant_slug,omitempty"`
 	TenantName string `json:"tenant_name,omitempty"`
+	// Terms & Conditions acceptance — required for tenant self-serve subscribe. The UI sends
+	// the version it displayed plus accepted=true; the accepting user is stamped for audit.
+	TermsVersion    string    `json:"terms_version,omitempty"`
+	TermsAccepted   bool      `json:"terms_accepted,omitempty"`
+	TermsAcceptedBy uuid.UUID `json:"terms_accepted_by,omitempty"`
 }
 
 // ChangePlanInput defines the payload for upgrading or downgrading.
@@ -95,24 +100,24 @@ type InitiateSubscriptionResult struct {
 
 // SubscriptionResult is returned from lifecycle operations.
 type SubscriptionResult struct {
-	ID                 uuid.UUID                `json:"id"`
-	TenantID           uuid.UUID                `json:"tenant_id"`
-	PlanCode           string                   `json:"plan_code"`
-	PlanName           string                   `json:"plan_name"`
-	Status             string                   `json:"status"`
-	BundleCode         *string                  `json:"bundle_code,omitempty"`
-	TrialEndsAt        *time.Time               `json:"trial_ends_at,omitempty"`
-	CurrentPeriodStart time.Time                `json:"current_period_start"`
-	CurrentPeriodEnd   time.Time                `json:"current_period_end"`
-	CancelledAt        *time.Time               `json:"cancelled_at,omitempty"`
-	CancelReason       *string                  `json:"cancel_reason,omitempty"`
-	Features           []string                 `json:"features"`
-	Limits             map[string]int           `json:"limits"`
+	ID                 uuid.UUID      `json:"id"`
+	TenantID           uuid.UUID      `json:"tenant_id"`
+	PlanCode           string         `json:"plan_code"`
+	PlanName           string         `json:"plan_name"`
+	Status             string         `json:"status"`
+	BundleCode         *string        `json:"bundle_code,omitempty"`
+	TrialEndsAt        *time.Time     `json:"trial_ends_at,omitempty"`
+	CurrentPeriodStart time.Time      `json:"current_period_start"`
+	CurrentPeriodEnd   time.Time      `json:"current_period_end"`
+	CancelledAt        *time.Time     `json:"cancelled_at,omitempty"`
+	CancelReason       *string        `json:"cancel_reason,omitempty"`
+	Features           []string       `json:"features"`
+	Limits             map[string]int `json:"limits"`
 	// AccessStatus is derived gating state for clients: "active" (full access),
 	// "grace" (past period end but within the grace window — still accessible, pay soon),
 	// or "blocked" (expired/cancelled/suspended). GraceEndsAt is set while in grace.
-	AccessStatus       string                   `json:"access_status"`
-	GraceEndsAt        *time.Time               `json:"grace_ends_at,omitempty"`
+	AccessStatus string     `json:"access_status"`
+	GraceEndsAt  *time.Time `json:"grace_ends_at,omitempty"`
 	// Scenario resolution — lets each service pick whichever plan scenario a tenant chose.
 	// BillingCycle mirrors the plan (MONTHLY/QUARTERLY/ANNUAL/ONE_TIME).
 	// BillingMode is the resolved scenario: "recurring" | "one_time" | "service_charge".
@@ -280,6 +285,12 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 		return nil, err
 	}
 
+	// Subscription T&C must be accepted by the tenant before a self-serve subscription is
+	// created. (Platform-owner admin assignment goes through a separate path and is exempt.)
+	if !in.TermsAccepted || in.TermsVersion == "" {
+		return nil, ErrTermsNotAccepted
+	}
+
 	// Ensure the local tenant projection exists before inserting the subscription.
 	// At signup, auth-api calls this S2S immediately after creating the tenant —
 	// before the async auth.tenant.created projection has run — so without this the
@@ -360,6 +371,14 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 	if plan.SetupFee > 0 {
 		create.SetSetupFeeAmount(plan.SetupFee)
 	}
+
+	// Record the T&C acceptance captured above (audit trail of version + who + when).
+	create.SetTermsVersion(in.TermsVersion).SetTermsAcceptedAt(now)
+	if in.TermsAcceptedBy != uuid.Nil {
+		create.SetTermsAcceptedBy(in.TermsAcceptedBy)
+	}
+	// New subscriptions start active for dormancy purposes.
+	create.SetLastActivityAt(now)
 
 	// Type-A referral attribution: if the tenant signed up via a referral code, record the
 	// referrer so they are credited when this tenant pays. A tenant cannot refer itself.
@@ -497,9 +516,14 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 		"tenant_slug":   tenantSlug,
 		"new_plan_code": newPlan.PlanCode,
 		"new_plan_name": newPlan.Name,
-		"service_tag":   func() string { if newPlan.ServiceTag != nil { return *newPlan.ServiceTag }; return "" }(),
-		"old_plan_id":   oldPlanID.String(),
-		"direction":     direction,
+		"service_tag": func() string {
+			if newPlan.ServiceTag != nil {
+				return *newPlan.ServiceTag
+			}
+			return ""
+		}(),
+		"old_plan_id": oldPlanID.String(),
+		"direction":   direction,
 		"notification": map[string]any{
 			"target": "tenant_admin",
 		},
@@ -868,10 +892,10 @@ func (s *Service) ListSubscriptions(ctx context.Context) ([]*SubscriptionResult,
 
 // ServiceSubscriptionEntry describes a tenant's subscription status for one service tag.
 type ServiceSubscriptionEntry struct {
-	ServiceTag  string     `json:"service_tag"`
-	Status      string     `json:"status"` // "ACTIVE", "TRIAL", "EXPIRED", "CANCELLED", "NONE"
-	PlanCode    *string    `json:"plan_code,omitempty"`
-	PlanName    *string    `json:"plan_name,omitempty"`
+	ServiceTag       string     `json:"service_tag"`
+	Status           string     `json:"status"` // "ACTIVE", "TRIAL", "EXPIRED", "CANCELLED", "NONE"
+	PlanCode         *string    `json:"plan_code,omitempty"`
+	PlanName         *string    `json:"plan_name,omitempty"`
 	CurrentPeriodEnd *time.Time `json:"current_period_end,omitempty"`
 }
 

@@ -353,6 +353,140 @@ func (_u *TenantSubscriptionUpdate) ClearReferralCode() *TenantSubscriptionUpdat
 	return _u
 }
 
+// SetTermsVersion sets the "terms_version" field.
+func (_u *TenantSubscriptionUpdate) SetTermsVersion(v string) *TenantSubscriptionUpdate {
+	_u.mutation.SetTermsVersion(v)
+	return _u
+}
+
+// SetNillableTermsVersion sets the "terms_version" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableTermsVersion(v *string) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetTermsVersion(*v)
+	}
+	return _u
+}
+
+// ClearTermsVersion clears the value of the "terms_version" field.
+func (_u *TenantSubscriptionUpdate) ClearTermsVersion() *TenantSubscriptionUpdate {
+	_u.mutation.ClearTermsVersion()
+	return _u
+}
+
+// SetTermsAcceptedAt sets the "terms_accepted_at" field.
+func (_u *TenantSubscriptionUpdate) SetTermsAcceptedAt(v time.Time) *TenantSubscriptionUpdate {
+	_u.mutation.SetTermsAcceptedAt(v)
+	return _u
+}
+
+// SetNillableTermsAcceptedAt sets the "terms_accepted_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableTermsAcceptedAt(v *time.Time) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetTermsAcceptedAt(*v)
+	}
+	return _u
+}
+
+// ClearTermsAcceptedAt clears the value of the "terms_accepted_at" field.
+func (_u *TenantSubscriptionUpdate) ClearTermsAcceptedAt() *TenantSubscriptionUpdate {
+	_u.mutation.ClearTermsAcceptedAt()
+	return _u
+}
+
+// SetTermsAcceptedBy sets the "terms_accepted_by" field.
+func (_u *TenantSubscriptionUpdate) SetTermsAcceptedBy(v uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.SetTermsAcceptedBy(v)
+	return _u
+}
+
+// SetNillableTermsAcceptedBy sets the "terms_accepted_by" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableTermsAcceptedBy(v *uuid.UUID) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetTermsAcceptedBy(*v)
+	}
+	return _u
+}
+
+// ClearTermsAcceptedBy clears the value of the "terms_accepted_by" field.
+func (_u *TenantSubscriptionUpdate) ClearTermsAcceptedBy() *TenantSubscriptionUpdate {
+	_u.mutation.ClearTermsAcceptedBy()
+	return _u
+}
+
+// SetLastActivityAt sets the "last_activity_at" field.
+func (_u *TenantSubscriptionUpdate) SetLastActivityAt(v time.Time) *TenantSubscriptionUpdate {
+	_u.mutation.SetLastActivityAt(v)
+	return _u
+}
+
+// SetNillableLastActivityAt sets the "last_activity_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableLastActivityAt(v *time.Time) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetLastActivityAt(*v)
+	}
+	return _u
+}
+
+// ClearLastActivityAt clears the value of the "last_activity_at" field.
+func (_u *TenantSubscriptionUpdate) ClearLastActivityAt() *TenantSubscriptionUpdate {
+	_u.mutation.ClearLastActivityAt()
+	return _u
+}
+
+// SetDormantAt sets the "dormant_at" field.
+func (_u *TenantSubscriptionUpdate) SetDormantAt(v time.Time) *TenantSubscriptionUpdate {
+	_u.mutation.SetDormantAt(v)
+	return _u
+}
+
+// SetNillableDormantAt sets the "dormant_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableDormantAt(v *time.Time) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetDormantAt(*v)
+	}
+	return _u
+}
+
+// ClearDormantAt clears the value of the "dormant_at" field.
+func (_u *TenantSubscriptionUpdate) ClearDormantAt() *TenantSubscriptionUpdate {
+	_u.mutation.ClearDormantAt()
+	return _u
+}
+
+// SetPurgeGraceEndsAt sets the "purge_grace_ends_at" field.
+func (_u *TenantSubscriptionUpdate) SetPurgeGraceEndsAt(v time.Time) *TenantSubscriptionUpdate {
+	_u.mutation.SetPurgeGraceEndsAt(v)
+	return _u
+}
+
+// SetNillablePurgeGraceEndsAt sets the "purge_grace_ends_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillablePurgeGraceEndsAt(v *time.Time) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetPurgeGraceEndsAt(*v)
+	}
+	return _u
+}
+
+// ClearPurgeGraceEndsAt clears the value of the "purge_grace_ends_at" field.
+func (_u *TenantSubscriptionUpdate) ClearPurgeGraceEndsAt() *TenantSubscriptionUpdate {
+	_u.mutation.ClearPurgeGraceEndsAt()
+	return _u
+}
+
+// SetPendingPurge sets the "pending_purge" field.
+func (_u *TenantSubscriptionUpdate) SetPendingPurge(v bool) *TenantSubscriptionUpdate {
+	_u.mutation.SetPendingPurge(v)
+	return _u
+}
+
+// SetNillablePendingPurge sets the "pending_purge" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillablePendingPurge(v *bool) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetPendingPurge(*v)
+	}
+	return _u
+}
+
 // SetMetadata sets the "metadata" field.
 func (_u *TenantSubscriptionUpdate) SetMetadata(v map[string]interface{}) *TenantSubscriptionUpdate {
 	_u.mutation.SetMetadata(v)
@@ -619,6 +753,45 @@ func (_u *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err
 	}
 	if _u.mutation.ReferralCodeCleared() {
 		_spec.ClearField(tenantsubscription.FieldReferralCode, field.TypeString)
+	}
+	if value, ok := _u.mutation.TermsVersion(); ok {
+		_spec.SetField(tenantsubscription.FieldTermsVersion, field.TypeString, value)
+	}
+	if _u.mutation.TermsVersionCleared() {
+		_spec.ClearField(tenantsubscription.FieldTermsVersion, field.TypeString)
+	}
+	if value, ok := _u.mutation.TermsAcceptedAt(); ok {
+		_spec.SetField(tenantsubscription.FieldTermsAcceptedAt, field.TypeTime, value)
+	}
+	if _u.mutation.TermsAcceptedAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldTermsAcceptedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.TermsAcceptedBy(); ok {
+		_spec.SetField(tenantsubscription.FieldTermsAcceptedBy, field.TypeUUID, value)
+	}
+	if _u.mutation.TermsAcceptedByCleared() {
+		_spec.ClearField(tenantsubscription.FieldTermsAcceptedBy, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.LastActivityAt(); ok {
+		_spec.SetField(tenantsubscription.FieldLastActivityAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastActivityAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldLastActivityAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DormantAt(); ok {
+		_spec.SetField(tenantsubscription.FieldDormantAt, field.TypeTime, value)
+	}
+	if _u.mutation.DormantAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldDormantAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.PurgeGraceEndsAt(); ok {
+		_spec.SetField(tenantsubscription.FieldPurgeGraceEndsAt, field.TypeTime, value)
+	}
+	if _u.mutation.PurgeGraceEndsAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldPurgeGraceEndsAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.PendingPurge(); ok {
+		_spec.SetField(tenantsubscription.FieldPendingPurge, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(tenantsubscription.FieldMetadata, field.TypeJSON, value)
@@ -1117,6 +1290,140 @@ func (_u *TenantSubscriptionUpdateOne) ClearReferralCode() *TenantSubscriptionUp
 	return _u
 }
 
+// SetTermsVersion sets the "terms_version" field.
+func (_u *TenantSubscriptionUpdateOne) SetTermsVersion(v string) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetTermsVersion(v)
+	return _u
+}
+
+// SetNillableTermsVersion sets the "terms_version" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableTermsVersion(v *string) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetTermsVersion(*v)
+	}
+	return _u
+}
+
+// ClearTermsVersion clears the value of the "terms_version" field.
+func (_u *TenantSubscriptionUpdateOne) ClearTermsVersion() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearTermsVersion()
+	return _u
+}
+
+// SetTermsAcceptedAt sets the "terms_accepted_at" field.
+func (_u *TenantSubscriptionUpdateOne) SetTermsAcceptedAt(v time.Time) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetTermsAcceptedAt(v)
+	return _u
+}
+
+// SetNillableTermsAcceptedAt sets the "terms_accepted_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableTermsAcceptedAt(v *time.Time) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetTermsAcceptedAt(*v)
+	}
+	return _u
+}
+
+// ClearTermsAcceptedAt clears the value of the "terms_accepted_at" field.
+func (_u *TenantSubscriptionUpdateOne) ClearTermsAcceptedAt() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearTermsAcceptedAt()
+	return _u
+}
+
+// SetTermsAcceptedBy sets the "terms_accepted_by" field.
+func (_u *TenantSubscriptionUpdateOne) SetTermsAcceptedBy(v uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetTermsAcceptedBy(v)
+	return _u
+}
+
+// SetNillableTermsAcceptedBy sets the "terms_accepted_by" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableTermsAcceptedBy(v *uuid.UUID) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetTermsAcceptedBy(*v)
+	}
+	return _u
+}
+
+// ClearTermsAcceptedBy clears the value of the "terms_accepted_by" field.
+func (_u *TenantSubscriptionUpdateOne) ClearTermsAcceptedBy() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearTermsAcceptedBy()
+	return _u
+}
+
+// SetLastActivityAt sets the "last_activity_at" field.
+func (_u *TenantSubscriptionUpdateOne) SetLastActivityAt(v time.Time) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetLastActivityAt(v)
+	return _u
+}
+
+// SetNillableLastActivityAt sets the "last_activity_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableLastActivityAt(v *time.Time) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetLastActivityAt(*v)
+	}
+	return _u
+}
+
+// ClearLastActivityAt clears the value of the "last_activity_at" field.
+func (_u *TenantSubscriptionUpdateOne) ClearLastActivityAt() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearLastActivityAt()
+	return _u
+}
+
+// SetDormantAt sets the "dormant_at" field.
+func (_u *TenantSubscriptionUpdateOne) SetDormantAt(v time.Time) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetDormantAt(v)
+	return _u
+}
+
+// SetNillableDormantAt sets the "dormant_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableDormantAt(v *time.Time) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetDormantAt(*v)
+	}
+	return _u
+}
+
+// ClearDormantAt clears the value of the "dormant_at" field.
+func (_u *TenantSubscriptionUpdateOne) ClearDormantAt() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearDormantAt()
+	return _u
+}
+
+// SetPurgeGraceEndsAt sets the "purge_grace_ends_at" field.
+func (_u *TenantSubscriptionUpdateOne) SetPurgeGraceEndsAt(v time.Time) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetPurgeGraceEndsAt(v)
+	return _u
+}
+
+// SetNillablePurgeGraceEndsAt sets the "purge_grace_ends_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillablePurgeGraceEndsAt(v *time.Time) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetPurgeGraceEndsAt(*v)
+	}
+	return _u
+}
+
+// ClearPurgeGraceEndsAt clears the value of the "purge_grace_ends_at" field.
+func (_u *TenantSubscriptionUpdateOne) ClearPurgeGraceEndsAt() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearPurgeGraceEndsAt()
+	return _u
+}
+
+// SetPendingPurge sets the "pending_purge" field.
+func (_u *TenantSubscriptionUpdateOne) SetPendingPurge(v bool) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetPendingPurge(v)
+	return _u
+}
+
+// SetNillablePendingPurge sets the "pending_purge" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillablePendingPurge(v *bool) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetPendingPurge(*v)
+	}
+	return _u
+}
+
 // SetMetadata sets the "metadata" field.
 func (_u *TenantSubscriptionUpdateOne) SetMetadata(v map[string]interface{}) *TenantSubscriptionUpdateOne {
 	_u.mutation.SetMetadata(v)
@@ -1413,6 +1720,45 @@ func (_u *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Tena
 	}
 	if _u.mutation.ReferralCodeCleared() {
 		_spec.ClearField(tenantsubscription.FieldReferralCode, field.TypeString)
+	}
+	if value, ok := _u.mutation.TermsVersion(); ok {
+		_spec.SetField(tenantsubscription.FieldTermsVersion, field.TypeString, value)
+	}
+	if _u.mutation.TermsVersionCleared() {
+		_spec.ClearField(tenantsubscription.FieldTermsVersion, field.TypeString)
+	}
+	if value, ok := _u.mutation.TermsAcceptedAt(); ok {
+		_spec.SetField(tenantsubscription.FieldTermsAcceptedAt, field.TypeTime, value)
+	}
+	if _u.mutation.TermsAcceptedAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldTermsAcceptedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.TermsAcceptedBy(); ok {
+		_spec.SetField(tenantsubscription.FieldTermsAcceptedBy, field.TypeUUID, value)
+	}
+	if _u.mutation.TermsAcceptedByCleared() {
+		_spec.ClearField(tenantsubscription.FieldTermsAcceptedBy, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.LastActivityAt(); ok {
+		_spec.SetField(tenantsubscription.FieldLastActivityAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastActivityAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldLastActivityAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DormantAt(); ok {
+		_spec.SetField(tenantsubscription.FieldDormantAt, field.TypeTime, value)
+	}
+	if _u.mutation.DormantAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldDormantAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.PurgeGraceEndsAt(); ok {
+		_spec.SetField(tenantsubscription.FieldPurgeGraceEndsAt, field.TypeTime, value)
+	}
+	if _u.mutation.PurgeGraceEndsAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldPurgeGraceEndsAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.PendingPurge(); ok {
+		_spec.SetField(tenantsubscription.FieldPendingPurge, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(tenantsubscription.FieldMetadata, field.TypeJSON, value)

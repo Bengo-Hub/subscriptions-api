@@ -248,6 +248,104 @@ func (_c *TenantSubscriptionCreate) SetNillableReferralCode(v *string) *TenantSu
 	return _c
 }
 
+// SetTermsVersion sets the "terms_version" field.
+func (_c *TenantSubscriptionCreate) SetTermsVersion(v string) *TenantSubscriptionCreate {
+	_c.mutation.SetTermsVersion(v)
+	return _c
+}
+
+// SetNillableTermsVersion sets the "terms_version" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableTermsVersion(v *string) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetTermsVersion(*v)
+	}
+	return _c
+}
+
+// SetTermsAcceptedAt sets the "terms_accepted_at" field.
+func (_c *TenantSubscriptionCreate) SetTermsAcceptedAt(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetTermsAcceptedAt(v)
+	return _c
+}
+
+// SetNillableTermsAcceptedAt sets the "terms_accepted_at" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableTermsAcceptedAt(v *time.Time) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetTermsAcceptedAt(*v)
+	}
+	return _c
+}
+
+// SetTermsAcceptedBy sets the "terms_accepted_by" field.
+func (_c *TenantSubscriptionCreate) SetTermsAcceptedBy(v uuid.UUID) *TenantSubscriptionCreate {
+	_c.mutation.SetTermsAcceptedBy(v)
+	return _c
+}
+
+// SetNillableTermsAcceptedBy sets the "terms_accepted_by" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableTermsAcceptedBy(v *uuid.UUID) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetTermsAcceptedBy(*v)
+	}
+	return _c
+}
+
+// SetLastActivityAt sets the "last_activity_at" field.
+func (_c *TenantSubscriptionCreate) SetLastActivityAt(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetLastActivityAt(v)
+	return _c
+}
+
+// SetNillableLastActivityAt sets the "last_activity_at" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableLastActivityAt(v *time.Time) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetLastActivityAt(*v)
+	}
+	return _c
+}
+
+// SetDormantAt sets the "dormant_at" field.
+func (_c *TenantSubscriptionCreate) SetDormantAt(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetDormantAt(v)
+	return _c
+}
+
+// SetNillableDormantAt sets the "dormant_at" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableDormantAt(v *time.Time) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetDormantAt(*v)
+	}
+	return _c
+}
+
+// SetPurgeGraceEndsAt sets the "purge_grace_ends_at" field.
+func (_c *TenantSubscriptionCreate) SetPurgeGraceEndsAt(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetPurgeGraceEndsAt(v)
+	return _c
+}
+
+// SetNillablePurgeGraceEndsAt sets the "purge_grace_ends_at" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillablePurgeGraceEndsAt(v *time.Time) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetPurgeGraceEndsAt(*v)
+	}
+	return _c
+}
+
+// SetPendingPurge sets the "pending_purge" field.
+func (_c *TenantSubscriptionCreate) SetPendingPurge(v bool) *TenantSubscriptionCreate {
+	_c.mutation.SetPendingPurge(v)
+	return _c
+}
+
+// SetNillablePendingPurge sets the "pending_purge" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillablePendingPurge(v *bool) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetPendingPurge(*v)
+	}
+	return _c
+}
+
 // SetMetadata sets the "metadata" field.
 func (_c *TenantSubscriptionCreate) SetMetadata(v map[string]interface{}) *TenantSubscriptionCreate {
 	_c.mutation.SetMetadata(v)
@@ -391,6 +489,10 @@ func (_c *TenantSubscriptionCreate) defaults() {
 		v := tenantsubscription.DefaultAllowOverage
 		_c.mutation.SetAllowOverage(v)
 	}
+	if _, ok := _c.mutation.PendingPurge(); !ok {
+		v := tenantsubscription.DefaultPendingPurge
+		_c.mutation.SetPendingPurge(v)
+	}
 	if _, ok := _c.mutation.Metadata(); !ok {
 		v := tenantsubscription.DefaultMetadata
 		_c.mutation.SetMetadata(v)
@@ -447,6 +549,9 @@ func (_c *TenantSubscriptionCreate) check() error {
 	}
 	if _, ok := _c.mutation.AllowOverage(); !ok {
 		return &ValidationError{Name: "allow_overage", err: errors.New(`ent: missing required field "TenantSubscription.allow_overage"`)}
+	}
+	if _, ok := _c.mutation.PendingPurge(); !ok {
+		return &ValidationError{Name: "pending_purge", err: errors.New(`ent: missing required field "TenantSubscription.pending_purge"`)}
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "TenantSubscription.created_at"`)}
@@ -559,6 +664,34 @@ func (_c *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgraph
 	if value, ok := _c.mutation.ReferralCode(); ok {
 		_spec.SetField(tenantsubscription.FieldReferralCode, field.TypeString, value)
 		_node.ReferralCode = &value
+	}
+	if value, ok := _c.mutation.TermsVersion(); ok {
+		_spec.SetField(tenantsubscription.FieldTermsVersion, field.TypeString, value)
+		_node.TermsVersion = &value
+	}
+	if value, ok := _c.mutation.TermsAcceptedAt(); ok {
+		_spec.SetField(tenantsubscription.FieldTermsAcceptedAt, field.TypeTime, value)
+		_node.TermsAcceptedAt = &value
+	}
+	if value, ok := _c.mutation.TermsAcceptedBy(); ok {
+		_spec.SetField(tenantsubscription.FieldTermsAcceptedBy, field.TypeUUID, value)
+		_node.TermsAcceptedBy = &value
+	}
+	if value, ok := _c.mutation.LastActivityAt(); ok {
+		_spec.SetField(tenantsubscription.FieldLastActivityAt, field.TypeTime, value)
+		_node.LastActivityAt = &value
+	}
+	if value, ok := _c.mutation.DormantAt(); ok {
+		_spec.SetField(tenantsubscription.FieldDormantAt, field.TypeTime, value)
+		_node.DormantAt = &value
+	}
+	if value, ok := _c.mutation.PurgeGraceEndsAt(); ok {
+		_spec.SetField(tenantsubscription.FieldPurgeGraceEndsAt, field.TypeTime, value)
+		_node.PurgeGraceEndsAt = &value
+	}
+	if value, ok := _c.mutation.PendingPurge(); ok {
+		_spec.SetField(tenantsubscription.FieldPendingPurge, field.TypeBool, value)
+		_node.PendingPurge = value
 	}
 	if value, ok := _c.mutation.Metadata(); ok {
 		_spec.SetField(tenantsubscription.FieldMetadata, field.TypeJSON, value)
@@ -972,6 +1105,126 @@ func (u *TenantSubscriptionUpsert) ClearReferralCode() *TenantSubscriptionUpsert
 	return u
 }
 
+// SetTermsVersion sets the "terms_version" field.
+func (u *TenantSubscriptionUpsert) SetTermsVersion(v string) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldTermsVersion, v)
+	return u
+}
+
+// UpdateTermsVersion sets the "terms_version" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateTermsVersion() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldTermsVersion)
+	return u
+}
+
+// ClearTermsVersion clears the value of the "terms_version" field.
+func (u *TenantSubscriptionUpsert) ClearTermsVersion() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldTermsVersion)
+	return u
+}
+
+// SetTermsAcceptedAt sets the "terms_accepted_at" field.
+func (u *TenantSubscriptionUpsert) SetTermsAcceptedAt(v time.Time) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldTermsAcceptedAt, v)
+	return u
+}
+
+// UpdateTermsAcceptedAt sets the "terms_accepted_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateTermsAcceptedAt() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldTermsAcceptedAt)
+	return u
+}
+
+// ClearTermsAcceptedAt clears the value of the "terms_accepted_at" field.
+func (u *TenantSubscriptionUpsert) ClearTermsAcceptedAt() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldTermsAcceptedAt)
+	return u
+}
+
+// SetTermsAcceptedBy sets the "terms_accepted_by" field.
+func (u *TenantSubscriptionUpsert) SetTermsAcceptedBy(v uuid.UUID) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldTermsAcceptedBy, v)
+	return u
+}
+
+// UpdateTermsAcceptedBy sets the "terms_accepted_by" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateTermsAcceptedBy() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldTermsAcceptedBy)
+	return u
+}
+
+// ClearTermsAcceptedBy clears the value of the "terms_accepted_by" field.
+func (u *TenantSubscriptionUpsert) ClearTermsAcceptedBy() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldTermsAcceptedBy)
+	return u
+}
+
+// SetLastActivityAt sets the "last_activity_at" field.
+func (u *TenantSubscriptionUpsert) SetLastActivityAt(v time.Time) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldLastActivityAt, v)
+	return u
+}
+
+// UpdateLastActivityAt sets the "last_activity_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateLastActivityAt() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldLastActivityAt)
+	return u
+}
+
+// ClearLastActivityAt clears the value of the "last_activity_at" field.
+func (u *TenantSubscriptionUpsert) ClearLastActivityAt() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldLastActivityAt)
+	return u
+}
+
+// SetDormantAt sets the "dormant_at" field.
+func (u *TenantSubscriptionUpsert) SetDormantAt(v time.Time) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldDormantAt, v)
+	return u
+}
+
+// UpdateDormantAt sets the "dormant_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateDormantAt() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldDormantAt)
+	return u
+}
+
+// ClearDormantAt clears the value of the "dormant_at" field.
+func (u *TenantSubscriptionUpsert) ClearDormantAt() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldDormantAt)
+	return u
+}
+
+// SetPurgeGraceEndsAt sets the "purge_grace_ends_at" field.
+func (u *TenantSubscriptionUpsert) SetPurgeGraceEndsAt(v time.Time) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldPurgeGraceEndsAt, v)
+	return u
+}
+
+// UpdatePurgeGraceEndsAt sets the "purge_grace_ends_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdatePurgeGraceEndsAt() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldPurgeGraceEndsAt)
+	return u
+}
+
+// ClearPurgeGraceEndsAt clears the value of the "purge_grace_ends_at" field.
+func (u *TenantSubscriptionUpsert) ClearPurgeGraceEndsAt() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldPurgeGraceEndsAt)
+	return u
+}
+
+// SetPendingPurge sets the "pending_purge" field.
+func (u *TenantSubscriptionUpsert) SetPendingPurge(v bool) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldPendingPurge, v)
+	return u
+}
+
+// UpdatePendingPurge sets the "pending_purge" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdatePendingPurge() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldPendingPurge)
+	return u
+}
+
 // SetMetadata sets the "metadata" field.
 func (u *TenantSubscriptionUpsert) SetMetadata(v map[string]interface{}) *TenantSubscriptionUpsert {
 	u.Set(tenantsubscription.FieldMetadata, v)
@@ -1379,6 +1632,146 @@ func (u *TenantSubscriptionUpsertOne) UpdateReferralCode() *TenantSubscriptionUp
 func (u *TenantSubscriptionUpsertOne) ClearReferralCode() *TenantSubscriptionUpsertOne {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.ClearReferralCode()
+	})
+}
+
+// SetTermsVersion sets the "terms_version" field.
+func (u *TenantSubscriptionUpsertOne) SetTermsVersion(v string) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetTermsVersion(v)
+	})
+}
+
+// UpdateTermsVersion sets the "terms_version" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateTermsVersion() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateTermsVersion()
+	})
+}
+
+// ClearTermsVersion clears the value of the "terms_version" field.
+func (u *TenantSubscriptionUpsertOne) ClearTermsVersion() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearTermsVersion()
+	})
+}
+
+// SetTermsAcceptedAt sets the "terms_accepted_at" field.
+func (u *TenantSubscriptionUpsertOne) SetTermsAcceptedAt(v time.Time) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetTermsAcceptedAt(v)
+	})
+}
+
+// UpdateTermsAcceptedAt sets the "terms_accepted_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateTermsAcceptedAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateTermsAcceptedAt()
+	})
+}
+
+// ClearTermsAcceptedAt clears the value of the "terms_accepted_at" field.
+func (u *TenantSubscriptionUpsertOne) ClearTermsAcceptedAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearTermsAcceptedAt()
+	})
+}
+
+// SetTermsAcceptedBy sets the "terms_accepted_by" field.
+func (u *TenantSubscriptionUpsertOne) SetTermsAcceptedBy(v uuid.UUID) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetTermsAcceptedBy(v)
+	})
+}
+
+// UpdateTermsAcceptedBy sets the "terms_accepted_by" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateTermsAcceptedBy() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateTermsAcceptedBy()
+	})
+}
+
+// ClearTermsAcceptedBy clears the value of the "terms_accepted_by" field.
+func (u *TenantSubscriptionUpsertOne) ClearTermsAcceptedBy() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearTermsAcceptedBy()
+	})
+}
+
+// SetLastActivityAt sets the "last_activity_at" field.
+func (u *TenantSubscriptionUpsertOne) SetLastActivityAt(v time.Time) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetLastActivityAt(v)
+	})
+}
+
+// UpdateLastActivityAt sets the "last_activity_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateLastActivityAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateLastActivityAt()
+	})
+}
+
+// ClearLastActivityAt clears the value of the "last_activity_at" field.
+func (u *TenantSubscriptionUpsertOne) ClearLastActivityAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearLastActivityAt()
+	})
+}
+
+// SetDormantAt sets the "dormant_at" field.
+func (u *TenantSubscriptionUpsertOne) SetDormantAt(v time.Time) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetDormantAt(v)
+	})
+}
+
+// UpdateDormantAt sets the "dormant_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateDormantAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateDormantAt()
+	})
+}
+
+// ClearDormantAt clears the value of the "dormant_at" field.
+func (u *TenantSubscriptionUpsertOne) ClearDormantAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearDormantAt()
+	})
+}
+
+// SetPurgeGraceEndsAt sets the "purge_grace_ends_at" field.
+func (u *TenantSubscriptionUpsertOne) SetPurgeGraceEndsAt(v time.Time) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetPurgeGraceEndsAt(v)
+	})
+}
+
+// UpdatePurgeGraceEndsAt sets the "purge_grace_ends_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdatePurgeGraceEndsAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdatePurgeGraceEndsAt()
+	})
+}
+
+// ClearPurgeGraceEndsAt clears the value of the "purge_grace_ends_at" field.
+func (u *TenantSubscriptionUpsertOne) ClearPurgeGraceEndsAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearPurgeGraceEndsAt()
+	})
+}
+
+// SetPendingPurge sets the "pending_purge" field.
+func (u *TenantSubscriptionUpsertOne) SetPendingPurge(v bool) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetPendingPurge(v)
+	})
+}
+
+// UpdatePendingPurge sets the "pending_purge" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdatePendingPurge() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdatePendingPurge()
 	})
 }
 
@@ -1961,6 +2354,146 @@ func (u *TenantSubscriptionUpsertBulk) UpdateReferralCode() *TenantSubscriptionU
 func (u *TenantSubscriptionUpsertBulk) ClearReferralCode() *TenantSubscriptionUpsertBulk {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.ClearReferralCode()
+	})
+}
+
+// SetTermsVersion sets the "terms_version" field.
+func (u *TenantSubscriptionUpsertBulk) SetTermsVersion(v string) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetTermsVersion(v)
+	})
+}
+
+// UpdateTermsVersion sets the "terms_version" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateTermsVersion() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateTermsVersion()
+	})
+}
+
+// ClearTermsVersion clears the value of the "terms_version" field.
+func (u *TenantSubscriptionUpsertBulk) ClearTermsVersion() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearTermsVersion()
+	})
+}
+
+// SetTermsAcceptedAt sets the "terms_accepted_at" field.
+func (u *TenantSubscriptionUpsertBulk) SetTermsAcceptedAt(v time.Time) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetTermsAcceptedAt(v)
+	})
+}
+
+// UpdateTermsAcceptedAt sets the "terms_accepted_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateTermsAcceptedAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateTermsAcceptedAt()
+	})
+}
+
+// ClearTermsAcceptedAt clears the value of the "terms_accepted_at" field.
+func (u *TenantSubscriptionUpsertBulk) ClearTermsAcceptedAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearTermsAcceptedAt()
+	})
+}
+
+// SetTermsAcceptedBy sets the "terms_accepted_by" field.
+func (u *TenantSubscriptionUpsertBulk) SetTermsAcceptedBy(v uuid.UUID) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetTermsAcceptedBy(v)
+	})
+}
+
+// UpdateTermsAcceptedBy sets the "terms_accepted_by" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateTermsAcceptedBy() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateTermsAcceptedBy()
+	})
+}
+
+// ClearTermsAcceptedBy clears the value of the "terms_accepted_by" field.
+func (u *TenantSubscriptionUpsertBulk) ClearTermsAcceptedBy() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearTermsAcceptedBy()
+	})
+}
+
+// SetLastActivityAt sets the "last_activity_at" field.
+func (u *TenantSubscriptionUpsertBulk) SetLastActivityAt(v time.Time) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetLastActivityAt(v)
+	})
+}
+
+// UpdateLastActivityAt sets the "last_activity_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateLastActivityAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateLastActivityAt()
+	})
+}
+
+// ClearLastActivityAt clears the value of the "last_activity_at" field.
+func (u *TenantSubscriptionUpsertBulk) ClearLastActivityAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearLastActivityAt()
+	})
+}
+
+// SetDormantAt sets the "dormant_at" field.
+func (u *TenantSubscriptionUpsertBulk) SetDormantAt(v time.Time) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetDormantAt(v)
+	})
+}
+
+// UpdateDormantAt sets the "dormant_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateDormantAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateDormantAt()
+	})
+}
+
+// ClearDormantAt clears the value of the "dormant_at" field.
+func (u *TenantSubscriptionUpsertBulk) ClearDormantAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearDormantAt()
+	})
+}
+
+// SetPurgeGraceEndsAt sets the "purge_grace_ends_at" field.
+func (u *TenantSubscriptionUpsertBulk) SetPurgeGraceEndsAt(v time.Time) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetPurgeGraceEndsAt(v)
+	})
+}
+
+// UpdatePurgeGraceEndsAt sets the "purge_grace_ends_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdatePurgeGraceEndsAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdatePurgeGraceEndsAt()
+	})
+}
+
+// ClearPurgeGraceEndsAt clears the value of the "purge_grace_ends_at" field.
+func (u *TenantSubscriptionUpsertBulk) ClearPurgeGraceEndsAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearPurgeGraceEndsAt()
+	})
+}
+
+// SetPendingPurge sets the "pending_purge" field.
+func (u *TenantSubscriptionUpsertBulk) SetPendingPurge(v bool) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetPendingPurge(v)
+	})
+}
+
+// UpdatePendingPurge sets the "pending_purge" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdatePendingPurge() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdatePendingPurge()
 	})
 }
 

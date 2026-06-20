@@ -27,9 +27,9 @@ func (TenantSubscription) Fields() []ent.Field {
 		field.UUID("plan_id", uuid.UUID{}).
 			Comment("Reference to subscription_plans"),
 		field.Enum("status").
-			Values("ACTIVE", "TRIAL", "EXPIRED", "CANCELLED", "SUSPENDED").
+			Values("ACTIVE", "TRIAL", "EXPIRED", "CANCELLED", "SUSPENDED", "DORMANT").
 			Default("TRIAL").
-			Comment("Current subscription status"),
+			Comment("Current subscription status. DORMANT = no activity >60d and unpaid; awaiting suspend/purge"),
 		field.Time("trial_ends_at").
 			Optional().
 			Nillable().
@@ -83,6 +83,35 @@ func (TenantSubscription) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("This tenant's own shareable referral code; others sign up with it to attribute the referral"),
+		// ── Subscription Terms & Conditions acceptance (captured at subscribe time) ──
+		field.String("terms_version").
+			Optional().
+			Nillable().
+			Comment("Version of the subscription T&C the tenant accepted (e.g. 2026-06-20)"),
+		field.Time("terms_accepted_at").
+			Optional().
+			Nillable().
+			Comment("When the subscription T&C were accepted"),
+		field.UUID("terms_accepted_by", uuid.UUID{}).
+			Optional().
+			Nillable().
+			Comment("User who accepted the subscription T&C"),
+		// ── Account dormancy lifecycle ──────────────────────────────────────────
+		field.Time("last_activity_at").
+			Optional().
+			Nillable().
+			Comment("Last billable usage event for this tenant; drives >60-day dormancy detection"),
+		field.Time("dormant_at").
+			Optional().
+			Nillable().
+			Comment("When the account was first flagged dormant (>60d idle, unpaid). Cleared on reactivation"),
+		field.Time("purge_grace_ends_at").
+			Optional().
+			Nillable().
+			Comment("End of the 7-day grace window after a dormancy notice; at expiry the account is suspended + queued for purge"),
+		field.Bool("pending_purge").
+			Default(false).
+			Comment("True once the grace window elapsed unpaid: account suspended and awaiting platform-owner-confirmed data purge"),
 		field.JSON("metadata", map[string]any{}).
 			Optional().
 			Default(map[string]any{}),
@@ -123,6 +152,8 @@ func (TenantSubscription) Indexes() []ent.Index {
 		index.Fields("status"),
 		// Query subscriptions expiring soon
 		index.Fields("current_period_end"),
+		// Dormancy detection: scan by last activity
+		index.Fields("last_activity_at"),
 		// A referral code uniquely identifies one referrer tenant.
 		index.Fields("referral_code").
 			Unique(),

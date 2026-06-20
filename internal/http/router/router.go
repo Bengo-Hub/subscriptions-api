@@ -80,6 +80,8 @@ func New(
 		r.Get("/plans", planHandler.ListPlans)
 		r.Get("/plans/{id}", planHandler.GetPlan)
 		r.Get("/plans/code/{code}", planHandler.GetPlanByCode)
+		// Current subscription Terms & Conditions (shown + accepted in the subscribe flow)
+		r.Get("/terms", subscriptionHandler.GetTerms)
 
 		// S2S webhook routes (API key auth handled inside handler)
 		if webhookHandler != nil {
@@ -328,6 +330,8 @@ func New(
 					})
 					r.Get("/", platformHandler.ListTenants)
 					r.Post("/{tenant_id}/subscription", platformHandler.AssignPlanToTenant)
+					// Platform-owner-confirmed, irreversible purge of a dormancy-suspended tenant.
+					r.Post("/{tenant_id}/purge-confirm", platformHandler.ConfirmDormancyPurge)
 					// Multi-use-case: per-product subscription lines (composite entitlements).
 					r.Get("/{tenant_id}/products", platformHandler.ListTenantProducts)
 					r.Post("/{tenant_id}/products", platformHandler.AssignProductToTenant)

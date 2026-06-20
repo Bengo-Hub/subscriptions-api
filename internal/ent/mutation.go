@@ -23433,6 +23433,13 @@ type TenantSubscriptionMutation struct {
 	payment_method_id            *uuid.UUID
 	referred_by                  *uuid.UUID
 	referral_code                *string
+	terms_version                *string
+	terms_accepted_at            *time.Time
+	terms_accepted_by            *uuid.UUID
+	last_activity_at             *time.Time
+	dormant_at                   *time.Time
+	purge_grace_ends_at          *time.Time
+	pending_purge                *bool
 	metadata                     *map[string]interface{}
 	created_at                   *time.Time
 	updated_at                   *time.Time
@@ -24361,6 +24368,336 @@ func (m *TenantSubscriptionMutation) ResetReferralCode() {
 	delete(m.clearedFields, tenantsubscription.FieldReferralCode)
 }
 
+// SetTermsVersion sets the "terms_version" field.
+func (m *TenantSubscriptionMutation) SetTermsVersion(s string) {
+	m.terms_version = &s
+}
+
+// TermsVersion returns the value of the "terms_version" field in the mutation.
+func (m *TenantSubscriptionMutation) TermsVersion() (r string, exists bool) {
+	v := m.terms_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTermsVersion returns the old "terms_version" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldTermsVersion(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTermsVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTermsVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTermsVersion: %w", err)
+	}
+	return oldValue.TermsVersion, nil
+}
+
+// ClearTermsVersion clears the value of the "terms_version" field.
+func (m *TenantSubscriptionMutation) ClearTermsVersion() {
+	m.terms_version = nil
+	m.clearedFields[tenantsubscription.FieldTermsVersion] = struct{}{}
+}
+
+// TermsVersionCleared returns if the "terms_version" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) TermsVersionCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldTermsVersion]
+	return ok
+}
+
+// ResetTermsVersion resets all changes to the "terms_version" field.
+func (m *TenantSubscriptionMutation) ResetTermsVersion() {
+	m.terms_version = nil
+	delete(m.clearedFields, tenantsubscription.FieldTermsVersion)
+}
+
+// SetTermsAcceptedAt sets the "terms_accepted_at" field.
+func (m *TenantSubscriptionMutation) SetTermsAcceptedAt(t time.Time) {
+	m.terms_accepted_at = &t
+}
+
+// TermsAcceptedAt returns the value of the "terms_accepted_at" field in the mutation.
+func (m *TenantSubscriptionMutation) TermsAcceptedAt() (r time.Time, exists bool) {
+	v := m.terms_accepted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTermsAcceptedAt returns the old "terms_accepted_at" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldTermsAcceptedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTermsAcceptedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTermsAcceptedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTermsAcceptedAt: %w", err)
+	}
+	return oldValue.TermsAcceptedAt, nil
+}
+
+// ClearTermsAcceptedAt clears the value of the "terms_accepted_at" field.
+func (m *TenantSubscriptionMutation) ClearTermsAcceptedAt() {
+	m.terms_accepted_at = nil
+	m.clearedFields[tenantsubscription.FieldTermsAcceptedAt] = struct{}{}
+}
+
+// TermsAcceptedAtCleared returns if the "terms_accepted_at" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) TermsAcceptedAtCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldTermsAcceptedAt]
+	return ok
+}
+
+// ResetTermsAcceptedAt resets all changes to the "terms_accepted_at" field.
+func (m *TenantSubscriptionMutation) ResetTermsAcceptedAt() {
+	m.terms_accepted_at = nil
+	delete(m.clearedFields, tenantsubscription.FieldTermsAcceptedAt)
+}
+
+// SetTermsAcceptedBy sets the "terms_accepted_by" field.
+func (m *TenantSubscriptionMutation) SetTermsAcceptedBy(u uuid.UUID) {
+	m.terms_accepted_by = &u
+}
+
+// TermsAcceptedBy returns the value of the "terms_accepted_by" field in the mutation.
+func (m *TenantSubscriptionMutation) TermsAcceptedBy() (r uuid.UUID, exists bool) {
+	v := m.terms_accepted_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTermsAcceptedBy returns the old "terms_accepted_by" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldTermsAcceptedBy(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTermsAcceptedBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTermsAcceptedBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTermsAcceptedBy: %w", err)
+	}
+	return oldValue.TermsAcceptedBy, nil
+}
+
+// ClearTermsAcceptedBy clears the value of the "terms_accepted_by" field.
+func (m *TenantSubscriptionMutation) ClearTermsAcceptedBy() {
+	m.terms_accepted_by = nil
+	m.clearedFields[tenantsubscription.FieldTermsAcceptedBy] = struct{}{}
+}
+
+// TermsAcceptedByCleared returns if the "terms_accepted_by" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) TermsAcceptedByCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldTermsAcceptedBy]
+	return ok
+}
+
+// ResetTermsAcceptedBy resets all changes to the "terms_accepted_by" field.
+func (m *TenantSubscriptionMutation) ResetTermsAcceptedBy() {
+	m.terms_accepted_by = nil
+	delete(m.clearedFields, tenantsubscription.FieldTermsAcceptedBy)
+}
+
+// SetLastActivityAt sets the "last_activity_at" field.
+func (m *TenantSubscriptionMutation) SetLastActivityAt(t time.Time) {
+	m.last_activity_at = &t
+}
+
+// LastActivityAt returns the value of the "last_activity_at" field in the mutation.
+func (m *TenantSubscriptionMutation) LastActivityAt() (r time.Time, exists bool) {
+	v := m.last_activity_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastActivityAt returns the old "last_activity_at" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldLastActivityAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastActivityAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastActivityAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastActivityAt: %w", err)
+	}
+	return oldValue.LastActivityAt, nil
+}
+
+// ClearLastActivityAt clears the value of the "last_activity_at" field.
+func (m *TenantSubscriptionMutation) ClearLastActivityAt() {
+	m.last_activity_at = nil
+	m.clearedFields[tenantsubscription.FieldLastActivityAt] = struct{}{}
+}
+
+// LastActivityAtCleared returns if the "last_activity_at" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) LastActivityAtCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldLastActivityAt]
+	return ok
+}
+
+// ResetLastActivityAt resets all changes to the "last_activity_at" field.
+func (m *TenantSubscriptionMutation) ResetLastActivityAt() {
+	m.last_activity_at = nil
+	delete(m.clearedFields, tenantsubscription.FieldLastActivityAt)
+}
+
+// SetDormantAt sets the "dormant_at" field.
+func (m *TenantSubscriptionMutation) SetDormantAt(t time.Time) {
+	m.dormant_at = &t
+}
+
+// DormantAt returns the value of the "dormant_at" field in the mutation.
+func (m *TenantSubscriptionMutation) DormantAt() (r time.Time, exists bool) {
+	v := m.dormant_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDormantAt returns the old "dormant_at" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldDormantAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDormantAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDormantAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDormantAt: %w", err)
+	}
+	return oldValue.DormantAt, nil
+}
+
+// ClearDormantAt clears the value of the "dormant_at" field.
+func (m *TenantSubscriptionMutation) ClearDormantAt() {
+	m.dormant_at = nil
+	m.clearedFields[tenantsubscription.FieldDormantAt] = struct{}{}
+}
+
+// DormantAtCleared returns if the "dormant_at" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) DormantAtCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldDormantAt]
+	return ok
+}
+
+// ResetDormantAt resets all changes to the "dormant_at" field.
+func (m *TenantSubscriptionMutation) ResetDormantAt() {
+	m.dormant_at = nil
+	delete(m.clearedFields, tenantsubscription.FieldDormantAt)
+}
+
+// SetPurgeGraceEndsAt sets the "purge_grace_ends_at" field.
+func (m *TenantSubscriptionMutation) SetPurgeGraceEndsAt(t time.Time) {
+	m.purge_grace_ends_at = &t
+}
+
+// PurgeGraceEndsAt returns the value of the "purge_grace_ends_at" field in the mutation.
+func (m *TenantSubscriptionMutation) PurgeGraceEndsAt() (r time.Time, exists bool) {
+	v := m.purge_grace_ends_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPurgeGraceEndsAt returns the old "purge_grace_ends_at" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldPurgeGraceEndsAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPurgeGraceEndsAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPurgeGraceEndsAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPurgeGraceEndsAt: %w", err)
+	}
+	return oldValue.PurgeGraceEndsAt, nil
+}
+
+// ClearPurgeGraceEndsAt clears the value of the "purge_grace_ends_at" field.
+func (m *TenantSubscriptionMutation) ClearPurgeGraceEndsAt() {
+	m.purge_grace_ends_at = nil
+	m.clearedFields[tenantsubscription.FieldPurgeGraceEndsAt] = struct{}{}
+}
+
+// PurgeGraceEndsAtCleared returns if the "purge_grace_ends_at" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) PurgeGraceEndsAtCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldPurgeGraceEndsAt]
+	return ok
+}
+
+// ResetPurgeGraceEndsAt resets all changes to the "purge_grace_ends_at" field.
+func (m *TenantSubscriptionMutation) ResetPurgeGraceEndsAt() {
+	m.purge_grace_ends_at = nil
+	delete(m.clearedFields, tenantsubscription.FieldPurgeGraceEndsAt)
+}
+
+// SetPendingPurge sets the "pending_purge" field.
+func (m *TenantSubscriptionMutation) SetPendingPurge(b bool) {
+	m.pending_purge = &b
+}
+
+// PendingPurge returns the value of the "pending_purge" field in the mutation.
+func (m *TenantSubscriptionMutation) PendingPurge() (r bool, exists bool) {
+	v := m.pending_purge
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPendingPurge returns the old "pending_purge" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldPendingPurge(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPendingPurge is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPendingPurge requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPendingPurge: %w", err)
+	}
+	return oldValue.PendingPurge, nil
+}
+
+// ResetPendingPurge resets all changes to the "pending_purge" field.
+func (m *TenantSubscriptionMutation) ResetPendingPurge() {
+	m.pending_purge = nil
+}
+
 // SetMetadata sets the "metadata" field.
 func (m *TenantSubscriptionMutation) SetMetadata(value map[string]interface{}) {
 	m.metadata = &value
@@ -24678,7 +25015,7 @@ func (m *TenantSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TenantSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 21)
+	fields := make([]string, 0, 28)
 	if m.tenant != nil {
 		fields = append(fields, tenantsubscription.FieldTenantID)
 	}
@@ -24733,6 +25070,27 @@ func (m *TenantSubscriptionMutation) Fields() []string {
 	if m.referral_code != nil {
 		fields = append(fields, tenantsubscription.FieldReferralCode)
 	}
+	if m.terms_version != nil {
+		fields = append(fields, tenantsubscription.FieldTermsVersion)
+	}
+	if m.terms_accepted_at != nil {
+		fields = append(fields, tenantsubscription.FieldTermsAcceptedAt)
+	}
+	if m.terms_accepted_by != nil {
+		fields = append(fields, tenantsubscription.FieldTermsAcceptedBy)
+	}
+	if m.last_activity_at != nil {
+		fields = append(fields, tenantsubscription.FieldLastActivityAt)
+	}
+	if m.dormant_at != nil {
+		fields = append(fields, tenantsubscription.FieldDormantAt)
+	}
+	if m.purge_grace_ends_at != nil {
+		fields = append(fields, tenantsubscription.FieldPurgeGraceEndsAt)
+	}
+	if m.pending_purge != nil {
+		fields = append(fields, tenantsubscription.FieldPendingPurge)
+	}
 	if m.metadata != nil {
 		fields = append(fields, tenantsubscription.FieldMetadata)
 	}
@@ -24786,6 +25144,20 @@ func (m *TenantSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.ReferredBy()
 	case tenantsubscription.FieldReferralCode:
 		return m.ReferralCode()
+	case tenantsubscription.FieldTermsVersion:
+		return m.TermsVersion()
+	case tenantsubscription.FieldTermsAcceptedAt:
+		return m.TermsAcceptedAt()
+	case tenantsubscription.FieldTermsAcceptedBy:
+		return m.TermsAcceptedBy()
+	case tenantsubscription.FieldLastActivityAt:
+		return m.LastActivityAt()
+	case tenantsubscription.FieldDormantAt:
+		return m.DormantAt()
+	case tenantsubscription.FieldPurgeGraceEndsAt:
+		return m.PurgeGraceEndsAt()
+	case tenantsubscription.FieldPendingPurge:
+		return m.PendingPurge()
 	case tenantsubscription.FieldMetadata:
 		return m.Metadata()
 	case tenantsubscription.FieldCreatedAt:
@@ -24837,6 +25209,20 @@ func (m *TenantSubscriptionMutation) OldField(ctx context.Context, name string) 
 		return m.OldReferredBy(ctx)
 	case tenantsubscription.FieldReferralCode:
 		return m.OldReferralCode(ctx)
+	case tenantsubscription.FieldTermsVersion:
+		return m.OldTermsVersion(ctx)
+	case tenantsubscription.FieldTermsAcceptedAt:
+		return m.OldTermsAcceptedAt(ctx)
+	case tenantsubscription.FieldTermsAcceptedBy:
+		return m.OldTermsAcceptedBy(ctx)
+	case tenantsubscription.FieldLastActivityAt:
+		return m.OldLastActivityAt(ctx)
+	case tenantsubscription.FieldDormantAt:
+		return m.OldDormantAt(ctx)
+	case tenantsubscription.FieldPurgeGraceEndsAt:
+		return m.OldPurgeGraceEndsAt(ctx)
+	case tenantsubscription.FieldPendingPurge:
+		return m.OldPendingPurge(ctx)
 	case tenantsubscription.FieldMetadata:
 		return m.OldMetadata(ctx)
 	case tenantsubscription.FieldCreatedAt:
@@ -24978,6 +25364,55 @@ func (m *TenantSubscriptionMutation) SetField(name string, value ent.Value) erro
 		}
 		m.SetReferralCode(v)
 		return nil
+	case tenantsubscription.FieldTermsVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTermsVersion(v)
+		return nil
+	case tenantsubscription.FieldTermsAcceptedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTermsAcceptedAt(v)
+		return nil
+	case tenantsubscription.FieldTermsAcceptedBy:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTermsAcceptedBy(v)
+		return nil
+	case tenantsubscription.FieldLastActivityAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastActivityAt(v)
+		return nil
+	case tenantsubscription.FieldDormantAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDormantAt(v)
+		return nil
+	case tenantsubscription.FieldPurgeGraceEndsAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPurgeGraceEndsAt(v)
+		return nil
+	case tenantsubscription.FieldPendingPurge:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPendingPurge(v)
+		return nil
 	case tenantsubscription.FieldMetadata:
 		v, ok := value.(map[string]interface{})
 		if !ok {
@@ -25083,6 +25518,24 @@ func (m *TenantSubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(tenantsubscription.FieldReferralCode) {
 		fields = append(fields, tenantsubscription.FieldReferralCode)
 	}
+	if m.FieldCleared(tenantsubscription.FieldTermsVersion) {
+		fields = append(fields, tenantsubscription.FieldTermsVersion)
+	}
+	if m.FieldCleared(tenantsubscription.FieldTermsAcceptedAt) {
+		fields = append(fields, tenantsubscription.FieldTermsAcceptedAt)
+	}
+	if m.FieldCleared(tenantsubscription.FieldTermsAcceptedBy) {
+		fields = append(fields, tenantsubscription.FieldTermsAcceptedBy)
+	}
+	if m.FieldCleared(tenantsubscription.FieldLastActivityAt) {
+		fields = append(fields, tenantsubscription.FieldLastActivityAt)
+	}
+	if m.FieldCleared(tenantsubscription.FieldDormantAt) {
+		fields = append(fields, tenantsubscription.FieldDormantAt)
+	}
+	if m.FieldCleared(tenantsubscription.FieldPurgeGraceEndsAt) {
+		fields = append(fields, tenantsubscription.FieldPurgeGraceEndsAt)
+	}
 	if m.FieldCleared(tenantsubscription.FieldMetadata) {
 		fields = append(fields, tenantsubscription.FieldMetadata)
 	}
@@ -25126,6 +25579,24 @@ func (m *TenantSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case tenantsubscription.FieldReferralCode:
 		m.ClearReferralCode()
+		return nil
+	case tenantsubscription.FieldTermsVersion:
+		m.ClearTermsVersion()
+		return nil
+	case tenantsubscription.FieldTermsAcceptedAt:
+		m.ClearTermsAcceptedAt()
+		return nil
+	case tenantsubscription.FieldTermsAcceptedBy:
+		m.ClearTermsAcceptedBy()
+		return nil
+	case tenantsubscription.FieldLastActivityAt:
+		m.ClearLastActivityAt()
+		return nil
+	case tenantsubscription.FieldDormantAt:
+		m.ClearDormantAt()
+		return nil
+	case tenantsubscription.FieldPurgeGraceEndsAt:
+		m.ClearPurgeGraceEndsAt()
 		return nil
 	case tenantsubscription.FieldMetadata:
 		m.ClearMetadata()
@@ -25191,6 +25662,27 @@ func (m *TenantSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case tenantsubscription.FieldReferralCode:
 		m.ResetReferralCode()
+		return nil
+	case tenantsubscription.FieldTermsVersion:
+		m.ResetTermsVersion()
+		return nil
+	case tenantsubscription.FieldTermsAcceptedAt:
+		m.ResetTermsAcceptedAt()
+		return nil
+	case tenantsubscription.FieldTermsAcceptedBy:
+		m.ResetTermsAcceptedBy()
+		return nil
+	case tenantsubscription.FieldLastActivityAt:
+		m.ResetLastActivityAt()
+		return nil
+	case tenantsubscription.FieldDormantAt:
+		m.ResetDormantAt()
+		return nil
+	case tenantsubscription.FieldPurgeGraceEndsAt:
+		m.ResetPurgeGraceEndsAt()
+		return nil
+	case tenantsubscription.FieldPendingPurge:
+		m.ResetPendingPurge()
 		return nil
 	case tenantsubscription.FieldMetadata:
 		m.ResetMetadata()

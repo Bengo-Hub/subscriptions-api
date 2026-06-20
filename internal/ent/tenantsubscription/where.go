@@ -136,6 +136,41 @@ func ReferralCode(v string) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldReferralCode, v))
 }
 
+// TermsVersion applies equality check predicate on the "terms_version" field. It's identical to TermsVersionEQ.
+func TermsVersion(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldTermsVersion, v))
+}
+
+// TermsAcceptedAt applies equality check predicate on the "terms_accepted_at" field. It's identical to TermsAcceptedAtEQ.
+func TermsAcceptedAt(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldTermsAcceptedAt, v))
+}
+
+// TermsAcceptedBy applies equality check predicate on the "terms_accepted_by" field. It's identical to TermsAcceptedByEQ.
+func TermsAcceptedBy(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldTermsAcceptedBy, v))
+}
+
+// LastActivityAt applies equality check predicate on the "last_activity_at" field. It's identical to LastActivityAtEQ.
+func LastActivityAt(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldLastActivityAt, v))
+}
+
+// DormantAt applies equality check predicate on the "dormant_at" field. It's identical to DormantAtEQ.
+func DormantAt(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldDormantAt, v))
+}
+
+// PurgeGraceEndsAt applies equality check predicate on the "purge_grace_ends_at" field. It's identical to PurgeGraceEndsAtEQ.
+func PurgeGraceEndsAt(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldPurgeGraceEndsAt, v))
+}
+
+// PendingPurge applies equality check predicate on the "pending_purge" field. It's identical to PendingPurgeEQ.
+func PendingPurge(v bool) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldPendingPurge, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldCreatedAt, v))
@@ -919,6 +954,341 @@ func ReferralCodeEqualFold(v string) predicate.TenantSubscription {
 // ReferralCodeContainsFold applies the ContainsFold predicate on the "referral_code" field.
 func ReferralCodeContainsFold(v string) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldContainsFold(FieldReferralCode, v))
+}
+
+// TermsVersionEQ applies the EQ predicate on the "terms_version" field.
+func TermsVersionEQ(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldTermsVersion, v))
+}
+
+// TermsVersionNEQ applies the NEQ predicate on the "terms_version" field.
+func TermsVersionNEQ(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldTermsVersion, v))
+}
+
+// TermsVersionIn applies the In predicate on the "terms_version" field.
+func TermsVersionIn(vs ...string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldTermsVersion, vs...))
+}
+
+// TermsVersionNotIn applies the NotIn predicate on the "terms_version" field.
+func TermsVersionNotIn(vs ...string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldTermsVersion, vs...))
+}
+
+// TermsVersionGT applies the GT predicate on the "terms_version" field.
+func TermsVersionGT(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldTermsVersion, v))
+}
+
+// TermsVersionGTE applies the GTE predicate on the "terms_version" field.
+func TermsVersionGTE(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldTermsVersion, v))
+}
+
+// TermsVersionLT applies the LT predicate on the "terms_version" field.
+func TermsVersionLT(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldTermsVersion, v))
+}
+
+// TermsVersionLTE applies the LTE predicate on the "terms_version" field.
+func TermsVersionLTE(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldTermsVersion, v))
+}
+
+// TermsVersionContains applies the Contains predicate on the "terms_version" field.
+func TermsVersionContains(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldContains(FieldTermsVersion, v))
+}
+
+// TermsVersionHasPrefix applies the HasPrefix predicate on the "terms_version" field.
+func TermsVersionHasPrefix(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldHasPrefix(FieldTermsVersion, v))
+}
+
+// TermsVersionHasSuffix applies the HasSuffix predicate on the "terms_version" field.
+func TermsVersionHasSuffix(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldHasSuffix(FieldTermsVersion, v))
+}
+
+// TermsVersionIsNil applies the IsNil predicate on the "terms_version" field.
+func TermsVersionIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldTermsVersion))
+}
+
+// TermsVersionNotNil applies the NotNil predicate on the "terms_version" field.
+func TermsVersionNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldTermsVersion))
+}
+
+// TermsVersionEqualFold applies the EqualFold predicate on the "terms_version" field.
+func TermsVersionEqualFold(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEqualFold(FieldTermsVersion, v))
+}
+
+// TermsVersionContainsFold applies the ContainsFold predicate on the "terms_version" field.
+func TermsVersionContainsFold(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldContainsFold(FieldTermsVersion, v))
+}
+
+// TermsAcceptedAtEQ applies the EQ predicate on the "terms_accepted_at" field.
+func TermsAcceptedAtEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldTermsAcceptedAt, v))
+}
+
+// TermsAcceptedAtNEQ applies the NEQ predicate on the "terms_accepted_at" field.
+func TermsAcceptedAtNEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldTermsAcceptedAt, v))
+}
+
+// TermsAcceptedAtIn applies the In predicate on the "terms_accepted_at" field.
+func TermsAcceptedAtIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldTermsAcceptedAt, vs...))
+}
+
+// TermsAcceptedAtNotIn applies the NotIn predicate on the "terms_accepted_at" field.
+func TermsAcceptedAtNotIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldTermsAcceptedAt, vs...))
+}
+
+// TermsAcceptedAtGT applies the GT predicate on the "terms_accepted_at" field.
+func TermsAcceptedAtGT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldTermsAcceptedAt, v))
+}
+
+// TermsAcceptedAtGTE applies the GTE predicate on the "terms_accepted_at" field.
+func TermsAcceptedAtGTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldTermsAcceptedAt, v))
+}
+
+// TermsAcceptedAtLT applies the LT predicate on the "terms_accepted_at" field.
+func TermsAcceptedAtLT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldTermsAcceptedAt, v))
+}
+
+// TermsAcceptedAtLTE applies the LTE predicate on the "terms_accepted_at" field.
+func TermsAcceptedAtLTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldTermsAcceptedAt, v))
+}
+
+// TermsAcceptedAtIsNil applies the IsNil predicate on the "terms_accepted_at" field.
+func TermsAcceptedAtIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldTermsAcceptedAt))
+}
+
+// TermsAcceptedAtNotNil applies the NotNil predicate on the "terms_accepted_at" field.
+func TermsAcceptedAtNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldTermsAcceptedAt))
+}
+
+// TermsAcceptedByEQ applies the EQ predicate on the "terms_accepted_by" field.
+func TermsAcceptedByEQ(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldTermsAcceptedBy, v))
+}
+
+// TermsAcceptedByNEQ applies the NEQ predicate on the "terms_accepted_by" field.
+func TermsAcceptedByNEQ(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldTermsAcceptedBy, v))
+}
+
+// TermsAcceptedByIn applies the In predicate on the "terms_accepted_by" field.
+func TermsAcceptedByIn(vs ...uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldTermsAcceptedBy, vs...))
+}
+
+// TermsAcceptedByNotIn applies the NotIn predicate on the "terms_accepted_by" field.
+func TermsAcceptedByNotIn(vs ...uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldTermsAcceptedBy, vs...))
+}
+
+// TermsAcceptedByGT applies the GT predicate on the "terms_accepted_by" field.
+func TermsAcceptedByGT(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldTermsAcceptedBy, v))
+}
+
+// TermsAcceptedByGTE applies the GTE predicate on the "terms_accepted_by" field.
+func TermsAcceptedByGTE(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldTermsAcceptedBy, v))
+}
+
+// TermsAcceptedByLT applies the LT predicate on the "terms_accepted_by" field.
+func TermsAcceptedByLT(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldTermsAcceptedBy, v))
+}
+
+// TermsAcceptedByLTE applies the LTE predicate on the "terms_accepted_by" field.
+func TermsAcceptedByLTE(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldTermsAcceptedBy, v))
+}
+
+// TermsAcceptedByIsNil applies the IsNil predicate on the "terms_accepted_by" field.
+func TermsAcceptedByIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldTermsAcceptedBy))
+}
+
+// TermsAcceptedByNotNil applies the NotNil predicate on the "terms_accepted_by" field.
+func TermsAcceptedByNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldTermsAcceptedBy))
+}
+
+// LastActivityAtEQ applies the EQ predicate on the "last_activity_at" field.
+func LastActivityAtEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldLastActivityAt, v))
+}
+
+// LastActivityAtNEQ applies the NEQ predicate on the "last_activity_at" field.
+func LastActivityAtNEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldLastActivityAt, v))
+}
+
+// LastActivityAtIn applies the In predicate on the "last_activity_at" field.
+func LastActivityAtIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldLastActivityAt, vs...))
+}
+
+// LastActivityAtNotIn applies the NotIn predicate on the "last_activity_at" field.
+func LastActivityAtNotIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldLastActivityAt, vs...))
+}
+
+// LastActivityAtGT applies the GT predicate on the "last_activity_at" field.
+func LastActivityAtGT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldLastActivityAt, v))
+}
+
+// LastActivityAtGTE applies the GTE predicate on the "last_activity_at" field.
+func LastActivityAtGTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldLastActivityAt, v))
+}
+
+// LastActivityAtLT applies the LT predicate on the "last_activity_at" field.
+func LastActivityAtLT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldLastActivityAt, v))
+}
+
+// LastActivityAtLTE applies the LTE predicate on the "last_activity_at" field.
+func LastActivityAtLTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldLastActivityAt, v))
+}
+
+// LastActivityAtIsNil applies the IsNil predicate on the "last_activity_at" field.
+func LastActivityAtIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldLastActivityAt))
+}
+
+// LastActivityAtNotNil applies the NotNil predicate on the "last_activity_at" field.
+func LastActivityAtNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldLastActivityAt))
+}
+
+// DormantAtEQ applies the EQ predicate on the "dormant_at" field.
+func DormantAtEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldDormantAt, v))
+}
+
+// DormantAtNEQ applies the NEQ predicate on the "dormant_at" field.
+func DormantAtNEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldDormantAt, v))
+}
+
+// DormantAtIn applies the In predicate on the "dormant_at" field.
+func DormantAtIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldDormantAt, vs...))
+}
+
+// DormantAtNotIn applies the NotIn predicate on the "dormant_at" field.
+func DormantAtNotIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldDormantAt, vs...))
+}
+
+// DormantAtGT applies the GT predicate on the "dormant_at" field.
+func DormantAtGT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldDormantAt, v))
+}
+
+// DormantAtGTE applies the GTE predicate on the "dormant_at" field.
+func DormantAtGTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldDormantAt, v))
+}
+
+// DormantAtLT applies the LT predicate on the "dormant_at" field.
+func DormantAtLT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldDormantAt, v))
+}
+
+// DormantAtLTE applies the LTE predicate on the "dormant_at" field.
+func DormantAtLTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldDormantAt, v))
+}
+
+// DormantAtIsNil applies the IsNil predicate on the "dormant_at" field.
+func DormantAtIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldDormantAt))
+}
+
+// DormantAtNotNil applies the NotNil predicate on the "dormant_at" field.
+func DormantAtNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldDormantAt))
+}
+
+// PurgeGraceEndsAtEQ applies the EQ predicate on the "purge_grace_ends_at" field.
+func PurgeGraceEndsAtEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldPurgeGraceEndsAt, v))
+}
+
+// PurgeGraceEndsAtNEQ applies the NEQ predicate on the "purge_grace_ends_at" field.
+func PurgeGraceEndsAtNEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldPurgeGraceEndsAt, v))
+}
+
+// PurgeGraceEndsAtIn applies the In predicate on the "purge_grace_ends_at" field.
+func PurgeGraceEndsAtIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldPurgeGraceEndsAt, vs...))
+}
+
+// PurgeGraceEndsAtNotIn applies the NotIn predicate on the "purge_grace_ends_at" field.
+func PurgeGraceEndsAtNotIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldPurgeGraceEndsAt, vs...))
+}
+
+// PurgeGraceEndsAtGT applies the GT predicate on the "purge_grace_ends_at" field.
+func PurgeGraceEndsAtGT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldPurgeGraceEndsAt, v))
+}
+
+// PurgeGraceEndsAtGTE applies the GTE predicate on the "purge_grace_ends_at" field.
+func PurgeGraceEndsAtGTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldPurgeGraceEndsAt, v))
+}
+
+// PurgeGraceEndsAtLT applies the LT predicate on the "purge_grace_ends_at" field.
+func PurgeGraceEndsAtLT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldPurgeGraceEndsAt, v))
+}
+
+// PurgeGraceEndsAtLTE applies the LTE predicate on the "purge_grace_ends_at" field.
+func PurgeGraceEndsAtLTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldPurgeGraceEndsAt, v))
+}
+
+// PurgeGraceEndsAtIsNil applies the IsNil predicate on the "purge_grace_ends_at" field.
+func PurgeGraceEndsAtIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldPurgeGraceEndsAt))
+}
+
+// PurgeGraceEndsAtNotNil applies the NotNil predicate on the "purge_grace_ends_at" field.
+func PurgeGraceEndsAtNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldPurgeGraceEndsAt))
+}
+
+// PendingPurgeEQ applies the EQ predicate on the "pending_purge" field.
+func PendingPurgeEQ(v bool) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldPendingPurge, v))
+}
+
+// PendingPurgeNEQ applies the NEQ predicate on the "pending_purge" field.
+func PendingPurgeNEQ(v bool) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldPendingPurge, v))
 }
 
 // MetadataIsNil applies the IsNil predicate on the "metadata" field.

@@ -12,9 +12,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bengobox/subscription-service/internal/ent"
-	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
@@ -351,6 +351,97 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 	}
 
 	writeJSON(w, http.StatusOK, sub)
+}
+
+// ConfirmDormancyPurge godoc
+// @Summary Confirm deletion of a dormant tenant's data (platform owner)
+// @Description Platform-owner-confirmed, irreversible purge of a suspended/dormant tenant. Emits
+// @Description tenant.purge for every service to delete that tenant's data. Guarded by the
+// @Description /admin platform-owner middleware; only acts on accounts already queued (pending_purge).
+// @Tags Platform
+// @Produce json
+// @Param tenant_id path string true "Tenant UUID"
+// @Success 200 {object} map[string]interface{}
+// @Router /admin/tenants/{tenant_id}/purge-confirm [post]
+func (h *PlatformHandler) ConfirmDormancyPurge(w http.ResponseWriter, r *http.Request) {
+	if h.subSvc == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "subscription service unavailable"})
+		return
+	}
+	ctx := r.Context()
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenant_id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+
+	sub, err := h.client.TenantSubscription.Query().
+		Where(tenantsubscription.TenantID(tenantID)).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "no subscription for tenant"})
+			return
+		}
+		h.log.Error("purge-confirm: query subscription", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	// Safety: only purge accounts the dormancy job actually suspended + queued. Prevents an
+	// accidental purge of a live tenant.
+	if !sub.PendingPurge {
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":   "not_pending_purge",
+			"message": "tenant is not suspended/queued for purge; only dormancy-suspended accounts can be purged",
+		})
+		return
+	}
+
+	tx, err := h.client.Tx(ctx)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	now := time.Now().UTC()
+	if _, err := tx.TenantSubscription.UpdateOneID(sub.ID).
+		SetStatus(tenantsubscription.StatusCANCELLED).
+		SetPendingPurge(false).
+		SetCancelledAt(now).
+		SetCancelReason("dormancy_purge_confirmed").
+		Save(ctx); err != nil {
+		_ = tx.Rollback()
+		h.log.Error("purge-confirm: update subscription", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	// Emit tenant.purge on the "tenant" aggregate. Every service runs a consumer that deletes
+	// that tenant's rows on receipt. Irreversible — gated by the platform-owner /admin middleware
+	// and the pending_purge precondition above.
+	h.subSvc.WriteOutboxEventPublic(ctx, tx, tenantID, "tenant", tenantID, "purge", map[string]any{
+		"tenant_id":    tenantID.String(),
+		"reason":       "dormancy",
+		"confirmed":    true,
+		"confirmed_at": now.Format(time.RFC3339),
+		"scope":        "all_services",
+	})
+
+	if err := tx.Commit(); err != nil {
+		h.log.Error("purge-confirm: commit", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	if h.featureHandler != nil {
+		h.featureHandler.InvalidateCache(ctx, tenantID)
+	}
+	h.log.Warn("dormancy purge confirmed — tenant.purge emitted", zap.String("tenant_id", tenantID.String()))
+	writeJSON(w, http.StatusOK, map[string]any{
+		"tenant_id": tenantID.String(),
+		"status":    "purge_initiated",
+		"message":   "tenant.purge emitted to all services; tenant data deletion is in progress",
+	})
 }
 
 // ListTenantProducts godoc
@@ -782,10 +873,10 @@ func (h *PlatformHandler) UpdateSubscription(w http.ResponseWriter, r *http.Requ
 	}
 
 	var body struct {
-		TrialEndsAt      *string `json:"trial_ends_at"`       // RFC3339 or null to clear
-		CurrentPeriodEnd *string `json:"current_period_end"`  // RFC3339
-		Status           *string `json:"status"`              // ACTIVE | TRIAL | EXPIRED | CANCELLED | SUSPENDED
-		PlanCode         *string `json:"plan_code"`           // switch plan
+		TrialEndsAt      *string `json:"trial_ends_at"`      // RFC3339 or null to clear
+		CurrentPeriodEnd *string `json:"current_period_end"` // RFC3339
+		Status           *string `json:"status"`             // ACTIVE | TRIAL | EXPIRED | CANCELLED | SUSPENDED
+		PlanCode         *string `json:"plan_code"`          // switch plan
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
@@ -1038,5 +1129,3 @@ func (h *PlatformHandler) DownloadSubscriptionInvoicePDF(w http.ResponseWriter, 
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)
 }
-
-
