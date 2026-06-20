@@ -28,7 +28,7 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 
 	minCharge50 := 50.0
 	minCharge5 := 5.0
-	minCharge10 := 10.0
+	minCharge2 := 2.0
 	maxCharge5000 := 5000.0
 	maxCharge2000 := 2000.0
 	maxCharge500 := 500.0
@@ -78,17 +78,17 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 		{
 			// Codevertex Flex — the pay-as-you-grow entry tier for micro-enterprises that
 			// can't commit to a monthly subscription (kiosks, stalls, new businesses). 1.5%
-			// of each sale, floored at KES 10, capped at KES 250 per transaction — deliberately
-			// aligned with the ~1.5% M-Pesa till rate merchants already understand. No monthly
+			// of each sale, floored at KES 2, capped at KES 250 per transaction — the 1.5% rate
+			// is aligned with the ~1.5% M-Pesa till rate merchants already understand. No monthly
 			// fee. Tenants on this plan are restricted to platform-collectable online rails
 			// (no cash/offline) so the commission is netted at settlement. Applies to all POS
 			// lines (POS/Duka/Dawa). See the dormancy clause in the pricing doc (>60 days idle).
 			code:        "SC_POS_FLEX",
 			name:        "Codevertex Flex — POS Service Charge",
-			description: "Pay-as-you-grow for micro shops, kiosks & stalls: 1.5% of each sale, minimum KES 10, capped at KES 250 per transaction. No monthly subscription. One-time setup KES 3,000. Online payment methods only.",
+			description: "Pay-as-you-grow for micro shops, kiosks & stalls: 1.5% of each sale, minimum KES 2, capped at KES 250 per transaction. No monthly subscription. One-time setup KES 3,000. Online payment methods only.",
 			chargeType:  servicechargeplan.ChargeTypePERCENTAGE,
 			chargeValue: 1.5,
-			minCharge:   &minCharge10,
+			minCharge:   &minCharge2,
 			maxCharge:   &maxCharge250,
 			services:    []string{"pos"},
 		},
