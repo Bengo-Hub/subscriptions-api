@@ -65,6 +65,20 @@ func (_c *TenantCreate) SetNillableUseCase(v *string) *TenantCreate {
 	return _c
 }
 
+// SetSubscriptionExempt sets the "subscription_exempt" field.
+func (_c *TenantCreate) SetSubscriptionExempt(v bool) *TenantCreate {
+	_c.mutation.SetSubscriptionExempt(v)
+	return _c
+}
+
+// SetNillableSubscriptionExempt sets the "subscription_exempt" field if the given value is not nil.
+func (_c *TenantCreate) SetNillableSubscriptionExempt(v *bool) *TenantCreate {
+	if v != nil {
+		_c.SetSubscriptionExempt(*v)
+	}
+	return _c
+}
+
 // SetSyncStatus sets the "sync_status" field.
 func (_c *TenantCreate) SetSyncStatus(v string) *TenantCreate {
 	_c.mutation.SetSyncStatus(v)
@@ -189,6 +203,10 @@ func (_c *TenantCreate) defaults() {
 		v := tenant.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.SubscriptionExempt(); !ok {
+		v := tenant.DefaultSubscriptionExempt
+		_c.mutation.SetSubscriptionExempt(v)
+	}
 	if _, ok := _c.mutation.SyncStatus(); !ok {
 		v := tenant.DefaultSyncStatus
 		_c.mutation.SetSyncStatus(v)
@@ -227,6 +245,9 @@ func (_c *TenantCreate) check() error {
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Tenant.status"`)}
+	}
+	if _, ok := _c.mutation.SubscriptionExempt(); !ok {
+		return &ValidationError{Name: "subscription_exempt", err: errors.New(`ent: missing required field "Tenant.subscription_exempt"`)}
 	}
 	if _, ok := _c.mutation.SyncStatus(); !ok {
 		return &ValidationError{Name: "sync_status", err: errors.New(`ent: missing required field "Tenant.sync_status"`)}
@@ -288,6 +309,10 @@ func (_c *TenantCreate) createSpec() (*Tenant, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.UseCase(); ok {
 		_spec.SetField(tenant.FieldUseCase, field.TypeString, value)
 		_node.UseCase = &value
+	}
+	if value, ok := _c.mutation.SubscriptionExempt(); ok {
+		_spec.SetField(tenant.FieldSubscriptionExempt, field.TypeBool, value)
+		_node.SubscriptionExempt = value
 	}
 	if value, ok := _c.mutation.SyncStatus(); ok {
 		_spec.SetField(tenant.FieldSyncStatus, field.TypeString, value)
@@ -424,6 +449,18 @@ func (u *TenantUpsert) UpdateUseCase() *TenantUpsert {
 // ClearUseCase clears the value of the "use_case" field.
 func (u *TenantUpsert) ClearUseCase() *TenantUpsert {
 	u.SetNull(tenant.FieldUseCase)
+	return u
+}
+
+// SetSubscriptionExempt sets the "subscription_exempt" field.
+func (u *TenantUpsert) SetSubscriptionExempt(v bool) *TenantUpsert {
+	u.Set(tenant.FieldSubscriptionExempt, v)
+	return u
+}
+
+// UpdateSubscriptionExempt sets the "subscription_exempt" field to the value that was provided on create.
+func (u *TenantUpsert) UpdateSubscriptionExempt() *TenantUpsert {
+	u.SetExcluded(tenant.FieldSubscriptionExempt)
 	return u
 }
 
@@ -580,6 +617,20 @@ func (u *TenantUpsertOne) UpdateUseCase() *TenantUpsertOne {
 func (u *TenantUpsertOne) ClearUseCase() *TenantUpsertOne {
 	return u.Update(func(s *TenantUpsert) {
 		s.ClearUseCase()
+	})
+}
+
+// SetSubscriptionExempt sets the "subscription_exempt" field.
+func (u *TenantUpsertOne) SetSubscriptionExempt(v bool) *TenantUpsertOne {
+	return u.Update(func(s *TenantUpsert) {
+		s.SetSubscriptionExempt(v)
+	})
+}
+
+// UpdateSubscriptionExempt sets the "subscription_exempt" field to the value that was provided on create.
+func (u *TenantUpsertOne) UpdateSubscriptionExempt() *TenantUpsertOne {
+	return u.Update(func(s *TenantUpsert) {
+		s.UpdateSubscriptionExempt()
 	})
 }
 
@@ -910,6 +961,20 @@ func (u *TenantUpsertBulk) UpdateUseCase() *TenantUpsertBulk {
 func (u *TenantUpsertBulk) ClearUseCase() *TenantUpsertBulk {
 	return u.Update(func(s *TenantUpsert) {
 		s.ClearUseCase()
+	})
+}
+
+// SetSubscriptionExempt sets the "subscription_exempt" field.
+func (u *TenantUpsertBulk) SetSubscriptionExempt(v bool) *TenantUpsertBulk {
+	return u.Update(func(s *TenantUpsert) {
+		s.SetSubscriptionExempt(v)
+	})
+}
+
+// UpdateSubscriptionExempt sets the "subscription_exempt" field to the value that was provided on create.
+func (u *TenantUpsertBulk) UpdateSubscriptionExempt() *TenantUpsertBulk {
+	return u.Update(func(s *TenantUpsert) {
+		s.UpdateSubscriptionExempt()
 	})
 }
 

@@ -760,16 +760,20 @@ func init() {
 	tenantDescStatus := tenantFields[3].Descriptor()
 	// tenant.DefaultStatus holds the default value on creation for the status field.
 	tenant.DefaultStatus = tenantDescStatus.Default.(string)
+	// tenantDescSubscriptionExempt is the schema descriptor for subscription_exempt field.
+	tenantDescSubscriptionExempt := tenantFields[5].Descriptor()
+	// tenant.DefaultSubscriptionExempt holds the default value on creation for the subscription_exempt field.
+	tenant.DefaultSubscriptionExempt = tenantDescSubscriptionExempt.Default.(bool)
 	// tenantDescSyncStatus is the schema descriptor for sync_status field.
-	tenantDescSyncStatus := tenantFields[5].Descriptor()
+	tenantDescSyncStatus := tenantFields[6].Descriptor()
 	// tenant.DefaultSyncStatus holds the default value on creation for the sync_status field.
 	tenant.DefaultSyncStatus = tenantDescSyncStatus.Default.(string)
 	// tenantDescCreatedAt is the schema descriptor for created_at field.
-	tenantDescCreatedAt := tenantFields[7].Descriptor()
+	tenantDescCreatedAt := tenantFields[8].Descriptor()
 	// tenant.DefaultCreatedAt holds the default value on creation for the created_at field.
 	tenant.DefaultCreatedAt = tenantDescCreatedAt.Default.(func() time.Time)
 	// tenantDescUpdatedAt is the schema descriptor for updated_at field.
-	tenantDescUpdatedAt := tenantFields[8].Descriptor()
+	tenantDescUpdatedAt := tenantFields[9].Descriptor()
 	// tenant.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	tenant.DefaultUpdatedAt = tenantDescUpdatedAt.Default.(func() time.Time)
 	// tenant.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

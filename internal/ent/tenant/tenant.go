@@ -23,6 +23,8 @@ const (
 	FieldStatus = "status"
 	// FieldUseCase holds the string denoting the use_case field in the database.
 	FieldUseCase = "use_case"
+	// FieldSubscriptionExempt holds the string denoting the subscription_exempt field in the database.
+	FieldSubscriptionExempt = "subscription_exempt"
 	// FieldSyncStatus holds the string denoting the sync_status field in the database.
 	FieldSyncStatus = "sync_status"
 	// FieldLastSyncAt holds the string denoting the last_sync_at field in the database.
@@ -51,6 +53,7 @@ var Columns = []string{
 	FieldSlug,
 	FieldStatus,
 	FieldUseCase,
+	FieldSubscriptionExempt,
 	FieldSyncStatus,
 	FieldLastSyncAt,
 	FieldCreatedAt,
@@ -74,6 +77,8 @@ var (
 	SlugValidator func(string) error
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
+	// DefaultSubscriptionExempt holds the default value on creation for the "subscription_exempt" field.
+	DefaultSubscriptionExempt bool
 	// DefaultSyncStatus holds the default value on creation for the "sync_status" field.
 	DefaultSyncStatus string
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -112,6 +117,11 @@ func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 // ByUseCase orders the results by the use_case field.
 func ByUseCase(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUseCase, opts...).ToFunc()
+}
+
+// BySubscriptionExempt orders the results by the subscription_exempt field.
+func BySubscriptionExempt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubscriptionExempt, opts...).ToFunc()
 }
 
 // BySyncStatus orders the results by the sync_status field.

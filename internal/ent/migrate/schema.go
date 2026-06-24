@@ -931,6 +931,7 @@ var (
 		{Name: "slug", Type: field.TypeString, Unique: true},
 		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "use_case", Type: field.TypeString, Nullable: true},
+		{Name: "subscription_exempt", Type: field.TypeBool, Default: false},
 		{Name: "sync_status", Type: field.TypeString, Default: "synced"},
 		{Name: "last_sync_at", Type: field.TypeTime, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},

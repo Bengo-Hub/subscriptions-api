@@ -118,6 +118,13 @@ func overlayPlanEntitlements(result *SubscriptionResult, plan *ent.SubscriptionP
 // (GET /tenants/{id}/subscription), so a multi-use-case tenant's token carries all of its
 // features at once.
 func (s *Service) GetSubscriptionResult(ctx context.Context, tenantID uuid.UUID) (*SubscriptionResult, error) {
+	// Exempt tenants never own a subscription record. Return a synthetic, fully-entitled result
+	// (status ACTIVE, every feature, no limits) marked Exempt so auth-api stamps the sub_exempt
+	// JWT claim and every downstream gate bypasses cleanly.
+	if s.IsExemptTenant(ctx, tenantID) {
+		return s.exemptResult(ctx, tenantID), nil
+	}
+
 	sub, err := s.getSubscription(ctx, tenantID)
 	if err != nil {
 		return nil, err

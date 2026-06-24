@@ -3,7 +3,9 @@ package subscriptions
 import (
 	"context"
 	"errors"
+	"time"
 
+	entfeaturedefinition "github.com/bengobox/subscription-service/internal/ent/featuredefinition"
 	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/google/uuid"
 )
@@ -36,7 +38,54 @@ func (s *Service) IsExemptTenant(ctx context.Context, tenantID uuid.UUID) bool {
 	if err != nil {
 		return false
 	}
-	return exemptSlugs[t.Slug]
+	// Exempt if: the tenant slug is a built-in platform/demo slug, OR the platform explicitly
+	// flagged this tenant subscription-exempt (configurable per-tenant grant).
+	return t.SubscriptionExempt || exemptSlugs[t.Slug]
+}
+
+// SetTenantExemption flips a tenant's explicit subscription-exemption flag. Platform-admin only
+// (the caller enforces authz). Returns the new value.
+func (s *Service) SetTenantExemption(ctx context.Context, tenantID uuid.UUID, exempt bool) error {
+	return s.client.Tenant.UpdateOneID(tenantID).SetSubscriptionExempt(exempt).Exec(ctx)
+}
+
+// exemptResult builds the synthetic, fully-entitled result returned for exempt tenants:
+// status ACTIVE, every catalog feature, no limit caps, Exempt=true.
+func (s *Service) exemptResult(ctx context.Context, tenantID uuid.UUID) *SubscriptionResult {
+	now := time.Now()
+	features := s.allFeatureCodes(ctx)
+	return &SubscriptionResult{
+		TenantID:           tenantID,
+		PlanCode:           "EXEMPT",
+		PlanName:           "Platform Exempt",
+		Status:             "ACTIVE",
+		AccessStatus:       "active",
+		CurrentPeriodStart: now,
+		CurrentPeriodEnd:   now.AddDate(100, 0, 0),
+		Features:           features,
+		Limits:             map[string]int{},
+		BillingMode:        "exempt",
+		IsPerpetual:        true,
+		Exempt:             true,
+	}
+}
+
+// allFeatureCodes returns every boolean FEATURE code in the catalog so an exempt tenant's token
+// carries the full entitlement set (belt-and-braces for any service that reads features directly
+// rather than going through the auth-client gating-exempt funnel).
+func (s *Service) allFeatureCodes(ctx context.Context) []string {
+	rows, err := s.client.FeatureDefinition.Query().
+		Where(entfeaturedefinition.KindEQ(entfeaturedefinition.KindFEATURE)).
+		Select(entfeaturedefinition.FieldFeatureCode).
+		All(ctx)
+	if err != nil {
+		return []string{}
+	}
+	out := make([]string, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, r.FeatureCode)
+	}
+	return out
 }
 
 // guardExempt returns ErrExemptTenant when the tenant must not own a subscription.

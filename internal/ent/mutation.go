@@ -22575,6 +22575,7 @@ type TenantMutation struct {
 	slug                 *string
 	status               *string
 	use_case             *string
+	subscription_exempt  *bool
 	sync_status          *string
 	last_sync_at         *time.Time
 	created_at           *time.Time
@@ -22849,6 +22850,42 @@ func (m *TenantMutation) ResetUseCase() {
 	delete(m.clearedFields, tenant.FieldUseCase)
 }
 
+// SetSubscriptionExempt sets the "subscription_exempt" field.
+func (m *TenantMutation) SetSubscriptionExempt(b bool) {
+	m.subscription_exempt = &b
+}
+
+// SubscriptionExempt returns the value of the "subscription_exempt" field in the mutation.
+func (m *TenantMutation) SubscriptionExempt() (r bool, exists bool) {
+	v := m.subscription_exempt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubscriptionExempt returns the old "subscription_exempt" field's value of the Tenant entity.
+// If the Tenant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantMutation) OldSubscriptionExempt(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubscriptionExempt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubscriptionExempt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubscriptionExempt: %w", err)
+	}
+	return oldValue.SubscriptionExempt, nil
+}
+
+// ResetSubscriptionExempt resets all changes to the "subscription_exempt" field.
+func (m *TenantMutation) ResetSubscriptionExempt() {
+	m.subscription_exempt = nil
+}
+
 // SetSyncStatus sets the "sync_status" field.
 func (m *TenantMutation) SetSyncStatus(s string) {
 	m.sync_status = &s
@@ -23094,7 +23131,7 @@ func (m *TenantMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TenantMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.name != nil {
 		fields = append(fields, tenant.FieldName)
 	}
@@ -23106,6 +23143,9 @@ func (m *TenantMutation) Fields() []string {
 	}
 	if m.use_case != nil {
 		fields = append(fields, tenant.FieldUseCase)
+	}
+	if m.subscription_exempt != nil {
+		fields = append(fields, tenant.FieldSubscriptionExempt)
 	}
 	if m.sync_status != nil {
 		fields = append(fields, tenant.FieldSyncStatus)
@@ -23135,6 +23175,8 @@ func (m *TenantMutation) Field(name string) (ent.Value, bool) {
 		return m.Status()
 	case tenant.FieldUseCase:
 		return m.UseCase()
+	case tenant.FieldSubscriptionExempt:
+		return m.SubscriptionExempt()
 	case tenant.FieldSyncStatus:
 		return m.SyncStatus()
 	case tenant.FieldLastSyncAt:
@@ -23160,6 +23202,8 @@ func (m *TenantMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldStatus(ctx)
 	case tenant.FieldUseCase:
 		return m.OldUseCase(ctx)
+	case tenant.FieldSubscriptionExempt:
+		return m.OldSubscriptionExempt(ctx)
 	case tenant.FieldSyncStatus:
 		return m.OldSyncStatus(ctx)
 	case tenant.FieldLastSyncAt:
@@ -23204,6 +23248,13 @@ func (m *TenantMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUseCase(v)
+		return nil
+	case tenant.FieldSubscriptionExempt:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubscriptionExempt(v)
 		return nil
 	case tenant.FieldSyncStatus:
 		v, ok := value.(string)
@@ -23308,6 +23359,9 @@ func (m *TenantMutation) ResetField(name string) error {
 		return nil
 	case tenant.FieldUseCase:
 		m.ResetUseCase()
+		return nil
+	case tenant.FieldSubscriptionExempt:
+		m.ResetSubscriptionExempt()
 		return nil
 	case tenant.FieldSyncStatus:
 		m.ResetSyncStatus()

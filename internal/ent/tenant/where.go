@@ -76,6 +76,11 @@ func UseCase(v string) predicate.Tenant {
 	return predicate.Tenant(sql.FieldEQ(FieldUseCase, v))
 }
 
+// SubscriptionExempt applies equality check predicate on the "subscription_exempt" field. It's identical to SubscriptionExemptEQ.
+func SubscriptionExempt(v bool) predicate.Tenant {
+	return predicate.Tenant(sql.FieldEQ(FieldSubscriptionExempt, v))
+}
+
 // SyncStatus applies equality check predicate on the "sync_status" field. It's identical to SyncStatusEQ.
 func SyncStatus(v string) predicate.Tenant {
 	return predicate.Tenant(sql.FieldEQ(FieldSyncStatus, v))
@@ -364,6 +369,16 @@ func UseCaseEqualFold(v string) predicate.Tenant {
 // UseCaseContainsFold applies the ContainsFold predicate on the "use_case" field.
 func UseCaseContainsFold(v string) predicate.Tenant {
 	return predicate.Tenant(sql.FieldContainsFold(FieldUseCase, v))
+}
+
+// SubscriptionExemptEQ applies the EQ predicate on the "subscription_exempt" field.
+func SubscriptionExemptEQ(v bool) predicate.Tenant {
+	return predicate.Tenant(sql.FieldEQ(FieldSubscriptionExempt, v))
+}
+
+// SubscriptionExemptNEQ applies the NEQ predicate on the "subscription_exempt" field.
+func SubscriptionExemptNEQ(v bool) predicate.Tenant {
+	return predicate.Tenant(sql.FieldNEQ(FieldSubscriptionExempt, v))
 }
 
 // SyncStatusEQ applies the EQ predicate on the "sync_status" field.

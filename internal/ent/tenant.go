@@ -26,6 +26,8 @@ type Tenant struct {
 	Status string `json:"status,omitempty"`
 	// Primary business use case — synced from auth-api
 	UseCase *string `json:"use_case,omitempty"`
+	// Platform-granted exemption: when true the tenant bypasses ALL subscription billing + gating. Set by platform admins only.
+	SubscriptionExempt bool `json:"subscription_exempt,omitempty"`
 	// Sync status from auth-api: synced | pending | failed
 	SyncStatus string `json:"sync_status,omitempty"`
 	// Last successful sync from auth-api
@@ -63,6 +65,8 @@ func (*Tenant) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case tenant.FieldSubscriptionExempt:
+			values[i] = new(sql.NullBool)
 		case tenant.FieldName, tenant.FieldSlug, tenant.FieldStatus, tenant.FieldUseCase, tenant.FieldSyncStatus:
 			values[i] = new(sql.NullString)
 		case tenant.FieldLastSyncAt, tenant.FieldCreatedAt, tenant.FieldUpdatedAt:
@@ -114,6 +118,12 @@ func (_m *Tenant) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.UseCase = new(string)
 				*_m.UseCase = value.String
+			}
+		case tenant.FieldSubscriptionExempt:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field subscription_exempt", values[i])
+			} else if value.Valid {
+				_m.SubscriptionExempt = value.Bool
 			}
 		case tenant.FieldSyncStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -194,6 +204,9 @@ func (_m *Tenant) String() string {
 		builder.WriteString("use_case=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", ")
+	builder.WriteString("subscription_exempt=")
+	builder.WriteString(fmt.Sprintf("%v", _m.SubscriptionExempt))
 	builder.WriteString(", ")
 	builder.WriteString("sync_status=")
 	builder.WriteString(_m.SyncStatus)

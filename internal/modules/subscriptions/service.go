@@ -132,6 +132,10 @@ type SubscriptionResult struct {
 	// When true, metered throughput limits may be exceeded and the excess accrues as
 	// OverageCharge billed on the next renewal.
 	AllowOverage bool `json:"allow_overage"`
+	// Exempt is true for tenants the platform has exempted from subscriptions entirely
+	// (platform/demo tenants + explicitly-flagged tenants). auth-api embeds this as the
+	// JWT sub_exempt claim so every downstream service bypasses subscription gating.
+	Exempt bool `json:"exempt"`
 }
 
 // --- State machine ---
