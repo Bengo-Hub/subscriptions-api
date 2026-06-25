@@ -154,6 +154,10 @@ var featureCatalog = func() []catalogEntry {
 		feat("supplier_portal", inventory, "Inventory", "Supplier Portal"),
 		feat("barcode_scanning", inventory, "Inventory", "Barcode / QR Scanning"),
 		feat("bulk_import", inventory, "Inventory", "Bulk CSV Import"),
+		// Multi-image catalog: unlocks attaching more than one image per product (the first
+		// image is always allowed). Paired with the inventory_max_images_per_item cap below.
+		feat("inventory_multiple_images", inventory, "Inventory", "Multiple Product Images"),
+		lim("inventory_max_images_per_item", inventory, "Limits", "Images per Product", ""),
 		lim("max_warehouses", inventory, "Limits", "Warehouses", ""),
 		lim("max_products", inventory, "Limits", "Products", ""),
 		lim("max_suppliers", inventory, "Limits", "Suppliers", ""),
