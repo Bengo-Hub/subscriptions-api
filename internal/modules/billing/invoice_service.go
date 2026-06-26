@@ -27,6 +27,7 @@ type InvoiceService struct {
 	orm              *ent.Client
 	svc              *subscriptions.Service // for outbox event writes
 	treasury         *serviceclient.Client
+	ispBillingClient *serviceclient.Client // isp-billing S2S (exact active PPPoE count); may be nil
 	apiKey           string
 	platformTenantID string
 	treasuryUIBase   string // e.g. https://books.codevertexitsolutions.com (for /pay)
@@ -36,12 +37,13 @@ type InvoiceService struct {
 }
 
 // NewInvoiceService constructs the subscription invoice service.
-func NewInvoiceService(log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, treasury *serviceclient.Client, apiKey, platformTenantID, treasuryUIBase, treasuryAPIBase string, vatRate float64) *InvoiceService {
+func NewInvoiceService(log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, treasury, ispBillingClient *serviceclient.Client, apiKey, platformTenantID, treasuryUIBase, treasuryAPIBase string, vatRate float64) *InvoiceService {
 	return &InvoiceService{
 		log:              log.Named("billing.invoice"),
 		orm:              orm,
 		svc:              svc,
 		treasury:         treasury,
+		ispBillingClient: ispBillingClient,
 		apiKey:           apiKey,
 		platformTenantID: platformTenantID,
 		treasuryUIBase:   treasuryUIBase,
@@ -104,7 +106,7 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 	// existing billing is unchanged. The base_price line above already covers the KES 500
 	// base. VAT is applied exclusive, mirroring the other taxable lines.
 	if IsISPBillingPlan(plan) {
-		ispLines, err := computeISPUsageLines(ctx, s.orm, sub, plan)
+		ispLines, err := s.computeISPUsageLines(ctx, sub, plan)
 		if err != nil {
 			// Don't fail the whole invoice on a usage-aggregation error — log and bill the
 			// deterministic base. The next cycle reconciles once the source recovers.

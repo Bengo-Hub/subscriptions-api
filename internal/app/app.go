@@ -53,12 +53,12 @@ type App struct {
 	events          *nats.Conn
 	orm             *ent.Client
 	outboxPublisher *eventslib.Publisher
-	tenantConsumer   *consumers.TenantCreatedConsumer
-	usageConsumer    *consumers.UsageConsumer
-	paymentConsumer  *consumers.TreasuryPaymentConsumer
-	subscriptionSvc  *subscriptions.Service
-	treasuryClient   *serviceclient.Client
-	invoiceSvc       *billing.InvoiceService
+	tenantConsumer  *consumers.TenantCreatedConsumer
+	usageConsumer   *consumers.UsageConsumer
+	paymentConsumer *consumers.TreasuryPaymentConsumer
+	subscriptionSvc *subscriptions.Service
+	treasuryClient  *serviceclient.Client
+	invoiceSvc      *billing.InvoiceService
 }
 
 func New(ctx context.Context) (*App, error) {
@@ -116,6 +116,10 @@ func New(ctx context.Context) (*App, error) {
 	// Initialize Treasury service client
 	treasuryCfg := serviceclient.DefaultConfig(cfg.Services.TreasuryAPI, "treasury-api", log)
 	treasuryClient := serviceclient.New(treasuryCfg)
+
+	// Initialize isp-billing service client (exact active PPPoE count for ISP usage billing).
+	ispBillingCfg := serviceclient.DefaultConfig(cfg.Services.ISPBillingAPI, "isp-billing-backend", log)
+	ispBillingClient := serviceclient.New(ispBillingCfg)
 
 	// Initialize auth-service JWT validator
 	var authMiddleware *authclient.AuthMiddleware
@@ -232,7 +236,7 @@ func New(ctx context.Context) (*App, error) {
 
 	// Subscription invoice service (platform→tenant invoices via treasury S2S) — shared by
 	// the 7-day invoice job, grace events, and the manual platform-owner endpoints.
-	invoiceSvc := billing.NewInvoiceService(log, ormClient, subscriptionSvc, treasuryClient, cfg.Services.TreasuryAPIKey, cfg.Services.PlatformTenantID, cfg.Services.TreasuryUI, cfg.Services.TreasuryAPI, cfg.Services.VATRate)
+	invoiceSvc := billing.NewInvoiceService(log, ormClient, subscriptionSvc, treasuryClient, ispBillingClient, cfg.Services.TreasuryAPIKey, cfg.Services.PlatformTenantID, cfg.Services.TreasuryUI, cfg.Services.TreasuryAPI, cfg.Services.VATRate)
 	platformHandler.WithInvoiceService(invoiceSvc)
 
 	// Inbound webhook handler (Treasury payment callbacks)

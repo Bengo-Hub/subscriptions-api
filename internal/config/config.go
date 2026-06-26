@@ -45,6 +45,9 @@ type ServicesConfig struct {
 	TreasuryUI     string `envconfig:"TREASURY_UI_URL" default:"https://books.codevertexitsolutions.com"`
 	TreasuryAPIKey string `envconfig:"INTERNAL_SERVICE_KEY"`
 	MarketflowAPI  string `envconfig:"MARKETFLOW_API_URL" default:"https://marketflowapi.codevertexitsolutions.com"`
+	// ISPBillingAPI is the isp-billing backend used to fetch the exact point-in-time active
+	// PPPoE subscriber count for ISP usage billing (S2S, authenticated with INTERNAL_SERVICE_KEY).
+	ISPBillingAPI string `envconfig:"ISP_BILLING_API_URL" default:"https://ispbillingapi.codevertexitsolutions.com"`
 	// PlatformTenantID is the treasury/auth tenant UUID that ISSUES subscription invoices
 	// (the platform org, e.g. codevertex). Subscription invoices are owned by this tenant
 	// with the billed tenant as the customer. Must be set in prod.

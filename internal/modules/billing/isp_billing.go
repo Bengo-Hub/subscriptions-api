@@ -2,10 +2,12 @@ package billing
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	"github.com/bengobox/subscription-service/internal/domain"
 	"github.com/bengobox/subscription-service/internal/ent"
@@ -29,12 +31,15 @@ import (
 //   - hotspot_sales      → SUM(value) of "isp.subscriber.created" events (value = sale amount)
 //   - pppoe_subscribers  → COUNT via SUM(value) of "isp.subscription.renewed" events
 //
-// NOTE / KNOWN LIMITATION (active PPPoE count): the ISP service publishes no PPPoE
-// subscriber create/deactivate events — only a renewal event. The pppoe_subscribers metric
-// therefore reflects PPPoE *renewals in the current month*, which approximates but is not
-// identical to the true active-subscriber count. When the ISP service starts publishing a
-// canonical active-subscriber signal (or exposes a count endpoint), swap the source in
-// ispActivePPPoESubscribers below. The deterministic base + threshold-gated % are exact.
+// ACTIVE PPPoE count (exact via S2S, renewals-approximation as fallback): the per-subscriber
+// fee multiplies the EXACT point-in-time active PPPoE count fetched from isp-billing over S2S
+// (GET /api/v1/s2s/tenants/{tenant_id}/pppoe/active-count). The ISP service publishes no PPPoE
+// subscriber create/deactivate events — only a renewal event — so when the S2S call is
+// unavailable (client not configured, non-2xx, parse/network error) we gracefully FALL BACK to
+// the pppoe_subscribers metric summed from usage_events, which reflects PPPoE *renewals in the
+// billing period*: an approximation of, not identical to, the true active count. The exact path
+// is preferred; the fallback never fails the invoice. The deterministic base + threshold-gated
+// % are exact regardless.
 
 // tier_limits keys (seeded in cmd/seed/plans_isp_billing.go).
 const (
@@ -132,11 +137,57 @@ func ispMonthlyHotspotSales(ctx context.Context, orm *ent.Client, tenantID uuid.
 	return total, nil
 }
 
+// ispActivePPPoEResponse is the isp-billing S2S active-count payload.
+type ispActivePPPoEResponse struct {
+	TenantID               string `json:"tenant_id"`
+	ActivePPPoESubscribers int    `json:"active_pppoe_subscribers"`
+}
+
 // ispActivePPPoESubscribers returns the active PPPoE subscriber count used for the per-
-// subscriber fee. See the package-level note: today this is the count of PPPoE renewals in
-// the period (best available signal), summed from usage_events.
-func ispActivePPPoESubscribers(ctx context.Context, orm *ent.Client, tenantID uuid.UUID, start, end time.Time) (float64, error) {
-	events, err := orm.UsageEvent.Query().
+// subscriber fee. Primary source is the EXACT point-in-time count from isp-billing over S2S;
+// on ANY failure it falls back to ispRenewalsApproxPPPoE (the usage_events renewals sum). See
+// the package-level note. The (start, end) window is used only by the fallback path.
+func (s *InvoiceService) ispActivePPPoESubscribers(ctx context.Context, tenantID uuid.UUID, start, end time.Time) (float64, error) {
+	if s != nil && s.ispBillingClient != nil {
+		count, err := s.ispExactActivePPPoE(ctx, tenantID)
+		if err == nil {
+			return count, nil
+		}
+		// Graceful degradation: never fail the invoice over the exact-count lookup — log and
+		// fall back to the renewals approximation below.
+		if s.log != nil {
+			s.log.Debug("isp: exact active PPPoE count unavailable; falling back to renewals approximation",
+				zap.String("tenant_id", tenantID.String()), zap.Error(err))
+		}
+	}
+	return s.ispRenewalsApproxPPPoE(ctx, tenantID, start, end)
+}
+
+// ispExactActivePPPoE fetches the exact active PPPoE subscriber count from isp-billing via S2S.
+func (s *InvoiceService) ispExactActivePPPoE(ctx context.Context, tenantID uuid.UUID) (float64, error) {
+	path := fmt.Sprintf("/api/v1/s2s/tenants/%s/pppoe/active-count", tenantID)
+	resp, err := s.ispBillingClient.Get(ctx, path, s.headers())
+	if err != nil {
+		return 0, fmt.Errorf("isp-billing active-count request: %w", err)
+	}
+	if !resp.IsSuccess() {
+		return 0, fmt.Errorf("isp-billing active-count returned status %d", resp.StatusCode)
+	}
+	var parsed ispActivePPPoEResponse
+	if err := json.Unmarshal(resp.Body, &parsed); err != nil {
+		return 0, fmt.Errorf("isp-billing active-count decode: %w", err)
+	}
+	count := float64(parsed.ActivePPPoESubscribers)
+	if count < 0 {
+		count = 0
+	}
+	return count, nil
+}
+
+// ispRenewalsApproxPPPoE returns the fallback active-count approximation: the count of PPPoE
+// renewals in the period (best available offline signal), summed from usage_events.
+func (s *InvoiceService) ispRenewalsApproxPPPoE(ctx context.Context, tenantID uuid.UUID, start, end time.Time) (float64, error) {
+	events, err := s.orm.UsageEvent.Query().
 		Where(
 			usageevent.TenantIDEQ(tenantID),
 			usageevent.MetricTypeEQ(ispMetricPPPoESubscribers),
@@ -161,7 +212,7 @@ func ispActivePPPoESubscribers(ctx context.Context, orm *ent.Client, tenantID uu
 // per-PPPoE-subscriber fee) for the subscription's current cycle. It does NOT include the
 // base_price — the generic line builder already adds that. Returns an empty slice (no
 // error) when the plan is not ISP or there is nothing to charge.
-func computeISPUsageLines(ctx context.Context, orm *ent.Client, sub *ent.TenantSubscription, plan *ent.SubscriptionPlan) ([]ispUsageLine, error) {
+func (s *InvoiceService) computeISPUsageLines(ctx context.Context, sub *ent.TenantSubscription, plan *ent.SubscriptionPlan) ([]ispUsageLine, error) {
 	if !IsISPBillingPlan(plan) || plan.TierLimitsJSON == nil {
 		return nil, nil
 	}
@@ -175,7 +226,7 @@ func computeISPUsageLines(ctx context.Context, orm *ent.Client, sub *ent.TenantS
 	pct := ispNum(limits, ispKeyServiceChargePct)
 	threshold := ispNum(limits, ispKeyServiceChargeThreshold)
 	if pct > 0 {
-		sales, err := ispMonthlyHotspotSales(ctx, orm, sub.TenantID, start, end)
+		sales, err := ispMonthlyHotspotSales(ctx, s.orm, sub.TenantID, start, end)
 		if err != nil {
 			return nil, err
 		}
@@ -195,7 +246,7 @@ func computeISPUsageLines(ctx context.Context, orm *ent.Client, sub *ent.TenantS
 	// 2. Per-active-PPPoE-subscriber fee (always, threshold-independent).
 	fee := ispNum(limits, ispKeyPPPoEPerSubscriberFee)
 	if fee > 0 {
-		count, err := ispActivePPPoESubscribers(ctx, orm, sub.TenantID, start, end)
+		count, err := s.ispActivePPPoESubscribers(ctx, sub.TenantID, start, end)
 		if err != nil {
 			return nil, err
 		}
