@@ -14,18 +14,53 @@ import (
 
 // ── ISP Billing Plans ────────────────────────────────────────────────────────
 // Plans for the ISP Billing SaaS product — sold to ISP providers (businesses)
-// that run hotspot or PPPoE networks and use the platform to manage customers,
-// routers, billing, vouchers, and analytics.
+// that run hotspot AND/OR PPPoE networks and use the platform to manage
+// customers, routers, billing, vouchers, and analytics.
 //
-// Two product lines mirror the internal PlatformSubscriptionTier model:
-//   - HOTSPOT: captive-portal billing for cafés, hotels, public Wi-Fi
-//   - PPPOE:   broadband ISP billing for PPPoE subscriber management
+// Pricing is the single source of truth in shared-docs/CODEVERTEX-PRICING-MODEL.md
+// §6: ONE "ISP Billing" service line with three tiers —
+//   Starter 3,500 · Professional 8,000 · Enterprise 16,000 (KES / month).
+// Annual = 10× monthly (≈16.7% discount). A single product line covers both
+// hotspot and PPPoE (the ISP provider's org type decides which features they use).
 //
-// Payments will be centralised through treasury-api once migration is complete.
+// SMS/WhatsApp are NOT plan limits/features — they are prepaid credit bundles in
+// notifications-api (§8), available to any tenant regardless of tier. So the plans
+// carry no max_sms_per_month / sms_notifications.
+//
+// The earlier split (ISP_HOTSPOT_* / ISP_PPPOE_*) is retired below (marked
+// inactive + non-public) so existing rows don't keep showing in the catalog.
+
+func ispBillingPlanID(key string) uuid.UUID {
+	return uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:"+key))
+}
 
 func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 	now := time.Now()
 	serviceTag := "isp_billing"
+
+	// Feature sets are cumulative (Starter ⊂ Professional ⊂ Enterprise).
+	starterFeatures := []string{
+		"hotspot_management", "pppoe_management", "captive_portal", "voucher_system",
+		"radius_auth", "customer_management", "bandwidth_limiting", "basic_analytics",
+		"invoice_generation", "mpesa_integration",
+	}
+	professionalFeatures := append(append([]string{}, starterFeatures...),
+		"advanced_analytics", "custom_domain", "multi_router", "performance_reports",
+		"expense_tracking", "fup_management",
+	)
+	enterpriseFeatures := append(append([]string{}, professionalFeatures...),
+		"white_label", "api_access", "custom_integrations", "priority_support", "audit_trail",
+	)
+
+	starterLimits := map[string]any{
+		"max_routers": 2, "max_customers": 200, "max_users": 3, "max_vouchers_per_month": -1,
+	}
+	professionalLimits := map[string]any{
+		"max_routers": 10, "max_customers": 2000, "max_users": 15, "max_vouchers_per_month": -1,
+	}
+	enterpriseLimits := map[string]any{
+		"max_routers": -1, "max_customers": -1, "max_users": -1, "max_vouchers_per_month": -1,
+	}
 
 	type planDef struct {
 		id           uuid.UUID
@@ -40,272 +75,74 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 	}
 
 	plans := []planDef{
-		// ── Hotspot Monthly Plans ────────────────────────────────────────────
+		// ── Monthly ──────────────────────────────────────────────────────────
 		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:HOTSPOT_STARTER")),
-			planCode:     "ISP_HOTSPOT_STARTER",
-			name:         "ISP Hotspot Starter",
-			description:  "Manage 1 hotspot router with up to 50 active customers. Includes voucher system, captive portal, and SMS notifications.",
+			id:           ispBillingPlanID("STARTER"),
+			planCode:     "ISP_BILLING_STARTER",
+			name:         "ISP Billing Starter",
+			description:  "For small ISPs: up to 2 routers and 200 hotspot/PPPoE customers. Captive portal, vouchers, RADIUS, M-Pesa billing, and basic analytics.",
 			billingCycle: "MONTHLY",
-			price:        500.0,
+			price:        3500.0,
 			tierOrder:    1,
-			tierLimits: map[string]any{
-				"max_routers":            1,
-				"max_customers":          50,
-				"max_users":              2,
-				"max_sms_per_month":      100,
-				"max_vouchers_per_month": 200,
-			},
-			features: []string{
-				"hotspot_management", "captive_portal", "voucher_system",
-				"customer_management", "bandwidth_limiting", "sms_notifications",
-				"basic_analytics",
-			},
+			tierLimits:   starterLimits,
+			features:     starterFeatures,
 		},
 		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:HOTSPOT_PROFESSIONAL")),
-			planCode:     "ISP_HOTSPOT_PROFESSIONAL",
-			name:         "ISP Hotspot Professional",
-			description:  "Manage up to 5 routers with unlimited customers. Adds advanced analytics, custom domain, and M-Pesa integration.",
+			id:           ispBillingPlanID("PROFESSIONAL"),
+			planCode:     "ISP_BILLING_PROFESSIONAL",
+			name:         "ISP Billing Professional",
+			description:  "For growing ISPs: up to 10 routers and 2,000 customers. Adds advanced analytics, custom domain, FUP management, and performance reports.",
 			billingCycle: "MONTHLY",
-			price:        2000.0,
+			price:        8000.0,
 			tierOrder:    2,
-			tierLimits: map[string]any{
-				"max_routers":            5,
-				"max_customers":          -1,
-				"max_users":              5,
-				"max_sms_per_month":      500,
-				"max_vouchers_per_month": -1,
-			},
-			features: []string{
-				"hotspot_management", "captive_portal", "voucher_system",
-				"customer_management", "bandwidth_limiting", "sms_notifications",
-				"advanced_analytics", "custom_domain", "mpesa_integration",
-				"multi_router", "performance_reports", "expense_tracking",
-			},
+			tierLimits:   professionalLimits,
+			features:     professionalFeatures,
 		},
 		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:HOTSPOT_ENTERPRISE")),
-			planCode:     "ISP_HOTSPOT_ENTERPRISE",
-			name:         "ISP Hotspot Enterprise",
-			description:  "Unlimited routers and customers. Full white-label, API access, custom integrations, and priority support.",
+			id:           ispBillingPlanID("ENTERPRISE"),
+			planCode:     "ISP_BILLING_ENTERPRISE",
+			name:         "ISP Billing Enterprise",
+			description:  "Unlimited routers and customers. Full white-label, API access, custom integrations, audit trail, and priority support.",
 			billingCycle: "MONTHLY",
-			price:        5000.0,
+			price:        16000.0,
 			tierOrder:    3,
-			tierLimits: map[string]any{
-				"max_routers":            -1,
-				"max_customers":          -1,
-				"max_users":              -1,
-				"max_sms_per_month":      -1,
-				"max_vouchers_per_month": -1,
-			},
-			features: []string{
-				"hotspot_management", "captive_portal", "voucher_system",
-				"customer_management", "bandwidth_limiting", "sms_notifications",
-				"advanced_analytics", "custom_domain", "mpesa_integration",
-				"multi_router", "performance_reports", "expense_tracking",
-				"white_label", "api_access", "custom_integrations",
-				"priority_support", "audit_trail",
-			},
+			tierLimits:   enterpriseLimits,
+			features:     enterpriseFeatures,
 		},
 
-		// ── PPPoE Monthly Plans ──────────────────────────────────────────────
+		// ── Annual (10× monthly ≈ 16.7% discount) ─────────────────────────────
 		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:PPPOE_STARTER")),
-			planCode:     "ISP_PPPOE_STARTER",
-			name:         "ISP PPPoE Starter",
-			description:  "Manage up to 50 PPPoE subscribers across 1 router. Includes RADIUS authentication, billing, and SMS alerts.",
-			billingCycle: "MONTHLY",
-			price:        1000.0,
-			tierOrder:    4,
-			tierLimits: map[string]any{
-				"max_routers":       1,
-				"max_customers":     50,
-				"max_users":         2,
-				"max_sms_per_month": 100,
-			},
-			features: []string{
-				"pppoe_management", "radius_auth", "customer_management",
-				"bandwidth_limiting", "sms_notifications", "basic_analytics",
-				"invoice_generation",
-			},
-		},
-		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:PPPOE_PROFESSIONAL")),
-			planCode:     "ISP_PPPOE_PROFESSIONAL",
-			name:         "ISP PPPoE Professional",
-			description:  "Up to 250 PPPoE subscribers across 5 routers. Adds FUP management, advanced analytics, and M-Pesa integration.",
-			billingCycle: "MONTHLY",
-			price:        4000.0,
-			tierOrder:    5,
-			tierLimits: map[string]any{
-				"max_routers":       5,
-				"max_customers":     250,
-				"max_users":         5,
-				"max_sms_per_month": 500,
-			},
-			features: []string{
-				"pppoe_management", "radius_auth", "customer_management",
-				"bandwidth_limiting", "sms_notifications", "advanced_analytics",
-				"invoice_generation", "fup_management", "mpesa_integration",
-				"multi_router", "performance_reports", "expense_tracking",
-			},
-		},
-		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:PPPOE_ENTERPRISE")),
-			planCode:     "ISP_PPPOE_ENTERPRISE",
-			name:         "ISP PPPoE Enterprise",
-			description:  "Unlimited PPPoE subscribers and routers. Full white-label, API access, custom integrations, and priority support.",
-			billingCycle: "MONTHLY",
-			price:        9000.0,
-			tierOrder:    6,
-			tierLimits: map[string]any{
-				"max_routers":       -1,
-				"max_customers":     -1,
-				"max_users":         -1,
-				"max_sms_per_month": -1,
-			},
-			features: []string{
-				"pppoe_management", "radius_auth", "customer_management",
-				"bandwidth_limiting", "sms_notifications", "advanced_analytics",
-				"invoice_generation", "fup_management", "mpesa_integration",
-				"multi_router", "performance_reports", "expense_tracking",
-				"white_label", "api_access", "custom_integrations",
-				"priority_support", "audit_trail",
-			},
-		},
-
-		// ── Annual Plans (10-month pricing ≈ 16.7% discount) ────────────────
-		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:HOTSPOT_STARTER_YEARLY")),
-			planCode:     "ISP_HOTSPOT_STARTER_YEARLY",
-			name:         "ISP Hotspot Starter — Annual",
-			description:  "1 router, up to 50 customers. Vouchers and captive portal. Save with annual billing.",
+			id:           ispBillingPlanID("STARTER_YEARLY"),
+			planCode:     "ISP_BILLING_STARTER_YEARLY",
+			name:         "ISP Billing Starter — Annual",
+			description:  "Up to 2 routers and 200 customers. Captive portal, vouchers, RADIUS, M-Pesa billing. Save with annual billing.",
 			billingCycle: "ANNUAL",
-			price:        5000.0,
+			price:        35000.0,
 			tierOrder:    1,
-			tierLimits: map[string]any{
-				"max_routers":            1,
-				"max_customers":          50,
-				"max_users":              2,
-				"max_sms_per_month":      100,
-				"max_vouchers_per_month": 200,
-			},
-			features: []string{
-				"hotspot_management", "captive_portal", "voucher_system",
-				"customer_management", "bandwidth_limiting", "sms_notifications",
-				"basic_analytics",
-			},
+			tierLimits:   starterLimits,
+			features:     starterFeatures,
 		},
 		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:HOTSPOT_PROFESSIONAL_YEARLY")),
-			planCode:     "ISP_HOTSPOT_PROFESSIONAL_YEARLY",
-			name:         "ISP Hotspot Professional — Annual",
-			description:  "5 routers, unlimited customers, custom domain, M-Pesa. Save with annual billing.",
+			id:           ispBillingPlanID("PROFESSIONAL_YEARLY"),
+			planCode:     "ISP_BILLING_PROFESSIONAL_YEARLY",
+			name:         "ISP Billing Professional — Annual",
+			description:  "Up to 10 routers and 2,000 customers. Advanced analytics, custom domain, FUP management. Save with annual billing.",
 			billingCycle: "ANNUAL",
-			price:        20000.0,
+			price:        80000.0,
 			tierOrder:    2,
-			tierLimits: map[string]any{
-				"max_routers":            5,
-				"max_customers":          -1,
-				"max_users":              5,
-				"max_sms_per_month":      500,
-				"max_vouchers_per_month": -1,
-			},
-			features: []string{
-				"hotspot_management", "captive_portal", "voucher_system",
-				"customer_management", "bandwidth_limiting", "sms_notifications",
-				"advanced_analytics", "custom_domain", "mpesa_integration",
-				"multi_router", "performance_reports", "expense_tracking",
-			},
+			tierLimits:   professionalLimits,
+			features:     professionalFeatures,
 		},
 		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:HOTSPOT_ENTERPRISE_YEARLY")),
-			planCode:     "ISP_HOTSPOT_ENTERPRISE_YEARLY",
-			name:         "ISP Hotspot Enterprise — Annual",
-			description:  "Unlimited routers, white-label, API access, priority support. Save with annual billing.",
+			id:           ispBillingPlanID("ENTERPRISE_YEARLY"),
+			planCode:     "ISP_BILLING_ENTERPRISE_YEARLY",
+			name:         "ISP Billing Enterprise — Annual",
+			description:  "Unlimited routers and customers. White-label, API access, priority support. Save with annual billing.",
 			billingCycle: "ANNUAL",
-			price:        50000.0,
+			price:        160000.0,
 			tierOrder:    3,
-			tierLimits: map[string]any{
-				"max_routers":            -1,
-				"max_customers":          -1,
-				"max_users":              -1,
-				"max_sms_per_month":      -1,
-				"max_vouchers_per_month": -1,
-			},
-			features: []string{
-				"hotspot_management", "captive_portal", "voucher_system",
-				"customer_management", "bandwidth_limiting", "sms_notifications",
-				"advanced_analytics", "custom_domain", "mpesa_integration",
-				"multi_router", "performance_reports", "expense_tracking",
-				"white_label", "api_access", "custom_integrations",
-				"priority_support", "audit_trail",
-			},
-		},
-		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:PPPOE_STARTER_YEARLY")),
-			planCode:     "ISP_PPPOE_STARTER_YEARLY",
-			name:         "ISP PPPoE Starter — Annual",
-			description:  "1 router, 50 PPPoE subscribers, RADIUS auth, SMS alerts. Save with annual billing.",
-			billingCycle: "ANNUAL",
-			price:        10000.0,
-			tierOrder:    4,
-			tierLimits: map[string]any{
-				"max_routers":       1,
-				"max_customers":     50,
-				"max_users":         2,
-				"max_sms_per_month": 100,
-			},
-			features: []string{
-				"pppoe_management", "radius_auth", "customer_management",
-				"bandwidth_limiting", "sms_notifications", "basic_analytics",
-				"invoice_generation",
-			},
-		},
-		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:PPPOE_PROFESSIONAL_YEARLY")),
-			planCode:     "ISP_PPPOE_PROFESSIONAL_YEARLY",
-			name:         "ISP PPPoE Professional — Annual",
-			description:  "5 routers, 250 subscribers, FUP management, M-Pesa. Save with annual billing.",
-			billingCycle: "ANNUAL",
-			price:        40000.0,
-			tierOrder:    5,
-			tierLimits: map[string]any{
-				"max_routers":       5,
-				"max_customers":     250,
-				"max_users":         5,
-				"max_sms_per_month": 500,
-			},
-			features: []string{
-				"pppoe_management", "radius_auth", "customer_management",
-				"bandwidth_limiting", "sms_notifications", "advanced_analytics",
-				"invoice_generation", "fup_management", "mpesa_integration",
-				"multi_router", "performance_reports", "expense_tracking",
-			},
-		},
-		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("isp_billing:PPPOE_ENTERPRISE_YEARLY")),
-			planCode:     "ISP_PPPOE_ENTERPRISE_YEARLY",
-			name:         "ISP PPPoE Enterprise — Annual",
-			description:  "Unlimited subscribers, white-label, API access, priority support. Save with annual billing.",
-			billingCycle: "ANNUAL",
-			price:        90000.0,
-			tierOrder:    6,
-			tierLimits: map[string]any{
-				"max_routers":       -1,
-				"max_customers":     -1,
-				"max_users":         -1,
-				"max_sms_per_month": -1,
-			},
-			features: []string{
-				"pppoe_management", "radius_auth", "customer_management",
-				"bandwidth_limiting", "sms_notifications", "advanced_analytics",
-				"invoice_generation", "fup_management", "mpesa_integration",
-				"multi_router", "performance_reports", "expense_tracking",
-				"white_label", "api_access", "custom_integrations",
-				"priority_support", "audit_trail",
-			},
+			tierLimits:   enterpriseLimits,
+			features:     enterpriseFeatures,
 		},
 	}
 
@@ -335,6 +172,30 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 			return fmt.Errorf("seed features for isp_billing plan %s: %w", p.planCode, err)
 		}
 		log.Printf("  isp_billing plan: %s (%s, KES %.0f)", p.name, p.billingCycle, p.price)
+	}
+
+	// Retire the previous hotspot/pppoe split plans (superseded by the unified
+	// ISP Billing line). Mark inactive + non-public so they drop out of the
+	// catalog while preserving any historical subscriptions referencing them.
+	retired := []string{
+		"HOTSPOT_STARTER", "HOTSPOT_PROFESSIONAL", "HOTSPOT_ENTERPRISE",
+		"PPPOE_STARTER", "PPPOE_PROFESSIONAL", "PPPOE_ENTERPRISE",
+		"HOTSPOT_STARTER_YEARLY", "HOTSPOT_PROFESSIONAL_YEARLY", "HOTSPOT_ENTERPRISE_YEARLY",
+		"PPPOE_STARTER_YEARLY", "PPPOE_PROFESSIONAL_YEARLY", "PPPOE_ENTERPRISE_YEARLY",
+	}
+	for _, key := range retired {
+		id := ispBillingPlanID(key)
+		if _, err := tx.SubscriptionPlan.Get(ctx, id); err != nil {
+			if ent.IsNotFound(err) {
+				continue
+			}
+			return fmt.Errorf("lookup retired isp_billing plan %s: %w", key, err)
+		}
+		if _, err := tx.SubscriptionPlan.UpdateOneID(id).
+			SetIsActive(false).SetIsPublic(false).SetUpdatedAt(now).Save(ctx); err != nil {
+			return fmt.Errorf("retire isp_billing plan %s: %w", key, err)
+		}
+		log.Printf("  isp_billing plan retired (inactive): %s", key)
 	}
 	return nil
 }
