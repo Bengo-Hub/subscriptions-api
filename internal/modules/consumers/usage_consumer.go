@@ -28,6 +28,12 @@ type usageEventMapping struct {
 	delta float64
 	// roleMetrics maps role strings to metric overrides for auth.user.created events
 	roleMetrics map[string]string
+	// amountField, when set, makes the recorded usage value the numeric amount carried
+	// in that payload field (instead of the unit delta). Used for revenue-style metering
+	// such as ISP hotspot sales (metric value = KES amount, summed over the period).
+	// The field may be a JSON number or a numeric string (the ISP outbox serialises
+	// Decimal amounts as strings).
+	amountField string
 }
 
 // usageSubjectMappings lists all billable event subjects published by microservices.
@@ -79,12 +85,29 @@ var usageSubjectMappings = map[string]usageEventMapping{
 
 	// ── MarketFlow ────────────────────────────────────────────────────────────
 	"marketflow.campaign.created": {metric: "campaigns", service: "marketflow"},
+
+	// ── ISP Billing ───────────────────────────────────────────────────────────
+	// isp.subscriber.created is emitted ONLY by the hotspot flow (subscriber_type
+	// "hotspot") and carries the purchase "amount". We record that amount as the
+	// usage value so the billing engine can SUM hotspot revenue for the cycle and
+	// apply the threshold-gated service charge (3% above KES 10k monthly sales).
+	"isp.subscriber.created": {metric: "hotspot_sales", service: "isp_billing", amountField: "amount"},
+	// isp.subscription.renewed is the PPPoE renewal signal (subscriber_type "pppoe").
+	// Counted (+1) into pppoe_subscribers so the per-subscriber/month fee has a usage
+	// source. NOTE: this counts PPPoE *renewals in the period*, which approximates —
+	// but is NOT identical to — the active-subscriber count, because the ISP service
+	// publishes no PPPoE create/deactivate events. See isp_billing.go for the caveat.
+	"isp.subscription.renewed": {metric: "pppoe_subscribers", service: "isp_billing"},
 }
 
 // usageEventPayload is the minimal common shape — all billable service events include tenant_id.
+// Some publishers (e.g. the ISP transactional outbox) use the shared-events envelope, which
+// keeps tenant_id at the top level but nests the business fields (amount, …) under "payload".
 type usageEventPayload struct {
-	TenantID string   `json:"tenant_id"`
-	Roles    []string `json:"roles"`
+	TenantID string             `json:"tenant_id"`
+	Roles    []string           `json:"roles"`
+	Amount   json.RawMessage    `json:"amount"`
+	Payload  *usageEventPayload `json:"payload"`
 }
 
 // UsageConsumer listens for billable events from microservices and records usage metrics.
@@ -152,6 +175,14 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 		return nil
 	}
 
+	// Events published via a shared outbox envelope wrap the business fields under a
+	// nested "payload" object. Fall back to it when the top-level fields are absent so
+	// tenant_id / amount resolve for both flat and enveloped publishers (e.g. the ISP
+	// transactional outbox emits {..., "payload": {"tenant_id": ..., "amount": ...}}).
+	if payload.TenantID == "" && payload.Payload != nil {
+		payload.TenantID = payload.Payload.TenantID
+	}
+
 	tenantID, err := uuid.Parse(payload.TenantID)
 	if err != nil {
 		c.log.Warn("usage event invalid tenant_id, skipping",
@@ -183,12 +214,59 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 		delta = 1.0
 	}
 
+	// Revenue-style metering: record the amount carried in the payload as the value
+	// (rather than a unit count), so the billing engine can SUM it for the cycle. A
+	// missing/zero amount is skipped — a sale with no amount carries no revenue.
+	if m.amountField != "" {
+		amt := payloadAmount(&payload, m.amountField)
+		if amt <= 0 {
+			c.log.Debug("usage event has no positive amount, skipping",
+				zap.String("metric", m.metric), zap.String("tenant_id", tenantID.String()))
+			return nil
+		}
+		delta = amt
+	}
+
 	for _, metric := range metrics {
 		if err := c.recordUsage(ctx, tenantID, metric, m.service, delta); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// payloadAmount extracts a numeric amount from the event, tolerating both a JSON number
+// and a numeric string (the ISP outbox serialises Decimal money as a string) and both the
+// flat and enveloped ({"payload": {...}}) shapes. Only the "amount" field is supported
+// today; field is accepted for forward-compatibility. Returns 0 when absent/unparseable.
+func payloadAmount(p *usageEventPayload, field string) float64 {
+	if field != "amount" {
+		return 0
+	}
+	raw := p.Amount
+	if len(raw) == 0 && p.Payload != nil {
+		raw = p.Payload.Amount
+	}
+	return parseJSONAmount(raw)
+}
+
+// parseJSONAmount parses a JSON number or numeric-string token into a float; 0 on failure.
+func parseJSONAmount(raw json.RawMessage) float64 {
+	if len(raw) == 0 {
+		return 0
+	}
+	// Try a bare number first, then a quoted numeric string.
+	var n float64
+	if err := json.Unmarshal(raw, &n); err == nil {
+		return n
+	}
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		if v, err := strconv.ParseFloat(strings.TrimSpace(s), 64); err == nil {
+			return v
+		}
+	}
+	return 0
 }
 
 func (c *UsageConsumer) recordUsage(ctx context.Context, tenantID uuid.UUID, metric, service string, value float64) error {

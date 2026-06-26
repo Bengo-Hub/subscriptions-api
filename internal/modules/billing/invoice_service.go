@@ -98,6 +98,29 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 	})
 	taxable += plan.BasePrice
 
+	// ISP Billing usage charges (service_tag "isp_billing"): threshold-gated service
+	// charge on monthly hotspot sales + per-active-PPPoE-subscriber fee, read from the
+	// plan's tier_limits. No-op for every non-ISP plan (guarded by IsISPBillingPlan), so
+	// existing billing is unchanged. The base_price line above already covers the KES 500
+	// base. VAT is applied exclusive, mirroring the other taxable lines.
+	if IsISPBillingPlan(plan) {
+		ispLines, err := computeISPUsageLines(ctx, s.orm, sub, plan)
+		if err != nil {
+			// Don't fail the whole invoice on a usage-aggregation error — log and bill the
+			// deterministic base. The next cycle reconciles once the source recovers.
+			s.log.Warn("invoice: ISP usage charge computation failed; billing base only", zap.Error(err))
+		}
+		for _, il := range ispLines {
+			lines = append(lines, map[string]any{
+				"description": il.Description,
+				"quantity":    il.Quantity,
+				"unit_price":  il.UnitPrice,
+				"tax_rate":    s.vatRate,
+			})
+			taxable += il.Subtotal
+		}
+	}
+
 	// One-time setup/onboarding fee — billed once on the first invoice only.
 	// Guarded by setup_fee_charged_at (nil = not yet charged); never recurs on renewal.
 	if sub.SetupFeeAmount > 0 && sub.SetupFeeChargedAt == nil {
