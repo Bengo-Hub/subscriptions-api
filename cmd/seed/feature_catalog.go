@@ -56,6 +56,7 @@ var featureCatalog = func() []catalogEntry {
 		portal     = "transporter_portal"
 		isp        = "isp_billing"
 		projects   = "projects"
+		library    = "library"
 		platform   = "platform"
 	)
 	entries := []catalogEntry{
@@ -250,20 +251,39 @@ var featureCatalog = func() []catalogEntry {
 		feat("analytics", portal, "Transporter Portal", "Advanced Fleet Analytics"),
 		lim("history_days", portal, "Limits", "Ticket History", "days"),
 
-		// ─── ISP Billing ──────────────────────────────────────────────────────
+		// ─── ISP Billing (hotspot + PPPoE; modeled on Centipid) ───────────────
 		feat("hotspot_management", isp, "ISP", "Hotspot Management"),
 		feat("pppoe_management", isp, "ISP", "PPPoE Management"),
 		feat("captive_portal", isp, "ISP", "Captive Portal"),
 		feat("radius_auth", isp, "ISP", "RADIUS Authentication"),
+		feat("voucher_system", isp, "ISP", "Voucher Management"),
 		feat("bandwidth_limiting", isp, "ISP", "Bandwidth Limiting"),
-		feat("fup_management", isp, "ISP", "Fair Usage Policy Management"),
-		feat("voucher_system", isp, "ISP", "Voucher System"),
-		feat("multi_router", isp, "ISP", "Multi-Router Support"),
-		feat("white_label_portal", isp, "ISP", "White-Label Captive Portal"),
+		feat("fup_management", isp, "ISP", "Fair Usage Policy (FUP)"),
+		feat("customer_management", isp, "ISP", "Customer Management"),
+		feat("multi_router", isp, "ISP", "Multi-Router (Unlimited MikroTiks)"),
+		feat("remote_winbox", isp, "ISP", "Remote WinBox Management"),
+		feat("mpesa_integration", isp, "ISP", "M-Pesa Integration"),
+		feat("invoice_generation", isp, "ISP", "Automated Invoicing"),
+		feat("realtime_notifications", isp, "ISP", "Real-time Notifications"),
+		feat("basic_analytics", isp, "ISP", "Basic Analytics"),
+		feat("advanced_analytics", isp, "ISP", "Advanced Analytics"),
+		feat("performance_reports", isp, "ISP", "Performance Reports"),
+		feat("expense_tracking", isp, "ISP", "Expense Tracking"),
+		feat("custom_domain", isp, "ISP", "Custom Domain"),
+		feat("white_label", isp, "ISP", "White-Label Captive Portal"),
+		feat("api_access", isp, "ISP", "API Access"),
+		feat("custom_integrations", isp, "ISP", "Custom Integrations"),
+		feat("priority_support", isp, "ISP", "Priority Support"),
+		feat("audit_trail", isp, "ISP", "Audit Trail"),
 		lim("max_routers", isp, "Limits", "Routers", ""),
-		lim("max_customers", isp, "Limits", "Customers", ""),
-		meteredLim("max_sms_per_month", isp, "Limits", "SMS", "/ month", "notifications.sms.sent"),
+		lim("max_customers", isp, "Limits", "Customers / Subscribers", ""),
+		lim("max_users", isp, "Limits", "Staff Users", ""),
+		// PPPoE active subscribers — drives the per-subscriber/month fee
+		// (Centipid $0.25 ≈ KES 35), metered via the isp.subscriber.created event.
+		meteredLim("max_pppoe_subscribers", isp, "Limits", "PPPoE Subscribers", "/ month", "isp.subscriber.created"),
 		meteredLim("max_vouchers_per_month", isp, "Limits", "Vouchers", "/ month", ""),
+		// NOTE: SMS/WhatsApp are prepaid credit bundles in notifications-api
+		// (TenantCredit), NOT plan limits — so no max_sms_per_month here.
 
 		// ─── Projects & Invoicing ─────────────────────────────────────────────
 		feat("project_management", projects, "Projects", "Project Management"),
@@ -311,6 +331,17 @@ var featureCatalog = func() []catalogEntry {
 		feat("sms_bundle_500", platform, "Add-ons", "SMS Bundle (500)"),
 		feat("ai_credits_topup", marketflow, "Add-ons", "AI Credits Top-up"),
 		feat("extra_transporter_portal", truload, "Add-ons", "Extra Transporter Portal Seat"),
+
+		// ─── Library Management ───────────────────────────────────────────────
+		feat("library_catalog", library, "Library", "Catalog & OPAC Search"),
+		feat("library_circulation", library, "Library", "Circulation (Checkout / Return / Renew)"),
+		feat("library_holds", library, "Library", "Holds & Reservations"),
+		feat("library_members", library, "Library", "Member Management"),
+		feat("library_fines", library, "Library", "Fines & Fees"),
+		feat("library_ebooks", library, "Library", "E-books & Controlled Digital Lending"),
+		lim("max_library_titles", library, "Limits", "Catalog Titles", ""),
+		lim("max_library_members", library, "Limits", "Library Members", ""),
+		lim("max_library_branches", library, "Limits", "Library Branches", ""),
 	}
 	return entries
 }()

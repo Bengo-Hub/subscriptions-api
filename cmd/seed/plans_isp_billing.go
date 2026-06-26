@@ -17,11 +17,15 @@ import (
 // that run hotspot AND/OR PPPoE networks and use the platform to manage
 // customers, routers, billing, vouchers, and analytics.
 //
-// Pricing is the single source of truth in shared-docs/CODEVERTEX-PRICING-MODEL.md
-// §6: ONE "ISP Billing" service line with three tiers —
-//   Starter 3,500 · Professional 8,000 · Enterprise 16,000 (KES / month).
-// Annual = 10× monthly (≈16.7% discount). A single product line covers both
-// hotspot and PPPoE (the ISP provider's org type decides which features they use).
+// PRIMARY billing model (Centipid-aligned, centipidbilling.com): PAY-AS-YOU-GROW
+// via the SC_ISP_BILLING service charge (cmd/seed/service_charges.go) — 3% of
+// hotspot revenue, minimum KES 500/month, + KES 35 (~$0.25) per active PPPoE
+// subscriber/month. That is the default for ISP providers.
+//
+// The flat monthly/annual tiers below are OPTIONAL fixed-price alternatives for
+// ISPs that prefer predictable billing over the % service charge (reference band
+// from CODEVERTEX-PRICING-MODEL.md §6: Starter 3,500 / Professional 8,000 /
+// Enterprise 16,000 KES/mo; annual = 10×). One line covers both hotspot and PPPoE.
 //
 // SMS/WhatsApp are NOT plan limits/features — they are prepaid credit bundles in
 // notifications-api (§8), available to any tenant regardless of tier. So the plans

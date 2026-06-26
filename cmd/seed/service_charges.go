@@ -29,6 +29,7 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 	minCharge50 := 50.0
 	minCharge5 := 5.0
 	minCharge2 := 2.0
+	minCharge500 := 500.0
 	maxCharge5000 := 5000.0
 	maxCharge2000 := 2000.0
 	maxCharge500 := 500.0
@@ -99,6 +100,22 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 			chargeType:  servicechargeplan.ChargeTypeFIXED_PER_TRANSACTION,
 			chargeValue: 50.0,
 			services:    nil, // any service
+		},
+		{
+			// ISP Billing — modeled on Centipid (centipidbilling.com): the platform
+			// takes 3% of the ISP's HOTSPOT revenue, with a KES 500/month minimum
+			// (so very small ISPs still pay the 500 floor). One plan covers both
+			// hotspot and PPPoE; PPPoE additionally bills a per-active-subscriber/month
+			// fee (KES 35 ≈ $0.25, the `pppoe_per_subscriber_fee` catalog limit) on top
+			// of this charge. 14-day free trial; unlimited routers/users.
+			code:        "SC_ISP_BILLING",
+			name:        "ISP Billing — 3% of Hotspot Revenue",
+			description: "Pay-as-you-grow for ISP providers: 3% of hotspot revenue, minimum KES 500/month. Covers hotspot + PPPoE management (unlimited routers & users, vouchers, captive portal, remote WinBox, payment + SMS gateways). PPPoE adds KES 35 per active subscriber/month. 14-day free trial.",
+			chargeType:  servicechargeplan.ChargeTypePERCENTAGE,
+			chargeValue: 3.0,
+			minCharge:   &minCharge500,
+			services:    []string{"isp_billing"},
+			isDefault:   true,
 		},
 		{
 			code:        "SC_TRULOAD_10PCT",
