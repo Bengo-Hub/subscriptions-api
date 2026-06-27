@@ -26,6 +26,7 @@ func seedSetupFees(ctx context.Context, tx *ent.Tx) error {
 		"inventory":   1500,  // Inventory standalone setup
 		"ordering":    1500,  // Ordering standalone setup
 		"isp_billing": 3000,  // ISP setup
+		"library":     10000, // Library implementation: cataloguing, member import, branch setup
 	}
 
 	for tag, fee := range byServiceTag {
@@ -62,6 +63,20 @@ func seedSetupFees(ctx context.Context, tx *ent.Tx) error {
 		return err
 	} else {
 		log.Printf("  setup fee: TRANSPORTER_* plans → KES 3000 (%d plans)", n)
+	}
+
+	// Library one-time perpetual licenses carry an implementation setup fee too (explicit
+	// product requirement) — the byServiceTag loop above skips ONE_TIME plans, so set it here.
+	if n, err := tx.SubscriptionPlan.Update().
+		Where(
+			subscriptionplan.PlanCodeHasPrefix("LIBRARY_"),
+			subscriptionplan.BillingCycleEQ("ONE_TIME"),
+		).
+		SetSetupFee(15000).
+		Save(ctx); err != nil {
+		return err
+	} else {
+		log.Printf("  setup fee: LIBRARY_*_ONE_TIME plans → KES 15000 (%d plans)", n)
 	}
 
 	return nil

@@ -244,6 +244,19 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			onetimePrice:  150000,
 			sortOrder:     70,
 		},
+		// Library Management
+		{
+			id:            uuid.MustParse("10000000-0000-0000-0000-000000000071"),
+			code:          "library",
+			name:          "Library Management",
+			description:   "Standalone library/ILS: catalog & OPAC, circulation (checkout/return/renew), holds, members, fines, e-book lending, barcode, stocktake, and reports.",
+			category:      product.CategoryProduct,
+			isBaseService: false,
+			monthlyPrice:  1500,
+			yearlyPrice:   16500,
+			onetimePrice:  150000,
+			sortOrder:     71,
+		},
 	}
 
 	for _, p := range products {

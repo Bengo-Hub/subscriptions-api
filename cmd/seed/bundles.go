@@ -84,6 +84,22 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 			},
 			sortOrder: 3,
 		},
+		{
+			id:          uuid.MustParse("20000000-0000-0000-0000-000000000004"),
+			code:        "library",
+			name:        "BengoBox Library",
+			description: "Standalone library/ILS: catalog & OPAC, circulation, holds, members, fines, and e-book lending. Treasury included for fines, membership fees, and e-book sales.",
+			products: []schema.BundleProduct{
+				{ProductCode: "library"},
+				{ProductCode: "treasury"},
+			},
+			tiers: []schema.BundleTier{
+				{PlanCode: "LIBRARY_STARTER", MonthlyPrice: 1500, YearlyPrice: 16500},
+				{PlanCode: "LIBRARY_GROWTH", MonthlyPrice: 4000, YearlyPrice: 44000},
+				{PlanCode: "LIBRARY_PROFESSIONAL", MonthlyPrice: 9000, YearlyPrice: 99000},
+			},
+			sortOrder: 4,
+		},
 	}
 
 	for _, b := range bundles {

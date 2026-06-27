@@ -145,6 +145,11 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed projects plans: %w", err)
 	}
 
+	// 2.15 Seed Library Management standalone plans (monthly/annual/one-time, 3 tiers)
+	if err := seedLibraryPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed library plans: %w", err)
+	}
+
 	// 3. Seed bundles (delivery, pos-suite, complete)
 	if err := seedBundles(ctx, tx); err != nil {
 		return fmt.Errorf("seed bundles: %w", err)
