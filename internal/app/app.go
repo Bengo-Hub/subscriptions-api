@@ -295,6 +295,17 @@ func New(ctx context.Context) (*App, error) {
 	paymentConsumer := consumers.NewTreasuryPaymentConsumer(log, ormClient)
 	paymentConsumer.SetSubscriptionService(subscriptionSvc)
 
+	// Usage consumer with per-event idempotency so JetStream redeliveries don't double-count
+	// rolling usage metrics. Schema-ensure is best-effort: on failure metering still runs
+	// (fail-open) rather than blocking billable event ingestion.
+	usageConsumer := consumers.NewUsageConsumer(log, dbPool, ormClient, redisClient)
+	idemStore := eventslib.NewIdempotencyStore(sqlDB)
+	if err := idemStore.EnsureSchema(context.Background()); err != nil {
+		log.Warn("usage idempotency schema ensure failed; metering will run without dedup", zap.Error(err))
+	} else {
+		usageConsumer.SetIdempotency(idemStore)
+	}
+
 	return &App{
 		cfg:             cfg,
 		log:             log,
@@ -305,7 +316,7 @@ func New(ctx context.Context) (*App, error) {
 		orm:             ormClient,
 		outboxPublisher: outboxPublisher,
 		tenantConsumer:  consumers.NewTenantCreatedConsumer(log, subscriptionSvc),
-		usageConsumer:   consumers.NewUsageConsumer(log, dbPool, ormClient, redisClient),
+		usageConsumer:   usageConsumer,
 		paymentConsumer: paymentConsumer,
 		subscriptionSvc: subscriptionSvc,
 		treasuryClient:  treasuryClient,

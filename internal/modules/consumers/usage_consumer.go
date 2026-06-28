@@ -117,6 +117,7 @@ type UsageConsumer struct {
 	orm   *ent.Client
 	cache *redis.Client
 	js    nats.JetStreamContext
+	idem  *eventslib.IdempotencyStore
 }
 
 // NewUsageConsumer creates a new UsageConsumer.
@@ -128,6 +129,13 @@ func NewUsageConsumer(log *zap.Logger, db *pgxpool.Pool, orm *ent.Client, cache 
 		cache: cache,
 	}
 }
+
+// SetIdempotency wires the shared-events IdempotencyStore so each event is metered at most
+// once even if JetStream redelivers it (Nak/crash/restart). Usage metering increments a
+// rolling counter, so without this a redelivery would double-count. Fail-open: when the
+// store is unset or the event carries no id, metering proceeds (better to risk a rare
+// double than to silently drop billable usage).
+func (c *UsageConsumer) SetIdempotency(idem *eventslib.IdempotencyStore) { c.idem = idem }
 
 // Start subscribes to all billable event subjects and processes them until ctx is cancelled.
 func (c *UsageConsumer) Start(ctx context.Context, js nats.JetStreamContext) error {
@@ -144,7 +152,7 @@ func (c *UsageConsumer) Start(ctx context.Context, js nats.JetStreamContext) err
 			js,
 			subj,
 			func(msg *nats.Msg) {
-				if err := c.handle(ctx, msg, m); err != nil {
+				if err := c.handle(ctx, msg, m, durableName); err != nil {
 					c.log.Error("failed to handle usage event",
 						zap.String("subject", subj),
 						zap.Error(err),
@@ -168,7 +176,20 @@ func (c *UsageConsumer) Start(ctx context.Context, js nats.JetStreamContext) err
 	return nil
 }
 
-func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventMapping) error {
+func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventMapping, consumerName string) error {
+	// Idempotency: skip events already metered by this consumer (JetStream redelivery would
+	// otherwise double-count the rolling usage). Fail-open when the store is unset or the
+	// event has no id, so billable usage is never silently dropped.
+	var eventID uuid.UUID
+	if c.idem != nil {
+		if id, err := eventslib.EventIDFromMsg(msg); err == nil {
+			eventID = id
+			if done, perr := c.idem.AlreadyProcessed(ctx, eventID, consumerName); perr == nil && done {
+				return nil
+			}
+		}
+	}
+
 	var payload usageEventPayload
 	if err := json.Unmarshal(msg.Data, &payload); err != nil || payload.TenantID == "" {
 		c.log.Warn("usage event missing tenant_id, skipping", zap.String("metric", m.metric))
@@ -230,6 +251,15 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 	for _, metric := range metrics {
 		if err := c.recordUsage(ctx, tenantID, metric, m.service, delta); err != nil {
 			return err
+		}
+	}
+
+	// Mark processed only after the usage was recorded — so a recordUsage failure (Nak →
+	// redelivery) re-runs rather than being skipped. At-least-once with a crash-window double
+	// instead of double-on-every-redelivery.
+	if c.idem != nil && eventID != uuid.Nil {
+		if err := c.idem.MarkProcessed(ctx, eventID, consumerName); err != nil {
+			c.log.Warn("mark usage event processed failed", zap.Error(err))
 		}
 	}
 	return nil
