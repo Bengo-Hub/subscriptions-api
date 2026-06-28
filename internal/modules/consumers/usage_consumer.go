@@ -146,11 +146,20 @@ func (c *UsageConsumer) Start(ctx context.Context, js nats.JetStreamContext) err
 		m := mapping
 		durableName := fmt.Sprintf("subscription-service-usage-%s",
 			strings.ReplaceAll(subj, ".", "-"))
+		// STREAM = the source stream carrying this subject, derived from the subject
+		// prefix (e.g. "pos.sale.finalized" -> "pos"). Used by the helper only for the
+		// one-time self-heal migration of a stale non-deliver-group durable.
+		stream := subj
+		if i := strings.IndexByte(subj, '.'); i > 0 {
+			stream = subj[:i]
+		}
 
-		eventslib.SubscribeWithRebind(
+		eventslib.SubscribeQueueWithRebind(
 			c.log,
 			js,
+			stream,
 			subj,
+			durableName,
 			func(msg *nats.Msg) {
 				if err := c.handle(ctx, msg, m, durableName); err != nil {
 					c.log.Error("failed to handle usage event",

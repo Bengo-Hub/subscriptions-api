@@ -54,10 +54,12 @@ func NewTenantCreatedConsumer(log *zap.Logger, svc *subscriptions.Service) *Tena
 func (c *TenantCreatedConsumer) Start(ctx context.Context, js nats.JetStreamContext) error {
 	// Ensure the stream exists — if auth-service publishes to a shared stream we just subscribe.
 	// Use a durable consumer so we resume after restart without missing events.
-	eventslib.SubscribeWithRebind(
+	eventslib.SubscribeQueueWithRebind(
 		c.log,
 		js,
+		"auth",
 		AuthTenantCreatedSubject,
+		"subscription-service-tenant-provisioner",
 		func(msg *nats.Msg) {
 			if err := c.handle(ctx, msg); err != nil {
 				c.log.Error("failed to handle tenant.created event", zap.Error(err))

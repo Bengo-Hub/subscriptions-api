@@ -73,10 +73,12 @@ func (c *TreasuryPaymentConsumer) SetSubscriptionService(svc *subscriptions.Serv
 
 // Start subscribes to treasury.payment.succeeded and blocks until ctx is cancelled.
 func (c *TreasuryPaymentConsumer) Start(ctx context.Context, js nats.JetStreamContext) error {
-	eventslib.SubscribeWithRebind(
+	eventslib.SubscribeQueueWithRebind(
 		c.log,
 		js,
+		"treasury",
 		treasuryPaymentSucceededSubject,
+		"subscription-service-treasury-payments",
 		func(msg *nats.Msg) {
 			if err := c.handle(ctx, msg); err != nil {
 				c.log.Error("failed to handle treasury.payment.succeeded", zap.Error(err))
