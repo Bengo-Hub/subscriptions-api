@@ -16,6 +16,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptioncredit"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
+	"github.com/bengobox/subscription-service/internal/payref"
 )
 
 // InvoiceService generates platform→tenant subscription invoices in treasury-api and
@@ -297,8 +298,12 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 	//    subscription via the existing payment.succeeded consumer, and mints a fresh
 	//    Paystack session on each visit (durable link).
 	payURL := ""
+	// Service-identifiable Paystack reference (SUB-{slug}-{hex}); the subscription UUID travels in
+	// metadata.entity_id. Safe: the renewal consumer reconciles by tenant_id + plan_code, and the
+	// invoice is settled via metadata.invoice_id — neither depends on this reference_id value.
+	payRef := payref.Build("SUB", "", sub.TenantID, sub.ID)
 	intentReq := map[string]any{
-		"reference_id":   sub.ID.String(),
+		"reference_id":   payRef,
 		"reference_type": "subscription",
 		"payment_method": "pending",
 		"currency":       currency,
@@ -307,6 +312,8 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 		"description":    fmt.Sprintf("Subscription invoice %s", inv.InvoiceNumber),
 		"customer_email": customerEmail,
 		"metadata": map[string]any{
+			"service":        "subscriptions",
+			"entity_id":      sub.ID.String(),
 			"tenant_id":      sub.TenantID.String(),
 			"plan_code":      planCode,
 			"invoice_id":     inv.ID,
@@ -324,7 +331,7 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 			q.Set("tenant", sub.TenantID.String())
 			q.Set("amount", fmt.Sprintf("%.2f", total))
 			q.Set("currency", currency)
-			q.Set("reference_id", sub.ID.String())
+			q.Set("reference_id", payRef)
 			q.Set("reference_type", "subscription")
 			q.Set("invoice_number", inv.InvoiceNumber)
 			if customerEmail != "" {

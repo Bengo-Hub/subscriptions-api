@@ -86,6 +86,11 @@ var usageSubjectMappings = map[string]usageEventMapping{
 	// ── MarketFlow ────────────────────────────────────────────────────────────
 	"marketflow.campaign.created": {metric: "campaigns", service: "marketflow"},
 
+	// ── Library ───────────────────────────────────────────────────────────────
+	"library.member.registered": {metric: "library_members", service: "library"},
+	"library.bib.created":       {metric: "library_titles", service: "library"},
+	"library.branch.created":    {metric: "library_branches", service: "library"},
+
 	// ── ISP Billing ───────────────────────────────────────────────────────────
 	// isp.subscriber.created is emitted ONLY by the hotspot flow (subscriber_type
 	// "hotspot") and carries the purchase "amount". We record that amount as the
@@ -529,6 +534,9 @@ func usageFindLimitKey(metricType string, planLimits map[string]any) string {
 		"emails_sent":       "email_notifications_per_day",
 		"push_sent":         "sms_notifications_per_day",
 		"webhooks":          "webhook_calls_per_day",
+		"library_members":   "max_library_members",
+		"library_titles":    "max_library_titles",
+		"library_branches":  "max_library_branches",
 	}
 
 	if key, ok := candidates[mt]; ok {

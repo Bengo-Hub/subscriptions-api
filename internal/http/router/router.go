@@ -210,6 +210,9 @@ func New(
 			// Service charge plans (GET plans moved to public; tenant-specific remains protected)
 			if serviceChargeHandler != nil {
 				r.Get("/tenants/{tenantID}/service-charges", serviceChargeHandler.GetTenantServiceCharges)
+				// S2S: compute the per-transaction commission for a single payment — used by
+				// treasury-api to derive service_charge_amount at intent creation.
+				r.Get("/tenants/{tenantID}/service-charge/compute", serviceChargeHandler.ComputeTenantServiceCharge)
 			}
 
 			// RBAC routes

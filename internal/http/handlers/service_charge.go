@@ -3,13 +3,17 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
+	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 )
 
 // ServiceChargeHandler handles service charge plan endpoints.
@@ -169,6 +173,103 @@ func (h *ServiceChargeHandler) GetTenantServiceCharges(w http.ResponseWriter, r 
 		"data":  charges,
 		"total": len(charges),
 	})
+}
+
+// ComputeTenantServiceCharge resolves the platform's per-transaction commission for a single
+// payment, so treasury-api can store service_charge_amount/net_amount WITHOUT each calling service
+// re-deriving the rate. S2S, tenant-scoped.
+//
+//	GET /api/v1/internal/tenants/{tenantID}/service-charge/compute?service={src}&amount={gross}
+//
+// Only PER-TRANSACTION service-charge plans apply (PERCENTAGE clamped to [min,max], or
+// FIXED_PER_TRANSACTION). Tenants billed by a monthly subscription instead (e.g. ISP: KES500 +
+// 3% of monthly sales + KES35/PPPoE) carry NO product-level service_charge_plan, so this correctly
+// returns applies=false for them — their commission is billed monthly, never per payment.
+// Fails CLOSED: any ambiguity returns applies=false / zero so a tenant is never over-charged.
+func (h *ServiceChargeHandler) ComputeTenantServiceCharge(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenantID"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant ID"})
+		return
+	}
+	service := r.URL.Query().Get("service")
+	gross, err := strconv.ParseFloat(r.URL.Query().Get("amount"), 64)
+	if err != nil || gross <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid amount"})
+		return
+	}
+
+	// Tenant-scoped, active product subscriptions that reference a service-charge plan.
+	subs, err := h.db.ProductSubscription.Query().
+		Where(
+			productsubscription.HasTenantSubscriptionWith(tenantsubscription.TenantID(tenantID)),
+			productsubscription.StatusEQ(productsubscription.StatusActive),
+		).
+		WithServiceChargePlan().
+		All(r.Context())
+	if err != nil {
+		h.log.Error("compute service charge: query failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	for _, ps := range subs {
+		sc := ps.Edges.ServiceChargePlan
+		if sc == nil || !sc.IsActive {
+			continue
+		}
+		if !serviceApplies(sc.ApplicableServices, service) {
+			continue
+		}
+		charge, pct := computeCharge(sc, gross)
+		if charge < 0 {
+			charge = 0
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"applies":            true,
+			"charge_amount":      strconv.FormatFloat(charge, 'f', 2, 64),
+			"charge_percentage":  pct,
+			"plan_code":          sc.Code,
+			"charge_type":        string(sc.ChargeType),
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"applies": false, "charge_amount": "0.00", "plan_code": ""})
+}
+
+// serviceApplies reports whether a plan whose applicable_services list is `applicable` covers
+// `service`. An empty/nil list means "all services".
+func serviceApplies(applicable []string, service string) bool {
+	if len(applicable) == 0 {
+		return true
+	}
+	for _, s := range applicable {
+		if strings.EqualFold(strings.TrimSpace(s), strings.TrimSpace(service)) {
+			return true
+		}
+	}
+	return false
+}
+
+// computeCharge returns (charge, percentageApplied) for a per-transaction plan. PERCENTAGE is
+// clamped to [min_charge, max_charge] when set; FIXED_PER_TRANSACTION is the flat value.
+func computeCharge(sc *ent.ServiceChargePlan, gross float64) (float64, float64) {
+	switch sc.ChargeType {
+	case servicechargeplan.ChargeTypeFIXED_PER_TRANSACTION:
+		return sc.ChargeValue, 0
+	case servicechargeplan.ChargeTypePERCENTAGE:
+		charge := gross * sc.ChargeValue / 100.0
+		if sc.MinCharge != nil && charge < *sc.MinCharge {
+			charge = *sc.MinCharge
+		}
+		if sc.MaxCharge != nil && *sc.MaxCharge > 0 && charge > *sc.MaxCharge {
+			charge = *sc.MaxCharge
+		}
+		return charge, sc.ChargeValue
+	default:
+		return 0, 0
+	}
 }
 
 // serviceChargePlanInput is the request body for create/update service charge plan.
