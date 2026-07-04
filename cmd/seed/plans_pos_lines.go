@@ -44,9 +44,13 @@ func seedPOSProductLinePlans(ctx context.Context, tx *ent.Tx) error {
 	}
 
 	// Point-of-sale essentials present in every tier (incl. the PAYG micro path).
+	// Every POS business runs on inventory, so basic warehouse management (real-time stock,
+	// stock adjustments, stock takes, low-stock alerts) is part of the core set across all
+	// tiers — including Starter — not a paid upgrade.
 	core := []string{
 		"pos_terminal", "order_management", "receipt_printing", "daily_reports",
 		"shift_reports", "mpesa_pos",
+		"stock_tracking", "low_stock_alerts",
 	}
 	with := func(extra ...string) []string {
 		return append(append([]string{}, core...), extra...)
