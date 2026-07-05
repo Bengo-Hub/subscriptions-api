@@ -522,7 +522,7 @@ func seedBundlePlans(ctx context.Context, tx *ent.Tx) error {
 				// ERP Professional (full suite)
 				"hr_management", "payroll", "basic_procurement", "leave_management",
 				"asset_management", "budgeting", "advanced_reports", "multi_department",
-				"approval_workflows", "custom_workflows",
+				"approval_workflows", "custom_workflows", "staff_fund_from_salary",
 				// Gateway codes
 				"basic_inventory_access", "basic_logistics_access", "basic_treasury_access",
 			},

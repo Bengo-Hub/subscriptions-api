@@ -188,6 +188,9 @@ var featureCatalog = func() []catalogEntry {
 		feat("multi_department", erp, "ERP", "Multi-Department Structure"),
 		feat("approval_workflows", erp, "ERP", "Approval Workflows"),
 		feat("custom_workflows", erp, "ERP", "Custom Workflows"),
+		// Staff take goods on credit/layaway at POS and repay via payroll deductions
+		// (POS↔ERP staff-purchase recoverable). Top-tier only.
+		feat("staff_fund_from_salary", erp, "ERP", "Staff Fund-from-Salary Credit"),
 		lim("max_employees", erp, "Limits", "Employees", ""),
 		lim("max_departments", erp, "Limits", "Departments", ""),
 

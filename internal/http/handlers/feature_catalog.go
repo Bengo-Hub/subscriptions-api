@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -10,6 +11,7 @@ import (
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/featuredefinition"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 )
 
 // FeatureCatalogHandler serves the platform-wide feature/limit catalog that
@@ -40,6 +42,46 @@ type featureDefinitionDTO struct {
 	NatsEvent     string    `json:"natsEvent,omitempty"`
 	SortOrder     int       `json:"sortOrder"`
 	IsActive      bool      `json:"isActive"`
+	// MinPlanCode / MinTierLabel = the cheapest active plan that unlocks this feature, computed
+	// from the plans' feature sets. Lets any UI render "Upgrade to <tier>" + deep-link to the
+	// pricing page without a hardcoded per-app feature→tier map. Empty when no plan grants it.
+	MinPlanCode  string `json:"minPlanCode,omitempty"`
+	MinTierLabel string `json:"minTierLabel,omitempty"`
+}
+
+// minPlan is the cheapest plan that unlocks a given feature code.
+type minPlan struct {
+	code  string
+	name  string
+	tier  int
+	price float64
+}
+
+// minUnlockingPlans builds featureCode → cheapest unlocking plan, by lowest (tier_order, base_price)
+// among active plans that include the feature. Powers the shared upgrade dialog's "Upgrade to X".
+func (h *FeatureCatalogHandler) minUnlockingPlans(ctx context.Context) map[string]minPlan {
+	res := map[string]minPlan{}
+	plans, err := h.orm.SubscriptionPlan.Query().
+		Where(subscriptionplan.IsActive(true)).
+		WithFeatures().
+		All(ctx)
+	if err != nil {
+		h.log.Warn("min-unlocking-plans: load plans failed (feature→tier omitted)", zap.Error(err))
+		return res
+	}
+	for _, p := range plans {
+		for _, pf := range p.Edges.Features {
+			if !pf.IsIncluded {
+				continue
+			}
+			cand := minPlan{code: p.PlanCode, name: p.Name, tier: p.TierOrder, price: p.BasePrice}
+			cur, ok := res[pf.FeatureCode]
+			if !ok || cand.tier < cur.tier || (cand.tier == cur.tier && cand.price < cur.price) {
+				res[pf.FeatureCode] = cand
+			}
+		}
+	}
+	return res
 }
 
 func toFeatureDefinitionDTO(e *ent.FeatureDefinition) featureDefinitionDTO {
@@ -98,10 +140,15 @@ func (h *FeatureCatalogHandler) ListCatalog(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	minPlans := h.minUnlockingPlans(ctx)
 	items := make([]featureDefinitionDTO, len(defs))
 	services := map[string]bool{}
 	for i, d := range defs {
 		items[i] = toFeatureDefinitionDTO(d)
+		if mp, ok := minPlans[d.FeatureCode]; ok {
+			items[i].MinPlanCode = mp.code
+			items[i].MinTierLabel = mp.name
+		}
 		services[d.ServiceTag] = true
 	}
 	serviceTags := make([]string, 0, len(services))

@@ -62,7 +62,7 @@ func seedERPPlans(ctx context.Context, tx *ent.Tx) error {
 			price:        10000.0,
 			tierOrder:    3,
 			tierLimits:   map[string]any{"max_employees": -1, "max_users": -1, "max_departments": -1},
-			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support"},
+			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support", "staff_fund_from_salary"},
 		},
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("erp:STARTER_YEARLY")),
@@ -95,7 +95,7 @@ func seedERPPlans(ctx context.Context, tx *ent.Tx) error {
 			price:        110000.0,
 			tierOrder:    3,
 			tierLimits:   map[string]any{"max_employees": -1, "max_users": -1, "max_departments": -1},
-			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support"},
+			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support", "staff_fund_from_salary"},
 		},
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("erp:ONE_TIME")),
@@ -106,7 +106,7 @@ func seedERPPlans(ctx context.Context, tx *ent.Tx) error {
 			price:        150000.0,
 			tierOrder:    4,
 			tierLimits:   map[string]any{"max_employees": -1, "max_users": -1, "max_departments": -1},
-			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support"},
+			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support", "staff_fund_from_salary"},
 		},
 	}
 
