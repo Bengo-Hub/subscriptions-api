@@ -63,7 +63,9 @@ func seedPOSProductLinePlans(ctx context.Context, tx *ent.Tx) error {
 			name: "Codevertex POS Starter (Hospitality)", description: "Cafes, small restaurants & bars turning over up to ~KES 300k/month. POS, M-Pesa Till, shift management, standard receipts, basic inventory, table management & loyalty.",
 			billingCycle: "MONTHLY", price: 2500, setupFee: 5000, tierOrder: 1,
 			tierLimits: map[string]any{"max_devices": 2, "max_cashiers": 3, "max_tables": 20},
-			features:   with("table_management", "loyalty_program", "etims_integration"),
+			// kds is core operations for hospitality/quick_service outlets (kitchen/bar ticket
+			// routing), not a paid upgrade — every tier including Starter gets it.
+			features: with("table_management", "loyalty_program", "etims_integration", "kds"),
 		},
 		{
 			id: uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:hosp:PRO")), planCode: "POS_HOSP_PRO",
