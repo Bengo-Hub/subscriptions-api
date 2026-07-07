@@ -51,6 +51,9 @@ type CreateInput struct {
 	BundleCode     string    `json:"bundle_code,omitempty"`
 	TrialDays      int       `json:"trial_days,omitempty"`
 	ReferredByCode string    `json:"referred_by_code,omitempty"` // Type-A referral: code of the referrer
+	// BillingCycle is the tenant's chosen billing period (MONTHLY/SEMI_ANNUAL/ANNUAL).
+	// Empty defaults to the plan's cycle. SEMI_ANNUAL/ANNUAL waive the one-time setup fee.
+	BillingCycle string `json:"billing_cycle,omitempty"`
 	// TenantSlug/TenantName let the creator (auth-api S2S at signup, or the
 	// auth.tenant.created consumer) seed the local tenant projection on demand,
 	// avoiding an FK violation when the async tenant sync has not run yet.
@@ -67,6 +70,9 @@ type CreateInput struct {
 type ChangePlanInput struct {
 	TenantID    uuid.UUID `json:"tenant_id"`
 	NewPlanCode string    `json:"new_plan_code"`
+	// BillingCycle optionally switches the billing period with the plan change
+	// (MONTHLY/SEMI_ANNUAL/ANNUAL); empty keeps the current cycle.
+	BillingCycle string `json:"billing_cycle,omitempty"`
 }
 
 // CancelInput defines the payload for cancellation.
@@ -79,6 +85,13 @@ type CancelInput struct {
 type RenewInput struct {
 	TenantID uuid.UUID
 	PlanCode string // optional: renew on a different plan
+	// BillingCycle optionally switches the billing period on renewal
+	// (MONTHLY/SEMI_ANNUAL/ANNUAL); empty keeps the current cycle.
+	BillingCycle string
+	// IntentID is the treasury payment intent that triggered this renewal (from the
+	// payment.succeeded event). When it matches the subscription's pending_intent_id
+	// metadata, the billing period/plan chosen at checkout is applied atomically.
+	IntentID string
 }
 
 // InitiateSubscriptionInput defines the payload for starting a subscription checkout.
@@ -86,6 +99,10 @@ type InitiateSubscriptionInput struct {
 	TenantID  uuid.UUID `json:"tenant_id"`
 	PlanCode  string    `json:"plan_code"`
 	ReturnURL string    `json:"return_url,omitempty"` // Callback after payment
+	// BillingCycle is the chosen billing period (MONTHLY/SEMI_ANNUAL/ANNUAL). The checkout
+	// amount is months × base_price, plus the one-time setup fee when the period is shorter
+	// than SetupFeeWaiverMonths (6) and the fee has not been charged yet.
+	BillingCycle string `json:"billing_cycle,omitempty"`
 }
 
 // InitiateSubscriptionResult contains payment intent info from Treasury.
@@ -189,9 +206,53 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 	}
 
 	// 2. For free plans, activate directly without Treasury
-	amount := decimal.NewFromFloat(plan.BasePrice)
-	if amount.IsZero() {
+	if plan.BasePrice == 0 {
 		return s.activateFreePlan(ctx, in, plan)
+	}
+
+	// Resolve the chosen billing period (defaults to the plan's own cycle). The checkout
+	// amount is months × monthly base price — no automatic discount; paying for
+	// SetupFeeWaiverMonths (6) or more months waives the one-time setup fee instead.
+	cycle, err := NormalizeBillingCycle(in.BillingCycle)
+	if err != nil {
+		return nil, err
+	}
+	if cycle == "" {
+		if c, cerr := NormalizeBillingCycle(plan.BillingCycle); cerr == nil && c != "" {
+			cycle = c
+		} else {
+			cycle = tenantsubscription.BillingCycleMONTHLY
+		}
+	}
+	months := BillingCycleMonths(string(cycle))
+	if months <= 0 {
+		months = 1
+	}
+	amount := decimal.NewFromFloat(plan.BasePrice).Mul(decimal.NewFromInt(int64(months)))
+
+	// One-time setup/installation fee: included in the checkout total only when the chosen
+	// period does NOT waive it and it has not been charged (or waived) before. An existing
+	// subscription's snapshot wins over the plan default so plan changes never re-charge it.
+	existingSub, _ := s.client.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(in.TenantID)).
+		Only(ctx)
+	setupFee := plan.SetupFee
+	if existingSub != nil {
+		setupFee = 0
+		if existingSub.SetupFeeChargedAt == nil {
+			setupFee = existingSub.SetupFeeAmount
+		}
+	}
+	setupFeeIncluded := setupFee > 0 && !CycleWaivesSetupFee(string(cycle))
+	if setupFeeIncluded {
+		amount = amount.Add(decimal.NewFromFloat(setupFee))
+	}
+
+	description := fmt.Sprintf("Subscription for %s plan (%d month(s))", plan.Name, months)
+	if setupFeeIncluded {
+		description += " incl. one-time setup fee"
+	} else if setupFee > 0 && CycleWaivesSetupFee(string(cycle)) {
+		description += " — setup fee waived"
 	}
 
 	req := map[string]any{
@@ -201,11 +262,15 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 		"reference_id":   fmt.Sprintf("SUB-%s-%d", in.TenantID.String()[:8], time.Now().Unix()),
 		"reference_type": "subscription",
 		"source_service": "subscriptions",
-		"description":    fmt.Sprintf("Subscription for %s plan", plan.Name),
+		"description":    description,
 		"callback_url":   in.ReturnURL,
 		"metadata": map[string]any{
-			"tenant_id": in.TenantID.String(),
-			"plan_code": plan.PlanCode,
+			"tenant_id":     in.TenantID.String(),
+			"plan_code":     plan.PlanCode,
+			"billing_cycle": string(cycle),
+			"months":        months,
+			"setup_fee":     setupFee,
+			"setup_fee_included": setupFeeIncluded,
 		},
 	}
 
@@ -233,6 +298,25 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 	}
 	if err := resp.DecodeJSON(&treasuryResp); err != nil {
 		return nil, fmt.Errorf("decode treasury response: %w", err)
+	}
+
+	// Bind the checkout choice (billing period / plan / setup-fee inclusion) to this intent
+	// on the subscription metadata. treasury's payment.succeeded event does not forward
+	// intent metadata, so RenewSubscription recovers the choice via pending_intent_id and
+	// applies it only for the matching payment — a stale abandoned checkout can never
+	// silently change the billing period of a later invoice payment.
+	if existingSub != nil {
+		meta := make(map[string]any, len(existingSub.Metadata)+4)
+		for k, v := range existingSub.Metadata {
+			meta[k] = v
+		}
+		meta[MetaPendingBillingCycle] = string(cycle)
+		meta[MetaPendingPlanCode] = plan.PlanCode
+		meta[MetaPendingIntentID] = treasuryResp.IntentID.String()
+		meta[MetaPendingSetupFee] = setupFeeIncluded
+		if _, err := s.client.TenantSubscription.UpdateOneID(existingSub.ID).SetMetadata(meta).Save(ctx); err != nil {
+			s.log.Warn("failed to record pending checkout choice", zap.String("tenant_id", in.TenantID.String()), zap.Error(err))
+		}
 	}
 
 	return &InitiateSubscriptionResult{
@@ -331,10 +415,24 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 		return nil, fmt.Errorf("lookup plan: %w", err)
 	}
 
+	// Resolve the tenant's chosen billing period (MONTHLY/SEMI_ANNUAL/ANNUAL); empty
+	// defaults to the plan's own cycle, then MONTHLY.
+	cycle, err := NormalizeBillingCycle(in.BillingCycle)
+	if err != nil {
+		return nil, err
+	}
+	if cycle == "" {
+		if c, cerr := NormalizeBillingCycle(plan.BillingCycle); cerr == nil && c != "" {
+			cycle = c
+		} else {
+			cycle = tenantsubscription.BillingCycleMONTHLY
+		}
+	}
+
 	now := time.Now().UTC()
 	status := tenantsubscription.StatusTRIAL
 	var trialEndsAt *time.Time
-	periodEnd := now.AddDate(0, 1, 0) // 1 month default
+	periodEnd := AddBillingCycle(now, string(cycle))
 
 	if in.TrialDays > 0 {
 		t := now.Add(time.Duration(in.TrialDays) * 24 * time.Hour)
@@ -359,6 +457,7 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 		SetTenantID(in.TenantID).
 		SetPlanID(plan.ID).
 		SetStatus(status).
+		SetBillingCycle(cycle).
 		SetCurrentPeriodStart(now).
 		SetCurrentPeriodEnd(periodEnd).
 		// Every subscription gets its own shareable referral code on creation.
@@ -371,9 +470,19 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 		create.SetBundleCode(in.BundleCode)
 	}
 	// Snapshot the plan's one-time setup fee onto the subscription; billed once on the
-	// first invoice (guarded by setup_fee_charged_at), never on renewal.
+	// first invoice (guarded by setup_fee_charged_at), never on renewal. A billing period
+	// of SetupFeeWaiverMonths (6) or longer waives it entirely (amount stays 0 with an
+	// audit trail in metadata) — and no other special discount applies to waived subs.
 	if plan.SetupFee > 0 {
-		create.SetSetupFeeAmount(plan.SetupFee)
+		if CycleWaivesSetupFee(string(cycle)) {
+			create.SetMetadata(map[string]any{
+				MetaSetupFeeWaived:       true,
+				MetaSetupFeeWaivedAmount: plan.SetupFee,
+				MetaSetupFeeWaiverReason: SetupFeeWaiverReason(string(cycle)),
+			})
+		} else {
+			create.SetSetupFeeAmount(plan.SetupFee)
+		}
 	}
 
 	// Record the T&C acceptance captured above (audit trail of version + who + when).
@@ -399,12 +508,13 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 
 	// Publish outbox event
 	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, "created", map[string]any{
-		"tenant_id":   sub.TenantID.String(),
-		"plan_code":   plan.PlanCode,
-		"plan_name":   plan.Name,
-		"status":      string(status),
-		"bundle_code": in.BundleCode,
-		"trial_days":  in.TrialDays,
+		"tenant_id":     sub.TenantID.String(),
+		"plan_code":     plan.PlanCode,
+		"plan_name":     plan.Name,
+		"status":        string(status),
+		"bundle_code":   in.BundleCode,
+		"trial_days":    in.TrialDays,
+		"billing_cycle": string(cycle),
 		"notification": map[string]any{
 			"target": "tenant_admin",
 		},
@@ -490,11 +600,25 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 		metadata["proration_credit"] = 0
 	}
 
-	sub, err = tx.TenantSubscription.UpdateOneID(sub.ID).
+	update := tx.TenantSubscription.UpdateOneID(sub.ID).
 		SetPlanID(newPlan.ID).
-		SetStatus(tenantsubscription.StatusACTIVE).
-		SetMetadata(metadata).
-		Save(ctx)
+		SetStatus(tenantsubscription.StatusACTIVE)
+
+	// Optional billing-period switch alongside the plan change (effective next renewal).
+	// A >= 6-month period waives the still-uncharged one-time setup fee (audit in metadata).
+	if c, cerr := NormalizeBillingCycle(in.BillingCycle); cerr != nil {
+		return nil, cerr
+	} else if c != "" && c != tenantsubscription.BillingCycleONE_TIME {
+		update.SetBillingCycle(c)
+		if sub.SetupFeeChargedAt == nil && sub.SetupFeeAmount > 0 && CycleWaivesSetupFee(string(c)) {
+			metadata[MetaSetupFeeWaived] = true
+			metadata[MetaSetupFeeWaivedAmount] = sub.SetupFeeAmount
+			metadata[MetaSetupFeeWaiverReason] = SetupFeeWaiverReason(string(c))
+			update.SetSetupFeeAmount(0)
+		}
+	}
+
+	sub, err = update.SetMetadata(metadata).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("update subscription plan: %w", err)
 	}
@@ -612,18 +736,43 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 		return nil, fmt.Errorf("cannot renew from %s status", sub.Status)
 	}
 
+	// Recover the billing period/plan chosen at checkout: InitiateSubscription binds the
+	// choice to the treasury intent via pending_* metadata (the payment.succeeded event
+	// carries no intent metadata). Applied only when the paying intent matches, so a stale
+	// abandoned checkout never changes the cycle of a later invoice payment.
+	planCode := in.PlanCode
+	cycleStr := in.BillingCycle
+	setupFeePaid := false
+	pendingIntent, _ := sub.Metadata[MetaPendingIntentID].(string)
+	if in.IntentID != "" && pendingIntent == in.IntentID {
+		if planCode == "" {
+			planCode, _ = sub.Metadata[MetaPendingPlanCode].(string)
+		}
+		if cycleStr == "" {
+			cycleStr, _ = sub.Metadata[MetaPendingBillingCycle].(string)
+		}
+		setupFeePaid, _ = sub.Metadata[MetaPendingSetupFee].(bool)
+	}
+
 	// Use current plan or switch if specified
 	planID := sub.PlanID
-	if in.PlanCode != "" {
-		newPlan, err := s.client.SubscriptionPlan.Query().
+	var newPlan *ent.SubscriptionPlan
+	if planCode != "" {
+		newPlan, err = s.client.SubscriptionPlan.Query().
 			Where(
-				subscriptionplan.PlanCodeEQ(in.PlanCode),
+				subscriptionplan.PlanCodeEQ(planCode),
 				subscriptionplan.IsActiveEQ(true),
 			).Only(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("plan not found: %s", in.PlanCode)
+			return nil, fmt.Errorf("plan not found: %s", planCode)
 		}
 		planID = newPlan.ID
+	}
+
+	// Switch the billing period when the tenant chose a new one for this renewal.
+	cycle := sub.BillingCycle
+	if c, cerr := NormalizeBillingCycle(cycleStr); cerr == nil && c != "" {
+		cycle = c
 	}
 
 	now := time.Now().UTC()
@@ -633,25 +782,28 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 	if sub.CurrentPeriodEnd.After(now) {
 		base = sub.CurrentPeriodEnd
 	}
-	var periodEnd time.Time
-	switch sub.BillingCycle {
-	case tenantsubscription.BillingCycleANNUAL:
-		periodEnd = base.AddDate(1, 0, 0)
-	case tenantsubscription.BillingCycleQUARTERLY:
-		periodEnd = base.AddDate(0, 3, 0)
-	default: // MONTHLY and ONE_TIME
-		periodEnd = base.AddDate(0, 1, 0)
-	}
+	periodEnd := AddBillingCycle(base, string(cycle))
 
-	// Clear grace + invoice/reminder markers now that payment has been received.
+	// Clear grace + invoice/reminder markers now that payment has been received; the
+	// pending checkout markers are one-shot and consumed (or discarded) here too.
 	cleanedMeta := make(map[string]any, len(sub.Metadata))
 	for k, v := range sub.Metadata {
 		switch k {
-		case "grace_until", "last_grace_reminder_date":
-			// drop — grace ended on payment
+		case "grace_until", "last_grace_reminder_date",
+			MetaPendingBillingCycle, MetaPendingPlanCode, MetaPendingIntentID, MetaPendingSetupFee:
+			// drop — grace ended on payment; checkout choice applied above
 		default:
 			cleanedMeta[k] = v
 		}
+	}
+
+	// Setup-fee waiver: a >= 6-month billing period waives the (still-uncharged) one-time
+	// setup fee. Stamp the audit trail so the next invoice never bills it.
+	waiveSetupFee := sub.SetupFeeChargedAt == nil && sub.SetupFeeAmount > 0 && CycleWaivesSetupFee(string(cycle))
+	if waiveSetupFee {
+		cleanedMeta[MetaSetupFeeWaived] = true
+		cleanedMeta[MetaSetupFeeWaivedAmount] = sub.SetupFeeAmount
+		cleanedMeta[MetaSetupFeeWaiverReason] = SetupFeeWaiverReason(string(cycle))
 	}
 
 	tx, err := s.client.Tx(ctx)
@@ -664,22 +816,32 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 		}
 	}()
 
-	sub, err = tx.TenantSubscription.UpdateOneID(sub.ID).
+	update := tx.TenantSubscription.UpdateOneID(sub.ID).
 		SetPlanID(planID).
 		SetStatus(tenantsubscription.StatusACTIVE).
+		SetBillingCycle(cycle).
 		SetCurrentPeriodStart(now).
 		SetCurrentPeriodEnd(periodEnd).
 		SetMetadata(cleanedMeta).
 		ClearCancelledAt().
 		ClearCancelReason().
-		ClearTrialEndsAt().
-		Save(ctx)
+		ClearTrialEndsAt()
+	if waiveSetupFee {
+		update.SetSetupFeeAmount(0)
+	} else if setupFeePaid && sub.SetupFeeChargedAt == nil {
+		// The checkout amount for this intent included the setup fee — mark it charged so
+		// the next invoice never bills it again.
+		update.SetSetupFeeChargedAt(now)
+	}
+	sub, err = update.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("renew subscription: %w", err)
 	}
 
 	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, "renewed", map[string]any{
-		"tenant_id": sub.TenantID.String(),
+		"tenant_id":     sub.TenantID.String(),
+		"billing_cycle": string(cycle),
+		"period_end":    periodEnd.Format(time.RFC3339),
 		"notification": map[string]any{
 			"target": "tenant_admin",
 		},
@@ -697,6 +859,50 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 		Only(ctx)
 
 	return s.buildResult(sub, plan), nil
+}
+
+// UpdateBillingCycle changes the tenant's billing period (MONTHLY/SEMI_ANNUAL/ANNUAL),
+// effective from the next renewal/invoice. When the new period is >= SetupFeeWaiverMonths
+// (6) and the one-time setup fee has not been charged yet, the fee is waived immediately
+// (audit trail in metadata). No other special discount applies to a waived subscription.
+func (s *Service) UpdateBillingCycle(ctx context.Context, tenantID uuid.UUID, billingCycle string) (*SubscriptionResult, error) {
+	if err := s.guardExempt(ctx, tenantID); err != nil {
+		return nil, err
+	}
+	cycle, err := NormalizeBillingCycle(billingCycle)
+	if err != nil {
+		return nil, err
+	}
+	if cycle == "" {
+		return nil, fmt.Errorf("billing_cycle is required")
+	}
+	if cycle == tenantsubscription.BillingCycleONE_TIME {
+		return nil, fmt.Errorf("cannot switch a subscription to ONE_TIME")
+	}
+
+	sub, err := s.getSubscription(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	if sub.Status != tenantsubscription.StatusACTIVE && sub.Status != tenantsubscription.StatusTRIAL {
+		return nil, fmt.Errorf("cannot change billing cycle in %s status", sub.Status)
+	}
+
+	update := s.client.TenantSubscription.UpdateOneID(sub.ID).SetBillingCycle(cycle)
+	if sub.SetupFeeChargedAt == nil && sub.SetupFeeAmount > 0 && CycleWaivesSetupFee(string(cycle)) {
+		meta := make(map[string]any, len(sub.Metadata)+3)
+		for k, v := range sub.Metadata {
+			meta[k] = v
+		}
+		meta[MetaSetupFeeWaived] = true
+		meta[MetaSetupFeeWaivedAmount] = sub.SetupFeeAmount
+		meta[MetaSetupFeeWaiverReason] = SetupFeeWaiverReason(string(cycle))
+		update.SetSetupFeeAmount(0).SetMetadata(meta)
+	}
+	if _, err := update.Save(ctx); err != nil {
+		return nil, fmt.Errorf("update billing cycle: %w", err)
+	}
+	return s.GetSubscriptionResult(ctx, tenantID)
 }
 
 // SwitchPlanByID changes the plan for a subscription identified by its UUID.
@@ -1161,10 +1367,16 @@ func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.Subscriptio
 	// Default scenario: recurring subscription gated by period end / grace.
 	result.BillingMode = "recurring"
 
+	// The tenant's chosen billing period wins over the plan default (one plan row serves
+	// MONTHLY/SEMI_ANNUAL/ANNUAL periods); ONE_TIME plans below still force one_time mode.
+	result.BillingCycle = string(sub.BillingCycle)
+
 	if plan != nil {
 		result.PlanCode = plan.PlanCode
 		result.PlanName = plan.Name
-		result.BillingCycle = plan.BillingCycle
+		if result.BillingCycle == "" {
+			result.BillingCycle = plan.BillingCycle
+		}
 		result.PlanType = string(plan.PlanType)
 		if plan.Edges.Features != nil {
 			for _, f := range plan.Edges.Features {
@@ -1186,6 +1398,8 @@ func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.Subscriptio
 		if plan.BillingCycle == "ONE_TIME" {
 			result.BillingMode = "one_time"
 			result.IsPerpetual = true
+			result.BillingCycle = "ONE_TIME" // legacy subs may carry the old MONTHLY default
+
 			if sub.Status != tenantsubscription.StatusCANCELLED && sub.Status != tenantsubscription.StatusSUSPENDED {
 				result.AccessStatus = "active"
 				result.GraceEndsAt = nil

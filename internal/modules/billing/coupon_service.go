@@ -9,6 +9,8 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/coupon"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptioncredit"
+	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -73,7 +75,20 @@ func (s *CouponService) ValidateCoupon(ctx context.Context, code, planCode strin
 
 // RedeemCoupon validates the coupon, converts it to a SubscriptionCreditTransaction,
 // and credits the tenant's wallet. Returns the credit amount added (KES).
+//
+// Discount exclusivity: a subscription whose one-time setup fee was waived by a 6+ month
+// billing period gets NO other special discount — coupons are rejected for those tenants.
+// (Manual discounts/coupons remain available only where the waiver does not apply.)
 func (s *CouponService) RedeemCoupon(ctx context.Context, tenantID uuid.UUID, code, planCode string, planPriceKes float64) (int, error) {
+	if sub, serr := s.orm.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(tenantID)).
+		Only(ctx); serr == nil {
+		waived, _ := sub.Metadata[subscriptions.MetaSetupFeeWaived].(bool)
+		if waived || subscriptions.CycleWaivesSetupFee(string(sub.BillingCycle)) {
+			return 0, fmt.Errorf("coupons cannot be combined with the 6+ month setup-fee waiver")
+		}
+	}
+
 	c, err := s.fetchActive(ctx, code)
 	if err != nil {
 		return 0, err

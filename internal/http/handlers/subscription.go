@@ -433,6 +433,55 @@ func (h *SubscriptionHandler) SwitchPlan(w http.ResponseWriter, r *http.Request)
 	h.respondWithJSON(w, http.StatusOK, sub)
 }
 
+// UpdateBillingCycle godoc
+// @Summary Change billing period
+// @Description Switches the tenant's billing period (MONTHLY, SEMI_ANNUAL, ANNUAL) effective
+// from the next renewal. Periods of 6+ months waive the one-time setup fee if it has not
+// been charged yet.
+// @Tags Subscriptions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Router /subscription/billing-cycle [put]
+func (h *SubscriptionHandler) UpdateBillingCycle(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	tenantIDStr := resolveTenantID(r)
+	if tenantIDStr == "" {
+		h.respondWithError(w, http.StatusBadRequest, "tenant_id required")
+		return
+	}
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid tenant id")
+		return
+	}
+
+	var body struct {
+		BillingCycle string `json:"billing_cycle"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.BillingCycle == "" {
+		h.respondWithError(w, http.StatusBadRequest, "billing_cycle required")
+		return
+	}
+
+	res, err := h.service.UpdateBillingCycle(ctx, tenantID, body.BillingCycle)
+	if err != nil {
+		if subscriptions.IsExemptErr(err) {
+			h.respondWithJSON(w, http.StatusOK, demoBypasResponse(tenantIDStr))
+			return
+		}
+		h.respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if h.featureHandler != nil {
+		h.featureHandler.InvalidateCache(ctx, tenantID)
+	}
+	h.respondWithJSON(w, http.StatusOK, res)
+}
+
 // GetSettings returns subscription settings (auto-renew, notification preferences).
 // GetSettings godoc
 // @Summary Get subscription settings

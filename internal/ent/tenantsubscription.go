@@ -37,7 +37,7 @@ type TenantSubscription struct {
 	CancelledAt *time.Time `json:"cancelled_at,omitempty"`
 	// Reason for cancellation
 	CancelReason *string `json:"cancel_reason,omitempty"`
-	// Tenant's chosen billing cycle (may override plan default)
+	// Tenant's chosen billing cycle (may override plan default). SEMI_ANNUAL/ANNUAL (>=6 months) waive the one-time setup fee
 	BillingCycle tenantsubscription.BillingCycle `json:"billing_cycle,omitempty"`
 	// Discount applied to this subscription based on rules (e.g., 20% for yearly)
 	AppliedDiscount float64 `json:"applied_discount,omitempty"`

@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -246,18 +247,27 @@ func initiatePaymentRenewal(ctx context.Context, log *zap.Logger, orm *ent.Clien
 		headers["X-API-Key"] = treasuryAPIKey
 	}
 
+	// base_price is per MONTH — charge the tenant's chosen billing period
+	// (MONTHLY=1, SEMI_ANNUAL=6, ANNUAL=12 months). No automatic discount.
+	months := subscriptions.BillingCycleMonths(string(sub.BillingCycle))
+	if months <= 0 {
+		months = 1
+	}
+	amount := plan.BasePrice * float64(months)
+
 	req := map[string]any{
-		"amount":         plan.BasePrice,
+		"amount":         amount,
 		"currency":       plan.Currency,
 		"payment_method": "auto",
 		"reference_id":   sub.ID.String(),
 		"reference_type": "subscription_renewal",
 		"source_service": "subscriptions",
-		"description":    "Auto-renewal: " + plan.Name,
+		"description":    fmt.Sprintf("Auto-renewal: %s (%d month(s))", plan.Name, months),
 		"metadata": map[string]any{
-			"tenant_id":   sub.TenantID.String(),
-			"plan_code":   plan.PlanCode,
-			"renewal":     true,
+			"tenant_id":     sub.TenantID.String(),
+			"plan_code":     plan.PlanCode,
+			"billing_cycle": string(sub.BillingCycle),
+			"renewal":       true,
 		},
 	}
 
