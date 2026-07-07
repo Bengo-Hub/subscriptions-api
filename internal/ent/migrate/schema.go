@@ -964,7 +964,7 @@ var (
 		{Name: "current_period_end", Type: field.TypeTime},
 		{Name: "cancelled_at", Type: field.TypeTime, Nullable: true},
 		{Name: "cancel_reason", Type: field.TypeString, Nullable: true},
-		{Name: "billing_cycle", Type: field.TypeEnum, Enums: []string{"MONTHLY", "QUARTERLY", "ANNUAL", "ONE_TIME"}, Default: "MONTHLY"},
+		{Name: "billing_cycle", Type: field.TypeEnum, Enums: []string{"MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL", "ONE_TIME"}, Default: "MONTHLY"},
 		{Name: "applied_discount", Type: field.TypeFloat64, Default: 0},
 		{Name: "setup_fee_amount", Type: field.TypeFloat64, Default: 0},
 		{Name: "setup_fee_charged_at", Type: field.TypeTime, Nullable: true},

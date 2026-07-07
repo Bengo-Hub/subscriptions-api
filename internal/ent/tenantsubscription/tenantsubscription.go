@@ -214,10 +214,11 @@ const DefaultBillingCycle = BillingCycleMONTHLY
 
 // BillingCycle values.
 const (
-	BillingCycleMONTHLY   BillingCycle = "MONTHLY"
-	BillingCycleQUARTERLY BillingCycle = "QUARTERLY"
-	BillingCycleANNUAL    BillingCycle = "ANNUAL"
-	BillingCycleONE_TIME  BillingCycle = "ONE_TIME"
+	BillingCycleMONTHLY     BillingCycle = "MONTHLY"
+	BillingCycleQUARTERLY   BillingCycle = "QUARTERLY"
+	BillingCycleSEMI_ANNUAL BillingCycle = "SEMI_ANNUAL"
+	BillingCycleANNUAL      BillingCycle = "ANNUAL"
+	BillingCycleONE_TIME    BillingCycle = "ONE_TIME"
 )
 
 func (bc BillingCycle) String() string {
@@ -227,7 +228,7 @@ func (bc BillingCycle) String() string {
 // BillingCycleValidator is a validator for the "billing_cycle" field enum values. It is called by the builders before save.
 func BillingCycleValidator(bc BillingCycle) error {
 	switch bc {
-	case BillingCycleMONTHLY, BillingCycleQUARTERLY, BillingCycleANNUAL, BillingCycleONE_TIME:
+	case BillingCycleMONTHLY, BillingCycleQUARTERLY, BillingCycleSEMI_ANNUAL, BillingCycleANNUAL, BillingCycleONE_TIME:
 		return nil
 	default:
 		return fmt.Errorf("tenantsubscription: invalid enum value for billing_cycle field: %q", bc)

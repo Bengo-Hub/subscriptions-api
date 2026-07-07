@@ -150,6 +150,13 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed library plans: %w", err)
 	}
 
+	// 2.16 Retire the per-cycle ANNUAL plan rows (*_YEARLY duplicates). Billing period is
+	// now a per-subscription choice (MONTHLY/SEMI_ANNUAL/ANNUAL on one monthly-priced plan;
+	// 6+ months waives the setup fee). Must run after every plan seed above.
+	if err := retireAnnualPlanRows(ctx, tx); err != nil {
+		return fmt.Errorf("retire annual plan rows: %w", err)
+	}
+
 	// 3. Seed bundles (delivery, pos-suite, complete)
 	if err := seedBundles(ctx, tx); err != nil {
 		return fmt.Errorf("seed bundles: %w", err)

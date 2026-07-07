@@ -157,7 +157,9 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 		}
 	}
 
-	if refType != "subscription" && refType != "renewal" {
+	// "subscription_renewal" is the reference_type used by the auto-renewal job's intents
+	// (jobs/renewal.go) — without it here, auto-renewal payments never extended the period.
+	if refType != "subscription" && refType != "renewal" && refType != "subscription_renewal" {
 		// card_setup or unknown — nothing more to do
 		return nil
 	}
@@ -168,9 +170,12 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 		if planCode == "" {
 			planCode = ev.PlanCode
 		}
+		// The intent id lets RenewSubscription apply the billing period/plan chosen at
+		// checkout (bound via pending_intent_id metadata by InitiateSubscription).
 		if _, err := c.svc.RenewSubscription(ctx, subscriptions.RenewInput{
 			TenantID: tenantID,
 			PlanCode: planCode,
+			IntentID: ev.Payload.IntentID,
 		}); err != nil {
 			c.log.Error("failed to renew subscription on payment.succeeded", zap.String("tenant_id", tenantIDStr), zap.Error(err))
 			return err

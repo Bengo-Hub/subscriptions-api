@@ -135,6 +135,8 @@ func New(
 				r.Get("/", subscriptionHandler.Get)
 				r.Post("/", subscriptionHandler.Create)
 				r.Put("/plan", subscriptionHandler.ChangePlan)
+				// Billing period (MONTHLY/SEMI_ANNUAL/ANNUAL); 6+ months waives the setup fee.
+				r.Put("/billing-cycle", subscriptionHandler.UpdateBillingCycle)
 				r.Post("/initiate", subscriptionHandler.Initiate)
 				r.Get("/settings", subscriptionHandler.GetSettings)
 				r.Put("/settings", subscriptionHandler.UpdateSettings)

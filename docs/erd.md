@@ -125,7 +125,7 @@ The subscription service manages all subscription and licensing operations, prov
 | `tenant_id` | UUID | NOT NULL, FK → tenants | Tenant identifier (from auth-service) |
 | `plan_id` | UUID | NOT NULL, FK → subscription_plans(id) | Current subscription plan |
 | `status` | VARCHAR(20) | NOT NULL, CHECK | TRIAL, ACTIVE, CANCELLED, PAUSED, EXPIRED |
-| `billing_cycle` | VARCHAR(20) | NOT NULL, CHECK | MONTHLY, QUARTERLY, ANNUAL, ONE_TIME |
+| `billing_cycle` | VARCHAR(20) | NOT NULL, CHECK | MONTHLY, QUARTERLY, SEMI_ANNUAL, ANNUAL, ONE_TIME — the tenant's chosen billing period; SEMI_ANNUAL/ANNUAL (≥6 months) waive the one-time setup fee |
 | `applied_discount` | NUMERIC(18,2)| DEFAULT 0 | Discount applied to this subscription based on rules |
 | `current_period_start` | DATE | NOT NULL | Current billing period start |
 | `current_period_end` | DATE | NOT NULL | Current billing period end |
@@ -156,7 +156,7 @@ The subscription service manages all subscription and licensing operations, prov
 
 **Constraints**:
 - CHECK: `status IN ('TRIAL', 'ACTIVE', 'CANCELLED', 'PAUSED', 'EXPIRED')`
-- CHECK: `billing_cycle IN ('MONTHLY', 'QUARTERLY', 'ANNUAL', 'ONE_TIME')`
+- CHECK: `billing_cycle IN ('MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'ANNUAL', 'ONE_TIME')`
 - CHECK: `current_period_end > current_period_start`
 - CHECK: `trial_end IS NULL OR trial_end >= trial_start`
 

@@ -93,13 +93,19 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 	var taxable float64 // sum of VAT-eligible line subtotals (base + overage + addons)
 
 	// Base plan line (VAT applied exclusive per the platform-seeded VAT-16 default).
+	// base_price is per MONTH; the line bills the tenant's chosen billing period
+	// (quantity = months: MONTHLY=1, SEMI_ANNUAL=6, ANNUAL=12) — no automatic discount.
+	months := subscriptions.BillingCycleMonths(string(sub.BillingCycle))
+	if months <= 0 {
+		months = 1
+	}
 	lines = append(lines, map[string]any{
-		"description": fmt.Sprintf("Subscription: %s (%s)", plan.Name, sub.BillingCycle),
-		"quantity":    1,
+		"description": fmt.Sprintf("Subscription: %s (%s — %d month(s) × %s %.2f)", plan.Name, sub.BillingCycle, months, currency, plan.BasePrice),
+		"quantity":    months,
 		"unit_price":  plan.BasePrice,
 		"tax_rate":    s.vatRate,
 	})
-	taxable += plan.BasePrice
+	taxable += plan.BasePrice * float64(months)
 
 	// ISP Billing usage charges (service_tag "isp_billing"): threshold-gated service
 	// charge on monthly hotspot sales + per-active-PPPoE-subscriber fee, read from the
@@ -126,7 +132,8 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 
 	// One-time setup/onboarding fee — billed once on the first invoice only.
 	// Guarded by setup_fee_charged_at (nil = not yet charged); never recurs on renewal.
-	if sub.SetupFeeAmount > 0 && sub.SetupFeeChargedAt == nil {
+	// Waived entirely (never on the invoice) for billing periods of 6+ months.
+	if setupFeeDue(sub) {
 		lines = append(lines, map[string]any{
 			"description": fmt.Sprintf("One-time setup fee: %s", plan.Name),
 			"quantity":    1,
@@ -190,6 +197,16 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 	}
 
 	return lines, total, currency, nil
+}
+
+// setupFeeDue reports whether the one-time setup/installation fee must be billed on the
+// next invoice: a positive uncharged snapshot AND a billing period too short to waive it
+// (< 6 months). Single source of truth shared by buildLines and the mark-charged step so
+// the fee is only ever marked charged when it was actually billed.
+func setupFeeDue(sub *ent.TenantSubscription) bool {
+	return sub.SetupFeeAmount > 0 &&
+		sub.SetupFeeChargedAt == nil &&
+		!subscriptions.CycleWaivesSetupFee(string(sub.BillingCycle))
 }
 
 // billingEmail resolves the tenant billing email from subscription metadata.
@@ -279,7 +296,9 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 	}
 
 	// Mark the one-time setup fee as charged so it is never billed again (renewals skip it).
-	if sub.SetupFeeAmount > 0 && sub.SetupFeeChargedAt == nil {
+	// Uses the same setupFeeDue rule as buildLines: a waived fee (6+ month period) was NOT
+	// billed above and must stay uncharged/waived rather than be marked charged.
+	if setupFeeDue(sub) {
 		chargedAt := now
 		if _, err := s.orm.TenantSubscription.UpdateOneID(sub.ID).SetSetupFeeChargedAt(chargedAt).Save(ctx); err != nil {
 			s.log.Warn("invoice: failed to mark setup fee charged", zap.String("subscription_id", sub.ID.String()), zap.Error(err))

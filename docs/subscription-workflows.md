@@ -210,12 +210,33 @@ Tenant continues using platform uninterrupted
 
 **Billing cycle periods:**
 
-| Cycle | Period added |
-|---|---|
-| `MONTHLY` | 30 days |
-| `QUARTERLY` | 90 days |
-| `ANNUAL` | 365 days |
-| `ONE_TIME` | No renewal (perpetual) |
+Every recurring plan is priced **per month** (`base_price`); the tenant chooses the billing
+period at subscribe/renew time (`billing_cycle` on the tenant subscription — there are no
+separate per-cycle plan rows; the legacy `*_YEARLY` rows are retired by the seed). The
+period price is exactly `months × base_price` — no automatic discount.
+
+| Cycle | Months | Period added | One-time setup fee |
+|---|---|---|---|
+| `MONTHLY` | 1 | +1 month | Charged on first invoice/checkout |
+| `QUARTERLY` (legacy) | 3 | +3 months | Charged on first invoice/checkout |
+| `SEMI_ANNUAL` | 6 | +6 months | **WAIVED** (≥ 6 months) |
+| `ANNUAL` | 12 | +12 months | **WAIVED** (≥ 6 months) |
+| `ONE_TIME` | — | No renewal (perpetual) | Per-plan (licence fee) |
+
+**Setup-fee waiver (`internal/modules/subscriptions/billing_cycle.go`):** paying for
+`SetupFeeWaiverMonths` (6) or more months up front waives the one-time setup/installation
+fee entirely — it never appears on the invoice or checkout total. The waiver is stamped in
+subscription metadata (`setup_fee_waived`, `setup_fee_waived_amount`,
+`setup_fee_waiver_reason`) and `setup_fee_amount` is zeroed. **Discount exclusivity:** a
+subscription with an active waiver gets no other special discount — coupon redemption is
+rejected for it; manual discounts/coupons apply only where the waiver does not.
+
+**Changing the period:** `PUT /subscription/billing-cycle { billing_cycle }` switches the
+period effective next renewal (and applies the waiver immediately when the fee is still
+uncharged). At checkout, `POST /subscription/initiate { plan_code, billing_cycle }` binds
+the choice to the created payment intent via `pending_*` subscription metadata;
+`RenewSubscription` applies it only when the paying intent matches (`pending_intent_id`),
+so an abandoned checkout can never change the cycle of a later payment.
 
 ---
 
