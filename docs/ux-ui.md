@@ -1,6 +1,6 @@
 # Subscription API — Consumer Guide
 
-This document is for developers integrating with the Subscription API from other BengoBox services or the subscriptions-ui frontend.
+This document is for developers integrating with the Subscription API from other Codevertex services or the subscriptions-ui frontend.
 
 **Base URL**: `https://pricingapi.codevertexitsolutions.com/api/v1`
 **Local**: `http://localhost:4005/api/v1`

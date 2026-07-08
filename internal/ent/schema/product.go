@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Product represents a subscribable microservice/module in the BengoBox ecosystem.
+// Product represents a subscribable microservice/module in the Codevertex ecosystem.
 // Platform products (auth, notifications, subscription) are always included.
 // Product/add-on products can be subscribed to individually or via bundles.
 type Product struct {

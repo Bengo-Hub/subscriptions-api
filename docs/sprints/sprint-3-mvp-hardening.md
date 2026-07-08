@@ -11,7 +11,7 @@
 
 ## Context
 
-Sprints 1-2 delivered the database schema, seed data, CRUD endpoints, state machine, and outbox pattern. Sprint 3 hardens the service for the BengoBox MVP launch (March 27). The subscription-api is a critical-path dependency — every other service relies on it for Trinity Authorization (RBAC + Licensing + Resources).
+Sprints 1-2 delivered the database schema, seed data, CRUD endpoints, state machine, and outbox pattern. Sprint 3 hardens the service for the Codevertex MVP launch (March 27). The subscription-api is a critical-path dependency — every other service relies on it for Trinity Authorization (RBAC + Licensing + Resources).
 
 ---
 

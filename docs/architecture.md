@@ -4,7 +4,7 @@
 
 ## System Context
 
-The Subscription API (`subscriptions-api`) is the centralized licensing, feature-gating, and subscription management backend for the BengoBox platform. It powers the **Trinity Authorization** model used across all services:
+The Subscription API (`subscriptions-api`) is the centralized licensing, feature-gating, and subscription management backend for the Codevertex platform. It powers the **Trinity Authorization** model used across all services:
 
 ```
 Authorization = RBAC (auth-service) + Licensing (subscription-service) + Resources (domain services)

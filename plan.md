@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-**System Purpose**: Centralized subscription and licensing management platform for the entire BengoBox ecosystem, providing multi-tenant SaaS capabilities with tiered pricing, feature gating, usage tracking, and automated billing integration.
+**System Purpose**: Centralized subscription and licensing management platform for the entire Codevertex ecosystem, providing multi-tenant SaaS capabilities with tiered pricing, feature gating, usage tracking, and automated billing integration.
 
 **Key Capabilities**:
 - Subscription plan management (Starter, Growth, Professional tiers; **one-time** subscription type)

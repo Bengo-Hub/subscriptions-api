@@ -5,7 +5,7 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "HTTP API for the BengoBox Subscriptions Service — manages subscription plans, features, usage, billing, and tenant entitlements.",
+        "description": "HTTP API for the Codevertex Subscriptions Service — manages subscription plans, features, usage, billing, and tenant entitlements.",
         "title": "Subscriptions API",
         "contact": {},
         "version": "1.0"

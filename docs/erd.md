@@ -1,6 +1,6 @@
 # Subscription Service – Comprehensive Entity Relationship Diagram
 
-The subscription service manages all subscription and licensing operations, providing centralized plan management, feature gating, usage tracking, and billing integration for the BengoBox ecosystem.
+The subscription service manages all subscription and licensing operations, providing centralized plan management, feature gating, usage tracking, and billing integration for the Codevertex ecosystem.
 
 > **Conventions**
 > - UUID primary keys (`id UUID PRIMARY KEY DEFAULT gen_random_uuid()`).

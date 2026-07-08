@@ -1,6 +1,6 @@
 # Subscription Service
 
-The Subscription Service provides centralized subscription and licensing management for all BengoBox properties, enabling multi-tenant SaaS operations with tiered pricing, feature gating, usage tracking, and seamless plan transitions.
+The Subscription Service provides centralized subscription and licensing management for all Codevertex properties, enabling multi-tenant SaaS operations with tiered pricing, feature gating, usage tracking, and seamless plan transitions.
 
 ## Current Status
 

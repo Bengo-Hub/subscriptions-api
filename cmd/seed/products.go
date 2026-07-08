@@ -35,7 +35,7 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			id:            uuid.MustParse("10000000-0000-0000-0000-000000000001"),
 			code:          "auth",
 			name:          "Authentication & SSO",
-			description:   "User authentication, multi-factor auth, OAuth 2.0, OpenID Connect, session management, and single sign-on across all BengoBox services.",
+			description:   "User authentication, multi-factor auth, OAuth 2.0, OpenID Connect, session management, and single sign-on across all Codevertex services.",
 			category:      product.CategoryPlatform,
 			isPlatform:    true,
 			isBaseService: true,

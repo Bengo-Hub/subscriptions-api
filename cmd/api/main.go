@@ -12,7 +12,7 @@ import (
 
 // @title Subscriptions API
 // @version 1.0
-// @description HTTP API for the BengoBox Subscriptions Service — manages subscription plans, features, usage, billing, and tenant entitlements.
+// @description HTTP API for the Codevertex Subscriptions Service — manages subscription plans, features, usage, billing, and tenant entitlements.
 // @host pricingapi.codevertexitsolutions.com
 // @BasePath /api/v1
 // @schemes https http

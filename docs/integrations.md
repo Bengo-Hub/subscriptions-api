@@ -4,7 +4,7 @@
 
 ## Overview
 
-This document describes how external services integrate with the Subscription service. The Subscription Service is the centralized licensing and subscription management platform, providing feature gating, plan management, and billing integration for the entire BengoBox ecosystem.
+This document describes how external services integrate with the Subscription service. The Subscription Service is the centralized licensing and subscription management platform, providing feature gating, plan management, and billing integration for the entire Codevertex ecosystem.
 
 **Key principle**: Feature gates and subscription status are baked into the JWT at token issuance by auth-api. Services read from JWT claims at runtime — no runtime calls to subscriptions-api are needed for routine feature checks.
 

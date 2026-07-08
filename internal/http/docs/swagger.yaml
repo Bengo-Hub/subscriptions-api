@@ -91,7 +91,7 @@ definitions:
 host: pricingapi.codevertexitsolutions.com
 info:
   contact: {}
-  description: HTTP API for the BengoBox Subscriptions Service — manages subscription
+  description: HTTP API for the Codevertex Subscriptions Service — manages subscription
     plans, features, usage, billing, and tenant entitlements.
   title: Subscriptions API
   version: "1.0"

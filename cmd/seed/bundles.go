@@ -32,7 +32,7 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 		{
 			id:   uuid.MustParse("20000000-0000-0000-0000-000000000001"),
 			code: "ordering",
-			name: "BengoBox Ordering",
+			name: "Codevertex Ordering",
 			description: "Complete food delivery platform: online ordering, logistics, payments, and storefront. " +
 				"Pricing matches the Urban Cafe Food Delivery System Inception Report tiers.",
 			products: []schema.BundleProduct{
@@ -52,7 +52,7 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 		{
 			id:          uuid.MustParse("20000000-0000-0000-0000-000000000002"),
 			code:        "pos-suite",
-			name:        "BengoBox POS",
+			name:        "Codevertex POS",
 			description: "In-store point of sale with payment processing. Ideal for walk-in restaurants and cafes.",
 			products: []schema.BundleProduct{
 				{ProductCode: "pos"},
@@ -68,7 +68,7 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 		{
 			id:          uuid.MustParse("20000000-0000-0000-0000-000000000003"),
 			code:        "powersuite",
-			name:        "BengoBox PowerSuite",
+			name:        "Codevertex PowerSuite",
 			description: "Everything included: online ordering, delivery logistics, POS, payments, and storefront. Best value for full-service operations.",
 			products: []schema.BundleProduct{
 				{ProductCode: "ordering"},
@@ -87,7 +87,7 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 		{
 			id:          uuid.MustParse("20000000-0000-0000-0000-000000000004"),
 			code:        "library",
-			name:        "BengoBox Library",
+			name:        "Codevertex Library",
 			description: "Standalone library/ILS: catalog & OPAC, circulation, holds, members, fines, and e-book lending. Treasury included for fines, membership fees, and e-book sales.",
 			products: []schema.BundleProduct{
 				{ProductCode: "library"},
