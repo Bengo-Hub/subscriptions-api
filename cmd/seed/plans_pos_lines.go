@@ -64,8 +64,11 @@ func seedPOSProductLinePlans(ctx context.Context, tx *ent.Tx) error {
 			billingCycle: "MONTHLY", price: 2500, setupFee: 5000, tierOrder: 1,
 			tierLimits: map[string]any{"max_devices": 2, "max_cashiers": 3, "max_tables": 20},
 			// kds is core operations for hospitality/quick_service outlets (kitchen/bar ticket
-			// routing), not a paid upgrade — every tier including Starter gets it.
-			features: with("table_management", "loyalty_program", "etims_integration", "kds"),
+			// routing), not a paid upgrade — every tier including Starter gets it. Procurement
+			// (purchase_orders/supplier_portal) is likewise core: every bar/restaurant reorders
+			// stock from suppliers regardless of turnover, matching stock_tracking's already-core
+			// status in the shared `core` set above — it shouldn't take a Pro upgrade to raise a PO.
+			features: with("table_management", "loyalty_program", "etims_integration", "kds", "purchase_orders", "supplier_portal"),
 		},
 		{
 			id: uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:hosp:PRO")), planCode: "POS_HOSP_PRO",
