@@ -171,7 +171,6 @@ func (h *WebhookHandler) saveCardAuthorization(ctx context.Context, tenantID uui
 
 func (h *WebhookHandler) activateSubscription(ctx context.Context, tenantID uuid.UUID, planCode string) error {
 	now := time.Now().UTC()
-	periodEnd := now.AddDate(0, 1, 0)
 
 	tx, err := h.orm.Tx(ctx)
 	if err != nil {
@@ -189,6 +188,11 @@ func (h *WebhookHandler) activateSubscription(ctx context.Context, tenantID uuid
 	if err != nil {
 		return err
 	}
+
+	// Respect the tenant's already-chosen billing cycle (MONTHLY/SEMI_ANNUAL/ANNUAL) —
+	// a hardcoded +1 month here desyncs current_period_end from the months actually
+	// invoiced by InvoiceService.buildLines for longer cycles.
+	periodEnd := subscriptions.AddBillingCycle(now, string(sub.BillingCycle))
 
 	update := tx.TenantSubscription.UpdateOneID(sub.ID).
 		SetStatus(tenantsubscription.StatusACTIVE).

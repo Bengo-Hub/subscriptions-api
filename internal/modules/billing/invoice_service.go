@@ -14,6 +14,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/customaddon"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptioncredit"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptioncredittransaction"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/bengobox/subscription-service/internal/payref"
@@ -74,12 +75,15 @@ func (s *InvoiceService) headers() map[string]string {
 }
 
 // buildLines assembles itemized invoice lines (base plan + pending overages + active
-// addons − available credits) and returns the lines plus the net total and currency.
-func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscription) ([]map[string]any, float64, string, error) {
+// addons − available credits) and returns the lines, the net total, the currency, and
+// the wallet credit amount applied (caller must actually deduct this from the tenant's
+// SubscriptionCredit balance once the invoice is confirmed created — this function only
+// computes, it does not mutate the wallet).
+func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscription) ([]map[string]any, float64, string, float64, error) {
 	if sub.Edges.Plan == nil {
 		plan, err := s.orm.TenantSubscription.QueryPlan(sub).Only(ctx)
 		if err != nil {
-			return nil, 0, "", fmt.Errorf("load plan: %w", err)
+			return nil, 0, "", 0, fmt.Errorf("load plan: %w", err)
 		}
 		sub.Edges.Plan = plan
 	}
@@ -179,6 +183,9 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 	total := taxable * (1 + s.vatRate/100)
 
 	// Apply available credits post-tax (untaxed line, floored so total never goes negative).
+	// The wallet itself is deducted by the caller once the invoice is confirmed created —
+	// see creditApplied below and its use in GenerateAndSend.
+	var creditApplied float64
 	if credit, err := s.orm.SubscriptionCredit.Query().
 		Where(subscriptioncredit.TenantIDEQ(sub.TenantID)).Only(ctx); err == nil && credit.BalanceKes > 0 {
 		apply := float64(credit.BalanceKes)
@@ -193,10 +200,11 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 				"tax_rate":    0,
 			})
 			total -= apply
+			creditApplied = apply
 		}
 	}
 
-	return lines, total, currency, nil
+	return lines, total, currency, creditApplied, nil
 }
 
 // setupFeeDue reports whether the one-time setup/installation fee must be billed on the
@@ -245,7 +253,7 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 		}
 	}
 
-	lines, total, currency, err := s.buildLines(ctx, sub)
+	lines, total, currency, creditApplied, err := s.buildLines(ctx, sub)
 	if err != nil {
 		return nil, err
 	}
@@ -393,6 +401,38 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 	if _, err := tx.TenantSubscription.UpdateOneID(sub.ID).SetMetadata(meta).Save(ctx); err != nil {
 		_ = tx.Rollback()
 		return nil, fmt.Errorf("persist invoice markers: %w", err)
+	}
+	// Actually consume the wallet credit that was applied as a line above — buildLines only
+	// computes the discount, it never mutates the wallet, so this deduction must happen once
+	// the invoice is confirmed created (never before: an earlier treasury failure above returns
+	// without ever reaching here, leaving the wallet untouched for the next attempt).
+	if creditApplied > 0 {
+		if wallet, werr := tx.SubscriptionCredit.Query().
+			Where(subscriptioncredit.TenantIDEQ(sub.TenantID)).Only(ctx); werr == nil {
+			applyInt := int(creditApplied)
+			if _, err := tx.SubscriptionCredit.UpdateOneID(wallet.ID).
+				SetBalanceKes(wallet.BalanceKes - applyInt).
+				SetUpdatedAt(now).
+				Save(ctx); err != nil {
+				_ = tx.Rollback()
+				return nil, fmt.Errorf("deduct applied credit: %w", err)
+			}
+			invoiceID, _ := uuid.Parse(inv.ID)
+			refType := "invoice"
+			if _, err := tx.SubscriptionCreditTransaction.Create().
+				SetTenantID(sub.TenantID).
+				SetCreditID(wallet.ID).
+				SetType(subscriptioncredittransaction.TypeAutoApplied).
+				SetAmountKes(-applyInt).
+				SetNillableRefID(&invoiceID).
+				SetNillableRefType(&refType).
+				Save(ctx); err != nil {
+				_ = tx.Rollback()
+				return nil, fmt.Errorf("record applied credit transaction: %w", err)
+			}
+		} else {
+			s.log.Warn("invoice: credit line was applied but wallet not found for deduction", zap.String("tenant_id", sub.TenantID.String()))
+		}
 	}
 	s.svc.WriteOutboxEventPublic(ctx, tx, sub.TenantID, "subscription", sub.ID, "invoice_generated", map[string]any{
 		"tenant_id":      sub.TenantID.String(),

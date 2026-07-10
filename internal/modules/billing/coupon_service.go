@@ -44,7 +44,9 @@ type ValidateCouponResult struct {
 
 // ValidateCoupon checks whether a coupon code is valid for the given plan and price,
 // and returns the computed discount. Does NOT apply or consume the coupon.
-func (s *CouponService) ValidateCoupon(ctx context.Context, code, planCode string, planPriceKes float64) (*ValidateCouponResult, error) {
+// billingCycleMonths is the number of months the tenant is being billed for in one
+// invoice (1 for MONTHLY, 6 for SEMI_ANNUAL, 12 for ANNUAL — see BillingCycleMonths).
+func (s *CouponService) ValidateCoupon(ctx context.Context, code, planCode string, planPriceKes float64, billingCycleMonths int) (*ValidateCouponResult, error) {
 	c, err := s.fetchActive(ctx, code)
 	if err != nil {
 		return nil, err
@@ -63,9 +65,9 @@ func (s *CouponService) ValidateCoupon(ctx context.Context, code, planCode strin
 
 	switch c.Type {
 	case coupon.TypePercentage:
-		result.DiscountKes = int(planPriceKes * c.Value / 100)
+		result.DiscountKes = int(planPriceKes*c.Value/100) * evergreenMonths(c, billingCycleMonths)
 	case coupon.TypeFixedKes:
-		result.DiscountKes = int(c.Value)
+		result.DiscountKes = int(c.Value) * evergreenMonths(c, billingCycleMonths)
 	case coupon.TypeFreeMonths:
 		result.FreeMonths = int(c.Value)
 	}
@@ -73,22 +75,32 @@ func (s *CouponService) ValidateCoupon(ctx context.Context, code, planCode strin
 	return result, nil
 }
 
+// evergreenMonths returns the discount multiplier for a per-month coupon amount:
+// a coupon with no valid_until (an "evergreen" code) has no natural expiry to bound
+// it to a single month, so it applies to every month covered by the invoice being
+// billed (e.g. a KES 1,000 evergreen coupon on a SEMI_ANNUAL invoice discounts all
+// 6 months, not just one). Coupons with a valid_until remain single-application
+// (multiplier 1) — they are promotional, one-off discounts, not a recurring rate cut.
+func evergreenMonths(c *ent.Coupon, billingCycleMonths int) int {
+	if billingCycleMonths <= 0 {
+		billingCycleMonths = 1
+	}
+	if c.ValidUntil == nil {
+		return billingCycleMonths
+	}
+	return 1
+}
+
 // RedeemCoupon validates the coupon, converts it to a SubscriptionCreditTransaction,
 // and credits the tenant's wallet. Returns the credit amount added (KES).
 //
 // Discount exclusivity: a subscription whose one-time setup fee was waived by a 6+ month
-// billing period gets NO other special discount — coupons are rejected for those tenants.
-// (Manual discounts/coupons remain available only where the waiver does not apply.)
+// billing period gets no OTHER *one-off promotional* discount — bounded (valid_until set)
+// coupons are rejected for those tenants so a structural waiver can't be stacked with a
+// limited-time promo. Evergreen coupons (no valid_until, e.g. a standing small-business
+// rate) are exempt from this exclusivity: they represent an ongoing per-month rate cut,
+// not a stackable bonus, so they combine with the setup-fee waiver by design.
 func (s *CouponService) RedeemCoupon(ctx context.Context, tenantID uuid.UUID, code, planCode string, planPriceKes float64) (int, error) {
-	if sub, serr := s.orm.TenantSubscription.Query().
-		Where(tenantsubscription.TenantIDEQ(tenantID)).
-		Only(ctx); serr == nil {
-		waived, _ := sub.Metadata[subscriptions.MetaSetupFeeWaived].(bool)
-		if waived || subscriptions.CycleWaivesSetupFee(string(sub.BillingCycle)) {
-			return 0, fmt.Errorf("coupons cannot be combined with the 6+ month setup-fee waiver")
-		}
-	}
-
 	c, err := s.fetchActive(ctx, code)
 	if err != nil {
 		return 0, err
@@ -98,13 +110,30 @@ func (s *CouponService) RedeemCoupon(ctx context.Context, tenantID uuid.UUID, co
 		return 0, err
 	}
 
-	// Compute credit value
+	billingCycleMonths := 1
+	if sub, serr := s.orm.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(tenantID)).
+		Only(ctx); serr == nil {
+		if c.ValidUntil != nil {
+			waived, _ := sub.Metadata[subscriptions.MetaSetupFeeWaived].(bool)
+			if waived || subscriptions.CycleWaivesSetupFee(string(sub.BillingCycle)) {
+				return 0, fmt.Errorf("coupons cannot be combined with the 6+ month setup-fee waiver")
+			}
+		}
+		if m := subscriptions.BillingCycleMonths(string(sub.BillingCycle)); m > 0 {
+			billingCycleMonths = m
+		}
+	}
+
+	// Compute credit value. An evergreen coupon (no valid_until) has no natural
+	// per-use expiry, so it is treated as a recurring per-month rate cut and applies
+	// to every month the tenant is being billed for in this cycle (see evergreenMonths).
 	var creditKes int
 	switch c.Type {
 	case coupon.TypePercentage:
-		creditKes = int(planPriceKes * c.Value / 100)
+		creditKes = int(planPriceKes*c.Value/100) * evergreenMonths(c, billingCycleMonths)
 	case coupon.TypeFixedKes:
-		creditKes = int(c.Value)
+		creditKes = int(c.Value) * evergreenMonths(c, billingCycleMonths)
 	case coupon.TypeFreeMonths:
 		// free_months: credit = full plan price × months
 		creditKes = int(planPriceKes) * int(c.Value)

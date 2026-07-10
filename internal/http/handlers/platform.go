@@ -252,8 +252,9 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 	}
 
 	var body struct {
-		PlanCode   string `json:"planCode"`
-		StartTrial bool   `json:"startTrial"`
+		PlanCode     string `json:"planCode"`
+		StartTrial   bool   `json:"startTrial"`
+		BillingCycle string `json:"billingCycle"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
@@ -261,6 +262,11 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 	}
 	if body.PlanCode == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "planCode is required"})
+		return
+	}
+	billingCycle, err := subscriptions.NormalizeBillingCycle(body.BillingCycle)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
@@ -292,7 +298,6 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 	}
 
 	now := time.Now()
-	periodEnd := now.AddDate(0, 1, 0)
 
 	// When starting a trial, set trial_ends_at from the plan's free_trial_days so
 	// the trial actually expires (otherwise it never ends — a free-forever leak).
@@ -314,14 +319,27 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 
 	var sub interface{}
 	if existing != nil {
+		// Preserve the tenant's already-chosen billing cycle unless the admin explicitly
+		// overrides it — period_end must always reflect the ACTUAL cycle being billed,
+		// not a hardcoded month (a mismatch here desyncs current_period_end from the
+		// months actually invoiced by InvoiceService.buildLines).
+		cycle := existing.BillingCycle
+		if billingCycle != "" {
+			cycle = billingCycle
+		}
+		periodEnd := subscriptions.AddBillingCycle(now, string(cycle))
+
 		// Update existing subscription
-		updated, err := h.client.TenantSubscription.UpdateOneID(existing.ID).
+		update := h.client.TenantSubscription.UpdateOneID(existing.ID).
 			SetPlanID(plan.ID).
 			SetStatus(status).
 			SetCurrentPeriodStart(now).
 			SetCurrentPeriodEnd(periodEnd).
-			SetNillableTrialEndsAt(trialEndsPtr).
-			Save(ctx)
+			SetNillableTrialEndsAt(trialEndsPtr)
+		if billingCycle != "" {
+			update = update.SetBillingCycle(tenantsubscription.BillingCycle(billingCycle))
+		}
+		updated, err := update.Save(ctx)
 		if err != nil {
 			h.log.Error("failed to update tenant subscription", zap.Error(err))
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update subscription"})
@@ -329,11 +347,18 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 		}
 		sub = updated
 	} else {
+		cycle := billingCycle
+		if cycle == "" {
+			cycle = tenantsubscription.BillingCycleMONTHLY
+		}
+		periodEnd := subscriptions.AddBillingCycle(now, string(cycle))
+
 		// Create new subscription
 		created, err := h.client.TenantSubscription.Create().
 			SetTenantID(tenantID).
 			SetPlanID(plan.ID).
 			SetStatus(status).
+			SetBillingCycle(cycle).
 			SetCurrentPeriodStart(now).
 			SetCurrentPeriodEnd(periodEnd).
 			SetNillableTrialEndsAt(trialEndsPtr).
