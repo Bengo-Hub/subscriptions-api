@@ -68,7 +68,11 @@ func seedPOSProductLinePlans(ctx context.Context, tx *ent.Tx) error {
 			// (purchase_orders/supplier_portal) is likewise core: every bar/restaurant reorders
 			// stock from suppliers regardless of turnover, matching stock_tracking's already-core
 			// status in the shared `core` set above — it shouldn't take a Pro upgrade to raise a PO.
-			features: with("table_management", "loyalty_program", "etims_integration", "kds", "purchase_orders", "supplier_portal"),
+			// ledger_posting: the (ungated) Expenses feature's "Expense Ledger" account picker reads
+			// treasury-api's /ledger/chart-of-accounts, which is gated behind this feature — without
+			// it Starter tenants get a permanently empty dropdown on a feature they otherwise have
+			// full access to. Granted here instead of ungating the endpoint in code.
+			features: with("table_management", "loyalty_program", "etims_integration", "kds", "purchase_orders", "supplier_portal", "ledger_posting"),
 		},
 		{
 			id: uuid.NewSHA1(uuid.NameSpaceOID, []byte("pos:hosp:PRO")), planCode: "POS_HOSP_PRO",
