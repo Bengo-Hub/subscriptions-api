@@ -217,6 +217,12 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 	if payload.TenantID == "" && payload.Payload != nil {
 		payload.TenantID = payload.Payload.TenantID
 	}
+	// Same for roles: auth.user.created nests `roles` under payload, so without this
+	// fallback the role buckets (admins/cashiers/riders) never fill and every new user
+	// is metered as generic staff.
+	if len(payload.Roles) == 0 && payload.Payload != nil {
+		payload.Roles = payload.Payload.Roles
+	}
 
 	tenantID, err := uuid.Parse(payload.TenantID)
 	if err != nil {

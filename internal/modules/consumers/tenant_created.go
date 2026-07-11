@@ -84,11 +84,22 @@ func (c *TenantCreatedConsumer) Start(ctx context.Context, js nats.JetStreamCont
 }
 
 func (c *TenantCreatedConsumer) handle(ctx context.Context, msg *nats.Msg) error {
-	var payload tenantCreatedPayload
-	if err := json.Unmarshal(msg.Data, &payload); err != nil {
+	// shared-events nests business fields under `payload`; slug/name live there, not at
+	// the top level. Decoding straight into tenantCreatedPayload left slug/name empty so
+	// the platform-owner skip never fired and the subscription was created with a blank
+	// slug/name.
+	var env struct {
+		TenantID uuid.UUID            `json:"tenant_id"`
+		Payload  tenantCreatedPayload `json:"payload"`
+	}
+	if err := json.Unmarshal(msg.Data, &env); err != nil {
 		c.log.Warn("could not parse tenant.created payload", zap.Error(err))
 		// Bad message format — ACK to avoid infinite redelivery.
 		return nil
+	}
+	payload := env.Payload
+	if payload.TenantID == uuid.Nil {
+		payload.TenantID = env.TenantID
 	}
 
 	if payload.TenantID == uuid.Nil {
