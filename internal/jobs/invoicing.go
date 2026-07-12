@@ -55,6 +55,7 @@ func generateUpcomingInvoices(ctx context.Context, log *zap.Logger, orm *ent.Cli
 			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
 			tenantsubscription.CurrentPeriodEndGTE(windowStart),
 			tenantsubscription.CurrentPeriodEndLTE(windowEnd),
+			notPerpetual(), // one-time/perpetual licenses are invoiced once at purchase, never recurring
 		).
 		WithPlan().
 		WithTenant().
