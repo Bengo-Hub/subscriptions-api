@@ -274,6 +274,7 @@ var featureCatalog = func() []catalogEntry {
 		feat("expense_tracking", isp, "ISP", "Expense Tracking"),
 		feat("custom_domain", isp, "ISP", "Custom Domain"),
 		feat("white_label", isp, "ISP", "White-Label Captive Portal"),
+		feat("white_label_portal", isp, "ISP", "White-Label Customer Portal"),
 		feat("api_access", isp, "ISP", "API Access"),
 		feat("custom_integrations", isp, "ISP", "Custom Integrations"),
 		feat("priority_support", isp, "ISP", "Priority Support"),
@@ -285,8 +286,16 @@ var featureCatalog = func() []catalogEntry {
 		// (Centipid $0.25 ≈ KES 35), metered via the isp.subscriber.created event.
 		meteredLim("max_pppoe_subscribers", isp, "Limits", "PPPoE Subscribers", "/ month", "isp.subscriber.created"),
 		meteredLim("max_vouchers_per_month", isp, "Limits", "Vouchers", "/ month", ""),
-		// NOTE: SMS/WhatsApp are prepaid credit bundles in notifications-api
-		// (TenantCredit), NOT plan limits — so no max_sms_per_month here.
+		// SMS bundles are prepaid TenantCredits in notifications-api and are NOT enforced as a plan
+		// limit; this catalog entry only exists because ISP plan tiers carry a nominal max_sms_per_month
+		// in tier_limits (keeps validateCatalogLinkage green — no service gates on it).
+		lim("max_sms_per_month", isp, "Limits", "SMS", "/ month"),
+		// ISP billing-engine inputs read from tier_limits (see plans_isp_billing.go): the per-subscriber
+		// PPPoE fee + the service-charge percentage/threshold. Catalogued as limits so the strict
+		// linkage check passes; they are pricing inputs, not enforced capacity caps.
+		lim("pppoe_per_subscriber_fee", isp, "Billing", "PPPoE Per-Subscriber Fee", "KES / subscriber"),
+		lim("service_charge_percentage", isp, "Billing", "Service Charge", "%"),
+		lim("service_charge_threshold", isp, "Billing", "Service Charge Threshold", "KES"),
 
 		// ─── Projects & Invoicing ─────────────────────────────────────────────
 		feat("project_management", projects, "Projects", "Project Management"),
