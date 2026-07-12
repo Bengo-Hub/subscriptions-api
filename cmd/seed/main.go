@@ -89,6 +89,11 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed bundle plans: %w", err)
 	}
 
+	// 2.1b Seed PowerSuite perpetual (one-time) license tiers (POWERSUITE_*_ONE_TIME)
+	if err := seedBundleOneTimePlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed powersuite one-time plans: %w", err)
+	}
+
 	// 2.5 Seed TruLoad org-level plans (Starter, Growth, Professional + License)
 	if err := seedTruLoadOrgPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed truload org plans: %w", err)

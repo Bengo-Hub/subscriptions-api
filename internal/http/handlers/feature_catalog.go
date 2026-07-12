@@ -42,11 +42,14 @@ type featureDefinitionDTO struct {
 	NatsEvent     string    `json:"natsEvent,omitempty"`
 	SortOrder     int       `json:"sortOrder"`
 	IsActive      bool      `json:"isActive"`
-	// MinPlanCode / MinTierLabel = the cheapest active plan that unlocks this feature, computed
-	// from the plans' feature sets. Lets any UI render "Upgrade to <tier>" + deep-link to the
-	// pricing page without a hardcoded per-app feature→tier map. Empty when no plan grants it.
+	// MinPlanCode / MinTierLabel / MinTierOrder = the cheapest active plan that unlocks this
+	// feature, computed from the plans' feature sets. Lets any UI render "Upgrade to <tier>" +
+	// deep-link to the pricing page without a hardcoded per-app feature→tier map, and lets the
+	// gating wrapper compare the tenant's tier rank against MinTierOrder (family-scoped) so
+	// at/below-tier features never show an upgrade banner. Empty/0 when no plan grants it.
 	MinPlanCode  string `json:"minPlanCode,omitempty"`
 	MinTierLabel string `json:"minTierLabel,omitempty"`
+	MinTierOrder int    `json:"minTierOrder,omitempty"`
 }
 
 // minPlan is the cheapest plan that unlocks a given feature code.
@@ -148,6 +151,7 @@ func (h *FeatureCatalogHandler) ListCatalog(w http.ResponseWriter, r *http.Reque
 		if mp, ok := minPlans[d.FeatureCode]; ok {
 			items[i].MinPlanCode = mp.code
 			items[i].MinTierLabel = mp.name
+			items[i].MinTierOrder = mp.tier
 		}
 		services[d.ServiceTag] = true
 	}

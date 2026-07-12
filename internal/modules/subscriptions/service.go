@@ -117,10 +117,15 @@ type InitiateSubscriptionResult struct {
 
 // SubscriptionResult is returned from lifecycle operations.
 type SubscriptionResult struct {
-	ID                 uuid.UUID      `json:"id"`
-	TenantID           uuid.UUID      `json:"tenant_id"`
-	PlanCode           string         `json:"plan_code"`
-	PlanName           string         `json:"plan_name"`
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
+	PlanCode string    `json:"plan_code"`
+	PlanName string    `json:"plan_name"`
+	// TierOrder is the resolved plan's tier rank (1=Starter, 2=Growth, 3=Professional; higher
+	// for licenses). Lets clients gate by tier: a feature whose cheapest unlocking plan is at
+	// tier ≤ TierOrder (same family) is unlocked, so the upgrade wrapper never shows for
+	// at/below-tier features. 0 for exempt/demo (always unlocked anyway).
+	TierOrder          int            `json:"tier_order"`
 	Status             string         `json:"status"`
 	BundleCode         *string        `json:"bundle_code,omitempty"`
 	TrialEndsAt        *time.Time     `json:"trial_ends_at,omitempty"`
@@ -265,11 +270,11 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 		"description":    description,
 		"callback_url":   in.ReturnURL,
 		"metadata": map[string]any{
-			"tenant_id":     in.TenantID.String(),
-			"plan_code":     plan.PlanCode,
-			"billing_cycle": string(cycle),
-			"months":        months,
-			"setup_fee":     setupFee,
+			"tenant_id":          in.TenantID.String(),
+			"plan_code":          plan.PlanCode,
+			"billing_cycle":      string(cycle),
+			"months":             months,
+			"setup_fee":          setupFee,
 			"setup_fee_included": setupFeeIncluded,
 		},
 	}
@@ -1374,6 +1379,7 @@ func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.Subscriptio
 	if plan != nil {
 		result.PlanCode = plan.PlanCode
 		result.PlanName = plan.Name
+		result.TierOrder = plan.TierOrder
 		if result.BillingCycle == "" {
 			result.BillingCycle = plan.BillingCycle
 		}
