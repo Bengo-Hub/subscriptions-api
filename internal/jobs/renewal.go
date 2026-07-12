@@ -7,11 +7,20 @@ import (
 
 	"go.uber.org/zap"
 
+	serviceclient "github.com/Bengo-Hub/shared-service-client"
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/predicate"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
-	serviceclient "github.com/Bengo-Hub/shared-service-client"
 )
+
+// notPerpetual excludes ONE_TIME (perpetual license) subscriptions from the expiry/renewal
+// lifecycle: they never expire and never auto-renew. Filter on the PLAN's billing cycle (the
+// sub row may carry a stale MONTHLY default even for a one-time plan — see buildResult).
+func notPerpetual() predicate.TenantSubscription {
+	return tenantsubscription.Not(tenantsubscription.HasPlanWith(subscriptionplan.BillingCycleEQ("ONE_TIME")))
+}
 
 // StartRenewalJob runs two background goroutines:
 //   - Expiry: marks ACTIVE subscriptions past current_period_end as EXPIRED (runs every hour)
@@ -83,6 +92,7 @@ func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, 
 		Where(
 			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
 			tenantsubscription.CurrentPeriodEndLT(now),
+			notPerpetual(), // never expire a paid one-time/perpetual license
 		).
 		All(ctx)
 	if err != nil {
@@ -168,6 +178,7 @@ func initiateRenewals(ctx context.Context, log *zap.Logger, orm *ent.Client, svc
 			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
 			tenantsubscription.CurrentPeriodEndGTE(now),
 			tenantsubscription.CurrentPeriodEndLTE(horizon),
+			notPerpetual(), // never auto-renew (re-charge) a paid one-time/perpetual license
 		).
 		WithPlan().
 		All(ctx)
@@ -223,8 +234,8 @@ func extendFreePlan(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *
 	}
 
 	svc.WriteOutboxEventPublic(ctx, tx, updated.TenantID, "subscription", updated.ID, "renewed", map[string]any{
-		"tenant_id": updated.TenantID.String(),
-		"free_plan": true,
+		"tenant_id":      updated.TenantID.String(),
+		"free_plan":      true,
 		"new_period_end": newEnd.Format(time.RFC3339),
 	})
 
