@@ -253,7 +253,14 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 		amount = amount.Add(decimal.NewFromFloat(setupFee))
 	}
 
-	description := fmt.Sprintf("Subscription for %s plan (%d month(s))", plan.Name, months)
+	// Description reflects the plan's actual billing cycle (from the DB) — a ONE_TIME perpetual
+	// licence is a single charge, not an N-month subscription.
+	var description string
+	if cycle == tenantsubscription.BillingCycleONE_TIME {
+		description = fmt.Sprintf("One-time perpetual licence for %s", plan.Name)
+	} else {
+		description = fmt.Sprintf("Subscription for %s plan (%d month(s))", plan.Name, months)
+	}
 	if setupFeeIncluded {
 		description += " incl. one-time setup fee"
 	} else if setupFee > 0 && CycleWaivesSetupFee(string(cycle)) {
