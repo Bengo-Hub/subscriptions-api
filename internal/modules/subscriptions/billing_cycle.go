@@ -68,6 +68,37 @@ func AddBillingCycle(t time.Time, cycle string) time.Time {
 	return t.AddDate(0, months, 0)
 }
 
+// PerpetualYears is how far out a ONE_TIME (perpetual) licence's current_period_end is placed so
+// it never appears "expiring" and never trips a period-window check. Matches the exempt-tenant
+// sentinel (exemption.go). The renewal/invoicing jobs additionally exclude ONE_TIME via
+// notPerpetual(), so this is belt-and-suspenders — but storing a real far-future date keeps the
+// stored row self-consistent instead of showing a finite ~1-month expiry on a perpetual licence.
+const PerpetualYears = 100
+
+// ResolvePeriodEnd returns the current_period_end for a freshly (re)started period: a far-future
+// perpetual date for a ONE_TIME licence, otherwise `now` advanced by one billing period. Use this
+// everywhere a subscription period is (re)started so a ONE_TIME plan never gets a finite,
+// soon-to-expire period.
+func ResolvePeriodEnd(now time.Time, cycle string) time.Time {
+	if tenantsubscription.BillingCycle(cycle) == tenantsubscription.BillingCycleONE_TIME {
+		return now.AddDate(PerpetualYears, 0, 0)
+	}
+	return AddBillingCycle(now, cycle)
+}
+
+// ResolveAssignedCycle picks the billing cycle to store on a subscription when a plan is assigned:
+// the admin's explicit request wins; otherwise inherit the PLAN's own cycle (so a ONE_TIME plan is
+// never silently stored as MONTHLY); falling back to MONTHLY only when neither is set/valid.
+func ResolveAssignedCycle(requested, planCycle string) tenantsubscription.BillingCycle {
+	if c, err := NormalizeBillingCycle(requested); err == nil && c != "" {
+		return c
+	}
+	if c, err := NormalizeBillingCycle(planCycle); err == nil && c != "" {
+		return c
+	}
+	return tenantsubscription.BillingCycleMONTHLY
+}
+
 // Metadata keys for the setup-fee waiver audit trail and for the intent-scoped pending
 // billing-period choice recorded at checkout (consumed by RenewSubscription when the
 // matching payment.succeeded event arrives).

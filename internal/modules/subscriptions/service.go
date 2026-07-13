@@ -444,7 +444,7 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 	now := time.Now().UTC()
 	status := tenantsubscription.StatusTRIAL
 	var trialEndsAt *time.Time
-	periodEnd := AddBillingCycle(now, string(cycle))
+	periodEnd := ResolvePeriodEnd(now, string(cycle)) // perpetual for ONE_TIME, else +1 period
 
 	if in.TrialDays > 0 {
 		t := now.Add(time.Duration(in.TrialDays) * 24 * time.Hour)
@@ -794,7 +794,9 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 	if sub.CurrentPeriodEnd.After(now) {
 		base = sub.CurrentPeriodEnd
 	}
-	periodEnd := AddBillingCycle(base, string(cycle))
+	// A ONE_TIME licence is perpetual — the initial "renewal" that settles its purchase payment
+	// must set a far-future period, not stack a single month.
+	periodEnd := ResolvePeriodEnd(base, string(cycle))
 
 	// Clear grace + invoice/reminder markers now that payment has been received; the
 	// pending checkout markers are one-shot and consumed (or discarded) here too.
