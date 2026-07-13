@@ -319,7 +319,13 @@ func (h *SubscriptionHandler) GetByTenantID(w http.ResponseWriter, r *http.Reque
 	raw, _ := json.Marshal(sub)
 	var resp map[string]any
 	_ = json.Unmarshal(raw, &resp)
-	resp["usage_limits"] = h.buildUsageLimits(r.Context(), tenantID, sub)
+	// usage_limits requires a per-tenant aggregate over usage_events. S2S callers
+	// on the login critical path (e.g. auth-api JWT enrichment) don't use it, so
+	// they pass ?include_usage=false to skip the aggregate. Defaults to including
+	// it for the frontend, which caches it for offline enforcement.
+	if r.URL.Query().Get("include_usage") != "false" {
+		resp["usage_limits"] = h.buildUsageLimits(r.Context(), tenantID, sub)
+	}
 
 	h.respondWithJSON(w, http.StatusOK, resp)
 }
