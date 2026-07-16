@@ -46,7 +46,9 @@ func seedInventoryPlans(ctx context.Context, tx *ent.Tx) error {
 				"max_users":                     3,
 				"inventory_max_images_per_item": 1,
 			},
-			features: []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports"},
+			// stock_transfers/stock_take etc. became REAL backend gates 2026-07-16 —
+			// standalone inventory tiers must grant what their tenants already use.
+			features: []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports", "stock_transfers", "stock_alerts"},
 		},
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("inventory:GROWTH")),
@@ -63,7 +65,7 @@ func seedInventoryPlans(ctx context.Context, tx *ent.Tx) error {
 				"max_users":                     10,
 				"inventory_max_images_per_item": 5,
 			},
-			features: []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports", "multi_warehouse", "batch_expiry_tracking", "supplier_portal", "advanced_analytics", "inventory_multiple_images"},
+			features: []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports", "multi_warehouse", "batch_expiry_tracking", "supplier_portal", "advanced_analytics", "inventory_multiple_images", "stock_transfers", "stock_alerts", "expiry_alerts", "stock_take", "lots_batches", "requisitions", "manufacturing", "fixed_assets", "report_stock_reconciliation"},
 		},
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("inventory:PROFESSIONAL")),
@@ -80,7 +82,7 @@ func seedInventoryPlans(ctx context.Context, tx *ent.Tx) error {
 				"max_users":                     -1,
 				"inventory_max_images_per_item": -1,
 			},
-			features: []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports", "multi_warehouse", "batch_expiry_tracking", "supplier_portal", "advanced_analytics", "api_access", "barcode_scanning", "bulk_import", "priority_support", "inventory_multiple_images"},
+			features: []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports", "multi_warehouse", "batch_expiry_tracking", "supplier_portal", "advanced_analytics", "api_access", "barcode_scanning", "bulk_import", "priority_support", "inventory_multiple_images", "stock_transfers", "stock_alerts", "expiry_alerts", "stock_take", "lots_batches", "requisitions", "rfqs", "procurement_contracts", "manufacturing", "fixed_assets", "events_module", "warranties", "report_stock_reconciliation", "report_food_cost_variance", "report_menu_engineering"},
 		},
 		{
 			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("inventory:ONE_TIME")),
@@ -91,7 +93,7 @@ func seedInventoryPlans(ctx context.Context, tx *ent.Tx) error {
 			price:        80000.0,
 			tierOrder:    4,
 			tierLimits:   map[string]any{"max_warehouses": -1, "max_products": -1, "max_suppliers": -1, "max_users": -1, "inventory_max_images_per_item": -1},
-			features:     []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports", "multi_warehouse", "batch_expiry_tracking", "supplier_portal", "advanced_analytics", "api_access", "barcode_scanning", "bulk_import", "priority_support", "inventory_multiple_images"},
+			features:     []string{"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports", "multi_warehouse", "batch_expiry_tracking", "supplier_portal", "advanced_analytics", "api_access", "barcode_scanning", "bulk_import", "priority_support", "inventory_multiple_images", "stock_transfers", "stock_alerts", "expiry_alerts", "stock_take", "lots_batches", "requisitions", "rfqs", "procurement_contracts", "manufacturing", "fixed_assets", "events_module", "warranties", "report_stock_reconciliation", "report_food_cost_variance", "report_menu_engineering"},
 		},
 	}
 

@@ -51,11 +51,14 @@ func seedTreasuryPlans(ctx context.Context, tx *ent.Tx) error {
 				"max_users":                  5,
 				"max_currencies":             1,
 			},
+			// quotations/credit_notes/vouchers/treasury_approvals became REAL backend/UI
+			// gates 2026-07-16 — standalone treasury tiers must grant what their tenants
+			// already use (invoice_generation historically covered quotations too).
 			features: []string{
 				"wallet_management", "payment_collection",
 				"paystack_integration", "payment_links", "transaction_reports",
 				"invoice_generation", "basic_reconciliation", "customer_management",
-				"basic_analytics",
+				"basic_analytics", "quotations",
 			},
 		},
 		{
@@ -82,6 +85,7 @@ func seedTreasuryPlans(ctx context.Context, tx *ent.Tx) error {
 				"basic_reconciliation", "etims_integration",
 				"advanced_analytics", "multi_currency", "bulk_payouts",
 				"escrow_management", "payout_schedules", "reconciliation",
+				"quotations", "credit_notes", "treasury_approvals", "smart_tax_compliance",
 			},
 		},
 		{
@@ -110,6 +114,7 @@ func seedTreasuryPlans(ctx context.Context, tx *ent.Tx) error {
 				"escrow_management", "payout_schedules", "reconciliation",
 				"api_access", "webhooks", "custom_integrations",
 				"audit_trail", "equity_payouts", "priority_support",
+				"quotations", "credit_notes", "vouchers", "treasury_approvals", "smart_tax_compliance",
 			},
 		},
 	}
