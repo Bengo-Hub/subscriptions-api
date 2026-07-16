@@ -78,3 +78,49 @@ attendance from T1 and appraisals/recruitment/training from T2), all TruLoad pla
 standalone service line (INVENTORY_/TREASURY_/LOGISTICS_/MARKETFLOW/ISP/PROJECTS/LIBRARY,
 service-charge plans). ERP-suite `_ONE_TIME` licenses still union `powerSuiteFeatures(tier)`
 (generic builders kept in `plans_powersuite_builders.go`).
+
+## Enforcement rollout (2026-07-16, same session — backends + UIs)
+
+Seed verified locally: migrations + `go run ./cmd/seed` → 0 WARN, catalog validation passed,
+all superseded rows migrated + hard-deleted, exit 0.
+
+- **auth-api**: `defaultTrialPlan` routes use_case → `POWERSUITE_{HOSP|DUKA|DAWA}_BASIC`.
+- **inventory-api**: route gates for stock_take/lots_batches/rfqs/requisitions/
+  procurement_contracts/manufacturing/events_module/fixed_assets/report_*/bulk_import;
+  **warranties module** (`extras_warranties.go`, mutations gated `warranties`); NEW: field-level
+  gates on PUT /inventory/settings (stock_alerts, expiry_alerts, lots_batches,
+  batch_expiry_tracking — enabling requires the feature) + `stock_alerts` gate on
+  /inventory/analytics/reorder-alerts.
+- **treasury-api**: invoice_generation vs quotations split, credit_notes, treasury_approvals,
+  smart_tax_compliance, ledger_posting, reconciliation, tax_codes (vouchers has no distinct
+  backend surface — rides ledger_posting; gated in treasury-ui nav via `vouchers`).
+- **pos-api**: NEW layaway + commissions feature gates; purchase-orders proxy DELETED
+  (inventory owns POs; `tenantSlugFromRequest` moved to online_orders_rider.go).
+- **erp-api**: payroll/appraisals/recruitment/training/attendance gates (pre-existing).
+- **pos-ui**: Purchase Orders page/hook/api DELETED (dashboard quick-action links to
+  inventory-ui); Accounting → single Treasury link; CRM & Marketing → single CRM link; NEW
+  gated ERP link (hr_management); Sync Monitor moved to platform-owner-only section + page
+  guard; settings tabs already use-case-gated.
+- **inventory-ui**: MODULE_FEATURE extended (stock_take, lots_batches, rfqs, requisitions,
+  procurement_contracts, manufacturing, events_module, fixed_assets, warranties, per-item
+  report_* codes); "Ingredient Utilization" → "Stock Reconciliation" (route unchanged); NEW
+  Warranties page (`/warranties`, retail-only nav) + gated ERP link; alert/lot/expiry settings
+  toggles wrapped in FeatureLock (matching the new API enforcement).
+- **treasury-ui**: Sales & Invoicing group gate dropped (T1 keeps Quotations/Customers);
+  per-item gates invoice_generation/quotations/credit_notes/vouchers/treasury_approvals;
+  dashboard Tax & Compliance card gated smart_tax_compliance; gated ERP link.
+- **erp-ui**: nav lock badges + route-level block gates (layout.tsx) for payroll, attendance,
+  appraisals (+performance), training, recruitment.
+- **subscriptions-ui**: tenant plans view filters `isPublic !== false` (SUPPORT_* rows hidden);
+  subscribe page already offers MONTHLY/SEMI_ANNUAL/ANNUAL.
+
+### Still pending (operational / decisions)
+1. **Prod rollout**: deploy subscriptions-api → run seed Job → check `MIGRATE …` log →
+   treasury invoice-correction pass (void+regen PENDING invoices whose plan price changed) →
+   deploy backends/UIs.
+2. **Quick-service + services plan families** (doc NOTE): not minted — they currently resolve
+   to the HOSP family. Needs a pricing decision (docs say "lower prices" without figures).
+3. Backlog from subscriptions-audit.md §5: schedule `CalculateDailyOverages` (daily worker),
+   wire per-service usage reporting to /usage/report, remaining capacity limits
+   (pos max_devices/max_cashiers…, ordering, inventory max_products/max_suppliers),
+   discount-rule format mismatch (UI `ANNUAL_DISCOUNT`+value vs API `YEARLY`+percentage).
