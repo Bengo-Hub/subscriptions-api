@@ -27,6 +27,10 @@ func retireAnnualPlanRows(ctx context.Context, tx *ent.Tx) error {
 		Where(
 			subscriptionplan.BillingCycleEQ("ANNUAL"),
 			subscriptionplan.IsActiveEQ(true),
+			// SUPPORT_* rows are the per-family annual support plans that accompany the
+			// PowerSuite perpetual licenses (plans_powersuite_support.go) — deliberately
+			// ANNUAL and deliberately kept active; they are not tier duplicates.
+			subscriptionplan.Not(subscriptionplan.PlanCodeHasPrefix("SUPPORT_")),
 		).
 		SetIsActive(false).
 		SetIsPublic(false).

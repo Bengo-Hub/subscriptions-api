@@ -35,14 +35,14 @@ func seedSetupFees(ctx context.Context, tx *ent.Tx) error {
 				subscriptionplan.ServiceTagEQ(tag),
 				subscriptionplan.BillingCycleNEQ("ONE_TIME"),
 			)
-		// POS industry product-line plans (Codevertex POS/Duka/Dawa) carry their own
-		// per-tier implementation fee from plans_pos_lines.go — don't clobber them with
-		// the flat device-onboarding fee. Only the POS_DEVICE_* seat plans get the default.
+		// The use-case PowerSuite families (service_tag=pos) carry their own per-tier
+		// implementation fee from plans_powersuite_usecase.go — don't clobber them with
+		// the flat device-onboarding fee.
 		if tag == "pos" {
 			upd = upd.Where(subscriptionplan.Not(subscriptionplan.Or(
-				subscriptionplan.PlanCodeHasPrefix("POS_HOSP_"),
-				subscriptionplan.PlanCodeHasPrefix("POS_DUKA_"),
-				subscriptionplan.PlanCodeHasPrefix("POS_DAWA_"),
+				subscriptionplan.PlanCodeHasPrefix("POWERSUITE_HOSP_"),
+				subscriptionplan.PlanCodeHasPrefix("POWERSUITE_DUKA_"),
+				subscriptionplan.PlanCodeHasPrefix("POWERSUITE_DAWA_"),
 			)))
 		}
 		n, err := upd.SetSetupFee(fee).Save(ctx)

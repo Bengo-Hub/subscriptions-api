@@ -56,25 +56,8 @@ func seedPlanAddonFeatures(ctx context.Context, tx *ent.Tx) error {
 				{featureCode: "dedicated_support_addon", overageUnitPrice: 5000.0},
 			},
 		},
-		// ── ORDERING_STARTER_YEARLY addons (mirrors monthly starter) ──────────
-		{
-			planID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_STARTER_YEARLY")),
-			addons: []addonDef{
-				{featureCode: "extra_rider_slot", overageUnitPrice: 2750.0},
-				{featureCode: "extra_outlet", overageUnitPrice: 5500.0},
-				{featureCode: "advanced_analytics_addon", overageUnitPrice: 5500.0},
-			},
-		},
-		// ── ORDERING_GROWTH_YEARLY addons ─────────────────────────────────────
-		{
-			planID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_GROWTH_YEARLY")),
-			addons: []addonDef{
-				{featureCode: "extra_rider_slot", overageUnitPrice: 2750.0},
-				{featureCode: "extra_outlet", overageUnitPrice: 4400.0},
-				{featureCode: "hotel_module_addon", overageUnitPrice: 22000.0},
-				{featureCode: "route_optimization_addon", overageUnitPrice: 11000.0},
-			},
-		},
+		// *_YEARLY addon blocks removed — annual plan rows are hard-deleted (billing
+		// period is now a per-subscription choice on the monthly rows).
 		// ── TRULOAD_STARTER addons ─────────────────────────────────────────────
 		{
 			planID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("truload:org:STARTER")),

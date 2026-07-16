@@ -1,0 +1,132 @@
+Hospitality Power suite plans(inventory, treasury, pos, ordering. logistics, erp)
+Power suite Basic tier 1(2,500/mo), Setup Fee KES 5,000 · Buy outright(one-time) 45,000 · Annual support: 9,000
+Inventory tier 1 features
+- Catalog -> all catalog side bar items but no bulk upload or import
+- Ware -> all warehouse modules except Stock Take and Lots and batches
+- Procurement -> all procurement modules except RFQs, Requisitions, Contracts
+- Reports -> all reports except ingredient utilization(rename to stock reconciliation), menu engineering and Food cost variance reports
+- Manufacturing ->  no access to any manufacturing module features
+- Events -> no access to any events module features
+- Assets -> no access to any assets module features
+- Settings -> in the settings tabs and configs, no stock alerts and expiry alerts, no lot & batch tracking, no expiry date tracking
+
+POS tier 1 features
+- Operations -> all operations module features on the side bar
+- Sell -> POS Terminal, All Sales
+- Floor & Service -> Tables
+- Display Board -> KDS
+- Hotel -> Happy Hour
+- Online Orders -> Pickup queue
+- Inventory -> Manage Inventory(remove the purchase orders duplicate, it is owned by inventory)
+- Accounting -> Link to Treasury(Remove the other duplicate links and link treasury service)
+- CRM & Marketing -> Link to CRM(Remove the other duplicate links)
+- Management -> Reports, Most Profitable, Settings(Sync Monitor only shown to platform admins. move to platform owner admin section). Settings tabs should be gated by use case, do nto show irrelevant settings like tables, booking policy in retail use case or any other unfitting use case
+
+Treasury tier 1 features
+- Dashboard -> all dashboard analytics and stats but gate the Tax & Compliance Card by subscription wrapper
+- Transactions -> all features
+- Sales & Invoicing  -> Customers, Quotations
+- Purchases & Payables -> Purchases & Bills
+- Accounting -> no features in tier 1
+- Reports & Compliance -> All Features but only include some Tax & Compliance Features like Tax Codes, Tax Periods, Rates & Calendars, Structuring
+- Settings-> All
+- Approvals -> not approvals in tier 1
+- Backups -> supported
+
+ERP tier 1 features -> no erp access in tier one(show the erp link in pos, inventory, treasury but gate by subscription and permissions, rbac)
+Ordering - basic ordering features
+Logistics - basic logistics features and basic rider app access
+CRM - crm contacts and basic access
+
+
+Hospitality Power suite plans(inventory, treasury, pos, ordering, logistics, erp, crm, logistics)
+Power suite Professional tier 2(4000/mo), Setup Fee KES 10,000 · Buy outright(one-time) 90,000 · Annual support: 19,000
+Inventory tier 2 features
+- Catalog -> all catalog side bar items and bulk upload or import support
+- Warehouse -> all warehouse modules except Lots and batches
+- Procurement -> all procurement modules except RFQs, Contracts
+- Reports -> all reports except menu engineering 
+- Manufacturing ->  basic access to manufacturing module features
+- Events -> no access to any events module features
+- Assets -> basic access to assets module features
+- Warranties -> audit the api and ui and implement this module(applicable in retail use case only, tier 2)
+- Settings -> in the settings tabs and configs, no expiry alerts, no lot & batch tracking, no expiry date tracking
+
+POS tier 2 features
+- Operations -> all operations module features on the side bar
+- Sell -> POS Terminal, All Sales
+- Floor & Service -> Tables
+- Display Board -> KDS
+- Hotel -> Happy Hour
+- Online Orders -> Pickup queue
+- Inventory -> Manage Inventory(remove the purchase orders duplicate, it is owned by inventory)
+- Accounting -> Link to Treasury(Remove the other duplicate links and link treasury service)
+- CRM & Marketing -> Link to CRM(Remove the other duplicate links)
+- Management -> Reports, Most Profitable, Settings(Sync Monitor only shown to platform admins. move to platform owner admin section). Settings tabs should be gated by use case, do nto show irrelevant settings like tables, booking policy in retail use case or any other unfitting use case
+
+Treasury tier 2 features
+- Dashboard -> all dashboard analytics and stats
+- Transactions -> all features
+- Sales & Invoicing  -> Customers, Quotations, Invoices, Credit Notes
+- Purchases & Payables -> All
+- Accounting -> basic accounting features exclude Vouchers, Reconciliation
+- Reports & Compliance -> All Features 
+- Settings-> All
+- Approvals -> supported
+- Backups -> supported
+
+ERP tier 2 features -> basic erp access in tier 2(show the erp link in pos, inventory, treasury but gate by subscription and permissions, rbac) but no payroll or payroll access, appraisals. recruitment and training modules, allow attendance and employee sync from relevant services like pos, treasury, inventory, etc
+Ordering - standard ordering features
+Logistics - standard logistics features and basic rider app access
+CRM - crm contacts and standard access
+
+
+Hospitality Power suite plans(inventory, treasury, pos, ordering, logistics, erp, crm, logistics)
+Power suite Gold tier 3(8000/mo), Setup Fee 20,000 · Buy outright 150,000 · Annual support 30,000
+Inventory tier 3 features
+- Catalog -> all catalog side bar items and bulk upload or import support
+- Warehouse -> all warehouse modules except Lots and batches
+- Procurement -> all procurement modules
+- Reports -> all access as per use case supported reports, analytics and stats
+- Manufacturing ->  all access
+- Events ->all access as per use case supported features
+- Assets ->all access as per use case supported features
+- Warranties -> audit the api and ui and implement this module(applicable in retail use case only, tier 2)
+- Settings -> in the settings tabs and configs, no expiry alerts, no expiry date tracking
+
+POS tier 3 features
+- Operations -> all access as per use case supported features
+- Sell -> all access as per use case supported features
+- Floor & Service -> All Access
+- Display Board -> KDS
+- Hotel -> Happy Hour
+- Online Orders -> Pickup queue
+- Inventory -> Manage Inventory(remove the purchase orders duplicate, it is owned by inventory)
+- Accounting -> Link to Treasury(Remove the other duplicate links and link treasury service)
+- CRM & Marketing -> Link to CRM(Remove the other duplicate links)
+- Management -> Applicable module use case Reports, Most Profitable, Settings(Sync Monitor only shown to platform admins. move to platform owner admin section). Settings tabs should be gated by use case, do not show irrelevant settings like tables, booking policy in retail use case or any other unfitting use case
+
+Treasury tier 3 features
+- Dashboard -> all dashboard analytics and stats
+- Transactions -> all access as per use case supported features
+- Sales & Invoicing  -> all access as per use case supported features
+- Purchases & Payables -> all access as per use case supported features
+- Accounting ->all access as per use case supported features
+- Reports & Compliance -> All Features 
+- Settings-> all access as per use case supported settings and configs
+- Approvals -> supported
+- Backups -> supported
+
+ERP tier 3 features -> all access(show the erp link in pos, inventory, treasury but gate by subscription and permissions, rbac) 
+Ordering - all access
+Logistics - all access
+CRM - all access
+
+
+NOTE
+- mint quick service plans as per use case supported features but lower the prices since quick services supports fewer features
+- mint services plans as per services use case supported features but lower plans even further since services has fewer features supported
+- drop all the individual inventory, logistics, pos, treasury, ordering specific plans, move the sofain-limited tenant to basic tier 1 plan and migrate all relevant data, coupons, etc and the 6 month payment
+- keep erp and truload related plans but polish the erp tier features based on the features in each use case based on the tier level features above
+
+

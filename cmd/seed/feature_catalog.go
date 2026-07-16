@@ -82,6 +82,14 @@ var featureCatalog = func() []catalogEntry {
 		feat("etims_integration", treasury, "Accounting", "KRA eTIMS Integration"),
 		feat("customer_management", treasury, "Accounting", "Customer Ledger"),
 		feat("vendor_management", treasury, "Accounting", "Vendor Management"),
+		// Module-granular codes for the use-case PowerSuite tiers: Sales & Invoicing splits
+		// (quotations tier 1, invoices/credit notes tier 2), accounting vouchers (tier 3),
+		// the approvals module (tier 2+) and the smart tax & compliance dashboard card.
+		feat("quotations", treasury, "Accounting", "Quotations & Estimates"),
+		feat("credit_notes", treasury, "Accounting", "Credit Notes"),
+		feat("vouchers", treasury, "Accounting", "Payment & Journal Vouchers"),
+		feat("treasury_approvals", treasury, "Accounting", "Approval Workflows (Treasury)"),
+		feat("smart_tax_compliance", treasury, "Accounting", "Smart Tax & Compliance Advisor"),
 		lim("max_wallets", treasury, "Limits", "Digital Wallets", ""),
 		lim("max_payment_links", treasury, "Limits", "Payment Links", ""),
 		lim("max_currencies", treasury, "Limits", "Currencies", ""),
@@ -134,6 +142,13 @@ var featureCatalog = func() []catalogEntry {
 		feat("mpesa_pos", pos, "POS", "M-Pesa POS Payments"),
 		feat("happy_hour", pos, "POS", "Happy Hour Pricing"),
 		feat("conference_events", pos, "POS", "Conference & Events Module"),
+		// Bookable-space management (co-working desks, meeting/conference rooms sold from the
+		// till) — lighter-weight than hotel_module; granted Pro+ on hospitality plans.
+		feat("facility_booking", pos, "POS", "Facility & Space Booking"),
+		// Retail till features already gated by pos-ui nav (subFeature) and pos-api — were
+		// previously uncatalogued (fail-open in the tier-aware UI gate).
+		feat("layaway", pos, "POS", "Layaway / Deposit Sales"),
+		feat("commissions", pos, "POS", "Staff Sales Commissions"),
 		// Pharmacy (Codevertex Dawa) — clinical & compliance features served by pos-api.
 		feat("prescription_management", pos, "Pharmacy", "Prescription Management & Dispensing"),
 		feat("patient_history", pos, "Pharmacy", "Patient History & Records"),
@@ -158,6 +173,24 @@ var featureCatalog = func() []catalogEntry {
 		// Multi-image catalog: unlocks attaching more than one image per product (the first
 		// image is always allowed). Paired with the inventory_max_images_per_item cap below.
 		feat("inventory_multiple_images", inventory, "Inventory", "Multiple Product Images"),
+		// Module-granular codes for the use-case PowerSuite tiers (docs/subscription-plans/*):
+		// warehouse sub-modules, procurement stages, manufacturing, events, assets, warranties,
+		// per-report gating and alert settings toggles.
+		feat("stock_take", inventory, "Inventory", "Stock Take / Cycle Counts"),
+		feat("lots_batches", inventory, "Inventory", "Lots & Batches"),
+		feat("stock_transfers", inventory, "Inventory", "Inter-Warehouse Transfers"),
+		feat("rfqs", inventory, "Procurement", "RFQs (Request for Quotation)"),
+		feat("requisitions", inventory, "Procurement", "Purchase Requisitions"),
+		feat("procurement_contracts", inventory, "Procurement", "Supplier Contracts"),
+		feat("manufacturing", inventory, "Manufacturing", "Manufacturing & Production Batches"),
+		feat("events_module", inventory, "Events", "Events & Banqueting"),
+		feat("fixed_assets", inventory, "Assets", "Fixed Assets Register"),
+		feat("warranties", inventory, "Assets", "Warranty Management (Retail)"),
+		feat("report_stock_reconciliation", inventory, "Reports", "Stock Reconciliation Report"),
+		feat("report_menu_engineering", inventory, "Reports", "Menu Engineering Report"),
+		feat("report_food_cost_variance", inventory, "Reports", "Food Cost Variance Report"),
+		feat("stock_alerts", inventory, "Alerts", "Low-Stock Alert Settings"),
+		feat("expiry_alerts", inventory, "Alerts", "Expiry Alert Settings"),
 		lim("inventory_max_images_per_item", inventory, "Limits", "Images per Product", ""),
 		lim("max_warehouses", inventory, "Limits", "Warehouses", ""),
 		lim("max_products", inventory, "Limits", "Products", ""),
@@ -191,6 +224,13 @@ var featureCatalog = func() []catalogEntry {
 		// Staff take goods on credit/layaway at POS and repay via payroll deductions
 		// (POS↔ERP staff-purchase recoverable). Top-tier only.
 		feat("staff_fund_from_salary", erp, "ERP", "Staff Fund-from-Salary Credit"),
+		// HRM sub-module codes for the use-case PowerSuite tiers: bundle tier 2 grants
+		// hr_management + attendance (employee sync) WITHOUT payroll/appraisals/recruitment/
+		// training; tier 3 grants everything.
+		feat("attendance", erp, "ERP", "Attendance & Time Tracking"),
+		feat("appraisals", erp, "ERP", "Appraisals & Performance"),
+		feat("recruitment", erp, "ERP", "Recruitment"),
+		feat("training", erp, "ERP", "Training Management"),
 		lim("max_employees", erp, "Limits", "Employees", ""),
 		lim("max_departments", erp, "Limits", "Departments", ""),
 

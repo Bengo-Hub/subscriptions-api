@@ -17,14 +17,19 @@ import (
 // erpFeatures is the single source of truth for the ERP module feature set at tier N
 // (1=Starter, 2=Growth, 3=Professional). Shared by the recurring monthly ERP standalone
 // plans and the ERP-suite ONE_TIME licenses (unioned with the PowerSuite set).
+// NOTE: these are the STANDALONE ERP plan tiers (ERP-first buyers get HR depth early:
+// attendance from tier 1, appraisals/recruitment/training from tier 2). The use-case
+// PowerSuite bundles deliberately gate harder — their tier 2 grants hr_management +
+// attendance WITHOUT payroll/appraisals/recruitment/training (see psERPBlock in
+// plans_powersuite_usecase.go, per docs/subscription-plans/).
 func erpFeatures(tier int) []string {
 	switch tier {
 	case 1:
-		return []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports"}
+		return []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance"}
 	case 2:
-		return []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows"}
+		return []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance", "appraisals", "recruitment", "training", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows"}
 	default: // tier 3
-		return []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support", "staff_fund_from_salary"}
+		return []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance", "appraisals", "recruitment", "training", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support", "staff_fund_from_salary"}
 	}
 }
 
@@ -118,39 +123,6 @@ func seedERPPlans(ctx context.Context, tx *ent.Tx) error {
 			tierOrder:    3,
 			tierLimits:   erpLimits(3),
 			features:     erpFeatures(3),
-		},
-		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("erp:STARTER_YEARLY")),
-			planCode:     "ERP_STARTER_YEARLY",
-			name:         "ERP Starter — Annual",
-			description:  "Core HR and payroll. Save with annual billing.",
-			billingCycle: "ANNUAL",
-			price:        22000.0,
-			tierOrder:    1,
-			tierLimits:   map[string]any{"max_employees": 20, "max_users": 5, "max_departments": 3},
-			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports"},
-		},
-		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("erp:GROWTH_YEARLY")),
-			planCode:     "ERP_GROWTH_YEARLY",
-			name:         "ERP Growth — Annual",
-			description:  "Multi-department HR, asset management, budgeting. Save with annual billing.",
-			billingCycle: "ANNUAL",
-			price:        55000.0,
-			tierOrder:    2,
-			tierLimits:   map[string]any{"max_employees": 100, "max_users": 20, "max_departments": -1},
-			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows"},
-		},
-		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("erp:PROFESSIONAL_YEARLY")),
-			planCode:     "ERP_PROFESSIONAL_YEARLY",
-			name:         "ERP Professional — Annual",
-			description:  "Unlimited employees, full financial suite, API access. Save with annual billing.",
-			billingCycle: "ANNUAL",
-			price:        110000.0,
-			tierOrder:    3,
-			tierLimits:   map[string]any{"max_employees": -1, "max_users": -1, "max_departments": -1},
-			features:     []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support", "staff_fund_from_salary"},
 		},
 		// ── ERP Suite — Perpetual (one-time) license tiers ───────────────────────────
 		// The ERP SUITE = full PowerSuite coverage (ordering/POS/inventory/logistics/

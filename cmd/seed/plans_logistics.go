@@ -84,56 +84,6 @@ func seedLogisticsPlans(ctx context.Context, tx *ent.Tx) error {
 			},
 			features: []string{"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch", "sms_notifications", "route_optimisation", "driver_analytics", "multi_outlet", "performance_reports", "api_access", "webhooks", "custom_integrations", "priority_support"},
 		},
-
-		// ── Annual Plans (10 months pricing ≈ 16.7% discount) ───────────
-		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("logistics:STARTER_YEARLY")),
-			planCode:     "LOGISTICS_STARTER_YEARLY",
-			name:         "Logistics Starter — Annual",
-			description:  "Up to 5 riders with live tracking. Save with annual billing.",
-			billingCycle: "ANNUAL",
-			price:        8000.0,
-			tierOrder:    1,
-			tierLimits: map[string]any{
-				"max_riders":                     5,
-				"live_tracking_requests_per_day": 1000,
-				"routing_requests_per_day":       100,
-				"api_calls_per_month":            10000,
-			},
-			features: []string{"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch", "sms_notifications"},
-		},
-		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("logistics:GROWTH_YEARLY")),
-			planCode:     "LOGISTICS_GROWTH_YEARLY",
-			name:         "Logistics Growth — Annual",
-			description:  "Up to 20 riders, route optimisation, driver analytics. Save with annual billing.",
-			billingCycle: "ANNUAL",
-			price:        25000.0,
-			tierOrder:    2,
-			tierLimits: map[string]any{
-				"max_riders":                     20,
-				"live_tracking_requests_per_day": 5000,
-				"routing_requests_per_day":       500,
-				"api_calls_per_month":            60000,
-			},
-			features: []string{"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch", "sms_notifications", "route_optimisation", "driver_analytics", "multi_outlet", "performance_reports"},
-		},
-		{
-			id:           uuid.NewSHA1(uuid.NameSpaceOID, []byte("logistics:PROFESSIONAL_YEARLY")),
-			planCode:     "LOGISTICS_PROFESSIONAL_YEARLY",
-			name:         "Logistics Professional — Annual",
-			description:  "Unlimited riders and outlets, API access, webhooks, priority support. Save with annual billing.",
-			billingCycle: "ANNUAL",
-			price:        50000.0,
-			tierOrder:    3,
-			tierLimits: map[string]any{
-				"max_riders":                     -1,
-				"live_tracking_requests_per_day": -1,
-				"routing_requests_per_day":       -1,
-				"api_calls_per_month":            -1,
-			},
-			features: []string{"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch", "sms_notifications", "route_optimisation", "driver_analytics", "multi_outlet", "performance_reports", "api_access", "webhooks", "custom_integrations", "priority_support"},
-		},
 	}
 
 	for _, p := range plans {

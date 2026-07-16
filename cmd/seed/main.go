@@ -55,7 +55,12 @@ func main() {
 	log.Println("database seed completed successfully")
 }
 
-func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error {
+// runSeed runs every seed step in ONE transaction. The named return is load-bearing:
+// the deferred closure below keys commit-vs-rollback on `err`, and only a NAMED return
+// value is assigned by `return fmt.Errorf(...)` before defers run. With an unnamed
+// return the inner errors never reached the closure and a FAILED seed (e.g.
+// validateCatalogLinkage) still committed.
+func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err error) {
 	tx, err := client.Tx(ctx)
 	if err != nil {
 		return err
@@ -84,14 +89,19 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 		return fmt.Errorf("seed ordering plans: %w", err)
 	}
 
-	// 2.1 Seed bundle-specific plans (POS_SUITE_*, POWERSUITE_*, ORDERING_SETUP_FEE)
-	if err := seedBundlePlans(ctx, tx); err != nil {
-		return fmt.Errorf("seed bundle plans: %w", err)
+	// 2.1 Seed the use-case PowerSuite families (POWERSUITE_{HOSP,DUKA,DAWA}_{BASIC,PRO,GOLD})
+	// — evolved in place from the POS product lines; supersede the generic POWERSUITE_* and
+	// POS_SUITE_* bundles (hard-deleted by migrateUseCasePowerSuite below).
+	if err := seedUseCasePowerSuitePlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed use-case powersuite plans: %w", err)
 	}
 
-	// 2.1b Seed PowerSuite perpetual (one-time) license tiers (POWERSUITE_*_ONE_TIME)
-	if err := seedBundleOneTimePlans(ctx, tx); err != nil {
-		return fmt.Errorf("seed powersuite one-time plans: %w", err)
+	// 2.1b Per-family perpetual buy-outright licenses (…_ONE_TIME) + annual support plans.
+	if err := seedUseCasePowerSuiteOneTimePlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed use-case powersuite one-time plans: %w", err)
+	}
+	if err := seedUseCasePowerSuiteSupportPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed use-case powersuite support plans: %w", err)
 	}
 
 	// 2.5 Seed TruLoad org-level plans (Starter, Growth, Professional + License)
@@ -117,17 +127,6 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 	// 2.9 Seed ERP standalone plans
 	if err := seedERPPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed erp plans: %w", err)
-	}
-
-	// 2.10 Seed POS industry product-line plans (Codevertex POS / Duka / Dawa tiers)
-	if err := seedPOSProductLinePlans(ctx, tx); err != nil {
-		return fmt.Errorf("seed pos product-line plans: %w", err)
-	}
-
-	// 2.10b Retire the legacy per-device/seat POS plans (POS_DEVICE_*, POS_LICENSE_*) — superseded
-	// by the product-line tiers above. Deactivated, not deleted, so existing subscriptions resolve.
-	if err := retireLegacyPOSPlans(ctx, tx); err != nil {
-		return fmt.Errorf("retire legacy pos plans: %w", err)
 	}
 
 	// 2.11 Seed MarketFlow CRM plans
@@ -201,6 +200,13 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) error 
 	// so backends/UI never gate on a code the catalog never defined.
 	if err := validateCatalogLinkage(ctx, tx); err != nil {
 		return fmt.Errorf("validate catalog linkage: %w", err)
+	}
+
+	// 3.57 Migrate subscribers off the superseded plans (generic POWERSUITE_*, POS_SUITE_*,
+	// POS_HOSP/DUKA/DAWA licenses, POS_DEVICE_*, retired *_YEARLY rows, legacy ERP_ONE_TIME)
+	// to their successors, then HARD-DELETE those plan rows (+ features/pricing history).
+	if err := migrateUseCasePowerSuite(ctx, tx); err != nil {
+		return fmt.Errorf("migrate use-case powersuite plans: %w", err)
 	}
 
 	// 3.6 Seed subscription coupons (platform discount codes for tenant billing)

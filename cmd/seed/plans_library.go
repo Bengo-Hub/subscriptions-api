@@ -47,10 +47,9 @@ func seedLibraryPlans(ctx context.Context, tx *ent.Tx) error {
 		{"STARTER", "LIBRARY_STARTER", "Library Starter", "Single-branch library: catalog/OPAC, circulation, members, and fines. Up to 5,000 titles.", "MONTHLY", 1500, 1, starterLimits, starterFeatures},
 		{"GROWTH", "LIBRARY_GROWTH", "Library Growth", "Multi-branch with holds and e-book lending. Up to 50,000 titles, 5 branches.", "MONTHLY", 4000, 2, growthLimits, growthFeatures},
 		{"PROFESSIONAL", "LIBRARY_PROFESSIONAL", "Library Professional", "Unlimited branches, titles, and members; all features + priority support.", "MONTHLY", 9000, 3, proLimits, proFeatures},
-		// Annual (~11x monthly)
-		{"STARTER_YEARLY", "LIBRARY_STARTER_YEARLY", "Library Starter — Annual", "Single-branch library. Save with annual billing.", "ANNUAL", 16500, 1, starterLimits, starterFeatures},
-		{"GROWTH_YEARLY", "LIBRARY_GROWTH_YEARLY", "Library Growth — Annual", "Multi-branch with holds + e-books. Save with annual billing.", "ANNUAL", 44000, 2, growthLimits, growthFeatures},
-		{"PROFESSIONAL_YEARLY", "LIBRARY_PROFESSIONAL_YEARLY", "Library Professional — Annual", "Everything, unlimited. Save with annual billing.", "ANNUAL", 99000, 3, proLimits, proFeatures},
+		// Annual rows are no longer seeded — billing period is a per-subscription choice
+		// (MONTHLY/SEMI_ANNUAL/ANNUAL on the monthly row); legacy *_YEARLY rows are
+		// hard-deleted by migrateUseCasePowerSuite.
 		// One-time perpetual licenses (include priority support; setup fee applies)
 		{"STARTER_ONE_TIME", "LIBRARY_STARTER_ONE_TIME", "Library Starter — Perpetual", "One-time perpetual license for a single-branch library. Excludes ongoing hosting.", "ONE_TIME", 150000, 1, starterLimits, append(append([]string{}, starterFeatures...), "priority_support")},
 		{"GROWTH_ONE_TIME", "LIBRARY_GROWTH_ONE_TIME", "Library Growth — Perpetual", "One-time perpetual license: multi-branch + holds + e-books. Excludes ongoing hosting.", "ONE_TIME", 200000, 2, growthLimits, append(append([]string{}, growthFeatures...), "priority_support")},

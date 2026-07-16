@@ -14,15 +14,15 @@ import (
 
 func seedCoupons(ctx context.Context, tx *ent.Tx) error {
 	type couponDef struct {
-		code               string
-		name               string
-		description        string
-		couponType         coupon.Type
-		value              float64
+		code                string
+		name                string
+		description         string
+		couponType          coupon.Type
+		value               float64
 		applicablePlanCodes []string
-		minPlanPrice       float64
-		maxUses            int
-		validDays          int // days from now; -1 = no expiry
+		minPlanPrice        float64
+		maxUses             int
+		validDays           int // days from now; -1 = no expiry
 	}
 
 	adminUserID := uuid.MustParse("00000000-0000-0000-0000-000000000001") // platform seed admin
@@ -37,20 +37,9 @@ func seedCoupons(ctx context.Context, tx *ent.Tx) error {
 			maxUses:     -1, // one per tenant enforced by business logic
 			validDays:   365,
 		},
-		{
-			code:        "ANNUAL10",
-			name:        "Annual Plan 10% Off",
-			description: "10% discount on any annual subscription plan.",
-			couponType:  coupon.TypePercentage,
-			value:       10,
-			applicablePlanCodes: []string{
-				"ORDERING_STARTER_YEARLY", "ORDERING_GROWTH_YEARLY", "ORDERING_PROFESSIONAL_YEARLY",
-				"POS_SUITE_STARTER_YEARLY", "POS_SUITE_GROWTH_YEARLY", "POS_SUITE_PROFESSIONAL_YEARLY",
-				"POWERSUITE_STARTER_YEARLY", "POWERSUITE_GROWTH_YEARLY", "POWERSUITE_PROFESSIONAL_YEARLY",
-			},
-			maxUses:   -1,
-			validDays: 365,
-		},
+		// ANNUAL10 removed: billing period is a per-subscription choice on the monthly
+		// row (≥6 months waives the setup fee — the only incentive; coupons are rejected
+		// while the waiver is active) and the *_YEARLY plan rows are hard-deleted.
 		{
 			code:        "DEMO_FREE",
 			name:        "30 Days Free",
@@ -71,13 +60,13 @@ func seedCoupons(ctx context.Context, tx *ent.Tx) error {
 			minPlanPrice: 2000,
 		},
 		{
-			code:        "GROWTH1000",
-			name:        "KES 1,000 Off Growth",
-			description: "KES 1,000 credit on any Growth plan.",
-			couponType:  coupon.TypeFixedKes,
-			value:       1000,
-			maxUses:     50,
-			validDays:   90,
+			code:         "GROWTH1000",
+			name:         "KES 1,000 Off Growth",
+			description:  "KES 1,000 credit on any Growth plan.",
+			couponType:   coupon.TypeFixedKes,
+			value:        1000,
+			maxUses:      50,
+			validDays:    90,
 			minPlanPrice: 4000,
 		},
 	}
