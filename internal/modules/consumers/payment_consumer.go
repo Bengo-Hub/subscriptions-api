@@ -47,6 +47,9 @@ type treasuryPaymentEvent struct {
 	CardExpYear      string      `json:"card_exp_year"`
 }
 
+// treasuryPaymentConsumerName keys processed_events rows for this consumer.
+const treasuryPaymentConsumerName = "subscription-service-treasury-payments"
+
 // TreasuryPaymentConsumer listens for treasury.payment.succeeded events:
 //   - card_setup: stores Paystack authorization_code for auto-renewal
 //   - subscription/renewal: activates/renews subscription, earns loyalty credits
@@ -55,6 +58,7 @@ type TreasuryPaymentConsumer struct {
 	orm           *ent.Client
 	svc           *subscriptions.Service
 	creditService *billing.CreditService
+	idem          *eventslib.IdempotencyStore
 }
 
 // NewTreasuryPaymentConsumer creates a new consumer.
@@ -69,6 +73,15 @@ func NewTreasuryPaymentConsumer(log *zap.Logger, orm *ent.Client) *TreasuryPayme
 // SetSubscriptionService injects the subscription service for activation flows.
 func (c *TreasuryPaymentConsumer) SetSubscriptionService(svc *subscriptions.Service) {
 	c.svc = svc
+}
+
+// SetIdempotency wires per-event dedup: RenewSubscription stacks the billing period from
+// max(now, current_period_end), so a redelivery after a successful renew (lost ack, AckWait
+// expiry post-commit) would EXTEND THE PERIOD TWICE; loyalty/referral credits can likewise
+// double-earn when the event carries no intent id. Check-then-mark (not Claim-before-act)
+// so a FAILED handling stays unmarked and the redelivery still retries.
+func (c *TreasuryPaymentConsumer) SetIdempotency(store *eventslib.IdempotencyStore) {
+	c.idem = store
 }
 
 // Start subscribes to treasury.payment.succeeded and blocks until ctx is cancelled.
@@ -106,6 +119,19 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 	if err := json.Unmarshal(msg.Data, &ev); err != nil {
 		c.log.Warn("could not parse treasury payment event, skipping", zap.Error(err))
 		return nil
+	}
+
+	// Redelivery dedup: skip events this consumer already handled successfully.
+	// Fail-open when the message carries no event id or the store is unavailable.
+	var eventID uuid.UUID
+	if c.idem != nil {
+		if id, err := eventslib.EventIDFromMsg(msg); err == nil {
+			eventID = id
+			if done, err := c.idem.AlreadyProcessed(ctx, eventID, treasuryPaymentConsumerName); err == nil && done {
+				c.log.Info("treasury payment event already processed, skipping", zap.String("event_id", eventID.String()))
+				return nil
+			}
+		}
 	}
 
 	// Resolve fields — prefer nested payload, fall back to flat
@@ -161,6 +187,7 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 	// (jobs/renewal.go) — without it here, auto-renewal payments never extended the period.
 	if refType != "subscription" && refType != "renewal" && refType != "subscription_renewal" {
 		// card_setup or unknown — nothing more to do
+		c.markProcessed(ctx, eventID)
 		return nil
 	}
 
@@ -210,7 +237,18 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 		}
 	}
 
+	c.markProcessed(ctx, eventID)
 	return nil
+}
+
+// markProcessed records the event as handled (no-op without a store or event id).
+func (c *TreasuryPaymentConsumer) markProcessed(ctx context.Context, eventID uuid.UUID) {
+	if c.idem == nil || eventID == uuid.Nil {
+		return
+	}
+	if err := c.idem.MarkProcessed(ctx, eventID, treasuryPaymentConsumerName); err != nil {
+		c.log.Warn("failed to mark treasury payment event processed", zap.Error(err))
+	}
 }
 
 func jsonNumberToInt(n json.Number) int {

@@ -304,6 +304,9 @@ func New(ctx context.Context) (*App, error) {
 		log.Warn("usage idempotency schema ensure failed; metering will run without dedup", zap.Error(err))
 	} else {
 		usageConsumer.SetIdempotency(idemStore)
+		// Payment consumer too: RenewSubscription period-stacking + loyalty credits
+		// must not double-apply on JetStream redelivery.
+		paymentConsumer.SetIdempotency(idemStore)
 	}
 
 	return &App{

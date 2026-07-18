@@ -41,7 +41,6 @@ type usageEventMapping struct {
 var usageSubjectMappings = map[string]usageEventMapping{
 	// ── Ordering ──────────────────────────────────────────────────────────────
 	"ordering.order.created":      {metric: "orders", service: "ordering"},
-	"cafe.order.created":          {metric: "orders", service: "cafe"},
 	"ordering.webhook.dispatched": {metric: "webhooks", service: "ordering"},
 
 	// ── POS ───────────────────────────────────────────────────────────────────
@@ -460,42 +459,16 @@ func (c *UsageConsumer) getThreshold(ctx context.Context, tenantID uuid.UUID) fl
 	return 0.80
 }
 
-// publishThresholdWarning writes an outbox event for the notifications service to
-// send an email to the tenant admin and surface an in-app banner alert.
+// publishThresholdWarning surfaces an in-app usage banner via Redis (served by the
+// usage/alerts endpoint). NOTE: this used to also js.Publish("usage.threshold_exceeded"),
+// but no stream binds usage.> and nothing consumes it — the publish failed on every call
+// and was dropped, so it was removed. If admin emails are ever wanted, emit
+// subscription.usage.threshold_exceeded (the subscription stream binds subscription.>)
+// and add a notifications-api consumer.
 func (c *UsageConsumer) publishThresholdWarning(ctx context.Context, tenantID uuid.UUID, metric string, planLimit int, currentUsage float64) {
 	pct := int(currentUsage / float64(planLimit) * 100)
-	payload := map[string]any{
-		"id":             uuid.New().String(),
-		"tenant_id":      tenantID.String(),
-		"aggregate_type": "usage",
-		"aggregate_id":   tenantID.String(),
-		"event_type":     "usage.threshold_exceeded",
-		"payload": map[string]any{
-			"tenant_id":     tenantID.String(),
-			"metric_type":   metric,
-			"plan_limit":    planLimit,
-			"current_usage": currentUsage,
-			"threshold_pct": pct,
-			"period":        time.Now().UTC().Format("2006-01"),
-			"notification": map[string]any{
-				"target": "tenant_admin",
-			},
-		},
-		"timestamp": time.Now().UTC().Format(time.RFC3339),
-		"version":   "1.0",
-	}
 
-	payloadJSON, _ := json.Marshal(payload)
-
-	if _, err := c.js.Publish("usage.threshold_exceeded", payloadJSON); err != nil {
-		c.log.Warn("failed to publish threshold warning",
-			zap.String("tenant_id", tenantID.String()),
-			zap.String("metric", metric),
-			zap.Error(err),
-		)
-	}
-
-	// Also persist to Redis so the usage/alerts endpoint can serve the banner
+	// Persist to Redis so the usage/alerts endpoint can serve the banner.
 	alertKey := fmt.Sprintf("usage:alert:%s:%s", tenantID.String(), metric)
 	alertData, _ := json.Marshal(map[string]any{
 		"metric":  metric,
