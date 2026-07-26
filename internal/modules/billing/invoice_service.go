@@ -32,8 +32,8 @@ type InvoiceService struct {
 	ispBillingClient *serviceclient.Client // isp-billing S2S (exact active PPPoE count); may be nil
 	apiKey           string
 	platformTenantID string
-	treasuryUIBase   string // e.g. https://books.codevertexitsolutions.com (for /pay)
-	treasuryAPIBase  string // e.g. https://booksapi.codevertexitsolutions.com (for public PDF)
+	treasuryUIBase   string // e.g. https://books.codevertexafrica.com (for /pay)
+	treasuryAPIBase  string // e.g. https://booksapi.codevertexafrica.com (for public PDF)
 	vatRate          float64
 	overage          *OverageService
 }

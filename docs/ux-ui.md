@@ -2,7 +2,7 @@
 
 This document is for developers integrating with the Subscription API from other Codevertex services or the subscriptions-ui frontend.
 
-**Base URL**: `https://pricingapi.codevertexitsolutions.com/api/v1`
+**Base URL**: `https://pricingapi.codevertexafrica.com/api/v1`
 **Local**: `http://localhost:4005/api/v1`
 
 ---
@@ -11,7 +11,7 @@ This document is for developers integrating with the Subscription API from other
 
 All endpoints (except health checks) require one of:
 
-1. **JWT Bearer Token** — Issued by auth-service SSO (`sso.codevertexitsolutions.com`)
+1. **JWT Bearer Token** — Issued by auth-service SSO (`sso.codevertexafrica.com`)
    ```
    Authorization: Bearer <jwt-token>
    ```
@@ -290,9 +290,9 @@ The demo tenant `urban-loft` (ID: `11111111-2222-3333-4444-555555555555`) is pre
 ```bash
 # Get subscription status
 curl -H "X-API-Key: $API_KEY" \
-  https://pricingapi.codevertexitsolutions.com/api/v1/tenants/11111111-2222-3333-4444-555555555555/subscription
+  https://pricingapi.codevertexafrica.com/api/v1/tenants/11111111-2222-3333-4444-555555555555/subscription
 
 # Check a feature
 curl -H "X-API-Key: $API_KEY" \
-  https://pricingapi.codevertexitsolutions.com/api/v1/tenants/11111111-2222-3333-4444-555555555555/features/loyalty_program/check
+  https://pricingapi.codevertexafrica.com/api/v1/tenants/11111111-2222-3333-4444-555555555555/features/loyalty_program/check
 ```

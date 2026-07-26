@@ -30,8 +30,8 @@
 - **Response Data:**
 ```json
 {
-  "token_endpoint": "https://sso.codevertexitsolutions.com/api/v1/token",
-  "issuer": "https://sso.codevertexitsolutions.com"
+  "token_endpoint": "https://sso.codevertexafrica.com/api/v1/token",
+  "issuer": "https://sso.codevertexafrica.com"
 }
 ```
 

@@ -13,7 +13,7 @@ import (
 // @title Subscriptions API
 // @version 1.0
 // @description HTTP API for the Codevertex Subscriptions Service — manages subscription plans, features, usage, billing, and tenant entitlements.
-// @host pricingapi.codevertexitsolutions.com
+// @host pricingapi.codevertexafrica.com
 // @BasePath /api/v1
 // @schemes https http
 // @securityDefinitions.apikey BearerAuth

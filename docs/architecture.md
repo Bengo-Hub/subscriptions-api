@@ -10,7 +10,7 @@ The Subscription API (`subscriptions-api`) is the centralized licensing, feature
 Authorization = RBAC (auth-service) + Licensing (subscription-service) + Resources (domain services)
 ```
 
-**Production URL**: `https://pricingapi.codevertexitsolutions.com`
+**Production URL**: `https://pricingapi.codevertexafrica.com`
 **Local Port**: `4005` (cloud: `4000`)
 **Canonical Tenant**: `urban-loft` (ID: `11111111-2222-3333-4444-555555555555`)
 
@@ -91,7 +91,7 @@ Polls the `outbox_events` table for `PENDING` events, publishes to NATS JetStrea
 
 **Libraries**: `shared-auth-client` (JWT validation + API key), `httpware` (tenant/request-ID middleware)
 
-- Validates JWTs from `sso.codevertexitsolutions.com` via JWKS
+- Validates JWTs from `sso.codevertexafrica.com` via JWKS
 - Supports API key fallback (`X-API-Key: INTERNAL_SERVICE_KEY`) for service-to-service calls
 - Extracts `tenant_id` from JWT claims via httpware middleware
 - **No local RBAC**: subscription service validates auth via auth-api JWT claims. Plan/config mutations require `IsPlatformOwner`.

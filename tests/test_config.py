@@ -13,12 +13,12 @@ class TestConfig:
     """Configuration for subscription service E2E tests."""
     
     # Production API URLs (with /api/v1 path prefix for subscriptions-api)
-    API_BASE_URL: str = "https://pricingapi.codevertexitsolutions.com/api/v1"
-    SUBSCRIPTIONS_API_BASE_URL: str = "https://pricingapi.codevertexitsolutions.com/api/v1"
-    AUTH_API_URL: str = "https://sso.codevertexitsolutions.com"
+    API_BASE_URL: str = "https://pricingapi.codevertexafrica.com/api/v1"
+    SUBSCRIPTIONS_API_BASE_URL: str = "https://pricingapi.codevertexafrica.com/api/v1"
+    AUTH_API_URL: str = "https://sso.codevertexafrica.com"
     
     # Frontend URL
-    FRONTEND_URL: str = "https://subscriptions.codevertexitsolutions.com"
+    FRONTEND_URL: str = "https://subscriptions.codevertexafrica.com"
     
     # Test tenant
     TENANT_SLUG: str = "urban-loft"
@@ -42,8 +42,8 @@ class TestConfig:
     DEFAULT_TIMEOUT: int = 30
     
     # Auth endpoints
-    AUTH_TOKEN_URL: str = "https://sso.codevertexitsolutions.com/api/v1/token"
-    AUTH_ME_URL: str = "https://sso.codevertexitsolutions.com/api/v1/auth/me"
+    AUTH_TOKEN_URL: str = "https://sso.codevertexafrica.com/api/v1/token"
+    AUTH_ME_URL: str = "https://sso.codevertexafrica.com/api/v1/auth/me"
 
 
 # Default config instance

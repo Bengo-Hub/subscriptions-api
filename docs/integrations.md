@@ -433,7 +433,7 @@ req.Header.Set("X-API-Key", os.Getenv("INTERNAL_SERVICE_KEY"))
 
 ### Authentication
 
-- **JWT**: Validated via JWKS from `https://sso.codevertexitsolutions.com/api/v1/.well-known/jwks.json`
+- **JWT**: Validated via JWKS from `https://sso.codevertexafrica.com/api/v1/.well-known/jwks.json`
 - **API Key**: `X-API-Key: INTERNAL_SERVICE_KEY` — single shared key for all S2S calls
 
 ### Tenant Isolation

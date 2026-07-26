@@ -10,7 +10,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "pricingapi.codevertexitsolutions.com",
+    "host": "pricingapi.codevertexafrica.com",
     "basePath": "/api/v1",
     "paths": {
         "/admin/plans": {
