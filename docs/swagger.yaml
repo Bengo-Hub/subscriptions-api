@@ -91,7 +91,7 @@ definitions:
       plan:
         $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan'
     type: object
-host: pricingapi.codevertexitsolutions.com
+host: pricingapi.codevertexafrica.com
 info:
   contact: {}
   description: HTTP API for the Codevertex Subscriptions Service — manages subscription

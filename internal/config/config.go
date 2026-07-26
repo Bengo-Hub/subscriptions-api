@@ -40,14 +40,14 @@ type AppConfig struct {
 }
 
 type ServicesConfig struct {
-	AuthAPI        string `envconfig:"AUTH_API_URL" default:"https://sso.codevertexitsolutions.com"`
-	TreasuryAPI    string `envconfig:"TREASURY_API_URL" default:"https://booksapi.codevertexitsolutions.com"`
-	TreasuryUI     string `envconfig:"TREASURY_UI_URL" default:"https://books.codevertexitsolutions.com"`
+	AuthAPI        string `envconfig:"AUTH_API_URL" default:"https://sso.codevertexafrica.com"`
+	TreasuryAPI    string `envconfig:"TREASURY_API_URL" default:"https://booksapi.codevertexafrica.com"`
+	TreasuryUI     string `envconfig:"TREASURY_UI_URL" default:"https://books.codevertexafrica.com"`
 	TreasuryAPIKey string `envconfig:"INTERNAL_SERVICE_KEY"`
-	MarketflowAPI  string `envconfig:"MARKETFLOW_API_URL" default:"https://marketflowapi.codevertexitsolutions.com"`
+	MarketflowAPI  string `envconfig:"MARKETFLOW_API_URL" default:"https://marketflowapi.codevertexafrica.com"`
 	// ISPBillingAPI is the isp-billing backend used to fetch the exact point-in-time active
 	// PPPoE subscriber count for ISP usage billing (S2S, authenticated with INTERNAL_SERVICE_KEY).
-	ISPBillingAPI string `envconfig:"ISP_BILLING_API_URL" default:"https://ispbillingapi.codevertexitsolutions.com"`
+	ISPBillingAPI string `envconfig:"ISP_BILLING_API_URL" default:"https://ispbillingapi.codevertexafrica.com"`
 	// PlatformTenantID is the treasury/auth tenant UUID that ISSUES subscription invoices
 	// (the platform org, e.g. codevertex). Subscription invoices are owned by this tenant
 	// with the billed tenant as the customer. Must be set in prod.
@@ -63,7 +63,7 @@ type HTTPConfig struct {
 	ReadTimeout    time.Duration `envconfig:"HTTP_READ_TIMEOUT" default:"15s"`
 	WriteTimeout   time.Duration `envconfig:"HTTP_WRITE_TIMEOUT" default:"15s"`
 	IdleTimeout    time.Duration `envconfig:"HTTP_IDLE_TIMEOUT" default:"60s"`
-	AllowedOrigins []string      `envconfig:"HTTP_ALLOWED_ORIGINS" default:"https://accounts.codevertexitsolutions.com,https://sso.codevertexitsolutions.com,https://pricing.codevertexitsolutions.com,https://theurbanloftcafe.com,https://ordersapp.codevertexitsolutions.com,https://books.codevertexitsolutions.com,https://pos.codevertexitsolutions.com,https://inventory.codevertexitsolutions.com,https://logistics.codevertexitsolutions.com,http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000"`
+	AllowedOrigins []string      `envconfig:"HTTP_ALLOWED_ORIGINS" default:"https://accounts.codevertexafrica.com,https://sso.codevertexafrica.com,https://pricing.codevertexafrica.com,https://theurbanloftcafe.com,https://ordering.codevertexafrica.com,https://books.codevertexafrica.com,https://pos.codevertexafrica.com,https://inventory.codevertexafrica.com,https://logistics.codevertexafrica.com,http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000"`
 }
 
 type PostgresConfig struct {
@@ -95,8 +95,8 @@ type TelemetryConfig struct {
 type SecurityConfig struct {
 	// Auth-service SSO integration
 	RequireJWT  bool   `envconfig:"REQUIRE_JWT" default:"true"`
-	JWKSURL     string `envconfig:"JWT_JWKS_URL" default:"https://sso.codevertexitsolutions.com/api/v1/.well-known/jwks.json"`
-	Issuer      string `envconfig:"JWT_ISSUER" default:"https://sso.codevertexitsolutions.com"`
+	JWKSURL     string `envconfig:"JWT_JWKS_URL" default:"https://sso.codevertexafrica.com/api/v1/.well-known/jwks.json"`
+	Issuer      string `envconfig:"JWT_ISSUER" default:"https://sso.codevertexafrica.com"`
 	Audience    string `envconfig:"JWT_AUDIENCE" default:"codevertex"`
 	APIKey      string `envconfig:"INTERNAL_SERVICE_KEY"`
 	APIKeyDBURL string `envconfig:"API_KEY_DB_URL"`
