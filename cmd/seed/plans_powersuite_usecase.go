@@ -148,7 +148,7 @@ func hospSuiteFeatures(tier int) []string {
 	f = append(f, "table_management", "kds", "happy_hour") // Floor & Service / Display Board / Hotel→Happy Hour from tier 1
 	if tier >= 2 {
 		f = append(f,
-			"multi_cashier", "facility_booking",
+			"multi_cashier", "facility_booking", "storefront_banner",
 			"bulk_import", "stock_take", "requisitions", "manufacturing", "fixed_assets",
 			"multi_warehouse", "inventory_multiple_images",
 			"report_stock_reconciliation", "report_food_cost_variance",
@@ -172,7 +172,7 @@ func dukaSuiteFeatures(tier int) []string {
 	f = append(f, "barcode_scanning")
 	if tier >= 2 {
 		f = append(f,
-			"multi_cashier", "layaway", "commissions",
+			"multi_cashier", "layaway", "commissions", "storefront_banner",
 			"bulk_import", "stock_take", "requisitions", "manufacturing", "fixed_assets",
 			"multi_warehouse", "inventory_multiple_images", "warranties",
 			"report_stock_reconciliation", "report_food_cost_variance",
@@ -195,7 +195,7 @@ func dawaSuiteFeatures(tier int) []string {
 	if tier >= 2 {
 		f = append(f,
 			"prescription_management", "patient_history", "insurance_claims",
-			"multi_cashier", "barcode_scanning",
+			"multi_cashier", "barcode_scanning", "storefront_banner",
 			"bulk_import", "requisitions", "multi_warehouse", "inventory_multiple_images",
 		)
 	}

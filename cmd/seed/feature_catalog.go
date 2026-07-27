@@ -149,6 +149,10 @@ var featureCatalog = func() []catalogEntry {
 		// previously uncatalogued (fail-open in the tier-aware UI gate).
 		feat("layaway", pos, "POS", "Layaway / Deposit Sales"),
 		feat("commissions", pos, "POS", "Staff Sales Commissions"),
+		// Storefront marketing banner (Discounts → "Show on storefront"): surfaces a promotion
+		// as a banner on the customer-facing ordering storefront. Pro/Gold PowerSuite only —
+		// see plans_powersuite_usecase.go's tier>=2 blocks.
+		feat("storefront_banner", pos, "POS", "Storefront Promotions Banner"),
 		// Pharmacy (Codevertex Dawa) — clinical & compliance features served by pos-api.
 		feat("prescription_management", pos, "Pharmacy", "Prescription Management & Dispensing"),
 		feat("patient_history", pos, "Pharmacy", "Patient History & Records"),
@@ -233,6 +237,7 @@ var featureCatalog = func() []catalogEntry {
 		feat("training", erp, "ERP", "Training Management"),
 		lim("max_employees", erp, "Limits", "Employees", ""),
 		lim("max_departments", erp, "Limits", "Departments", ""),
+		lim("max_payroll_runs_per_month", erp, "Limits", "Payroll Runs", "/ month"),
 
 		// ─── MarketFlow (CRM & Marketing) ─────────────────────────────────────
 		feat("contact_management", marketflow, "CRM", "CRM Contact Management"),
