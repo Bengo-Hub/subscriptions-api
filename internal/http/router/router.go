@@ -335,6 +335,8 @@ func New(
 					})
 					r.Get("/", platformHandler.ListTenants)
 					r.Post("/{tenant_id}/subscription", platformHandler.AssignPlanToTenant)
+					// Platform-admin: grant/revoke a tenant's blanket subscription exemption.
+					r.Patch("/{tenant_id}/exemption", platformHandler.SetTenantExemption)
 					// Platform-owner-confirmed, irreversible purge of a dormancy-suspended tenant.
 					r.Post("/{tenant_id}/purge-confirm", platformHandler.ConfirmDormancyPurge)
 					// Multi-use-case: per-product subscription lines (composite entitlements).

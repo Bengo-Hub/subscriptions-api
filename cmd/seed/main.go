@@ -104,6 +104,18 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 		return fmt.Errorf("seed use-case powersuite support plans: %w", err)
 	}
 
+	// 2.1c Codevertex Afya (hospital-service) plans: AFYA_{CLINIC,FACILITY,HOSPITAL}
+	// (+ one-time licenses + annual support) — see plans_hospital.go.
+	if err := seedHospitalPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed hospital plans: %w", err)
+	}
+	if err := seedHospitalOneTimePlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed hospital one-time plans: %w", err)
+	}
+	if err := seedHospitalSupportPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed hospital support plans: %w", err)
+	}
+
 	// 2.5 Seed TruLoad org-level plans (Starter, Growth, Professional + License)
 	if err := seedTruLoadOrgPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed truload org plans: %w", err)

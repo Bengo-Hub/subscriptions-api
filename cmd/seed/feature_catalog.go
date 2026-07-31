@@ -58,6 +58,7 @@ var featureCatalog = func() []catalogEntry {
 		projects   = "projects"
 		library    = "library"
 		platform   = "platform"
+		hospital   = "hospital"
 	)
 	entries := []catalogEntry{
 		// ─── Treasury / Finance ───────────────────────────────────────────────
@@ -210,9 +211,39 @@ var featureCatalog = func() []catalogEntry {
 		feat("route_optimisation", logistics, "Logistics", "Route Optimisation (Valhalla)"),
 		feat("driver_analytics", logistics, "Logistics", "Driver Performance Analytics"),
 		feat("performance_reports", logistics, "Logistics", "Fleet Performance Reports"),
+		// Thin reference into logistics-api's Task/PricingRule — no new dispatch engine, see
+		// hospital-api/docs/integrations.md §2A. Hospital tier only (plans_hospital.go).
+		feat("ambulance_dispatch", logistics, "Logistics", "Ambulance & Emergency Dispatch"),
 		lim("max_riders", logistics, "Limits", "Riders", ""),
 		meteredLim("live_tracking_requests_per_day", logistics, "Limits", "Live Tracking Requests", "/ day", "logistics.task.eta_updated"),
 		meteredLim("routing_requests_per_day", logistics, "Limits", "Route Calculations", "/ day", ""),
+
+		// ─── Hospital / Codevertex Afya (hospital-service) ────────────────────
+		// See plans_hospital.go + CODEVERTEX AFRICA HOSPITAL MANAGEMENT SYSTEMS PRICING
+		// MODEL.md. Cross-service features (insurance_claims, stock_take, lots_batches,
+		// asset_management, multi_department, hr_management, payroll, etc.) are declared
+		// under their owning service above and reused as-is — not duplicated here.
+		feat("patient_records", hospital, "Clinical", "Patient Records (EMR)"),
+		feat("reception_queuing", hospital, "Clinical", "Reception & Queuing"),
+		feat("consultation", hospital, "Clinical", "Consultation"),
+		feat("triage", hospital, "Clinical", "Triage"),
+		feat("pharmacy_dispensing", hospital, "Clinical", "Pharmacy Dispensing & OTC Sale"),
+		feat("billing", hospital, "Clinical", "Billing & Cashier"),
+		feat("lab_requests_basic", hospital, "Clinical", "Basic Referred-Out Lab Requests"),
+		feat("in_house_lab", hospital, "Clinical", "In-House Laboratory (Full Catalogue)"),
+		feat("inpatient_module", hospital, "Clinical", "Inpatient Management (Ward/Bed/Admission)"),
+		feat("controlled_substance_register", hospital, "Clinical", "Controlled-Substance Dispensing Register"),
+		feat("diagnosis_lab_catalogues", hospital, "Clinical", "Diagnosis & Lab-Test Catalogues"),
+		feat("discharge_summaries", hospital, "Clinical", "Discharge Summaries"),
+		feat("theatre_module", hospital, "Clinical", "Theatre / Operating Room Scheduling"),
+		feat("maternity_module", hospital, "Clinical", "Maternity Management"),
+		feat("morgue_module", hospital, "Clinical", "Morgue Management"),
+		feat("specialized_programmes", hospital, "Clinical", "Specialized Programmes (ANC/PNC/ART/TB/Immunization)"),
+		feat("multi_branch", hospital, "Operations", "Multi-Branch Consolidated Reporting"),
+		feat("taifa_care_dedicated_onboarding", hospital, "Compliance", "Dedicated Taifa Care HMIS Onboarding"),
+		feat("khis_dhis2_reporting", hospital, "Compliance", "KHIS/DHIS2 Aggregate Reporting (ADX)"),
+		lim("max_patients_per_day", hospital, "Limits", "Patients per Day", ""),
+		lim("max_branches", hospital, "Limits", "Branches", ""),
 
 		// ─── ERP ──────────────────────────────────────────────────────────────
 		feat("hr_management", erp, "ERP", "HR Management"),

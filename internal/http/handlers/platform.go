@@ -688,14 +688,20 @@ func (h *PlatformHandler) ListTenants(w http.ResponseWriter, r *http.Request) {
 		PlanName           string `json:"planName,omitempty"`
 		PlanCode           string `json:"planCode,omitempty"`
 		CurrentPeriodEnd   string `json:"currentPeriodEnd,omitempty"`
+		SubscriptionExempt bool   `json:"subscriptionExempt"`
 	}
 
 	data := make([]tenantRow, 0, len(tenants))
 	for _, t := range tenants {
+		exempt := t.SubscriptionExempt
+		if !exempt && h.subSvc != nil {
+			exempt = h.subSvc.IsExemptTenant(ctx, t.ID)
+		}
 		row := tenantRow{
-			ID:   t.ID.String(),
-			Name: t.Name,
-			Slug: t.Slug,
+			ID:                 t.ID.String(),
+			Name:               t.Name,
+			Slug:               t.Slug,
+			SubscriptionExempt: exempt,
 		}
 		if len(t.Edges.Subscriptions) > 0 {
 			sub := t.Edges.Subscriptions[0]
@@ -725,6 +731,54 @@ func (h *PlatformHandler) ListTenants(w http.ResponseWriter, r *http.Request) {
 		"total":    total,
 		"page":     page,
 		"pageSize": pageSize,
+	})
+}
+
+// SetTenantExemption godoc
+// @Summary Grant or revoke a tenant's subscription exemption (platform admin)
+// @Description Flips TenantSubscriptionExempt. An exempt tenant bypasses ALL subscription
+// @Description gating platform-wide (every feature unlocked, no limits) without needing a real
+// @Description subscription record — for platform-owner-approved cases outside the built-in
+// @Description demo/platform-owner slugs (e.g. a sponsored/service-charge pilot tenant).
+// @Tags Platform
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant ID"
+// @Param body body object{exempt=bool} true "Exemption flag"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /admin/tenants/{tenant_id}/exemption [patch]
+func (h *PlatformHandler) SetTenantExemption(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	tenantID, ok := h.parseTenantParam(w, r)
+	if !ok {
+		return
+	}
+
+	var body struct {
+		Exempt bool `json:"exempt"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	if h.subSvc == nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "subscription service unavailable"})
+		return
+	}
+	if err := h.subSvc.SetTenantExemption(ctx, tenantID, body.Exempt); err != nil {
+		h.log.Error("failed to set tenant exemption", zap.Error(err), zap.String("tenant_id", tenantID.String()))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"tenantId": tenantID.String(),
+		"exempt":   body.Exempt,
 	})
 }
 
