@@ -108,7 +108,7 @@ func New(ctx context.Context) (*App, error) {
 	}
 
 	// Sync platform owner tenant
-	tenantSyncer := tenant.NewSyncer(ormClient, cfg.Services.AuthAPI)
+	tenantSyncer := tenant.NewSyncer(ormClient, cfg.Services.AuthAPI).WithDB(sqlDB)
 	if _, err := tenantSyncer.SyncTenant(ctx, "codevertex"); err != nil {
 		log.Warn("failed to sync platform owner", zap.Error(err))
 	}

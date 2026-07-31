@@ -13,6 +13,7 @@ const (
 	ServiceTagMarketFlow = "marketflow"
 	ServiceTagISPBilling = "isp_billing"
 	ServiceTagProjects   = "projects"
+	ServiceTagAfya       = "afya"
 )
 
 // AllServiceTags lists all billable service tags.
@@ -29,4 +30,5 @@ var AllServiceTags = []string{
 	ServiceTagMarketFlow,
 	ServiceTagISPBilling,
 	ServiceTagProjects,
+	ServiceTagAfya,
 }
