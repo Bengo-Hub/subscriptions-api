@@ -59,6 +59,7 @@ type App struct {
 	subscriptionSvc *subscriptions.Service
 	treasuryClient  *serviceclient.Client
 	invoiceSvc      *billing.InvoiceService
+	overageSvc      *billing.OverageService
 }
 
 func New(ctx context.Context) (*App, error) {
@@ -324,6 +325,7 @@ func New(ctx context.Context) (*App, error) {
 		subscriptionSvc: subscriptionSvc,
 		treasuryClient:  treasuryClient,
 		invoiceSvc:      invoiceSvc,
+		overageSvc:      overageSvc,
 	}, nil
 }
 
@@ -366,6 +368,12 @@ func (a *App) Run(ctx context.Context) error {
 	if a.orm != nil && a.subscriptionSvc != nil {
 		go jobs.StartDormancyJob(ctx, a.log, a.orm, a.subscriptionSvc)
 		a.log.Info("dormancy job started")
+	}
+
+	// Start daily overage-calculation job (accumulates metered-overage charges for renewal invoices)
+	if a.orm != nil && a.overageSvc != nil {
+		go jobs.StartOverageJob(ctx, a.log, a.overageSvc)
+		a.log.Info("overage job started")
 	}
 
 	// Start auth.tenant.created consumer for auto-provisioning new tenants
