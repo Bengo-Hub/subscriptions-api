@@ -147,6 +147,13 @@ func (s *Service) GetSubscriptionResult(ctx context.Context, tenantID uuid.UUID)
 		overlayPlanEntitlements(result, pp)
 	}
 
+	if codes, cerr := s.activeProductCodesForSub(ctx, sub.ID); cerr != nil {
+		s.log.Warn("composite entitlements: failed to load active product codes",
+			zap.String("tenant_id", tenantID.String()), zap.Error(cerr))
+	} else {
+		result.ActiveProducts = codes
+	}
+
 	return result, nil
 }
 

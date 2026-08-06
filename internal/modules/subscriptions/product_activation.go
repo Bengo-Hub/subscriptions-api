@@ -7,6 +7,7 @@ import (
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/featuredefinition"
+	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/google/uuid"
@@ -30,9 +31,28 @@ var DefaultActivatedProducts = []string{"auth", "pos", "inventory", "treasury", 
 // is created) — no existing-row check needed, unlike AssignProductPlan which can be called
 // repeatedly against an existing subscription.
 func activateDefaultProductsTx(ctx context.Context, tx *ent.Tx, tenantSubscriptionID uuid.UUID, now time.Time) error {
+	// product_id is a required, unique FK on ProductSubscription — resolve every default
+	// product's row up front (one query, not N) rather than per-code.
+	rows, err := tx.Product.Query().Where(product.CodeIn(DefaultActivatedProducts...)).All(ctx)
+	if err != nil {
+		return fmt.Errorf("resolve default products: %w", err)
+	}
+	idByCode := make(map[string]uuid.UUID, len(rows))
+	for _, p := range rows {
+		idByCode[p.Code] = p.ID
+	}
+
 	for _, code := range DefaultActivatedProducts {
+		productID, ok := idByCode[code]
+		if !ok {
+			// A default product code with no matching `products` row is a seed-data gap, not a
+			// tenant-specific failure — skip it (log, don't fail the whole signup over it) rather
+			// than block every new tenant subscription because one product row is missing.
+			continue
+		}
 		if err := tx.ProductSubscription.Create().
 			SetTenantSubscriptionID(tenantSubscriptionID).
+			SetProductID(productID).
 			SetProductCode(code).
 			SetStatus(productsubscription.StatusActive).
 			SetActivatedAt(now).
@@ -180,9 +200,15 @@ func (s *Service) ActiveProductCodes(ctx context.Context, tenantID uuid.UUID) ([
 		// No subscription (exempt tenant, or none provisioned yet) → no product claims, not an error.
 		return nil, nil //nolint:nilerr
 	}
+	return s.activeProductCodesForSub(ctx, sub.ID)
+}
+
+// activeProductCodesForSub is the shared core of ActiveProductCodes, for callers (like
+// GetSubscriptionResult) that already hold the TenantSubscription and would otherwise re-query it.
+func (s *Service) activeProductCodesForSub(ctx context.Context, tenantSubscriptionID uuid.UUID) ([]string, error) {
 	rows, err := s.client.ProductSubscription.Query().
 		Where(
-			productsubscription.TenantSubscriptionIDEQ(sub.ID),
+			productsubscription.TenantSubscriptionIDEQ(tenantSubscriptionID),
 			productsubscription.StatusEQ(productsubscription.StatusActive),
 		).
 		All(ctx)

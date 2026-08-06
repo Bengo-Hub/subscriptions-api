@@ -9,6 +9,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/domain"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
+	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
@@ -135,6 +136,10 @@ type SubscriptionResult struct {
 	CancelReason       *string        `json:"cancel_reason,omitempty"`
 	Features           []string       `json:"features"`
 	Limits             map[string]int `json:"limits"`
+	// ActiveProducts is the product_code of every currently-active ProductSubscription — minted
+	// into the JWT active_products claim so the app-switcher can show only activated apps
+	// without an extra network call. See ActiveProductCodes.
+	ActiveProducts []string `json:"active_products,omitempty"`
 	// AccessStatus is derived gating state for clients: "active" (full access),
 	// "grace" (past period end but within the grace window — still accessible, pay soon),
 	// or "blocked" (expired/cancelled/suspended). GraceEndsAt is set while in grace.
@@ -979,6 +984,18 @@ func (s *Service) AssignProductPlan(ctx context.Context, tenantID uuid.UUID, pro
 		overridePlanID = &plan.ID
 	}
 
+	// product_id is a required, unique FK on ProductSubscription (Product.code is merely a
+	// denormalized copy for cheap filtering) — resolve it up front so a genuinely unknown
+	// product_code fails clearly here, before opening a transaction, rather than as an opaque
+	// not-null-constraint database error deep inside the Create() call.
+	prod, perr := s.client.Product.Query().Where(product.CodeEQ(productCode)).Only(ctx)
+	if perr != nil {
+		if ent.IsNotFound(perr) {
+			return fmt.Errorf("product not found: %s", productCode)
+		}
+		return fmt.Errorf("lookup product: %w", perr)
+	}
+
 	tx, err := s.client.Tx(ctx)
 	if err != nil {
 		return fmt.Errorf("start transaction: %w", err)
@@ -1009,6 +1026,7 @@ func (s *Service) AssignProductPlan(ctx context.Context, tenantID uuid.UUID, pro
 	case ent.IsNotFound(qerr):
 		create := tx.ProductSubscription.Create().
 			SetTenantSubscriptionID(sub.ID).
+			SetProductID(prod.ID).
 			SetProductCode(productCode).
 			SetStatus(productsubscription.StatusActive).
 			SetActivatedAt(time.Now().UTC())
