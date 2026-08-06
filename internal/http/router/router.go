@@ -34,6 +34,7 @@ func New(
 	usageAdminHandler *handlers.UsageAdminHandler,
 	couponAdminHandler *handlers.CouponAdminHandler,
 	featureCatalogHandler *handlers.FeatureCatalogHandler,
+	productActivationHandler *handlers.ProductActivationHandler,
 	backupHandler *handlers.BackupHandler,
 	backupDestHandler *handlers.BackupDestinationHandler,
 	apiKey string,
@@ -196,6 +197,19 @@ func New(
 					if featureCatalogHandler != nil {
 						r.Get("/catalog", featureCatalogHandler.ListCatalog)
 					}
+				})
+			}
+
+			// Tenant self-service app activation — distinct from the platform-owner-only
+			// /admin/tenants/{tenant_id}/products below: these never take a tenant_id path
+			// param, the acting tenant is always the caller's own (resolveTenantID), so a
+			// tenant admin can only ever activate/deactivate products for their own tenant.
+			if productActivationHandler != nil {
+				r.Route("/products", func(r chi.Router) {
+					r.Get("/", productActivationHandler.ListMyProducts)
+					r.Get("/{product_code}/entitlement", productActivationHandler.CheckProductEntitlement)
+					r.Post("/{product_code}/activate", productActivationHandler.ActivateMyProduct)
+					r.Post("/{product_code}/deactivate", productActivationHandler.DeactivateMyProduct)
 				})
 			}
 

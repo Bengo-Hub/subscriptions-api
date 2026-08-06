@@ -518,6 +518,12 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 		return nil, fmt.Errorf("create subscription: %w", err)
 	}
 
+	// Every brand-new subscription auto-activates the default app set (POS, Inventory,
+	// Treasury, Subscriptions, Auth/SSO) — no tenant action needed. See DefaultActivatedProducts.
+	if err = activateDefaultProductsTx(ctx, tx, sub.ID, now); err != nil {
+		return nil, err
+	}
+
 	// Publish outbox event
 	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, "created", map[string]any{
 		"tenant_id":     sub.TenantID.String(),

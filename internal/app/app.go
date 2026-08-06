@@ -235,6 +235,10 @@ func New(ctx context.Context) (*App, error) {
 	platformHandler := handlers.NewPlatformHandler(log, ormClient, featureHandler)
 	platformHandler.WithSubscriptionService(subscriptionSvc)
 
+	// Tenant self-service app activation (distinct from platformHandler's admin-only
+	// product endpoints — see product_activation.go doc comment).
+	productActivationHandler := handlers.NewProductActivationHandler(log, subscriptionSvc)
+
 	// Subscription invoice service (platform→tenant invoices via treasury S2S) — shared by
 	// the 7-day invoice job, grace events, and the manual platform-owner endpoints.
 	invoiceSvc := billing.NewInvoiceService(log, ormClient, subscriptionSvc, treasuryClient, ispBillingClient, cfg.Services.TreasuryAPIKey, cfg.Services.PlatformTenantID, cfg.Services.TreasuryUI, cfg.Services.TreasuryAPI, cfg.Services.VATRate)
@@ -282,7 +286,7 @@ func New(ctx context.Context) (*App, error) {
 		RetentionDays: cfg.Backup.RetentionDays,
 	}, log).Start(ctx)
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, backupHandler, backupDestHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, productActivationHandler, backupHandler, backupDestHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),
