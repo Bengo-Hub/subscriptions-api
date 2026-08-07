@@ -361,17 +361,41 @@ func (h *SubscriptionHandler) buildUsageLimits(ctx context.Context, tenantID uui
 		}
 	}
 
-	for metricType, limit := range sub.Limits {
-		result[metricType] = map[string]int{
-			"used":  usedByType[metricType],
-			"limit": limit,
-		}
+	// planLimits as map[string]any so the SAME metric<->limit-key matching the live enforcement
+	// path uses (limitKeyForMetric/inferMetricType, both in usage.go) resolves here too. A naive
+	// exact-key lookup (metricType == limitKey) would miss EVERY metric: usage_events.metric_type
+	// is always a short name ("orders") while plan limits are always prefixed
+	// (max_orders_per_day, inventory_max_sku, …). That mismatch used to fall into the "no plan
+	// limit configured" branch below and report limit:0 for every metric — making even an
+	// unlimited (-1) top-tier plan look like it was already over its limit.
+	planLimits := make(map[string]any, len(sub.Limits))
+	for k, v := range sub.Limits {
+		planLimits[k] = v
 	}
-	// Also include metrics that have usage but no plan limit
-	for metricType, used := range usedByType {
-		if _, exists := result[metricType]; !exists {
-			result[metricType] = map[string]int{"used": used, "limit": 0}
+
+	// Start from configured plan limits (so a metric with zero usage this period still surfaces
+	// with its real limit, not only metrics that already have events).
+	for limitKey, limit := range sub.Limits {
+		metricType := inferMetricType(limitKey)
+		if metricType == "" {
+			continue
 		}
+		if _, exists := result[metricType]; exists {
+			continue
+		}
+		result[metricType] = map[string]int{"used": usedByType[metricType], "limit": limit}
+	}
+	// Any metric with usage not already resolved above — fuzzy-match it to its real plan-limit
+	// key before falling back to "no plan limit configured" (0).
+	for metricType, used := range usedByType {
+		if _, exists := result[metricType]; exists {
+			continue
+		}
+		limit := 0
+		if limitKey, ok := limitKeyForMetric(metricType, planLimits); ok {
+			limit = sub.Limits[limitKey]
+		}
+		result[metricType] = map[string]int{"used": used, "limit": limit}
 	}
 
 	return result
