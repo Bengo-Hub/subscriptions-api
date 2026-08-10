@@ -37,6 +37,7 @@ func New(
 	productActivationHandler *handlers.ProductActivationHandler,
 	backupHandler *handlers.BackupHandler,
 	backupDestHandler *handlers.BackupDestinationHandler,
+	emailLicenseHandler *handlers.EmailLicenseHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -186,6 +187,12 @@ func New(
 			// Custom addons — platform-admin configured; tenant read-only view
 			if customAddonHandler != nil {
 				r.Get("/custom-addons", customAddonHandler.ListMyCustomAddons)
+			}
+
+			// Email hosting licenses (tenant-scoped) — see
+			// .claude/plans/codevertex-email-hosting-service-plan.md Part 3.
+			if emailLicenseHandler != nil {
+				emailLicenseHandler.RegisterEmailRoutes(r)
 			}
 
 			// Feature gate checks — used by all microservices for Trinity Authorization

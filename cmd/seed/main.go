@@ -84,6 +84,15 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 		return fmt.Errorf("seed products: %w", err)
 	}
 
+	// 1.1 Seed the email-hosting product + Lite/Standard/Professional plans.
+	// See .claude/plans/codevertex-email-hosting-service-plan.md Parts 3/4.
+	if err := seedEmailHostingProduct(ctx, tx); err != nil {
+		return fmt.Errorf("seed email-hosting product: %w", err)
+	}
+	if err := seedEmailPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed email plans: %w", err)
+	}
+
 	// 2. Seed ordering plans (Starter, Growth, Professional — monthly + yearly)
 	if err := seedOrderingPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed ordering plans: %w", err)
