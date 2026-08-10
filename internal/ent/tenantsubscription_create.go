@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
@@ -434,6 +435,21 @@ func (_c *TenantSubscriptionCreate) AddOverageCharges(v ...*OverageCharge) *Tena
 	return _c.AddOverageChargeIDs(ids...)
 }
 
+// AddEmailLicenseIDs adds the "email_licenses" edge to the EmailLicense entity by IDs.
+func (_c *TenantSubscriptionCreate) AddEmailLicenseIDs(ids ...uuid.UUID) *TenantSubscriptionCreate {
+	_c.mutation.AddEmailLicenseIDs(ids...)
+	return _c
+}
+
+// AddEmailLicenses adds the "email_licenses" edges to the EmailLicense entity.
+func (_c *TenantSubscriptionCreate) AddEmailLicenses(v ...*EmailLicense) *TenantSubscriptionCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEmailLicenseIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_c *TenantSubscriptionCreate) Mutation() *TenantSubscriptionMutation {
 	return _c.mutation
@@ -764,6 +780,22 @@ func (_c *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgraph
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(overagecharge.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EmailLicensesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailLicensesTable,
+			Columns: []string{tenantsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

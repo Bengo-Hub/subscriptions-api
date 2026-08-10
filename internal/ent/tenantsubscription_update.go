@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
@@ -545,6 +546,21 @@ func (_u *TenantSubscriptionUpdate) AddOverageCharges(v ...*OverageCharge) *Tena
 	return _u.AddOverageChargeIDs(ids...)
 }
 
+// AddEmailLicenseIDs adds the "email_licenses" edge to the EmailLicense entity by IDs.
+func (_u *TenantSubscriptionUpdate) AddEmailLicenseIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.AddEmailLicenseIDs(ids...)
+	return _u
+}
+
+// AddEmailLicenses adds the "email_licenses" edges to the EmailLicense entity.
+func (_u *TenantSubscriptionUpdate) AddEmailLicenses(v ...*EmailLicense) *TenantSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEmailLicenseIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_u *TenantSubscriptionUpdate) Mutation() *TenantSubscriptionMutation {
 	return _u.mutation
@@ -602,6 +618,27 @@ func (_u *TenantSubscriptionUpdate) RemoveOverageCharges(v ...*OverageCharge) *T
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveOverageChargeIDs(ids...)
+}
+
+// ClearEmailLicenses clears all "email_licenses" edges to the EmailLicense entity.
+func (_u *TenantSubscriptionUpdate) ClearEmailLicenses() *TenantSubscriptionUpdate {
+	_u.mutation.ClearEmailLicenses()
+	return _u
+}
+
+// RemoveEmailLicenseIDs removes the "email_licenses" edge to EmailLicense entities by IDs.
+func (_u *TenantSubscriptionUpdate) RemoveEmailLicenseIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.RemoveEmailLicenseIDs(ids...)
+	return _u
+}
+
+// RemoveEmailLicenses removes "email_licenses" edges to EmailLicense entities.
+func (_u *TenantSubscriptionUpdate) RemoveEmailLicenses(v ...*EmailLicense) *TenantSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEmailLicenseIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -943,6 +980,51 @@ func (_u *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(overagecharge.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EmailLicensesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailLicensesTable,
+			Columns: []string{tenantsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEmailLicensesIDs(); len(nodes) > 0 && !_u.mutation.EmailLicensesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailLicensesTable,
+			Columns: []string{tenantsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EmailLicensesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailLicensesTable,
+			Columns: []string{tenantsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1482,6 +1564,21 @@ func (_u *TenantSubscriptionUpdateOne) AddOverageCharges(v ...*OverageCharge) *T
 	return _u.AddOverageChargeIDs(ids...)
 }
 
+// AddEmailLicenseIDs adds the "email_licenses" edge to the EmailLicense entity by IDs.
+func (_u *TenantSubscriptionUpdateOne) AddEmailLicenseIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.AddEmailLicenseIDs(ids...)
+	return _u
+}
+
+// AddEmailLicenses adds the "email_licenses" edges to the EmailLicense entity.
+func (_u *TenantSubscriptionUpdateOne) AddEmailLicenses(v ...*EmailLicense) *TenantSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEmailLicenseIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_u *TenantSubscriptionUpdateOne) Mutation() *TenantSubscriptionMutation {
 	return _u.mutation
@@ -1539,6 +1636,27 @@ func (_u *TenantSubscriptionUpdateOne) RemoveOverageCharges(v ...*OverageCharge)
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveOverageChargeIDs(ids...)
+}
+
+// ClearEmailLicenses clears all "email_licenses" edges to the EmailLicense entity.
+func (_u *TenantSubscriptionUpdateOne) ClearEmailLicenses() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearEmailLicenses()
+	return _u
+}
+
+// RemoveEmailLicenseIDs removes the "email_licenses" edge to EmailLicense entities by IDs.
+func (_u *TenantSubscriptionUpdateOne) RemoveEmailLicenseIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.RemoveEmailLicenseIDs(ids...)
+	return _u
+}
+
+// RemoveEmailLicenses removes "email_licenses" edges to EmailLicense entities.
+func (_u *TenantSubscriptionUpdateOne) RemoveEmailLicenses(v ...*EmailLicense) *TenantSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEmailLicenseIDs(ids...)
 }
 
 // Where appends a list predicates to the TenantSubscriptionUpdate builder.
@@ -1910,6 +2028,51 @@ func (_u *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Tena
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(overagecharge.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EmailLicensesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailLicensesTable,
+			Columns: []string{tenantsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEmailLicensesIDs(); len(nodes) > 0 && !_u.mutation.EmailLicensesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailLicensesTable,
+			Columns: []string{tenantsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EmailLicensesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailLicensesTable,
+			Columns: []string{tenantsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

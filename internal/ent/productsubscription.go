@@ -63,9 +63,11 @@ type ProductSubscriptionEdges struct {
 	ServiceChargePlan *ServiceChargePlan `json:"service_charge_plan,omitempty"`
 	// OverridePlan holds the value of the override_plan edge.
 	OverridePlan *SubscriptionPlan `json:"override_plan,omitempty"`
+	// EmailLicenses holds the value of the email_licenses edge.
+	EmailLicenses []*EmailLicense `json:"email_licenses,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // TenantSubscriptionOrErr returns the TenantSubscription value or an error if the edge
@@ -110,6 +112,15 @@ func (e ProductSubscriptionEdges) OverridePlanOrErr() (*SubscriptionPlan, error)
 		return nil, &NotFoundError{label: subscriptionplan.Label}
 	}
 	return nil, &NotLoadedError{edge: "override_plan"}
+}
+
+// EmailLicensesOrErr returns the EmailLicenses value or an error if the edge
+// was not loaded in eager-loading.
+func (e ProductSubscriptionEdges) EmailLicensesOrErr() ([]*EmailLicense, error) {
+	if e.loadedTypes[4] {
+		return e.EmailLicenses, nil
+	}
+	return nil, &NotLoadedError{edge: "email_licenses"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -258,6 +269,11 @@ func (_m *ProductSubscription) QueryServiceChargePlan() *ServiceChargePlanQuery 
 // QueryOverridePlan queries the "override_plan" edge of the ProductSubscription entity.
 func (_m *ProductSubscription) QueryOverridePlan() *SubscriptionPlanQuery {
 	return NewProductSubscriptionClient(_m.config).QueryOverridePlan(_m)
+}
+
+// QueryEmailLicenses queries the "email_licenses" edge of the ProductSubscription entity.
+func (_m *ProductSubscription) QueryEmailLicenses() *EmailLicenseQuery {
+	return NewProductSubscriptionClient(_m.config).QueryEmailLicenses(_m)
 }
 
 // Update returns a builder for updating this ProductSubscription.

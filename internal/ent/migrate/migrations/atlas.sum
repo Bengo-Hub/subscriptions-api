@@ -1,4 +1,4 @@
-h1:dUR1vFW9yx4EX7VWUrQpNAo4IXL/Xb/EeS6l8ox0rs8=
+h1:NBJBtkMH6HAh/TS6Xa4Ly80vUS2KDSHBzYq+J9v5KQw=
 20260311014015_initial_schema_v3.sql h1:R/oJ+OKFJOqXXwALIht3GiwudlgIBhftlKYX/25Wqy8=
 20260320031754_add_service_charge_plan_and_per_service_overrides.sql h1:wZ7KKK7UG8v1MIGTS+E9YCd90AgoV2Ot/coMCgG4Pes=
 20260322100158_add_rbac_rate_limit_service_config.sql h1:OujNi4BaOL1hr7g5UtSgNSabahv1KL5m8HfY3rQP3ew=
@@ -15,3 +15,4 @@ h1:dUR1vFW9yx4EX7VWUrQpNAo4IXL/Xb/EeS6l8ox0rs8=
 20260617120000_add_setup_fee.sql h1:WWUppU/9n8a5WAOhYgLC2i6tNeVWxRVpRJvyWd7oGbo=
 20260625120000_add_tenant_subscription_exempt.sql h1:7g2fST7vnye99etNtUohL1LYxyju2xFDs/9Z3oWcr88=
 20260707112939_add_semi_annual_billing_cycle.sql h1:h/HnsT+keuxyKSKgTAYCs8ywOBbi61TCAKvXYaRcvoo=
+20260810110804_add_email_hosting_plan_license.sql h1:KNEEeaJADLwf/ZO4tzwCugoqOe69l3TH3SiFD+mteOc=

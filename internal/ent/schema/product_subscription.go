@@ -84,6 +84,7 @@ func (ProductSubscription) Edges() []ent.Edge {
 			Ref("override_product_subscriptions").
 			Field("override_plan_id").
 			Unique(),
+		edge.To("email_licenses", EmailLicense.Type),
 	}
 }
 

@@ -16,6 +16,8 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
 	"github.com/bengobox/subscription-service/internal/ent/coupon"
 	"github.com/bengobox/subscription-service/internal/ent/customaddon"
+	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
+	"github.com/bengobox/subscription-service/internal/ent/emailplan"
 	"github.com/bengobox/subscription-service/internal/ent/featuredefinition"
 	"github.com/bengobox/subscription-service/internal/ent/outboxevent"
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
@@ -56,6 +58,8 @@ const (
 	TypeBundle                        = "Bundle"
 	TypeCoupon                        = "Coupon"
 	TypeCustomAddon                   = "CustomAddon"
+	TypeEmailLicense                  = "EmailLicense"
+	TypeEmailPlan                     = "EmailPlan"
 	TypeFeatureDefinition             = "FeatureDefinition"
 	TypeOutboxEvent                   = "OutboxEvent"
 	TypeOverageCharge                 = "OverageCharge"
@@ -5150,6 +5154,2744 @@ func (m *CustomAddonMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *CustomAddonMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown CustomAddon edge %s", name)
+}
+
+// EmailLicenseMutation represents an operation that mutates the EmailLicense nodes in the graph.
+type EmailLicenseMutation struct {
+	config
+	op                          Op
+	typ                         string
+	id                          *uuid.UUID
+	assigned_to_email           *string
+	assigned_to_user_id         *uuid.UUID
+	status                      *emaillicense.Status
+	suspend_reason              *string
+	storage_quota_gb            *int
+	addstorage_quota_gb         *int
+	features_json               *map[string]interface{}
+	assigned_at                 *time.Time
+	expires_at                  *time.Time
+	metadata                    *map[string]interface{}
+	created_at                  *time.Time
+	updated_at                  *time.Time
+	clearedFields               map[string]struct{}
+	tenant_subscription         *uuid.UUID
+	clearedtenant_subscription  bool
+	product_subscription        *uuid.UUID
+	clearedproduct_subscription bool
+	email_plan                  *uuid.UUID
+	clearedemail_plan           bool
+	done                        bool
+	oldValue                    func(context.Context) (*EmailLicense, error)
+	predicates                  []predicate.EmailLicense
+}
+
+var _ ent.Mutation = (*EmailLicenseMutation)(nil)
+
+// emaillicenseOption allows management of the mutation configuration using functional options.
+type emaillicenseOption func(*EmailLicenseMutation)
+
+// newEmailLicenseMutation creates new mutation for the EmailLicense entity.
+func newEmailLicenseMutation(c config, op Op, opts ...emaillicenseOption) *EmailLicenseMutation {
+	m := &EmailLicenseMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeEmailLicense,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withEmailLicenseID sets the ID field of the mutation.
+func withEmailLicenseID(id uuid.UUID) emaillicenseOption {
+	return func(m *EmailLicenseMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *EmailLicense
+		)
+		m.oldValue = func(ctx context.Context) (*EmailLicense, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().EmailLicense.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withEmailLicense sets the old EmailLicense of the mutation.
+func withEmailLicense(node *EmailLicense) emaillicenseOption {
+	return func(m *EmailLicenseMutation) {
+		m.oldValue = func(context.Context) (*EmailLicense, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m EmailLicenseMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m EmailLicenseMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of EmailLicense entities.
+func (m *EmailLicenseMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *EmailLicenseMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *EmailLicenseMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().EmailLicense.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetTenantSubscriptionID sets the "tenant_subscription_id" field.
+func (m *EmailLicenseMutation) SetTenantSubscriptionID(u uuid.UUID) {
+	m.tenant_subscription = &u
+}
+
+// TenantSubscriptionID returns the value of the "tenant_subscription_id" field in the mutation.
+func (m *EmailLicenseMutation) TenantSubscriptionID() (r uuid.UUID, exists bool) {
+	v := m.tenant_subscription
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTenantSubscriptionID returns the old "tenant_subscription_id" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldTenantSubscriptionID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTenantSubscriptionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTenantSubscriptionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantSubscriptionID: %w", err)
+	}
+	return oldValue.TenantSubscriptionID, nil
+}
+
+// ResetTenantSubscriptionID resets all changes to the "tenant_subscription_id" field.
+func (m *EmailLicenseMutation) ResetTenantSubscriptionID() {
+	m.tenant_subscription = nil
+}
+
+// SetProductSubscriptionID sets the "product_subscription_id" field.
+func (m *EmailLicenseMutation) SetProductSubscriptionID(u uuid.UUID) {
+	m.product_subscription = &u
+}
+
+// ProductSubscriptionID returns the value of the "product_subscription_id" field in the mutation.
+func (m *EmailLicenseMutation) ProductSubscriptionID() (r uuid.UUID, exists bool) {
+	v := m.product_subscription
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProductSubscriptionID returns the old "product_subscription_id" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldProductSubscriptionID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProductSubscriptionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProductSubscriptionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProductSubscriptionID: %w", err)
+	}
+	return oldValue.ProductSubscriptionID, nil
+}
+
+// ResetProductSubscriptionID resets all changes to the "product_subscription_id" field.
+func (m *EmailLicenseMutation) ResetProductSubscriptionID() {
+	m.product_subscription = nil
+}
+
+// SetEmailPlanID sets the "email_plan_id" field.
+func (m *EmailLicenseMutation) SetEmailPlanID(u uuid.UUID) {
+	m.email_plan = &u
+}
+
+// EmailPlanID returns the value of the "email_plan_id" field in the mutation.
+func (m *EmailLicenseMutation) EmailPlanID() (r uuid.UUID, exists bool) {
+	v := m.email_plan
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmailPlanID returns the old "email_plan_id" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldEmailPlanID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmailPlanID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmailPlanID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmailPlanID: %w", err)
+	}
+	return oldValue.EmailPlanID, nil
+}
+
+// ResetEmailPlanID resets all changes to the "email_plan_id" field.
+func (m *EmailLicenseMutation) ResetEmailPlanID() {
+	m.email_plan = nil
+}
+
+// SetAssignedToEmail sets the "assigned_to_email" field.
+func (m *EmailLicenseMutation) SetAssignedToEmail(s string) {
+	m.assigned_to_email = &s
+}
+
+// AssignedToEmail returns the value of the "assigned_to_email" field in the mutation.
+func (m *EmailLicenseMutation) AssignedToEmail() (r string, exists bool) {
+	v := m.assigned_to_email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAssignedToEmail returns the old "assigned_to_email" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldAssignedToEmail(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAssignedToEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAssignedToEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAssignedToEmail: %w", err)
+	}
+	return oldValue.AssignedToEmail, nil
+}
+
+// ClearAssignedToEmail clears the value of the "assigned_to_email" field.
+func (m *EmailLicenseMutation) ClearAssignedToEmail() {
+	m.assigned_to_email = nil
+	m.clearedFields[emaillicense.FieldAssignedToEmail] = struct{}{}
+}
+
+// AssignedToEmailCleared returns if the "assigned_to_email" field was cleared in this mutation.
+func (m *EmailLicenseMutation) AssignedToEmailCleared() bool {
+	_, ok := m.clearedFields[emaillicense.FieldAssignedToEmail]
+	return ok
+}
+
+// ResetAssignedToEmail resets all changes to the "assigned_to_email" field.
+func (m *EmailLicenseMutation) ResetAssignedToEmail() {
+	m.assigned_to_email = nil
+	delete(m.clearedFields, emaillicense.FieldAssignedToEmail)
+}
+
+// SetAssignedToUserID sets the "assigned_to_user_id" field.
+func (m *EmailLicenseMutation) SetAssignedToUserID(u uuid.UUID) {
+	m.assigned_to_user_id = &u
+}
+
+// AssignedToUserID returns the value of the "assigned_to_user_id" field in the mutation.
+func (m *EmailLicenseMutation) AssignedToUserID() (r uuid.UUID, exists bool) {
+	v := m.assigned_to_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAssignedToUserID returns the old "assigned_to_user_id" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldAssignedToUserID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAssignedToUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAssignedToUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAssignedToUserID: %w", err)
+	}
+	return oldValue.AssignedToUserID, nil
+}
+
+// ClearAssignedToUserID clears the value of the "assigned_to_user_id" field.
+func (m *EmailLicenseMutation) ClearAssignedToUserID() {
+	m.assigned_to_user_id = nil
+	m.clearedFields[emaillicense.FieldAssignedToUserID] = struct{}{}
+}
+
+// AssignedToUserIDCleared returns if the "assigned_to_user_id" field was cleared in this mutation.
+func (m *EmailLicenseMutation) AssignedToUserIDCleared() bool {
+	_, ok := m.clearedFields[emaillicense.FieldAssignedToUserID]
+	return ok
+}
+
+// ResetAssignedToUserID resets all changes to the "assigned_to_user_id" field.
+func (m *EmailLicenseMutation) ResetAssignedToUserID() {
+	m.assigned_to_user_id = nil
+	delete(m.clearedFields, emaillicense.FieldAssignedToUserID)
+}
+
+// SetStatus sets the "status" field.
+func (m *EmailLicenseMutation) SetStatus(e emaillicense.Status) {
+	m.status = &e
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *EmailLicenseMutation) Status() (r emaillicense.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldStatus(ctx context.Context) (v emaillicense.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *EmailLicenseMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetSuspendReason sets the "suspend_reason" field.
+func (m *EmailLicenseMutation) SetSuspendReason(s string) {
+	m.suspend_reason = &s
+}
+
+// SuspendReason returns the value of the "suspend_reason" field in the mutation.
+func (m *EmailLicenseMutation) SuspendReason() (r string, exists bool) {
+	v := m.suspend_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSuspendReason returns the old "suspend_reason" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldSuspendReason(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSuspendReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSuspendReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSuspendReason: %w", err)
+	}
+	return oldValue.SuspendReason, nil
+}
+
+// ClearSuspendReason clears the value of the "suspend_reason" field.
+func (m *EmailLicenseMutation) ClearSuspendReason() {
+	m.suspend_reason = nil
+	m.clearedFields[emaillicense.FieldSuspendReason] = struct{}{}
+}
+
+// SuspendReasonCleared returns if the "suspend_reason" field was cleared in this mutation.
+func (m *EmailLicenseMutation) SuspendReasonCleared() bool {
+	_, ok := m.clearedFields[emaillicense.FieldSuspendReason]
+	return ok
+}
+
+// ResetSuspendReason resets all changes to the "suspend_reason" field.
+func (m *EmailLicenseMutation) ResetSuspendReason() {
+	m.suspend_reason = nil
+	delete(m.clearedFields, emaillicense.FieldSuspendReason)
+}
+
+// SetStorageQuotaGB sets the "storage_quota_gb" field.
+func (m *EmailLicenseMutation) SetStorageQuotaGB(i int) {
+	m.storage_quota_gb = &i
+	m.addstorage_quota_gb = nil
+}
+
+// StorageQuotaGB returns the value of the "storage_quota_gb" field in the mutation.
+func (m *EmailLicenseMutation) StorageQuotaGB() (r int, exists bool) {
+	v := m.storage_quota_gb
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStorageQuotaGB returns the old "storage_quota_gb" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldStorageQuotaGB(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStorageQuotaGB is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStorageQuotaGB requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStorageQuotaGB: %w", err)
+	}
+	return oldValue.StorageQuotaGB, nil
+}
+
+// AddStorageQuotaGB adds i to the "storage_quota_gb" field.
+func (m *EmailLicenseMutation) AddStorageQuotaGB(i int) {
+	if m.addstorage_quota_gb != nil {
+		*m.addstorage_quota_gb += i
+	} else {
+		m.addstorage_quota_gb = &i
+	}
+}
+
+// AddedStorageQuotaGB returns the value that was added to the "storage_quota_gb" field in this mutation.
+func (m *EmailLicenseMutation) AddedStorageQuotaGB() (r int, exists bool) {
+	v := m.addstorage_quota_gb
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStorageQuotaGB resets all changes to the "storage_quota_gb" field.
+func (m *EmailLicenseMutation) ResetStorageQuotaGB() {
+	m.storage_quota_gb = nil
+	m.addstorage_quota_gb = nil
+}
+
+// SetFeaturesJSON sets the "features_json" field.
+func (m *EmailLicenseMutation) SetFeaturesJSON(value map[string]interface{}) {
+	m.features_json = &value
+}
+
+// FeaturesJSON returns the value of the "features_json" field in the mutation.
+func (m *EmailLicenseMutation) FeaturesJSON() (r map[string]interface{}, exists bool) {
+	v := m.features_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFeaturesJSON returns the old "features_json" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldFeaturesJSON(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFeaturesJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFeaturesJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFeaturesJSON: %w", err)
+	}
+	return oldValue.FeaturesJSON, nil
+}
+
+// ResetFeaturesJSON resets all changes to the "features_json" field.
+func (m *EmailLicenseMutation) ResetFeaturesJSON() {
+	m.features_json = nil
+}
+
+// SetAssignedAt sets the "assigned_at" field.
+func (m *EmailLicenseMutation) SetAssignedAt(t time.Time) {
+	m.assigned_at = &t
+}
+
+// AssignedAt returns the value of the "assigned_at" field in the mutation.
+func (m *EmailLicenseMutation) AssignedAt() (r time.Time, exists bool) {
+	v := m.assigned_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAssignedAt returns the old "assigned_at" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldAssignedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAssignedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAssignedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAssignedAt: %w", err)
+	}
+	return oldValue.AssignedAt, nil
+}
+
+// ClearAssignedAt clears the value of the "assigned_at" field.
+func (m *EmailLicenseMutation) ClearAssignedAt() {
+	m.assigned_at = nil
+	m.clearedFields[emaillicense.FieldAssignedAt] = struct{}{}
+}
+
+// AssignedAtCleared returns if the "assigned_at" field was cleared in this mutation.
+func (m *EmailLicenseMutation) AssignedAtCleared() bool {
+	_, ok := m.clearedFields[emaillicense.FieldAssignedAt]
+	return ok
+}
+
+// ResetAssignedAt resets all changes to the "assigned_at" field.
+func (m *EmailLicenseMutation) ResetAssignedAt() {
+	m.assigned_at = nil
+	delete(m.clearedFields, emaillicense.FieldAssignedAt)
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *EmailLicenseMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *EmailLicenseMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (m *EmailLicenseMutation) ClearExpiresAt() {
+	m.expires_at = nil
+	m.clearedFields[emaillicense.FieldExpiresAt] = struct{}{}
+}
+
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
+func (m *EmailLicenseMutation) ExpiresAtCleared() bool {
+	_, ok := m.clearedFields[emaillicense.FieldExpiresAt]
+	return ok
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *EmailLicenseMutation) ResetExpiresAt() {
+	m.expires_at = nil
+	delete(m.clearedFields, emaillicense.FieldExpiresAt)
+}
+
+// SetMetadata sets the "metadata" field.
+func (m *EmailLicenseMutation) SetMetadata(value map[string]interface{}) {
+	m.metadata = &value
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *EmailLicenseMutation) Metadata() (r map[string]interface{}, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldMetadata(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *EmailLicenseMutation) ResetMetadata() {
+	m.metadata = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *EmailLicenseMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *EmailLicenseMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *EmailLicenseMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *EmailLicenseMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *EmailLicenseMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the EmailLicense entity.
+// If the EmailLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailLicenseMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *EmailLicenseMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// ClearTenantSubscription clears the "tenant_subscription" edge to the TenantSubscription entity.
+func (m *EmailLicenseMutation) ClearTenantSubscription() {
+	m.clearedtenant_subscription = true
+	m.clearedFields[emaillicense.FieldTenantSubscriptionID] = struct{}{}
+}
+
+// TenantSubscriptionCleared reports if the "tenant_subscription" edge to the TenantSubscription entity was cleared.
+func (m *EmailLicenseMutation) TenantSubscriptionCleared() bool {
+	return m.clearedtenant_subscription
+}
+
+// TenantSubscriptionIDs returns the "tenant_subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TenantSubscriptionID instead. It exists only for internal usage by the builders.
+func (m *EmailLicenseMutation) TenantSubscriptionIDs() (ids []uuid.UUID) {
+	if id := m.tenant_subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTenantSubscription resets all changes to the "tenant_subscription" edge.
+func (m *EmailLicenseMutation) ResetTenantSubscription() {
+	m.tenant_subscription = nil
+	m.clearedtenant_subscription = false
+}
+
+// ClearProductSubscription clears the "product_subscription" edge to the ProductSubscription entity.
+func (m *EmailLicenseMutation) ClearProductSubscription() {
+	m.clearedproduct_subscription = true
+	m.clearedFields[emaillicense.FieldProductSubscriptionID] = struct{}{}
+}
+
+// ProductSubscriptionCleared reports if the "product_subscription" edge to the ProductSubscription entity was cleared.
+func (m *EmailLicenseMutation) ProductSubscriptionCleared() bool {
+	return m.clearedproduct_subscription
+}
+
+// ProductSubscriptionIDs returns the "product_subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ProductSubscriptionID instead. It exists only for internal usage by the builders.
+func (m *EmailLicenseMutation) ProductSubscriptionIDs() (ids []uuid.UUID) {
+	if id := m.product_subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetProductSubscription resets all changes to the "product_subscription" edge.
+func (m *EmailLicenseMutation) ResetProductSubscription() {
+	m.product_subscription = nil
+	m.clearedproduct_subscription = false
+}
+
+// ClearEmailPlan clears the "email_plan" edge to the EmailPlan entity.
+func (m *EmailLicenseMutation) ClearEmailPlan() {
+	m.clearedemail_plan = true
+	m.clearedFields[emaillicense.FieldEmailPlanID] = struct{}{}
+}
+
+// EmailPlanCleared reports if the "email_plan" edge to the EmailPlan entity was cleared.
+func (m *EmailLicenseMutation) EmailPlanCleared() bool {
+	return m.clearedemail_plan
+}
+
+// EmailPlanIDs returns the "email_plan" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// EmailPlanID instead. It exists only for internal usage by the builders.
+func (m *EmailLicenseMutation) EmailPlanIDs() (ids []uuid.UUID) {
+	if id := m.email_plan; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetEmailPlan resets all changes to the "email_plan" edge.
+func (m *EmailLicenseMutation) ResetEmailPlan() {
+	m.email_plan = nil
+	m.clearedemail_plan = false
+}
+
+// Where appends a list predicates to the EmailLicenseMutation builder.
+func (m *EmailLicenseMutation) Where(ps ...predicate.EmailLicense) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the EmailLicenseMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *EmailLicenseMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.EmailLicense, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *EmailLicenseMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *EmailLicenseMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (EmailLicense).
+func (m *EmailLicenseMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *EmailLicenseMutation) Fields() []string {
+	fields := make([]string, 0, 14)
+	if m.tenant_subscription != nil {
+		fields = append(fields, emaillicense.FieldTenantSubscriptionID)
+	}
+	if m.product_subscription != nil {
+		fields = append(fields, emaillicense.FieldProductSubscriptionID)
+	}
+	if m.email_plan != nil {
+		fields = append(fields, emaillicense.FieldEmailPlanID)
+	}
+	if m.assigned_to_email != nil {
+		fields = append(fields, emaillicense.FieldAssignedToEmail)
+	}
+	if m.assigned_to_user_id != nil {
+		fields = append(fields, emaillicense.FieldAssignedToUserID)
+	}
+	if m.status != nil {
+		fields = append(fields, emaillicense.FieldStatus)
+	}
+	if m.suspend_reason != nil {
+		fields = append(fields, emaillicense.FieldSuspendReason)
+	}
+	if m.storage_quota_gb != nil {
+		fields = append(fields, emaillicense.FieldStorageQuotaGB)
+	}
+	if m.features_json != nil {
+		fields = append(fields, emaillicense.FieldFeaturesJSON)
+	}
+	if m.assigned_at != nil {
+		fields = append(fields, emaillicense.FieldAssignedAt)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, emaillicense.FieldExpiresAt)
+	}
+	if m.metadata != nil {
+		fields = append(fields, emaillicense.FieldMetadata)
+	}
+	if m.created_at != nil {
+		fields = append(fields, emaillicense.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, emaillicense.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *EmailLicenseMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case emaillicense.FieldTenantSubscriptionID:
+		return m.TenantSubscriptionID()
+	case emaillicense.FieldProductSubscriptionID:
+		return m.ProductSubscriptionID()
+	case emaillicense.FieldEmailPlanID:
+		return m.EmailPlanID()
+	case emaillicense.FieldAssignedToEmail:
+		return m.AssignedToEmail()
+	case emaillicense.FieldAssignedToUserID:
+		return m.AssignedToUserID()
+	case emaillicense.FieldStatus:
+		return m.Status()
+	case emaillicense.FieldSuspendReason:
+		return m.SuspendReason()
+	case emaillicense.FieldStorageQuotaGB:
+		return m.StorageQuotaGB()
+	case emaillicense.FieldFeaturesJSON:
+		return m.FeaturesJSON()
+	case emaillicense.FieldAssignedAt:
+		return m.AssignedAt()
+	case emaillicense.FieldExpiresAt:
+		return m.ExpiresAt()
+	case emaillicense.FieldMetadata:
+		return m.Metadata()
+	case emaillicense.FieldCreatedAt:
+		return m.CreatedAt()
+	case emaillicense.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *EmailLicenseMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case emaillicense.FieldTenantSubscriptionID:
+		return m.OldTenantSubscriptionID(ctx)
+	case emaillicense.FieldProductSubscriptionID:
+		return m.OldProductSubscriptionID(ctx)
+	case emaillicense.FieldEmailPlanID:
+		return m.OldEmailPlanID(ctx)
+	case emaillicense.FieldAssignedToEmail:
+		return m.OldAssignedToEmail(ctx)
+	case emaillicense.FieldAssignedToUserID:
+		return m.OldAssignedToUserID(ctx)
+	case emaillicense.FieldStatus:
+		return m.OldStatus(ctx)
+	case emaillicense.FieldSuspendReason:
+		return m.OldSuspendReason(ctx)
+	case emaillicense.FieldStorageQuotaGB:
+		return m.OldStorageQuotaGB(ctx)
+	case emaillicense.FieldFeaturesJSON:
+		return m.OldFeaturesJSON(ctx)
+	case emaillicense.FieldAssignedAt:
+		return m.OldAssignedAt(ctx)
+	case emaillicense.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	case emaillicense.FieldMetadata:
+		return m.OldMetadata(ctx)
+	case emaillicense.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case emaillicense.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown EmailLicense field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EmailLicenseMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case emaillicense.FieldTenantSubscriptionID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTenantSubscriptionID(v)
+		return nil
+	case emaillicense.FieldProductSubscriptionID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProductSubscriptionID(v)
+		return nil
+	case emaillicense.FieldEmailPlanID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmailPlanID(v)
+		return nil
+	case emaillicense.FieldAssignedToEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAssignedToEmail(v)
+		return nil
+	case emaillicense.FieldAssignedToUserID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAssignedToUserID(v)
+		return nil
+	case emaillicense.FieldStatus:
+		v, ok := value.(emaillicense.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case emaillicense.FieldSuspendReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSuspendReason(v)
+		return nil
+	case emaillicense.FieldStorageQuotaGB:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStorageQuotaGB(v)
+		return nil
+	case emaillicense.FieldFeaturesJSON:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFeaturesJSON(v)
+		return nil
+	case emaillicense.FieldAssignedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAssignedAt(v)
+		return nil
+	case emaillicense.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	case emaillicense.FieldMetadata:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
+		return nil
+	case emaillicense.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case emaillicense.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown EmailLicense field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *EmailLicenseMutation) AddedFields() []string {
+	var fields []string
+	if m.addstorage_quota_gb != nil {
+		fields = append(fields, emaillicense.FieldStorageQuotaGB)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *EmailLicenseMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case emaillicense.FieldStorageQuotaGB:
+		return m.AddedStorageQuotaGB()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EmailLicenseMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case emaillicense.FieldStorageQuotaGB:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStorageQuotaGB(v)
+		return nil
+	}
+	return fmt.Errorf("unknown EmailLicense numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *EmailLicenseMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(emaillicense.FieldAssignedToEmail) {
+		fields = append(fields, emaillicense.FieldAssignedToEmail)
+	}
+	if m.FieldCleared(emaillicense.FieldAssignedToUserID) {
+		fields = append(fields, emaillicense.FieldAssignedToUserID)
+	}
+	if m.FieldCleared(emaillicense.FieldSuspendReason) {
+		fields = append(fields, emaillicense.FieldSuspendReason)
+	}
+	if m.FieldCleared(emaillicense.FieldAssignedAt) {
+		fields = append(fields, emaillicense.FieldAssignedAt)
+	}
+	if m.FieldCleared(emaillicense.FieldExpiresAt) {
+		fields = append(fields, emaillicense.FieldExpiresAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *EmailLicenseMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *EmailLicenseMutation) ClearField(name string) error {
+	switch name {
+	case emaillicense.FieldAssignedToEmail:
+		m.ClearAssignedToEmail()
+		return nil
+	case emaillicense.FieldAssignedToUserID:
+		m.ClearAssignedToUserID()
+		return nil
+	case emaillicense.FieldSuspendReason:
+		m.ClearSuspendReason()
+		return nil
+	case emaillicense.FieldAssignedAt:
+		m.ClearAssignedAt()
+		return nil
+	case emaillicense.FieldExpiresAt:
+		m.ClearExpiresAt()
+		return nil
+	}
+	return fmt.Errorf("unknown EmailLicense nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *EmailLicenseMutation) ResetField(name string) error {
+	switch name {
+	case emaillicense.FieldTenantSubscriptionID:
+		m.ResetTenantSubscriptionID()
+		return nil
+	case emaillicense.FieldProductSubscriptionID:
+		m.ResetProductSubscriptionID()
+		return nil
+	case emaillicense.FieldEmailPlanID:
+		m.ResetEmailPlanID()
+		return nil
+	case emaillicense.FieldAssignedToEmail:
+		m.ResetAssignedToEmail()
+		return nil
+	case emaillicense.FieldAssignedToUserID:
+		m.ResetAssignedToUserID()
+		return nil
+	case emaillicense.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case emaillicense.FieldSuspendReason:
+		m.ResetSuspendReason()
+		return nil
+	case emaillicense.FieldStorageQuotaGB:
+		m.ResetStorageQuotaGB()
+		return nil
+	case emaillicense.FieldFeaturesJSON:
+		m.ResetFeaturesJSON()
+		return nil
+	case emaillicense.FieldAssignedAt:
+		m.ResetAssignedAt()
+		return nil
+	case emaillicense.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	case emaillicense.FieldMetadata:
+		m.ResetMetadata()
+		return nil
+	case emaillicense.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case emaillicense.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown EmailLicense field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *EmailLicenseMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.tenant_subscription != nil {
+		edges = append(edges, emaillicense.EdgeTenantSubscription)
+	}
+	if m.product_subscription != nil {
+		edges = append(edges, emaillicense.EdgeProductSubscription)
+	}
+	if m.email_plan != nil {
+		edges = append(edges, emaillicense.EdgeEmailPlan)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *EmailLicenseMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case emaillicense.EdgeTenantSubscription:
+		if id := m.tenant_subscription; id != nil {
+			return []ent.Value{*id}
+		}
+	case emaillicense.EdgeProductSubscription:
+		if id := m.product_subscription; id != nil {
+			return []ent.Value{*id}
+		}
+	case emaillicense.EdgeEmailPlan:
+		if id := m.email_plan; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *EmailLicenseMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *EmailLicenseMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *EmailLicenseMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedtenant_subscription {
+		edges = append(edges, emaillicense.EdgeTenantSubscription)
+	}
+	if m.clearedproduct_subscription {
+		edges = append(edges, emaillicense.EdgeProductSubscription)
+	}
+	if m.clearedemail_plan {
+		edges = append(edges, emaillicense.EdgeEmailPlan)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *EmailLicenseMutation) EdgeCleared(name string) bool {
+	switch name {
+	case emaillicense.EdgeTenantSubscription:
+		return m.clearedtenant_subscription
+	case emaillicense.EdgeProductSubscription:
+		return m.clearedproduct_subscription
+	case emaillicense.EdgeEmailPlan:
+		return m.clearedemail_plan
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *EmailLicenseMutation) ClearEdge(name string) error {
+	switch name {
+	case emaillicense.EdgeTenantSubscription:
+		m.ClearTenantSubscription()
+		return nil
+	case emaillicense.EdgeProductSubscription:
+		m.ClearProductSubscription()
+		return nil
+	case emaillicense.EdgeEmailPlan:
+		m.ClearEmailPlan()
+		return nil
+	}
+	return fmt.Errorf("unknown EmailLicense unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *EmailLicenseMutation) ResetEdge(name string) error {
+	switch name {
+	case emaillicense.EdgeTenantSubscription:
+		m.ResetTenantSubscription()
+		return nil
+	case emaillicense.EdgeProductSubscription:
+		m.ResetProductSubscription()
+		return nil
+	case emaillicense.EdgeEmailPlan:
+		m.ResetEmailPlan()
+		return nil
+	}
+	return fmt.Errorf("unknown EmailLicense edge %s", name)
+}
+
+// EmailPlanMutation represents an operation that mutates the EmailPlan nodes in the graph.
+type EmailPlanMutation struct {
+	config
+	op                        Op
+	typ                       string
+	id                        *uuid.UUID
+	code                      *string
+	name                      *string
+	description               *string
+	price_per_user_monthly    *float64
+	addprice_per_user_monthly *float64
+	price_per_user_yearly     *float64
+	addprice_per_user_yearly  *float64
+	storage_per_user_gb       *int
+	addstorage_per_user_gb    *int
+	max_aliases               *int
+	addmax_aliases            *int
+	max_email_size_mb         *int
+	addmax_email_size_mb      *int
+	features_json             *map[string]interface{}
+	is_active                 *bool
+	is_public                 *bool
+	sort_order                *int
+	addsort_order             *int
+	metadata                  *map[string]interface{}
+	created_at                *time.Time
+	updated_at                *time.Time
+	clearedFields             map[string]struct{}
+	licenses                  map[uuid.UUID]struct{}
+	removedlicenses           map[uuid.UUID]struct{}
+	clearedlicenses           bool
+	done                      bool
+	oldValue                  func(context.Context) (*EmailPlan, error)
+	predicates                []predicate.EmailPlan
+}
+
+var _ ent.Mutation = (*EmailPlanMutation)(nil)
+
+// emailplanOption allows management of the mutation configuration using functional options.
+type emailplanOption func(*EmailPlanMutation)
+
+// newEmailPlanMutation creates new mutation for the EmailPlan entity.
+func newEmailPlanMutation(c config, op Op, opts ...emailplanOption) *EmailPlanMutation {
+	m := &EmailPlanMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeEmailPlan,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withEmailPlanID sets the ID field of the mutation.
+func withEmailPlanID(id uuid.UUID) emailplanOption {
+	return func(m *EmailPlanMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *EmailPlan
+		)
+		m.oldValue = func(ctx context.Context) (*EmailPlan, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().EmailPlan.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withEmailPlan sets the old EmailPlan of the mutation.
+func withEmailPlan(node *EmailPlan) emailplanOption {
+	return func(m *EmailPlanMutation) {
+		m.oldValue = func(context.Context) (*EmailPlan, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m EmailPlanMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m EmailPlanMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of EmailPlan entities.
+func (m *EmailPlanMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *EmailPlanMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *EmailPlanMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().EmailPlan.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCode sets the "code" field.
+func (m *EmailPlanMutation) SetCode(s string) {
+	m.code = &s
+}
+
+// Code returns the value of the "code" field in the mutation.
+func (m *EmailPlanMutation) Code() (r string, exists bool) {
+	v := m.code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCode returns the old "code" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCode: %w", err)
+	}
+	return oldValue.Code, nil
+}
+
+// ResetCode resets all changes to the "code" field.
+func (m *EmailPlanMutation) ResetCode() {
+	m.code = nil
+}
+
+// SetName sets the "name" field.
+func (m *EmailPlanMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *EmailPlanMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *EmailPlanMutation) ResetName() {
+	m.name = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *EmailPlanMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *EmailPlanMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *EmailPlanMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[emailplan.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *EmailPlanMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[emailplan.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *EmailPlanMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, emailplan.FieldDescription)
+}
+
+// SetPricePerUserMonthly sets the "price_per_user_monthly" field.
+func (m *EmailPlanMutation) SetPricePerUserMonthly(f float64) {
+	m.price_per_user_monthly = &f
+	m.addprice_per_user_monthly = nil
+}
+
+// PricePerUserMonthly returns the value of the "price_per_user_monthly" field in the mutation.
+func (m *EmailPlanMutation) PricePerUserMonthly() (r float64, exists bool) {
+	v := m.price_per_user_monthly
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPricePerUserMonthly returns the old "price_per_user_monthly" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldPricePerUserMonthly(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPricePerUserMonthly is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPricePerUserMonthly requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPricePerUserMonthly: %w", err)
+	}
+	return oldValue.PricePerUserMonthly, nil
+}
+
+// AddPricePerUserMonthly adds f to the "price_per_user_monthly" field.
+func (m *EmailPlanMutation) AddPricePerUserMonthly(f float64) {
+	if m.addprice_per_user_monthly != nil {
+		*m.addprice_per_user_monthly += f
+	} else {
+		m.addprice_per_user_monthly = &f
+	}
+}
+
+// AddedPricePerUserMonthly returns the value that was added to the "price_per_user_monthly" field in this mutation.
+func (m *EmailPlanMutation) AddedPricePerUserMonthly() (r float64, exists bool) {
+	v := m.addprice_per_user_monthly
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPricePerUserMonthly resets all changes to the "price_per_user_monthly" field.
+func (m *EmailPlanMutation) ResetPricePerUserMonthly() {
+	m.price_per_user_monthly = nil
+	m.addprice_per_user_monthly = nil
+}
+
+// SetPricePerUserYearly sets the "price_per_user_yearly" field.
+func (m *EmailPlanMutation) SetPricePerUserYearly(f float64) {
+	m.price_per_user_yearly = &f
+	m.addprice_per_user_yearly = nil
+}
+
+// PricePerUserYearly returns the value of the "price_per_user_yearly" field in the mutation.
+func (m *EmailPlanMutation) PricePerUserYearly() (r float64, exists bool) {
+	v := m.price_per_user_yearly
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPricePerUserYearly returns the old "price_per_user_yearly" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldPricePerUserYearly(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPricePerUserYearly is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPricePerUserYearly requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPricePerUserYearly: %w", err)
+	}
+	return oldValue.PricePerUserYearly, nil
+}
+
+// AddPricePerUserYearly adds f to the "price_per_user_yearly" field.
+func (m *EmailPlanMutation) AddPricePerUserYearly(f float64) {
+	if m.addprice_per_user_yearly != nil {
+		*m.addprice_per_user_yearly += f
+	} else {
+		m.addprice_per_user_yearly = &f
+	}
+}
+
+// AddedPricePerUserYearly returns the value that was added to the "price_per_user_yearly" field in this mutation.
+func (m *EmailPlanMutation) AddedPricePerUserYearly() (r float64, exists bool) {
+	v := m.addprice_per_user_yearly
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPricePerUserYearly clears the value of the "price_per_user_yearly" field.
+func (m *EmailPlanMutation) ClearPricePerUserYearly() {
+	m.price_per_user_yearly = nil
+	m.addprice_per_user_yearly = nil
+	m.clearedFields[emailplan.FieldPricePerUserYearly] = struct{}{}
+}
+
+// PricePerUserYearlyCleared returns if the "price_per_user_yearly" field was cleared in this mutation.
+func (m *EmailPlanMutation) PricePerUserYearlyCleared() bool {
+	_, ok := m.clearedFields[emailplan.FieldPricePerUserYearly]
+	return ok
+}
+
+// ResetPricePerUserYearly resets all changes to the "price_per_user_yearly" field.
+func (m *EmailPlanMutation) ResetPricePerUserYearly() {
+	m.price_per_user_yearly = nil
+	m.addprice_per_user_yearly = nil
+	delete(m.clearedFields, emailplan.FieldPricePerUserYearly)
+}
+
+// SetStoragePerUserGB sets the "storage_per_user_gb" field.
+func (m *EmailPlanMutation) SetStoragePerUserGB(i int) {
+	m.storage_per_user_gb = &i
+	m.addstorage_per_user_gb = nil
+}
+
+// StoragePerUserGB returns the value of the "storage_per_user_gb" field in the mutation.
+func (m *EmailPlanMutation) StoragePerUserGB() (r int, exists bool) {
+	v := m.storage_per_user_gb
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStoragePerUserGB returns the old "storage_per_user_gb" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldStoragePerUserGB(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStoragePerUserGB is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStoragePerUserGB requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStoragePerUserGB: %w", err)
+	}
+	return oldValue.StoragePerUserGB, nil
+}
+
+// AddStoragePerUserGB adds i to the "storage_per_user_gb" field.
+func (m *EmailPlanMutation) AddStoragePerUserGB(i int) {
+	if m.addstorage_per_user_gb != nil {
+		*m.addstorage_per_user_gb += i
+	} else {
+		m.addstorage_per_user_gb = &i
+	}
+}
+
+// AddedStoragePerUserGB returns the value that was added to the "storage_per_user_gb" field in this mutation.
+func (m *EmailPlanMutation) AddedStoragePerUserGB() (r int, exists bool) {
+	v := m.addstorage_per_user_gb
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStoragePerUserGB resets all changes to the "storage_per_user_gb" field.
+func (m *EmailPlanMutation) ResetStoragePerUserGB() {
+	m.storage_per_user_gb = nil
+	m.addstorage_per_user_gb = nil
+}
+
+// SetMaxAliases sets the "max_aliases" field.
+func (m *EmailPlanMutation) SetMaxAliases(i int) {
+	m.max_aliases = &i
+	m.addmax_aliases = nil
+}
+
+// MaxAliases returns the value of the "max_aliases" field in the mutation.
+func (m *EmailPlanMutation) MaxAliases() (r int, exists bool) {
+	v := m.max_aliases
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMaxAliases returns the old "max_aliases" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldMaxAliases(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMaxAliases is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMaxAliases requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMaxAliases: %w", err)
+	}
+	return oldValue.MaxAliases, nil
+}
+
+// AddMaxAliases adds i to the "max_aliases" field.
+func (m *EmailPlanMutation) AddMaxAliases(i int) {
+	if m.addmax_aliases != nil {
+		*m.addmax_aliases += i
+	} else {
+		m.addmax_aliases = &i
+	}
+}
+
+// AddedMaxAliases returns the value that was added to the "max_aliases" field in this mutation.
+func (m *EmailPlanMutation) AddedMaxAliases() (r int, exists bool) {
+	v := m.addmax_aliases
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMaxAliases resets all changes to the "max_aliases" field.
+func (m *EmailPlanMutation) ResetMaxAliases() {
+	m.max_aliases = nil
+	m.addmax_aliases = nil
+}
+
+// SetMaxEmailSizeMB sets the "max_email_size_mb" field.
+func (m *EmailPlanMutation) SetMaxEmailSizeMB(i int) {
+	m.max_email_size_mb = &i
+	m.addmax_email_size_mb = nil
+}
+
+// MaxEmailSizeMB returns the value of the "max_email_size_mb" field in the mutation.
+func (m *EmailPlanMutation) MaxEmailSizeMB() (r int, exists bool) {
+	v := m.max_email_size_mb
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMaxEmailSizeMB returns the old "max_email_size_mb" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldMaxEmailSizeMB(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMaxEmailSizeMB is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMaxEmailSizeMB requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMaxEmailSizeMB: %w", err)
+	}
+	return oldValue.MaxEmailSizeMB, nil
+}
+
+// AddMaxEmailSizeMB adds i to the "max_email_size_mb" field.
+func (m *EmailPlanMutation) AddMaxEmailSizeMB(i int) {
+	if m.addmax_email_size_mb != nil {
+		*m.addmax_email_size_mb += i
+	} else {
+		m.addmax_email_size_mb = &i
+	}
+}
+
+// AddedMaxEmailSizeMB returns the value that was added to the "max_email_size_mb" field in this mutation.
+func (m *EmailPlanMutation) AddedMaxEmailSizeMB() (r int, exists bool) {
+	v := m.addmax_email_size_mb
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMaxEmailSizeMB resets all changes to the "max_email_size_mb" field.
+func (m *EmailPlanMutation) ResetMaxEmailSizeMB() {
+	m.max_email_size_mb = nil
+	m.addmax_email_size_mb = nil
+}
+
+// SetFeaturesJSON sets the "features_json" field.
+func (m *EmailPlanMutation) SetFeaturesJSON(value map[string]interface{}) {
+	m.features_json = &value
+}
+
+// FeaturesJSON returns the value of the "features_json" field in the mutation.
+func (m *EmailPlanMutation) FeaturesJSON() (r map[string]interface{}, exists bool) {
+	v := m.features_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFeaturesJSON returns the old "features_json" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldFeaturesJSON(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFeaturesJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFeaturesJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFeaturesJSON: %w", err)
+	}
+	return oldValue.FeaturesJSON, nil
+}
+
+// ResetFeaturesJSON resets all changes to the "features_json" field.
+func (m *EmailPlanMutation) ResetFeaturesJSON() {
+	m.features_json = nil
+}
+
+// SetIsActive sets the "is_active" field.
+func (m *EmailPlanMutation) SetIsActive(b bool) {
+	m.is_active = &b
+}
+
+// IsActive returns the value of the "is_active" field in the mutation.
+func (m *EmailPlanMutation) IsActive() (r bool, exists bool) {
+	v := m.is_active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsActive returns the old "is_active" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldIsActive(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsActive: %w", err)
+	}
+	return oldValue.IsActive, nil
+}
+
+// ResetIsActive resets all changes to the "is_active" field.
+func (m *EmailPlanMutation) ResetIsActive() {
+	m.is_active = nil
+}
+
+// SetIsPublic sets the "is_public" field.
+func (m *EmailPlanMutation) SetIsPublic(b bool) {
+	m.is_public = &b
+}
+
+// IsPublic returns the value of the "is_public" field in the mutation.
+func (m *EmailPlanMutation) IsPublic() (r bool, exists bool) {
+	v := m.is_public
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsPublic returns the old "is_public" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldIsPublic(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsPublic is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsPublic requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsPublic: %w", err)
+	}
+	return oldValue.IsPublic, nil
+}
+
+// ResetIsPublic resets all changes to the "is_public" field.
+func (m *EmailPlanMutation) ResetIsPublic() {
+	m.is_public = nil
+}
+
+// SetSortOrder sets the "sort_order" field.
+func (m *EmailPlanMutation) SetSortOrder(i int) {
+	m.sort_order = &i
+	m.addsort_order = nil
+}
+
+// SortOrder returns the value of the "sort_order" field in the mutation.
+func (m *EmailPlanMutation) SortOrder() (r int, exists bool) {
+	v := m.sort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSortOrder returns the old "sort_order" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldSortOrder(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSortOrder is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSortOrder requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSortOrder: %w", err)
+	}
+	return oldValue.SortOrder, nil
+}
+
+// AddSortOrder adds i to the "sort_order" field.
+func (m *EmailPlanMutation) AddSortOrder(i int) {
+	if m.addsort_order != nil {
+		*m.addsort_order += i
+	} else {
+		m.addsort_order = &i
+	}
+}
+
+// AddedSortOrder returns the value that was added to the "sort_order" field in this mutation.
+func (m *EmailPlanMutation) AddedSortOrder() (r int, exists bool) {
+	v := m.addsort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSortOrder resets all changes to the "sort_order" field.
+func (m *EmailPlanMutation) ResetSortOrder() {
+	m.sort_order = nil
+	m.addsort_order = nil
+}
+
+// SetMetadata sets the "metadata" field.
+func (m *EmailPlanMutation) SetMetadata(value map[string]interface{}) {
+	m.metadata = &value
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *EmailPlanMutation) Metadata() (r map[string]interface{}, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldMetadata(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *EmailPlanMutation) ResetMetadata() {
+	m.metadata = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *EmailPlanMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *EmailPlanMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *EmailPlanMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *EmailPlanMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *EmailPlanMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the EmailPlan entity.
+// If the EmailPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailPlanMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *EmailPlanMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// AddLicenseIDs adds the "licenses" edge to the EmailLicense entity by ids.
+func (m *EmailPlanMutation) AddLicenseIDs(ids ...uuid.UUID) {
+	if m.licenses == nil {
+		m.licenses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.licenses[ids[i]] = struct{}{}
+	}
+}
+
+// ClearLicenses clears the "licenses" edge to the EmailLicense entity.
+func (m *EmailPlanMutation) ClearLicenses() {
+	m.clearedlicenses = true
+}
+
+// LicensesCleared reports if the "licenses" edge to the EmailLicense entity was cleared.
+func (m *EmailPlanMutation) LicensesCleared() bool {
+	return m.clearedlicenses
+}
+
+// RemoveLicenseIDs removes the "licenses" edge to the EmailLicense entity by IDs.
+func (m *EmailPlanMutation) RemoveLicenseIDs(ids ...uuid.UUID) {
+	if m.removedlicenses == nil {
+		m.removedlicenses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.licenses, ids[i])
+		m.removedlicenses[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedLicenses returns the removed IDs of the "licenses" edge to the EmailLicense entity.
+func (m *EmailPlanMutation) RemovedLicensesIDs() (ids []uuid.UUID) {
+	for id := range m.removedlicenses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// LicensesIDs returns the "licenses" edge IDs in the mutation.
+func (m *EmailPlanMutation) LicensesIDs() (ids []uuid.UUID) {
+	for id := range m.licenses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetLicenses resets all changes to the "licenses" edge.
+func (m *EmailPlanMutation) ResetLicenses() {
+	m.licenses = nil
+	m.clearedlicenses = false
+	m.removedlicenses = nil
+}
+
+// Where appends a list predicates to the EmailPlanMutation builder.
+func (m *EmailPlanMutation) Where(ps ...predicate.EmailPlan) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the EmailPlanMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *EmailPlanMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.EmailPlan, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *EmailPlanMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *EmailPlanMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (EmailPlan).
+func (m *EmailPlanMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *EmailPlanMutation) Fields() []string {
+	fields := make([]string, 0, 15)
+	if m.code != nil {
+		fields = append(fields, emailplan.FieldCode)
+	}
+	if m.name != nil {
+		fields = append(fields, emailplan.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, emailplan.FieldDescription)
+	}
+	if m.price_per_user_monthly != nil {
+		fields = append(fields, emailplan.FieldPricePerUserMonthly)
+	}
+	if m.price_per_user_yearly != nil {
+		fields = append(fields, emailplan.FieldPricePerUserYearly)
+	}
+	if m.storage_per_user_gb != nil {
+		fields = append(fields, emailplan.FieldStoragePerUserGB)
+	}
+	if m.max_aliases != nil {
+		fields = append(fields, emailplan.FieldMaxAliases)
+	}
+	if m.max_email_size_mb != nil {
+		fields = append(fields, emailplan.FieldMaxEmailSizeMB)
+	}
+	if m.features_json != nil {
+		fields = append(fields, emailplan.FieldFeaturesJSON)
+	}
+	if m.is_active != nil {
+		fields = append(fields, emailplan.FieldIsActive)
+	}
+	if m.is_public != nil {
+		fields = append(fields, emailplan.FieldIsPublic)
+	}
+	if m.sort_order != nil {
+		fields = append(fields, emailplan.FieldSortOrder)
+	}
+	if m.metadata != nil {
+		fields = append(fields, emailplan.FieldMetadata)
+	}
+	if m.created_at != nil {
+		fields = append(fields, emailplan.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, emailplan.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *EmailPlanMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case emailplan.FieldCode:
+		return m.Code()
+	case emailplan.FieldName:
+		return m.Name()
+	case emailplan.FieldDescription:
+		return m.Description()
+	case emailplan.FieldPricePerUserMonthly:
+		return m.PricePerUserMonthly()
+	case emailplan.FieldPricePerUserYearly:
+		return m.PricePerUserYearly()
+	case emailplan.FieldStoragePerUserGB:
+		return m.StoragePerUserGB()
+	case emailplan.FieldMaxAliases:
+		return m.MaxAliases()
+	case emailplan.FieldMaxEmailSizeMB:
+		return m.MaxEmailSizeMB()
+	case emailplan.FieldFeaturesJSON:
+		return m.FeaturesJSON()
+	case emailplan.FieldIsActive:
+		return m.IsActive()
+	case emailplan.FieldIsPublic:
+		return m.IsPublic()
+	case emailplan.FieldSortOrder:
+		return m.SortOrder()
+	case emailplan.FieldMetadata:
+		return m.Metadata()
+	case emailplan.FieldCreatedAt:
+		return m.CreatedAt()
+	case emailplan.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *EmailPlanMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case emailplan.FieldCode:
+		return m.OldCode(ctx)
+	case emailplan.FieldName:
+		return m.OldName(ctx)
+	case emailplan.FieldDescription:
+		return m.OldDescription(ctx)
+	case emailplan.FieldPricePerUserMonthly:
+		return m.OldPricePerUserMonthly(ctx)
+	case emailplan.FieldPricePerUserYearly:
+		return m.OldPricePerUserYearly(ctx)
+	case emailplan.FieldStoragePerUserGB:
+		return m.OldStoragePerUserGB(ctx)
+	case emailplan.FieldMaxAliases:
+		return m.OldMaxAliases(ctx)
+	case emailplan.FieldMaxEmailSizeMB:
+		return m.OldMaxEmailSizeMB(ctx)
+	case emailplan.FieldFeaturesJSON:
+		return m.OldFeaturesJSON(ctx)
+	case emailplan.FieldIsActive:
+		return m.OldIsActive(ctx)
+	case emailplan.FieldIsPublic:
+		return m.OldIsPublic(ctx)
+	case emailplan.FieldSortOrder:
+		return m.OldSortOrder(ctx)
+	case emailplan.FieldMetadata:
+		return m.OldMetadata(ctx)
+	case emailplan.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case emailplan.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown EmailPlan field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EmailPlanMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case emailplan.FieldCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCode(v)
+		return nil
+	case emailplan.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case emailplan.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case emailplan.FieldPricePerUserMonthly:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPricePerUserMonthly(v)
+		return nil
+	case emailplan.FieldPricePerUserYearly:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPricePerUserYearly(v)
+		return nil
+	case emailplan.FieldStoragePerUserGB:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStoragePerUserGB(v)
+		return nil
+	case emailplan.FieldMaxAliases:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMaxAliases(v)
+		return nil
+	case emailplan.FieldMaxEmailSizeMB:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMaxEmailSizeMB(v)
+		return nil
+	case emailplan.FieldFeaturesJSON:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFeaturesJSON(v)
+		return nil
+	case emailplan.FieldIsActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsActive(v)
+		return nil
+	case emailplan.FieldIsPublic:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsPublic(v)
+		return nil
+	case emailplan.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSortOrder(v)
+		return nil
+	case emailplan.FieldMetadata:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
+		return nil
+	case emailplan.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case emailplan.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown EmailPlan field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *EmailPlanMutation) AddedFields() []string {
+	var fields []string
+	if m.addprice_per_user_monthly != nil {
+		fields = append(fields, emailplan.FieldPricePerUserMonthly)
+	}
+	if m.addprice_per_user_yearly != nil {
+		fields = append(fields, emailplan.FieldPricePerUserYearly)
+	}
+	if m.addstorage_per_user_gb != nil {
+		fields = append(fields, emailplan.FieldStoragePerUserGB)
+	}
+	if m.addmax_aliases != nil {
+		fields = append(fields, emailplan.FieldMaxAliases)
+	}
+	if m.addmax_email_size_mb != nil {
+		fields = append(fields, emailplan.FieldMaxEmailSizeMB)
+	}
+	if m.addsort_order != nil {
+		fields = append(fields, emailplan.FieldSortOrder)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *EmailPlanMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case emailplan.FieldPricePerUserMonthly:
+		return m.AddedPricePerUserMonthly()
+	case emailplan.FieldPricePerUserYearly:
+		return m.AddedPricePerUserYearly()
+	case emailplan.FieldStoragePerUserGB:
+		return m.AddedStoragePerUserGB()
+	case emailplan.FieldMaxAliases:
+		return m.AddedMaxAliases()
+	case emailplan.FieldMaxEmailSizeMB:
+		return m.AddedMaxEmailSizeMB()
+	case emailplan.FieldSortOrder:
+		return m.AddedSortOrder()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EmailPlanMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case emailplan.FieldPricePerUserMonthly:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPricePerUserMonthly(v)
+		return nil
+	case emailplan.FieldPricePerUserYearly:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPricePerUserYearly(v)
+		return nil
+	case emailplan.FieldStoragePerUserGB:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStoragePerUserGB(v)
+		return nil
+	case emailplan.FieldMaxAliases:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMaxAliases(v)
+		return nil
+	case emailplan.FieldMaxEmailSizeMB:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMaxEmailSizeMB(v)
+		return nil
+	case emailplan.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSortOrder(v)
+		return nil
+	}
+	return fmt.Errorf("unknown EmailPlan numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *EmailPlanMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(emailplan.FieldDescription) {
+		fields = append(fields, emailplan.FieldDescription)
+	}
+	if m.FieldCleared(emailplan.FieldPricePerUserYearly) {
+		fields = append(fields, emailplan.FieldPricePerUserYearly)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *EmailPlanMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *EmailPlanMutation) ClearField(name string) error {
+	switch name {
+	case emailplan.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case emailplan.FieldPricePerUserYearly:
+		m.ClearPricePerUserYearly()
+		return nil
+	}
+	return fmt.Errorf("unknown EmailPlan nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *EmailPlanMutation) ResetField(name string) error {
+	switch name {
+	case emailplan.FieldCode:
+		m.ResetCode()
+		return nil
+	case emailplan.FieldName:
+		m.ResetName()
+		return nil
+	case emailplan.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case emailplan.FieldPricePerUserMonthly:
+		m.ResetPricePerUserMonthly()
+		return nil
+	case emailplan.FieldPricePerUserYearly:
+		m.ResetPricePerUserYearly()
+		return nil
+	case emailplan.FieldStoragePerUserGB:
+		m.ResetStoragePerUserGB()
+		return nil
+	case emailplan.FieldMaxAliases:
+		m.ResetMaxAliases()
+		return nil
+	case emailplan.FieldMaxEmailSizeMB:
+		m.ResetMaxEmailSizeMB()
+		return nil
+	case emailplan.FieldFeaturesJSON:
+		m.ResetFeaturesJSON()
+		return nil
+	case emailplan.FieldIsActive:
+		m.ResetIsActive()
+		return nil
+	case emailplan.FieldIsPublic:
+		m.ResetIsPublic()
+		return nil
+	case emailplan.FieldSortOrder:
+		m.ResetSortOrder()
+		return nil
+	case emailplan.FieldMetadata:
+		m.ResetMetadata()
+		return nil
+	case emailplan.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case emailplan.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown EmailPlan field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *EmailPlanMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.licenses != nil {
+		edges = append(edges, emailplan.EdgeLicenses)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *EmailPlanMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case emailplan.EdgeLicenses:
+		ids := make([]ent.Value, 0, len(m.licenses))
+		for id := range m.licenses {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *EmailPlanMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedlicenses != nil {
+		edges = append(edges, emailplan.EdgeLicenses)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *EmailPlanMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case emailplan.EdgeLicenses:
+		ids := make([]ent.Value, 0, len(m.removedlicenses))
+		for id := range m.removedlicenses {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *EmailPlanMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedlicenses {
+		edges = append(edges, emailplan.EdgeLicenses)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *EmailPlanMutation) EdgeCleared(name string) bool {
+	switch name {
+	case emailplan.EdgeLicenses:
+		return m.clearedlicenses
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *EmailPlanMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown EmailPlan unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *EmailPlanMutation) ResetEdge(name string) error {
+	switch name {
+	case emailplan.EdgeLicenses:
+		m.ResetLicenses()
+		return nil
+	}
+	return fmt.Errorf("unknown EmailPlan edge %s", name)
 }
 
 // FeatureDefinitionMutation represents an operation that mutates the FeatureDefinition nodes in the graph.
@@ -11653,6 +14395,9 @@ type ProductSubscriptionMutation struct {
 	clearedservice_charge_plan bool
 	override_plan              *uuid.UUID
 	clearedoverride_plan       bool
+	email_licenses             map[uuid.UUID]struct{}
+	removedemail_licenses      map[uuid.UUID]struct{}
+	clearedemail_licenses      bool
 	done                       bool
 	oldValue                   func(context.Context) (*ProductSubscription, error)
 	predicates                 []predicate.ProductSubscription
@@ -12367,6 +15112,60 @@ func (m *ProductSubscriptionMutation) ResetOverridePlan() {
 	m.clearedoverride_plan = false
 }
 
+// AddEmailLicenseIDs adds the "email_licenses" edge to the EmailLicense entity by ids.
+func (m *ProductSubscriptionMutation) AddEmailLicenseIDs(ids ...uuid.UUID) {
+	if m.email_licenses == nil {
+		m.email_licenses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.email_licenses[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEmailLicenses clears the "email_licenses" edge to the EmailLicense entity.
+func (m *ProductSubscriptionMutation) ClearEmailLicenses() {
+	m.clearedemail_licenses = true
+}
+
+// EmailLicensesCleared reports if the "email_licenses" edge to the EmailLicense entity was cleared.
+func (m *ProductSubscriptionMutation) EmailLicensesCleared() bool {
+	return m.clearedemail_licenses
+}
+
+// RemoveEmailLicenseIDs removes the "email_licenses" edge to the EmailLicense entity by IDs.
+func (m *ProductSubscriptionMutation) RemoveEmailLicenseIDs(ids ...uuid.UUID) {
+	if m.removedemail_licenses == nil {
+		m.removedemail_licenses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.email_licenses, ids[i])
+		m.removedemail_licenses[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEmailLicenses returns the removed IDs of the "email_licenses" edge to the EmailLicense entity.
+func (m *ProductSubscriptionMutation) RemovedEmailLicensesIDs() (ids []uuid.UUID) {
+	for id := range m.removedemail_licenses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EmailLicensesIDs returns the "email_licenses" edge IDs in the mutation.
+func (m *ProductSubscriptionMutation) EmailLicensesIDs() (ids []uuid.UUID) {
+	for id := range m.email_licenses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEmailLicenses resets all changes to the "email_licenses" edge.
+func (m *ProductSubscriptionMutation) ResetEmailLicenses() {
+	m.email_licenses = nil
+	m.clearedemail_licenses = false
+	m.removedemail_licenses = nil
+}
+
 // Where appends a list predicates to the ProductSubscriptionMutation builder.
 func (m *ProductSubscriptionMutation) Where(ps ...predicate.ProductSubscription) {
 	m.predicates = append(m.predicates, ps...)
@@ -12720,7 +15519,7 @@ func (m *ProductSubscriptionMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ProductSubscriptionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.tenant_subscription != nil {
 		edges = append(edges, productsubscription.EdgeTenantSubscription)
 	}
@@ -12732,6 +15531,9 @@ func (m *ProductSubscriptionMutation) AddedEdges() []string {
 	}
 	if m.override_plan != nil {
 		edges = append(edges, productsubscription.EdgeOverridePlan)
+	}
+	if m.email_licenses != nil {
+		edges = append(edges, productsubscription.EdgeEmailLicenses)
 	}
 	return edges
 }
@@ -12756,25 +15558,42 @@ func (m *ProductSubscriptionMutation) AddedIDs(name string) []ent.Value {
 		if id := m.override_plan; id != nil {
 			return []ent.Value{*id}
 		}
+	case productsubscription.EdgeEmailLicenses:
+		ids := make([]ent.Value, 0, len(m.email_licenses))
+		for id := range m.email_licenses {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ProductSubscriptionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
+	if m.removedemail_licenses != nil {
+		edges = append(edges, productsubscription.EdgeEmailLicenses)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *ProductSubscriptionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case productsubscription.EdgeEmailLicenses:
+		ids := make([]ent.Value, 0, len(m.removedemail_licenses))
+		for id := range m.removedemail_licenses {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ProductSubscriptionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.clearedtenant_subscription {
 		edges = append(edges, productsubscription.EdgeTenantSubscription)
 	}
@@ -12786,6 +15605,9 @@ func (m *ProductSubscriptionMutation) ClearedEdges() []string {
 	}
 	if m.clearedoverride_plan {
 		edges = append(edges, productsubscription.EdgeOverridePlan)
+	}
+	if m.clearedemail_licenses {
+		edges = append(edges, productsubscription.EdgeEmailLicenses)
 	}
 	return edges
 }
@@ -12802,6 +15624,8 @@ func (m *ProductSubscriptionMutation) EdgeCleared(name string) bool {
 		return m.clearedservice_charge_plan
 	case productsubscription.EdgeOverridePlan:
 		return m.clearedoverride_plan
+	case productsubscription.EdgeEmailLicenses:
+		return m.clearedemail_licenses
 	}
 	return false
 }
@@ -12841,6 +15665,9 @@ func (m *ProductSubscriptionMutation) ResetEdge(name string) error {
 		return nil
 	case productsubscription.EdgeOverridePlan:
 		m.ResetOverridePlan()
+		return nil
+	case productsubscription.EdgeEmailLicenses:
+		m.ResetEmailLicenses()
 		return nil
 	}
 	return fmt.Errorf("unknown ProductSubscription edge %s", name)
@@ -23508,6 +26335,9 @@ type TenantSubscriptionMutation struct {
 	overage_charges              map[uuid.UUID]struct{}
 	removedoverage_charges       map[uuid.UUID]struct{}
 	clearedoverage_charges       bool
+	email_licenses               map[uuid.UUID]struct{}
+	removedemail_licenses        map[uuid.UUID]struct{}
+	clearedemail_licenses        bool
 	done                         bool
 	oldValue                     func(context.Context) (*TenantSubscription, error)
 	predicates                   []predicate.TenantSubscription
@@ -25035,6 +27865,60 @@ func (m *TenantSubscriptionMutation) ResetOverageCharges() {
 	m.removedoverage_charges = nil
 }
 
+// AddEmailLicenseIDs adds the "email_licenses" edge to the EmailLicense entity by ids.
+func (m *TenantSubscriptionMutation) AddEmailLicenseIDs(ids ...uuid.UUID) {
+	if m.email_licenses == nil {
+		m.email_licenses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.email_licenses[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEmailLicenses clears the "email_licenses" edge to the EmailLicense entity.
+func (m *TenantSubscriptionMutation) ClearEmailLicenses() {
+	m.clearedemail_licenses = true
+}
+
+// EmailLicensesCleared reports if the "email_licenses" edge to the EmailLicense entity was cleared.
+func (m *TenantSubscriptionMutation) EmailLicensesCleared() bool {
+	return m.clearedemail_licenses
+}
+
+// RemoveEmailLicenseIDs removes the "email_licenses" edge to the EmailLicense entity by IDs.
+func (m *TenantSubscriptionMutation) RemoveEmailLicenseIDs(ids ...uuid.UUID) {
+	if m.removedemail_licenses == nil {
+		m.removedemail_licenses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.email_licenses, ids[i])
+		m.removedemail_licenses[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEmailLicenses returns the removed IDs of the "email_licenses" edge to the EmailLicense entity.
+func (m *TenantSubscriptionMutation) RemovedEmailLicensesIDs() (ids []uuid.UUID) {
+	for id := range m.removedemail_licenses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EmailLicensesIDs returns the "email_licenses" edge IDs in the mutation.
+func (m *TenantSubscriptionMutation) EmailLicensesIDs() (ids []uuid.UUID) {
+	for id := range m.email_licenses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEmailLicenses resets all changes to the "email_licenses" edge.
+func (m *TenantSubscriptionMutation) ResetEmailLicenses() {
+	m.email_licenses = nil
+	m.clearedemail_licenses = false
+	m.removedemail_licenses = nil
+}
+
 // Where appends a list predicates to the TenantSubscriptionMutation builder.
 func (m *TenantSubscriptionMutation) Where(ps ...predicate.TenantSubscription) {
 	m.predicates = append(m.predicates, ps...)
@@ -25753,7 +28637,7 @@ func (m *TenantSubscriptionMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TenantSubscriptionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.tenant != nil {
 		edges = append(edges, tenantsubscription.EdgeTenant)
 	}
@@ -25765,6 +28649,9 @@ func (m *TenantSubscriptionMutation) AddedEdges() []string {
 	}
 	if m.overage_charges != nil {
 		edges = append(edges, tenantsubscription.EdgeOverageCharges)
+	}
+	if m.email_licenses != nil {
+		edges = append(edges, tenantsubscription.EdgeEmailLicenses)
 	}
 	return edges
 }
@@ -25793,18 +28680,27 @@ func (m *TenantSubscriptionMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case tenantsubscription.EdgeEmailLicenses:
+		ids := make([]ent.Value, 0, len(m.email_licenses))
+		for id := range m.email_licenses {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TenantSubscriptionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.removedproduct_subscriptions != nil {
 		edges = append(edges, tenantsubscription.EdgeProductSubscriptions)
 	}
 	if m.removedoverage_charges != nil {
 		edges = append(edges, tenantsubscription.EdgeOverageCharges)
+	}
+	if m.removedemail_licenses != nil {
+		edges = append(edges, tenantsubscription.EdgeEmailLicenses)
 	}
 	return edges
 }
@@ -25825,13 +28721,19 @@ func (m *TenantSubscriptionMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case tenantsubscription.EdgeEmailLicenses:
+		ids := make([]ent.Value, 0, len(m.removedemail_licenses))
+		for id := range m.removedemail_licenses {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TenantSubscriptionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.clearedtenant {
 		edges = append(edges, tenantsubscription.EdgeTenant)
 	}
@@ -25843,6 +28745,9 @@ func (m *TenantSubscriptionMutation) ClearedEdges() []string {
 	}
 	if m.clearedoverage_charges {
 		edges = append(edges, tenantsubscription.EdgeOverageCharges)
+	}
+	if m.clearedemail_licenses {
+		edges = append(edges, tenantsubscription.EdgeEmailLicenses)
 	}
 	return edges
 }
@@ -25859,6 +28764,8 @@ func (m *TenantSubscriptionMutation) EdgeCleared(name string) bool {
 		return m.clearedproduct_subscriptions
 	case tenantsubscription.EdgeOverageCharges:
 		return m.clearedoverage_charges
+	case tenantsubscription.EdgeEmailLicenses:
+		return m.clearedemail_licenses
 	}
 	return false
 }
@@ -25892,6 +28799,9 @@ func (m *TenantSubscriptionMutation) ResetEdge(name string) error {
 		return nil
 	case tenantsubscription.EdgeOverageCharges:
 		m.ResetOverageCharges()
+		return nil
+	case tenantsubscription.EdgeEmailLicenses:
+		m.ResetEmailLicenses()
 		return nil
 	}
 	return fmt.Errorf("unknown TenantSubscription edge %s", name)

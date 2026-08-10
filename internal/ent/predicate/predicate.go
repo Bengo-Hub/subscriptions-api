@@ -21,6 +21,12 @@ type Coupon func(*sql.Selector)
 // CustomAddon is the predicate function for customaddon builders.
 type CustomAddon func(*sql.Selector)
 
+// EmailLicense is the predicate function for emaillicense builders.
+type EmailLicense func(*sql.Selector)
+
+// EmailPlan is the predicate function for emailplan builders.
+type EmailPlan func(*sql.Selector)
+
 // FeatureDefinition is the predicate function for featuredefinition builders.
 type FeatureDefinition func(*sql.Selector)
 

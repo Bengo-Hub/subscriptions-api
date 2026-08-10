@@ -139,6 +139,7 @@ func (TenantSubscription) Edges() []ent.Edge {
 			Field("plan_id"),
 		edge.To("product_subscriptions", ProductSubscription.Type),
 		edge.To("overage_charges", OverageCharge.Type),
+		edge.To("email_licenses", EmailLicense.Type),
 	}
 }
 

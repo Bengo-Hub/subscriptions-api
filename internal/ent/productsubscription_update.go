@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
@@ -221,6 +222,21 @@ func (_u *ProductSubscriptionUpdate) SetOverridePlan(v *SubscriptionPlan) *Produ
 	return _u.SetOverridePlanID(v.ID)
 }
 
+// AddEmailLicenseIDs adds the "email_licenses" edge to the EmailLicense entity by IDs.
+func (_u *ProductSubscriptionUpdate) AddEmailLicenseIDs(ids ...uuid.UUID) *ProductSubscriptionUpdate {
+	_u.mutation.AddEmailLicenseIDs(ids...)
+	return _u
+}
+
+// AddEmailLicenses adds the "email_licenses" edges to the EmailLicense entity.
+func (_u *ProductSubscriptionUpdate) AddEmailLicenses(v ...*EmailLicense) *ProductSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEmailLicenseIDs(ids...)
+}
+
 // Mutation returns the ProductSubscriptionMutation object of the builder.
 func (_u *ProductSubscriptionUpdate) Mutation() *ProductSubscriptionMutation {
 	return _u.mutation
@@ -248,6 +264,27 @@ func (_u *ProductSubscriptionUpdate) ClearServiceChargePlan() *ProductSubscripti
 func (_u *ProductSubscriptionUpdate) ClearOverridePlan() *ProductSubscriptionUpdate {
 	_u.mutation.ClearOverridePlan()
 	return _u
+}
+
+// ClearEmailLicenses clears all "email_licenses" edges to the EmailLicense entity.
+func (_u *ProductSubscriptionUpdate) ClearEmailLicenses() *ProductSubscriptionUpdate {
+	_u.mutation.ClearEmailLicenses()
+	return _u
+}
+
+// RemoveEmailLicenseIDs removes the "email_licenses" edge to EmailLicense entities by IDs.
+func (_u *ProductSubscriptionUpdate) RemoveEmailLicenseIDs(ids ...uuid.UUID) *ProductSubscriptionUpdate {
+	_u.mutation.RemoveEmailLicenseIDs(ids...)
+	return _u
+}
+
+// RemoveEmailLicenses removes "email_licenses" edges to EmailLicense entities.
+func (_u *ProductSubscriptionUpdate) RemoveEmailLicenses(v ...*EmailLicense) *ProductSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEmailLicenseIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -465,6 +502,51 @@ func (_u *ProductSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.EmailLicensesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   productsubscription.EmailLicensesTable,
+			Columns: []string{productsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEmailLicensesIDs(); len(nodes) > 0 && !_u.mutation.EmailLicensesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   productsubscription.EmailLicensesTable,
+			Columns: []string{productsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EmailLicensesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   productsubscription.EmailLicensesTable,
+			Columns: []string{productsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{productsubscription.Label}
@@ -673,6 +755,21 @@ func (_u *ProductSubscriptionUpdateOne) SetOverridePlan(v *SubscriptionPlan) *Pr
 	return _u.SetOverridePlanID(v.ID)
 }
 
+// AddEmailLicenseIDs adds the "email_licenses" edge to the EmailLicense entity by IDs.
+func (_u *ProductSubscriptionUpdateOne) AddEmailLicenseIDs(ids ...uuid.UUID) *ProductSubscriptionUpdateOne {
+	_u.mutation.AddEmailLicenseIDs(ids...)
+	return _u
+}
+
+// AddEmailLicenses adds the "email_licenses" edges to the EmailLicense entity.
+func (_u *ProductSubscriptionUpdateOne) AddEmailLicenses(v ...*EmailLicense) *ProductSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEmailLicenseIDs(ids...)
+}
+
 // Mutation returns the ProductSubscriptionMutation object of the builder.
 func (_u *ProductSubscriptionUpdateOne) Mutation() *ProductSubscriptionMutation {
 	return _u.mutation
@@ -700,6 +797,27 @@ func (_u *ProductSubscriptionUpdateOne) ClearServiceChargePlan() *ProductSubscri
 func (_u *ProductSubscriptionUpdateOne) ClearOverridePlan() *ProductSubscriptionUpdateOne {
 	_u.mutation.ClearOverridePlan()
 	return _u
+}
+
+// ClearEmailLicenses clears all "email_licenses" edges to the EmailLicense entity.
+func (_u *ProductSubscriptionUpdateOne) ClearEmailLicenses() *ProductSubscriptionUpdateOne {
+	_u.mutation.ClearEmailLicenses()
+	return _u
+}
+
+// RemoveEmailLicenseIDs removes the "email_licenses" edge to EmailLicense entities by IDs.
+func (_u *ProductSubscriptionUpdateOne) RemoveEmailLicenseIDs(ids ...uuid.UUID) *ProductSubscriptionUpdateOne {
+	_u.mutation.RemoveEmailLicenseIDs(ids...)
+	return _u
+}
+
+// RemoveEmailLicenses removes "email_licenses" edges to EmailLicense entities.
+func (_u *ProductSubscriptionUpdateOne) RemoveEmailLicenses(v ...*EmailLicense) *ProductSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEmailLicenseIDs(ids...)
 }
 
 // Where appends a list predicates to the ProductSubscriptionUpdate builder.
@@ -940,6 +1058,51 @@ func (_u *ProductSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Pro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscriptionplan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EmailLicensesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   productsubscription.EmailLicensesTable,
+			Columns: []string{productsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEmailLicensesIDs(); len(nodes) > 0 && !_u.mutation.EmailLicensesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   productsubscription.EmailLicensesTable,
+			Columns: []string{productsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EmailLicensesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   productsubscription.EmailLicensesTable,
+			Columns: []string{productsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

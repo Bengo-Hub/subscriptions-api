@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
@@ -32,6 +33,7 @@ type TenantSubscriptionQuery struct {
 	withPlan                 *SubscriptionPlanQuery
 	withProductSubscriptions *ProductSubscriptionQuery
 	withOverageCharges       *OverageChargeQuery
+	withEmailLicenses        *EmailLicenseQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -149,6 +151,28 @@ func (_q *TenantSubscriptionQuery) QueryOverageCharges() *OverageChargeQuery {
 			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, selector),
 			sqlgraph.To(overagecharge.Table, overagecharge.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.OverageChargesTable, tenantsubscription.OverageChargesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEmailLicenses chains the current query on the "email_licenses" edge.
+func (_q *TenantSubscriptionQuery) QueryEmailLicenses() *EmailLicenseQuery {
+	query := (&EmailLicenseClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, selector),
+			sqlgraph.To(emaillicense.Table, emaillicense.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.EmailLicensesTable, tenantsubscription.EmailLicensesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -352,6 +376,7 @@ func (_q *TenantSubscriptionQuery) Clone() *TenantSubscriptionQuery {
 		withPlan:                 _q.withPlan.Clone(),
 		withProductSubscriptions: _q.withProductSubscriptions.Clone(),
 		withOverageCharges:       _q.withOverageCharges.Clone(),
+		withEmailLicenses:        _q.withEmailLicenses.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -399,6 +424,17 @@ func (_q *TenantSubscriptionQuery) WithOverageCharges(opts ...func(*OverageCharg
 		opt(query)
 	}
 	_q.withOverageCharges = query
+	return _q
+}
+
+// WithEmailLicenses tells the query-builder to eager-load the nodes that are connected to
+// the "email_licenses" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TenantSubscriptionQuery) WithEmailLicenses(opts ...func(*EmailLicenseQuery)) *TenantSubscriptionQuery {
+	query := (&EmailLicenseClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEmailLicenses = query
 	return _q
 }
 
@@ -480,11 +516,12 @@ func (_q *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 	var (
 		nodes       = []*TenantSubscription{}
 		_spec       = _q.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			_q.withTenant != nil,
 			_q.withPlan != nil,
 			_q.withProductSubscriptions != nil,
 			_q.withOverageCharges != nil,
+			_q.withEmailLicenses != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -532,6 +569,13 @@ func (_q *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 			func(n *TenantSubscription, e *OverageCharge) {
 				n.Edges.OverageCharges = append(n.Edges.OverageCharges, e)
 			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withEmailLicenses; query != nil {
+		if err := _q.loadEmailLicenses(ctx, query, nodes,
+			func(n *TenantSubscription) { n.Edges.EmailLicenses = []*EmailLicense{} },
+			func(n *TenantSubscription, e *EmailLicense) { n.Edges.EmailLicenses = append(n.Edges.EmailLicenses, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -641,6 +685,36 @@ func (_q *TenantSubscriptionQuery) loadOverageCharges(ctx context.Context, query
 	}
 	query.Where(predicate.OverageCharge(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(tenantsubscription.OverageChargesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.TenantSubscriptionID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "tenant_subscription_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *TenantSubscriptionQuery) loadEmailLicenses(ctx context.Context, query *EmailLicenseQuery, nodes []*TenantSubscription, init func(*TenantSubscription), assign func(*TenantSubscription, *EmailLicense)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*TenantSubscription)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(emaillicense.FieldTenantSubscriptionID)
+	}
+	query.Where(predicate.EmailLicense(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(tenantsubscription.EmailLicensesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

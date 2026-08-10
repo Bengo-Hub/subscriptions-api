@@ -177,6 +177,109 @@ var (
 			},
 		},
 	}
+	// EmailLicensesColumns holds the columns for the "email_licenses" table.
+	EmailLicensesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "assigned_to_email", Type: field.TypeString, Nullable: true},
+		{Name: "assigned_to_user_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"AVAILABLE", "ASSIGNED", "SUSPENDED", "EXPIRED"}, Default: "AVAILABLE"},
+		{Name: "suspend_reason", Type: field.TypeString, Nullable: true},
+		{Name: "storage_quota_gb", Type: field.TypeInt},
+		{Name: "features_json", Type: field.TypeJSON},
+		{Name: "assigned_at", Type: field.TypeTime, Nullable: true},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "metadata", Type: field.TypeJSON},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "email_plan_id", Type: field.TypeUUID},
+		{Name: "product_subscription_id", Type: field.TypeUUID},
+		{Name: "tenant_subscription_id", Type: field.TypeUUID},
+	}
+	// EmailLicensesTable holds the schema information for the "email_licenses" table.
+	EmailLicensesTable = &schema.Table{
+		Name:       "email_licenses",
+		Columns:    EmailLicensesColumns,
+		PrimaryKey: []*schema.Column{EmailLicensesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "email_licenses_email_plans_licenses",
+				Columns:    []*schema.Column{EmailLicensesColumns[12]},
+				RefColumns: []*schema.Column{EmailPlansColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "email_licenses_product_subscriptions_email_licenses",
+				Columns:    []*schema.Column{EmailLicensesColumns[13]},
+				RefColumns: []*schema.Column{ProductSubscriptionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "email_licenses_tenant_subscriptions_email_licenses",
+				Columns:    []*schema.Column{EmailLicensesColumns[14]},
+				RefColumns: []*schema.Column{TenantSubscriptionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "emaillicense_tenant_subscription_id_status",
+				Unique:  false,
+				Columns: []*schema.Column{EmailLicensesColumns[14], EmailLicensesColumns[3]},
+			},
+			{
+				Name:    "emaillicense_product_subscription_id_assigned_to_email",
+				Unique:  true,
+				Columns: []*schema.Column{EmailLicensesColumns[13], EmailLicensesColumns[1]},
+			},
+			{
+				Name:    "emaillicense_status",
+				Unique:  false,
+				Columns: []*schema.Column{EmailLicensesColumns[3]},
+			},
+		},
+	}
+	// EmailPlansColumns holds the columns for the "email_plans" table.
+	EmailPlansColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "code", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "price_per_user_monthly", Type: field.TypeFloat64},
+		{Name: "price_per_user_yearly", Type: field.TypeFloat64, Nullable: true},
+		{Name: "storage_per_user_gb", Type: field.TypeInt},
+		{Name: "max_aliases", Type: field.TypeInt, Default: 5},
+		{Name: "max_email_size_mb", Type: field.TypeInt, Default: 25},
+		{Name: "features_json", Type: field.TypeJSON},
+		{Name: "is_active", Type: field.TypeBool, Default: true},
+		{Name: "is_public", Type: field.TypeBool, Default: true},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+		{Name: "metadata", Type: field.TypeJSON},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// EmailPlansTable holds the schema information for the "email_plans" table.
+	EmailPlansTable = &schema.Table{
+		Name:       "email_plans",
+		Columns:    EmailPlansColumns,
+		PrimaryKey: []*schema.Column{EmailPlansColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "emailplan_code",
+				Unique:  false,
+				Columns: []*schema.Column{EmailPlansColumns[1]},
+			},
+			{
+				Name:    "emailplan_is_active",
+				Unique:  false,
+				Columns: []*schema.Column{EmailPlansColumns[10]},
+			},
+			{
+				Name:    "emailplan_sort_order",
+				Unique:  false,
+				Columns: []*schema.Column{EmailPlansColumns[12]},
+			},
+		},
+	}
 	// FeatureDefinitionsColumns holds the columns for the "feature_definitions" table.
 	FeatureDefinitionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1150,6 +1253,8 @@ var (
 		BundlesTable,
 		CouponsTable,
 		CustomAddonsTable,
+		EmailLicensesTable,
+		EmailPlansTable,
 		FeatureDefinitionsTable,
 		OutboxEventsTable,
 		OverageChargesTable,
@@ -1175,6 +1280,9 @@ var (
 )
 
 func init() {
+	EmailLicensesTable.ForeignKeys[0].RefTable = EmailPlansTable
+	EmailLicensesTable.ForeignKeys[1].RefTable = ProductSubscriptionsTable
+	EmailLicensesTable.ForeignKeys[2].RefTable = TenantSubscriptionsTable
 	OverageChargesTable.ForeignKeys[0].RefTable = TenantSubscriptionsTable
 	PlanFeaturesTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
 	PlanPricingHistoriesTable.ForeignKeys[0].RefTable = SubscriptionPlansTable

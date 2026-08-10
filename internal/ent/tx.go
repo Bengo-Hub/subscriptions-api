@@ -22,6 +22,10 @@ type Tx struct {
 	Coupon *CouponClient
 	// CustomAddon is the client for interacting with the CustomAddon builders.
 	CustomAddon *CustomAddonClient
+	// EmailLicense is the client for interacting with the EmailLicense builders.
+	EmailLicense *EmailLicenseClient
+	// EmailPlan is the client for interacting with the EmailPlan builders.
+	EmailPlan *EmailPlanClient
 	// FeatureDefinition is the client for interacting with the FeatureDefinition builders.
 	FeatureDefinition *FeatureDefinitionClient
 	// OutboxEvent is the client for interacting with the OutboxEvent builders.
@@ -200,6 +204,8 @@ func (tx *Tx) init() {
 	tx.Bundle = NewBundleClient(tx.config)
 	tx.Coupon = NewCouponClient(tx.config)
 	tx.CustomAddon = NewCustomAddonClient(tx.config)
+	tx.EmailLicense = NewEmailLicenseClient(tx.config)
+	tx.EmailPlan = NewEmailPlanClient(tx.config)
 	tx.FeatureDefinition = NewFeatureDefinitionClient(tx.config)
 	tx.OutboxEvent = NewOutboxEventClient(tx.config)
 	tx.OverageCharge = NewOverageChargeClient(tx.config)

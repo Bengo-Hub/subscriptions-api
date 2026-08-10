@@ -10,6 +10,8 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
 	"github.com/bengobox/subscription-service/internal/ent/coupon"
 	"github.com/bengobox/subscription-service/internal/ent/customaddon"
+	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
+	"github.com/bengobox/subscription-service/internal/ent/emailplan"
 	"github.com/bengobox/subscription-service/internal/ent/featuredefinition"
 	"github.com/bengobox/subscription-service/internal/ent/outboxevent"
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
@@ -228,6 +230,82 @@ func init() {
 	customaddonDescID := customaddonFields[0].Descriptor()
 	// customaddon.DefaultID holds the default value on creation for the id field.
 	customaddon.DefaultID = customaddonDescID.Default.(func() uuid.UUID)
+	emaillicenseFields := schema.EmailLicense{}.Fields()
+	_ = emaillicenseFields
+	// emaillicenseDescFeaturesJSON is the schema descriptor for features_json field.
+	emaillicenseDescFeaturesJSON := emaillicenseFields[9].Descriptor()
+	// emaillicense.DefaultFeaturesJSON holds the default value on creation for the features_json field.
+	emaillicense.DefaultFeaturesJSON = emaillicenseDescFeaturesJSON.Default.(map[string]interface{})
+	// emaillicenseDescMetadata is the schema descriptor for metadata field.
+	emaillicenseDescMetadata := emaillicenseFields[12].Descriptor()
+	// emaillicense.DefaultMetadata holds the default value on creation for the metadata field.
+	emaillicense.DefaultMetadata = emaillicenseDescMetadata.Default.(map[string]interface{})
+	// emaillicenseDescCreatedAt is the schema descriptor for created_at field.
+	emaillicenseDescCreatedAt := emaillicenseFields[13].Descriptor()
+	// emaillicense.DefaultCreatedAt holds the default value on creation for the created_at field.
+	emaillicense.DefaultCreatedAt = emaillicenseDescCreatedAt.Default.(func() time.Time)
+	// emaillicenseDescUpdatedAt is the schema descriptor for updated_at field.
+	emaillicenseDescUpdatedAt := emaillicenseFields[14].Descriptor()
+	// emaillicense.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	emaillicense.DefaultUpdatedAt = emaillicenseDescUpdatedAt.Default.(func() time.Time)
+	// emaillicense.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	emaillicense.UpdateDefaultUpdatedAt = emaillicenseDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// emaillicenseDescID is the schema descriptor for id field.
+	emaillicenseDescID := emaillicenseFields[0].Descriptor()
+	// emaillicense.DefaultID holds the default value on creation for the id field.
+	emaillicense.DefaultID = emaillicenseDescID.Default.(func() uuid.UUID)
+	emailplanFields := schema.EmailPlan{}.Fields()
+	_ = emailplanFields
+	// emailplanDescCode is the schema descriptor for code field.
+	emailplanDescCode := emailplanFields[1].Descriptor()
+	// emailplan.CodeValidator is a validator for the "code" field. It is called by the builders before save.
+	emailplan.CodeValidator = emailplanDescCode.Validators[0].(func(string) error)
+	// emailplanDescName is the schema descriptor for name field.
+	emailplanDescName := emailplanFields[2].Descriptor()
+	// emailplan.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	emailplan.NameValidator = emailplanDescName.Validators[0].(func(string) error)
+	// emailplanDescMaxAliases is the schema descriptor for max_aliases field.
+	emailplanDescMaxAliases := emailplanFields[7].Descriptor()
+	// emailplan.DefaultMaxAliases holds the default value on creation for the max_aliases field.
+	emailplan.DefaultMaxAliases = emailplanDescMaxAliases.Default.(int)
+	// emailplanDescMaxEmailSizeMB is the schema descriptor for max_email_size_mb field.
+	emailplanDescMaxEmailSizeMB := emailplanFields[8].Descriptor()
+	// emailplan.DefaultMaxEmailSizeMB holds the default value on creation for the max_email_size_mb field.
+	emailplan.DefaultMaxEmailSizeMB = emailplanDescMaxEmailSizeMB.Default.(int)
+	// emailplanDescFeaturesJSON is the schema descriptor for features_json field.
+	emailplanDescFeaturesJSON := emailplanFields[9].Descriptor()
+	// emailplan.DefaultFeaturesJSON holds the default value on creation for the features_json field.
+	emailplan.DefaultFeaturesJSON = emailplanDescFeaturesJSON.Default.(map[string]interface{})
+	// emailplanDescIsActive is the schema descriptor for is_active field.
+	emailplanDescIsActive := emailplanFields[10].Descriptor()
+	// emailplan.DefaultIsActive holds the default value on creation for the is_active field.
+	emailplan.DefaultIsActive = emailplanDescIsActive.Default.(bool)
+	// emailplanDescIsPublic is the schema descriptor for is_public field.
+	emailplanDescIsPublic := emailplanFields[11].Descriptor()
+	// emailplan.DefaultIsPublic holds the default value on creation for the is_public field.
+	emailplan.DefaultIsPublic = emailplanDescIsPublic.Default.(bool)
+	// emailplanDescSortOrder is the schema descriptor for sort_order field.
+	emailplanDescSortOrder := emailplanFields[12].Descriptor()
+	// emailplan.DefaultSortOrder holds the default value on creation for the sort_order field.
+	emailplan.DefaultSortOrder = emailplanDescSortOrder.Default.(int)
+	// emailplanDescMetadata is the schema descriptor for metadata field.
+	emailplanDescMetadata := emailplanFields[13].Descriptor()
+	// emailplan.DefaultMetadata holds the default value on creation for the metadata field.
+	emailplan.DefaultMetadata = emailplanDescMetadata.Default.(map[string]interface{})
+	// emailplanDescCreatedAt is the schema descriptor for created_at field.
+	emailplanDescCreatedAt := emailplanFields[14].Descriptor()
+	// emailplan.DefaultCreatedAt holds the default value on creation for the created_at field.
+	emailplan.DefaultCreatedAt = emailplanDescCreatedAt.Default.(func() time.Time)
+	// emailplanDescUpdatedAt is the schema descriptor for updated_at field.
+	emailplanDescUpdatedAt := emailplanFields[15].Descriptor()
+	// emailplan.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	emailplan.DefaultUpdatedAt = emailplanDescUpdatedAt.Default.(func() time.Time)
+	// emailplan.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	emailplan.UpdateDefaultUpdatedAt = emailplanDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// emailplanDescID is the schema descriptor for id field.
+	emailplanDescID := emailplanFields[0].Descriptor()
+	// emailplan.DefaultID holds the default value on creation for the id field.
+	emailplan.DefaultID = emailplanDescID.Default.(func() uuid.UUID)
 	featuredefinitionFields := schema.FeatureDefinition{}.Fields()
 	_ = featuredefinitionFields
 	// featuredefinitionDescFeatureCode is the schema descriptor for feature_code field.

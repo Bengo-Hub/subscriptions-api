@@ -80,6 +80,8 @@ const (
 	EdgeProductSubscriptions = "product_subscriptions"
 	// EdgeOverageCharges holds the string denoting the overage_charges edge name in mutations.
 	EdgeOverageCharges = "overage_charges"
+	// EdgeEmailLicenses holds the string denoting the email_licenses edge name in mutations.
+	EdgeEmailLicenses = "email_licenses"
 	// Table holds the table name of the tenantsubscription in the database.
 	Table = "tenant_subscriptions"
 	// TenantTable is the table that holds the tenant relation/edge.
@@ -110,6 +112,13 @@ const (
 	OverageChargesInverseTable = "overage_charges"
 	// OverageChargesColumn is the table column denoting the overage_charges relation/edge.
 	OverageChargesColumn = "tenant_subscription_id"
+	// EmailLicensesTable is the table that holds the email_licenses relation/edge.
+	EmailLicensesTable = "email_licenses"
+	// EmailLicensesInverseTable is the table name for the EmailLicense entity.
+	// It exists in this package in order to avoid circular dependency with the "emaillicense" package.
+	EmailLicensesInverseTable = "email_licenses"
+	// EmailLicensesColumn is the table column denoting the email_licenses relation/edge.
+	EmailLicensesColumn = "tenant_subscription_id"
 )
 
 // Columns holds all SQL columns for tenantsubscription fields.
@@ -419,6 +428,20 @@ func ByOverageCharges(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newOverageChargesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByEmailLicensesCount orders the results by email_licenses count.
+func ByEmailLicensesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEmailLicensesStep(), opts...)
+	}
+}
+
+// ByEmailLicenses orders the results by email_licenses terms.
+func ByEmailLicenses(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEmailLicensesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newTenantStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -445,5 +468,12 @@ func newOverageChargesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OverageChargesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, OverageChargesTable, OverageChargesColumn),
+	)
+}
+func newEmailLicensesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EmailLicensesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EmailLicensesTable, EmailLicensesColumn),
 	)
 }

@@ -69,6 +69,30 @@ func (f CustomAddonFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CustomAddonMutation", m)
 }
 
+// The EmailLicenseFunc type is an adapter to allow the use of ordinary
+// function as EmailLicense mutator.
+type EmailLicenseFunc func(context.Context, *ent.EmailLicenseMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EmailLicenseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EmailLicenseMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EmailLicenseMutation", m)
+}
+
+// The EmailPlanFunc type is an adapter to allow the use of ordinary
+// function as EmailPlan mutator.
+type EmailPlanFunc func(context.Context, *ent.EmailPlanMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EmailPlanFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EmailPlanMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EmailPlanMutation", m)
+}
+
 // The FeatureDefinitionFunc type is an adapter to allow the use of ordinary
 // function as FeatureDefinition mutator.
 type FeatureDefinitionFunc func(context.Context, *ent.FeatureDefinitionMutation) (ent.Value, error)

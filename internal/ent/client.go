@@ -21,6 +21,8 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
 	"github.com/bengobox/subscription-service/internal/ent/coupon"
 	"github.com/bengobox/subscription-service/internal/ent/customaddon"
+	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
+	"github.com/bengobox/subscription-service/internal/ent/emailplan"
 	"github.com/bengobox/subscription-service/internal/ent/featuredefinition"
 	"github.com/bengobox/subscription-service/internal/ent/outboxevent"
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
@@ -59,6 +61,10 @@ type Client struct {
 	Coupon *CouponClient
 	// CustomAddon is the client for interacting with the CustomAddon builders.
 	CustomAddon *CustomAddonClient
+	// EmailLicense is the client for interacting with the EmailLicense builders.
+	EmailLicense *EmailLicenseClient
+	// EmailPlan is the client for interacting with the EmailPlan builders.
+	EmailPlan *EmailPlanClient
 	// FeatureDefinition is the client for interacting with the FeatureDefinition builders.
 	FeatureDefinition *FeatureDefinitionClient
 	// OutboxEvent is the client for interacting with the OutboxEvent builders.
@@ -117,6 +123,8 @@ func (c *Client) init() {
 	c.Bundle = NewBundleClient(c.config)
 	c.Coupon = NewCouponClient(c.config)
 	c.CustomAddon = NewCustomAddonClient(c.config)
+	c.EmailLicense = NewEmailLicenseClient(c.config)
+	c.EmailPlan = NewEmailPlanClient(c.config)
 	c.FeatureDefinition = NewFeatureDefinitionClient(c.config)
 	c.OutboxEvent = NewOutboxEventClient(c.config)
 	c.OverageCharge = NewOverageChargeClient(c.config)
@@ -235,6 +243,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Bundle:                        NewBundleClient(cfg),
 		Coupon:                        NewCouponClient(cfg),
 		CustomAddon:                   NewCustomAddonClient(cfg),
+		EmailLicense:                  NewEmailLicenseClient(cfg),
+		EmailPlan:                     NewEmailPlanClient(cfg),
 		FeatureDefinition:             NewFeatureDefinitionClient(cfg),
 		OutboxEvent:                   NewOutboxEventClient(cfg),
 		OverageCharge:                 NewOverageChargeClient(cfg),
@@ -280,6 +290,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Bundle:                        NewBundleClient(cfg),
 		Coupon:                        NewCouponClient(cfg),
 		CustomAddon:                   NewCustomAddonClient(cfg),
+		EmailLicense:                  NewEmailLicenseClient(cfg),
+		EmailPlan:                     NewEmailPlanClient(cfg),
 		FeatureDefinition:             NewFeatureDefinitionClient(cfg),
 		OutboxEvent:                   NewOutboxEventClient(cfg),
 		OverageCharge:                 NewOverageChargeClient(cfg),
@@ -330,13 +342,13 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Backup, c.BackupSetting, c.Bundle, c.Coupon, c.CustomAddon,
-		c.FeatureDefinition, c.OutboxEvent, c.OverageCharge, c.PlanFeature,
-		c.PlanPricingHistory, c.Product, c.ProductSubscription, c.RateLimitConfig,
-		c.RolePermission, c.ServiceChargePlan, c.ServiceConfig, c.SubscriptionCredit,
-		c.SubscriptionCreditTransaction, c.SubscriptionPlan, c.SubscriptionsPermission,
-		c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant, c.TenantSubscription,
-		c.UsageEvent, c.UserRoleAssignment,
+		c.Backup, c.BackupSetting, c.Bundle, c.Coupon, c.CustomAddon, c.EmailLicense,
+		c.EmailPlan, c.FeatureDefinition, c.OutboxEvent, c.OverageCharge,
+		c.PlanFeature, c.PlanPricingHistory, c.Product, c.ProductSubscription,
+		c.RateLimitConfig, c.RolePermission, c.ServiceChargePlan, c.ServiceConfig,
+		c.SubscriptionCredit, c.SubscriptionCreditTransaction, c.SubscriptionPlan,
+		c.SubscriptionsPermission, c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant,
+		c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
 	} {
 		n.Use(hooks...)
 	}
@@ -346,13 +358,13 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Backup, c.BackupSetting, c.Bundle, c.Coupon, c.CustomAddon,
-		c.FeatureDefinition, c.OutboxEvent, c.OverageCharge, c.PlanFeature,
-		c.PlanPricingHistory, c.Product, c.ProductSubscription, c.RateLimitConfig,
-		c.RolePermission, c.ServiceChargePlan, c.ServiceConfig, c.SubscriptionCredit,
-		c.SubscriptionCreditTransaction, c.SubscriptionPlan, c.SubscriptionsPermission,
-		c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant, c.TenantSubscription,
-		c.UsageEvent, c.UserRoleAssignment,
+		c.Backup, c.BackupSetting, c.Bundle, c.Coupon, c.CustomAddon, c.EmailLicense,
+		c.EmailPlan, c.FeatureDefinition, c.OutboxEvent, c.OverageCharge,
+		c.PlanFeature, c.PlanPricingHistory, c.Product, c.ProductSubscription,
+		c.RateLimitConfig, c.RolePermission, c.ServiceChargePlan, c.ServiceConfig,
+		c.SubscriptionCredit, c.SubscriptionCreditTransaction, c.SubscriptionPlan,
+		c.SubscriptionsPermission, c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant,
+		c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -371,6 +383,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Coupon.mutate(ctx, m)
 	case *CustomAddonMutation:
 		return c.CustomAddon.mutate(ctx, m)
+	case *EmailLicenseMutation:
+		return c.EmailLicense.mutate(ctx, m)
+	case *EmailPlanMutation:
+		return c.EmailPlan.mutate(ctx, m)
 	case *FeatureDefinitionMutation:
 		return c.FeatureDefinition.mutate(ctx, m)
 	case *OutboxEventMutation:
@@ -1080,6 +1096,336 @@ func (c *CustomAddonClient) mutate(ctx context.Context, m *CustomAddonMutation) 
 		return (&CustomAddonDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CustomAddon mutation op: %q", m.Op())
+	}
+}
+
+// EmailLicenseClient is a client for the EmailLicense schema.
+type EmailLicenseClient struct {
+	config
+}
+
+// NewEmailLicenseClient returns a client for the EmailLicense from the given config.
+func NewEmailLicenseClient(c config) *EmailLicenseClient {
+	return &EmailLicenseClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `emaillicense.Hooks(f(g(h())))`.
+func (c *EmailLicenseClient) Use(hooks ...Hook) {
+	c.hooks.EmailLicense = append(c.hooks.EmailLicense, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `emaillicense.Intercept(f(g(h())))`.
+func (c *EmailLicenseClient) Intercept(interceptors ...Interceptor) {
+	c.inters.EmailLicense = append(c.inters.EmailLicense, interceptors...)
+}
+
+// Create returns a builder for creating a EmailLicense entity.
+func (c *EmailLicenseClient) Create() *EmailLicenseCreate {
+	mutation := newEmailLicenseMutation(c.config, OpCreate)
+	return &EmailLicenseCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of EmailLicense entities.
+func (c *EmailLicenseClient) CreateBulk(builders ...*EmailLicenseCreate) *EmailLicenseCreateBulk {
+	return &EmailLicenseCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *EmailLicenseClient) MapCreateBulk(slice any, setFunc func(*EmailLicenseCreate, int)) *EmailLicenseCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &EmailLicenseCreateBulk{err: fmt.Errorf("calling to EmailLicenseClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*EmailLicenseCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &EmailLicenseCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for EmailLicense.
+func (c *EmailLicenseClient) Update() *EmailLicenseUpdate {
+	mutation := newEmailLicenseMutation(c.config, OpUpdate)
+	return &EmailLicenseUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *EmailLicenseClient) UpdateOne(_m *EmailLicense) *EmailLicenseUpdateOne {
+	mutation := newEmailLicenseMutation(c.config, OpUpdateOne, withEmailLicense(_m))
+	return &EmailLicenseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *EmailLicenseClient) UpdateOneID(id uuid.UUID) *EmailLicenseUpdateOne {
+	mutation := newEmailLicenseMutation(c.config, OpUpdateOne, withEmailLicenseID(id))
+	return &EmailLicenseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for EmailLicense.
+func (c *EmailLicenseClient) Delete() *EmailLicenseDelete {
+	mutation := newEmailLicenseMutation(c.config, OpDelete)
+	return &EmailLicenseDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *EmailLicenseClient) DeleteOne(_m *EmailLicense) *EmailLicenseDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *EmailLicenseClient) DeleteOneID(id uuid.UUID) *EmailLicenseDeleteOne {
+	builder := c.Delete().Where(emaillicense.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &EmailLicenseDeleteOne{builder}
+}
+
+// Query returns a query builder for EmailLicense.
+func (c *EmailLicenseClient) Query() *EmailLicenseQuery {
+	return &EmailLicenseQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeEmailLicense},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a EmailLicense entity by its id.
+func (c *EmailLicenseClient) Get(ctx context.Context, id uuid.UUID) (*EmailLicense, error) {
+	return c.Query().Where(emaillicense.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *EmailLicenseClient) GetX(ctx context.Context, id uuid.UUID) *EmailLicense {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenantSubscription queries the tenant_subscription edge of a EmailLicense.
+func (c *EmailLicenseClient) QueryTenantSubscription(_m *EmailLicense) *TenantSubscriptionQuery {
+	query := (&TenantSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(emaillicense.Table, emaillicense.FieldID, id),
+			sqlgraph.To(tenantsubscription.Table, tenantsubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, emaillicense.TenantSubscriptionTable, emaillicense.TenantSubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProductSubscription queries the product_subscription edge of a EmailLicense.
+func (c *EmailLicenseClient) QueryProductSubscription(_m *EmailLicense) *ProductSubscriptionQuery {
+	query := (&ProductSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(emaillicense.Table, emaillicense.FieldID, id),
+			sqlgraph.To(productsubscription.Table, productsubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, emaillicense.ProductSubscriptionTable, emaillicense.ProductSubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEmailPlan queries the email_plan edge of a EmailLicense.
+func (c *EmailLicenseClient) QueryEmailPlan(_m *EmailLicense) *EmailPlanQuery {
+	query := (&EmailPlanClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(emaillicense.Table, emaillicense.FieldID, id),
+			sqlgraph.To(emailplan.Table, emailplan.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, emaillicense.EmailPlanTable, emaillicense.EmailPlanColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *EmailLicenseClient) Hooks() []Hook {
+	return c.hooks.EmailLicense
+}
+
+// Interceptors returns the client interceptors.
+func (c *EmailLicenseClient) Interceptors() []Interceptor {
+	return c.inters.EmailLicense
+}
+
+func (c *EmailLicenseClient) mutate(ctx context.Context, m *EmailLicenseMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&EmailLicenseCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&EmailLicenseUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&EmailLicenseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&EmailLicenseDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown EmailLicense mutation op: %q", m.Op())
+	}
+}
+
+// EmailPlanClient is a client for the EmailPlan schema.
+type EmailPlanClient struct {
+	config
+}
+
+// NewEmailPlanClient returns a client for the EmailPlan from the given config.
+func NewEmailPlanClient(c config) *EmailPlanClient {
+	return &EmailPlanClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `emailplan.Hooks(f(g(h())))`.
+func (c *EmailPlanClient) Use(hooks ...Hook) {
+	c.hooks.EmailPlan = append(c.hooks.EmailPlan, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `emailplan.Intercept(f(g(h())))`.
+func (c *EmailPlanClient) Intercept(interceptors ...Interceptor) {
+	c.inters.EmailPlan = append(c.inters.EmailPlan, interceptors...)
+}
+
+// Create returns a builder for creating a EmailPlan entity.
+func (c *EmailPlanClient) Create() *EmailPlanCreate {
+	mutation := newEmailPlanMutation(c.config, OpCreate)
+	return &EmailPlanCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of EmailPlan entities.
+func (c *EmailPlanClient) CreateBulk(builders ...*EmailPlanCreate) *EmailPlanCreateBulk {
+	return &EmailPlanCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *EmailPlanClient) MapCreateBulk(slice any, setFunc func(*EmailPlanCreate, int)) *EmailPlanCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &EmailPlanCreateBulk{err: fmt.Errorf("calling to EmailPlanClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*EmailPlanCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &EmailPlanCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for EmailPlan.
+func (c *EmailPlanClient) Update() *EmailPlanUpdate {
+	mutation := newEmailPlanMutation(c.config, OpUpdate)
+	return &EmailPlanUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *EmailPlanClient) UpdateOne(_m *EmailPlan) *EmailPlanUpdateOne {
+	mutation := newEmailPlanMutation(c.config, OpUpdateOne, withEmailPlan(_m))
+	return &EmailPlanUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *EmailPlanClient) UpdateOneID(id uuid.UUID) *EmailPlanUpdateOne {
+	mutation := newEmailPlanMutation(c.config, OpUpdateOne, withEmailPlanID(id))
+	return &EmailPlanUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for EmailPlan.
+func (c *EmailPlanClient) Delete() *EmailPlanDelete {
+	mutation := newEmailPlanMutation(c.config, OpDelete)
+	return &EmailPlanDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *EmailPlanClient) DeleteOne(_m *EmailPlan) *EmailPlanDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *EmailPlanClient) DeleteOneID(id uuid.UUID) *EmailPlanDeleteOne {
+	builder := c.Delete().Where(emailplan.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &EmailPlanDeleteOne{builder}
+}
+
+// Query returns a query builder for EmailPlan.
+func (c *EmailPlanClient) Query() *EmailPlanQuery {
+	return &EmailPlanQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeEmailPlan},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a EmailPlan entity by its id.
+func (c *EmailPlanClient) Get(ctx context.Context, id uuid.UUID) (*EmailPlan, error) {
+	return c.Query().Where(emailplan.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *EmailPlanClient) GetX(ctx context.Context, id uuid.UUID) *EmailPlan {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryLicenses queries the licenses edge of a EmailPlan.
+func (c *EmailPlanClient) QueryLicenses(_m *EmailPlan) *EmailLicenseQuery {
+	query := (&EmailLicenseClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(emailplan.Table, emailplan.FieldID, id),
+			sqlgraph.To(emaillicense.Table, emaillicense.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, emailplan.LicensesTable, emailplan.LicensesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *EmailPlanClient) Hooks() []Hook {
+	return c.hooks.EmailPlan
+}
+
+// Interceptors returns the client interceptors.
+func (c *EmailPlanClient) Interceptors() []Interceptor {
+	return c.inters.EmailPlan
+}
+
+func (c *EmailPlanClient) mutate(ctx context.Context, m *EmailPlanMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&EmailPlanCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&EmailPlanUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&EmailPlanUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&EmailPlanDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown EmailPlan mutation op: %q", m.Op())
 	}
 }
 
@@ -2110,6 +2456,22 @@ func (c *ProductSubscriptionClient) QueryOverridePlan(_m *ProductSubscription) *
 			sqlgraph.From(productsubscription.Table, productsubscription.FieldID, id),
 			sqlgraph.To(subscriptionplan.Table, subscriptionplan.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, productsubscription.OverridePlanTable, productsubscription.OverridePlanColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEmailLicenses queries the email_licenses edge of a ProductSubscription.
+func (c *ProductSubscriptionClient) QueryEmailLicenses(_m *ProductSubscription) *EmailLicenseQuery {
+	query := (&EmailLicenseClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(productsubscription.Table, productsubscription.FieldID, id),
+			sqlgraph.To(emaillicense.Table, emaillicense.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, productsubscription.EmailLicensesTable, productsubscription.EmailLicensesColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -4017,6 +4379,22 @@ func (c *TenantSubscriptionClient) QueryOverageCharges(_m *TenantSubscription) *
 	return query
 }
 
+// QueryEmailLicenses queries the email_licenses edge of a TenantSubscription.
+func (c *TenantSubscriptionClient) QueryEmailLicenses(_m *TenantSubscription) *EmailLicenseQuery {
+	query := (&EmailLicenseClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, id),
+			sqlgraph.To(emaillicense.Table, emaillicense.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.EmailLicensesTable, tenantsubscription.EmailLicensesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *TenantSubscriptionClient) Hooks() []Hook {
 	return c.hooks.TenantSubscription
@@ -4343,21 +4721,21 @@ func (c *UserRoleAssignmentClient) mutate(ctx context.Context, m *UserRoleAssign
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Backup, BackupSetting, Bundle, Coupon, CustomAddon, FeatureDefinition,
-		OutboxEvent, OverageCharge, PlanFeature, PlanPricingHistory, Product,
-		ProductSubscription, RateLimitConfig, RolePermission, ServiceChargePlan,
-		ServiceConfig, SubscriptionCredit, SubscriptionCreditTransaction,
-		SubscriptionPlan, SubscriptionsPermission, SubscriptionsRole,
-		SubscriptionsUser, Tenant, TenantSubscription, UsageEvent,
+		Backup, BackupSetting, Bundle, Coupon, CustomAddon, EmailLicense, EmailPlan,
+		FeatureDefinition, OutboxEvent, OverageCharge, PlanFeature, PlanPricingHistory,
+		Product, ProductSubscription, RateLimitConfig, RolePermission,
+		ServiceChargePlan, ServiceConfig, SubscriptionCredit,
+		SubscriptionCreditTransaction, SubscriptionPlan, SubscriptionsPermission,
+		SubscriptionsRole, SubscriptionsUser, Tenant, TenantSubscription, UsageEvent,
 		UserRoleAssignment []ent.Hook
 	}
 	inters struct {
-		Backup, BackupSetting, Bundle, Coupon, CustomAddon, FeatureDefinition,
-		OutboxEvent, OverageCharge, PlanFeature, PlanPricingHistory, Product,
-		ProductSubscription, RateLimitConfig, RolePermission, ServiceChargePlan,
-		ServiceConfig, SubscriptionCredit, SubscriptionCreditTransaction,
-		SubscriptionPlan, SubscriptionsPermission, SubscriptionsRole,
-		SubscriptionsUser, Tenant, TenantSubscription, UsageEvent,
+		Backup, BackupSetting, Bundle, Coupon, CustomAddon, EmailLicense, EmailPlan,
+		FeatureDefinition, OutboxEvent, OverageCharge, PlanFeature, PlanPricingHistory,
+		Product, ProductSubscription, RateLimitConfig, RolePermission,
+		ServiceChargePlan, ServiceConfig, SubscriptionCredit,
+		SubscriptionCreditTransaction, SubscriptionPlan, SubscriptionsPermission,
+		SubscriptionsRole, SubscriptionsUser, Tenant, TenantSubscription, UsageEvent,
 		UserRoleAssignment []ent.Interceptor
 	}
 )

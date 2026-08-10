@@ -48,6 +48,8 @@ const (
 	EdgeServiceChargePlan = "service_charge_plan"
 	// EdgeOverridePlan holds the string denoting the override_plan edge name in mutations.
 	EdgeOverridePlan = "override_plan"
+	// EdgeEmailLicenses holds the string denoting the email_licenses edge name in mutations.
+	EdgeEmailLicenses = "email_licenses"
 	// Table holds the table name of the productsubscription in the database.
 	Table = "product_subscriptions"
 	// TenantSubscriptionTable is the table that holds the tenant_subscription relation/edge.
@@ -78,6 +80,13 @@ const (
 	OverridePlanInverseTable = "subscription_plans"
 	// OverridePlanColumn is the table column denoting the override_plan relation/edge.
 	OverridePlanColumn = "override_plan_id"
+	// EmailLicensesTable is the table that holds the email_licenses relation/edge.
+	EmailLicensesTable = "email_licenses"
+	// EmailLicensesInverseTable is the table name for the EmailLicense entity.
+	// It exists in this package in order to avoid circular dependency with the "emaillicense" package.
+	EmailLicensesInverseTable = "email_licenses"
+	// EmailLicensesColumn is the table column denoting the email_licenses relation/edge.
+	EmailLicensesColumn = "product_subscription_id"
 )
 
 // Columns holds all SQL columns for productsubscription fields.
@@ -241,6 +250,20 @@ func ByOverridePlanField(field string, opts ...sql.OrderTermOption) OrderOption 
 		sqlgraph.OrderByNeighborTerms(s, newOverridePlanStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByEmailLicensesCount orders the results by email_licenses count.
+func ByEmailLicensesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEmailLicensesStep(), opts...)
+	}
+}
+
+// ByEmailLicenses orders the results by email_licenses terms.
+func ByEmailLicenses(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEmailLicensesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newTenantSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -267,5 +290,12 @@ func newOverridePlanStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OverridePlanInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, OverridePlanTable, OverridePlanColumn),
+	)
+}
+func newEmailLicensesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EmailLicensesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EmailLicensesTable, EmailLicensesColumn),
 	)
 }

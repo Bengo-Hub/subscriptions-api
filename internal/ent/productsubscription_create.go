@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/servicechargeplan"
@@ -196,6 +197,21 @@ func (_c *ProductSubscriptionCreate) SetServiceChargePlan(v *ServiceChargePlan) 
 // SetOverridePlan sets the "override_plan" edge to the SubscriptionPlan entity.
 func (_c *ProductSubscriptionCreate) SetOverridePlan(v *SubscriptionPlan) *ProductSubscriptionCreate {
 	return _c.SetOverridePlanID(v.ID)
+}
+
+// AddEmailLicenseIDs adds the "email_licenses" edge to the EmailLicense entity by IDs.
+func (_c *ProductSubscriptionCreate) AddEmailLicenseIDs(ids ...uuid.UUID) *ProductSubscriptionCreate {
+	_c.mutation.AddEmailLicenseIDs(ids...)
+	return _c
+}
+
+// AddEmailLicenses adds the "email_licenses" edges to the EmailLicense entity.
+func (_c *ProductSubscriptionCreate) AddEmailLicenses(v ...*EmailLicense) *ProductSubscriptionCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEmailLicenseIDs(ids...)
 }
 
 // Mutation returns the ProductSubscriptionMutation object of the builder.
@@ -428,6 +444,22 @@ func (_c *ProductSubscriptionCreate) createSpec() (*ProductSubscription, *sqlgra
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.OverridePlanID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EmailLicensesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   productsubscription.EmailLicensesTable,
+			Columns: []string{productsubscription.EmailLicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
