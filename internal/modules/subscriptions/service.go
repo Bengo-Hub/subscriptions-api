@@ -8,6 +8,7 @@ import (
 	serviceclient "github.com/Bengo-Hub/shared-service-client"
 	"github.com/bengobox/subscription-service/internal/domain"
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
@@ -734,6 +735,18 @@ func (s *Service) CancelSubscription(ctx context.Context, in CancelInput) (*Subs
 		},
 	})
 
+	// Cascade-suspend the tenant's email licenses in the same transaction —
+	// per plan Part 3E's bounded-context design, this belongs here (where the
+	// licensing business logic already lives), not in email-provisioner's
+	// dumb bridge. A direct in-transaction call, not a NATS round-trip to
+	// itself: subscriptions-api is both the publisher and the intended
+	// handler of this cascade, so looping it through NATS would just add
+	// latency and lose transactional atomicity for no benefit.
+	if err := s.cascadeSuspendEmailLicensesTx(ctx, tx, sub.TenantID, "tenant_subscription_cancelled"); err != nil {
+		s.log.Warn("cascade-suspend email licenses on cancellation failed",
+			zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
+	}
+
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit: %w", err)
 	}
@@ -1106,6 +1119,37 @@ func (s *Service) emitSubscriptionUpdatedTx(ctx context.Context, tx *ent.Tx, sub
 		"tenant_slug": tenantSlug,
 		"direction":   direction,
 	})
+}
+
+// cascadeSuspendEmailLicensesTx suspends every ASSIGNED EmailLicense for a
+// tenant inside tx, publishing email.license.suspended for each so
+// email-provisioner's already-built consumer locks the corresponding
+// Stalwart mailboxes. Best-effort by design (see the caller) — a tenant with
+// no email licenses at all is the common case, not an error.
+func (s *Service) cascadeSuspendEmailLicensesTx(ctx context.Context, tx *ent.Tx, tenantID uuid.UUID, reason string) error {
+	licenses, err := tx.EmailLicense.Query().
+		Where(emaillicense.TenantSubscriptionIDEQ(tenantID), emaillicense.StatusEQ("ASSIGNED")).
+		All(ctx)
+	if err != nil {
+		return fmt.Errorf("query assigned email licenses: %w", err)
+	}
+
+	for _, lic := range licenses {
+		updated, err := tx.EmailLicense.UpdateOneID(lic.ID).
+			SetStatus("SUSPENDED").
+			SetSuspendReason(reason).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("suspend email license %s: %w", lic.ID, err)
+		}
+		s.writeOutboxEvent(ctx, tx, tenantID, "email", lic.ID, "license.suspended", map[string]any{
+			"license_id":        lic.ID.String(),
+			"assigned_to_email": updated.AssignedToEmail,
+			"domain":            "codevertexafrica.com",
+			"suspend_reason":    reason,
+		})
+	}
+	return nil
 }
 
 // ListProducts returns all product subscriptions for a tenant.

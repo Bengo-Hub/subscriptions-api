@@ -214,6 +214,15 @@ func New(ctx context.Context) (*App, error) {
 	platformTenantID, _ := uuid.Parse(cfg.Services.PlatformTenantID)
 	subscriptionSvc := subscriptions.New(ormClient, log, treasuryClient, cfg.Services.TreasuryAPIKey, platformTenantID)
 
+	// auth.user.created consumer — auto-assigns an available EmailLicense on
+	// user creation, per plan Part 3E (belongs with the licensing business
+	// logic, not email-provisioner's dumb bridge).
+	if natsConn != nil {
+		if err := subscriptionSvc.SubscribeAuthEvents(natsConn); err != nil {
+			log.Warn("failed to subscribe to auth.user.created (non-fatal)", zap.Error(err))
+		}
+	}
+
 	// Feature gate handler with Redis caching (constructed first — injected into mutation handlers)
 	featureHandler := handlers.NewFeatureHandler(log, subscriptionSvc, redisClient)
 
