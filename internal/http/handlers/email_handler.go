@@ -242,6 +242,214 @@ func (h *EmailLicenseHandler) UnassignEmailLicense(w http.ResponseWriter, r *htt
 	writeJSON(w, http.StatusOK, updated)
 }
 
+type upgradeLicenseInput struct {
+	PlanCode string `json:"plan_code"`
+}
+
+// UpgradeEmailLicense handles PUT /api/v1/email/licenses/{id}/upgrade.
+// Moves the license to a different EmailPlan tier — re-denormalizes
+// storage_quota_gb/features_json from the new plan (mirrors PurchaseEmailLicenses'
+// denormalization at creation time), leaves status/assignment untouched.
+func (h *EmailLicenseHandler) UpgradeEmailLicense(w http.ResponseWriter, r *http.Request) {
+	licenseID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid license id"})
+		return
+	}
+	tenantID, ok := h.tenantID(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "tenant context required"})
+		return
+	}
+
+	var in upgradeLicenseInput
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil || in.PlanCode == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "plan_code is required"})
+		return
+	}
+
+	ctx := r.Context()
+	tx, err := h.client.Tx(ctx)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	lic, err := tx.EmailLicense.Query().
+		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantID)).
+		Only(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "license not found"})
+		return
+	}
+
+	newPlan, err := tx.EmailPlan.Query().
+		Where(emailplan.CodeEQ(in.PlanCode), emailplan.IsActive(true)).
+		Only(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("unknown or inactive plan_code %q", in.PlanCode)})
+		return
+	}
+
+	updated, err := tx.EmailLicense.UpdateOneID(licenseID).
+		SetEmailPlanID(newPlan.ID).
+		SetStorageQuotaGB(newPlan.StoragePerUserGB).
+		SetFeaturesJSON(newPlan.FeaturesJSON).
+		Save(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		h.log.Error("upgrade email license failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	h.subSvc.WriteOutboxEventPublic(ctx, tx, tenantID, "email", licenseID, "license.upgraded", map[string]any{
+		"license_id":        licenseID.String(),
+		"assigned_to_email": lic.AssignedToEmail,
+		"domain":            "codevertexafrica.com",
+		"storage_quota_gb":  updated.StorageQuotaGB,
+		"plan_code":         newPlan.Code,
+	})
+
+	if err := tx.Commit(); err != nil {
+		h.log.Error("commit upgrade email license failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}
+
+type suspendLicenseInput struct {
+	Reason string `json:"reason"`
+}
+
+// SuspendEmailLicense handles PUT /api/v1/email/licenses/{id}/suspend.
+// Triggered today by direct API call only — plan Part 6's abuse-response
+// ladder (bounce/complaint-threshold automation in email-provisioner) and
+// billing non-payment are the two intended real callers, neither of which
+// exists yet (see plan §13.2); this closes the subscriptions-api half of
+// that gap so email-provisioner's already-built license.suspended consumer
+// stops being unreachable. Never touches inbound delivery/mailbox read —
+// that's enforced downstream in email-provisioner's Stalwart client, not here.
+func (h *EmailLicenseHandler) SuspendEmailLicense(w http.ResponseWriter, r *http.Request) {
+	licenseID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid license id"})
+		return
+	}
+	tenantID, ok := h.tenantID(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "tenant context required"})
+		return
+	}
+
+	var in suspendLicenseInput
+	_ = json.NewDecoder(r.Body).Decode(&in)
+	if in.Reason == "" {
+		in.Reason = "manual"
+	}
+
+	ctx := r.Context()
+	tx, err := h.client.Tx(ctx)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	lic, err := tx.EmailLicense.Query().
+		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantID)).
+		Only(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "license not found"})
+		return
+	}
+
+	updated, err := tx.EmailLicense.UpdateOneID(licenseID).
+		SetStatus("SUSPENDED").
+		SetSuspendReason(in.Reason).
+		Save(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		h.log.Error("suspend email license failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	h.subSvc.WriteOutboxEventPublic(ctx, tx, tenantID, "email", licenseID, "license.suspended", map[string]any{
+		"license_id":        licenseID.String(),
+		"assigned_to_email": lic.AssignedToEmail,
+		"domain":            "codevertexafrica.com",
+		"suspend_reason":    in.Reason,
+	})
+
+	if err := tx.Commit(); err != nil {
+		h.log.Error("commit suspend email license failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}
+
+// ExpireEmailLicense handles PUT /api/v1/email/licenses/{id}/expire.
+// Manual/explicit trigger only — this closes the "can this license be moved
+// to EXPIRED and does email-provisioner react correctly" gap, but automatic
+// detection (a periodic scan for expires_at < now()) is separate, unbuilt
+// work, not implied by wiring this transition (plan §13.2).
+func (h *EmailLicenseHandler) ExpireEmailLicense(w http.ResponseWriter, r *http.Request) {
+	licenseID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid license id"})
+		return
+	}
+	tenantID, ok := h.tenantID(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "tenant context required"})
+		return
+	}
+
+	ctx := r.Context()
+	tx, err := h.client.Tx(ctx)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	lic, err := tx.EmailLicense.Query().
+		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantID)).
+		Only(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "license not found"})
+		return
+	}
+
+	updated, err := tx.EmailLicense.UpdateOneID(licenseID).
+		SetStatus("EXPIRED").
+		Save(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		h.log.Error("expire email license failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	h.subSvc.WriteOutboxEventPublic(ctx, tx, tenantID, "email", licenseID, "license.expired", map[string]any{
+		"license_id":        licenseID.String(),
+		"assigned_to_email": lic.AssignedToEmail,
+		"domain":            "codevertexafrica.com",
+	})
+
+	if err := tx.Commit(); err != nil {
+		h.log.Error("commit expire email license failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}
+
 // transition is the shared assign/upgrade path: loads the license (tenant-scoped),
 // applies the given mutation, publishes the matching email.license.* event, commits.
 func (h *EmailLicenseHandler) transition(w http.ResponseWriter, r *http.Request, eventSuffix string, mutate func(*ent.EmailLicenseUpdateOne, assignLicenseInput) *ent.EmailLicenseUpdateOne) {
@@ -312,4 +520,7 @@ func (h *EmailLicenseHandler) RegisterEmailRoutes(r chi.Router) {
 	r.Post("/email/licenses/purchase", h.PurchaseEmailLicenses)
 	r.Put("/email/licenses/{id}/assign", h.AssignEmailLicense)
 	r.Put("/email/licenses/{id}/unassign", h.UnassignEmailLicense)
+	r.Put("/email/licenses/{id}/upgrade", h.UpgradeEmailLicense)
+	r.Put("/email/licenses/{id}/suspend", h.SuspendEmailLicense)
+	r.Put("/email/licenses/{id}/expire", h.ExpireEmailLicense)
 }
