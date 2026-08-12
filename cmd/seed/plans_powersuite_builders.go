@@ -150,7 +150,7 @@ func powerSuiteLimits(tier int) map[string]any {
 			"max_cashiers": 2,
 			"max_tables":   20,
 			// Inventory
-			"inventory_max_sku":             500,
+			"inventory_max_sku":             2000,
 			"inventory_max_warehouses":      1,
 			"inventory_max_images_per_item": 1,
 			"max_suppliers":                 10,
