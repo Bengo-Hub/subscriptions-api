@@ -59,6 +59,7 @@ var featureCatalog = func() []catalogEntry {
 		library    = "library"
 		platform   = "platform"
 		hospital   = "hospital"
+		etimsAPI   = "etims_api"
 	)
 	entries := []catalogEntry{
 		// ─── Treasury / Finance ───────────────────────────────────────────────
@@ -81,6 +82,14 @@ var featureCatalog = func() []catalogEntry {
 		feat("ledger_posting", treasury, "Accounting", "Double-Entry Ledger Posting"),
 		feat("tax_codes", treasury, "Accounting", "Tax Code Management (VAT/EAC)"),
 		feat("etims_integration", treasury, "Accounting", "KRA eTIMS Integration"),
+		// Standalone external eTIMS API product (ETIMS_API_BASIC/GROWTH/SCALE plans, service_tag
+		// "etims_api") -- distinct from etims_integration above (bundled feature onboarded tenants
+		// already get on their regular treasury/POS plan) and kept under its own catalog service
+		// tag (not treasury) so plan<->catalog tier-limit validation lines up with the plan's own
+		// service_tag, even though treasury-api is what actually enforces/reports it.
+		feat("etims_api_access", etimsAPI, "Accounting", "eTIMS API Access (external)"),
+		meteredLim("etims_transactions_per_month", etimsAPI, "Limits", "eTIMS API Transactions", "/ month", "treasury.etims.transaction.transmitted"),
+		lim("overage_etims_price_per_100_month", etimsAPI, "Overage", "eTIMS API Overage (per 100)", "KES / month"),
 		feat("customer_management", treasury, "Accounting", "Customer Ledger"),
 		feat("vendor_management", treasury, "Accounting", "Vendor Management"),
 		// Module-granular codes for the use-case PowerSuite tiers: Sales & Invoicing splits

@@ -93,6 +93,16 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 		return fmt.Errorf("seed email plans: %w", err)
 	}
 
+	// 1.2 Seed the standalone eTIMS API product + Basic/Growth/Scale plans, for
+	// external (non-tenant) API consumers -- see .claude/plans/etims-api-
+	// monetization-and-security-2026-08-18.md.
+	if err := seedEtimsAPIProduct(ctx, tx); err != nil {
+		return fmt.Errorf("seed etims-api-access product: %w", err)
+	}
+	if err := seedEtimsAPIPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed etims api plans: %w", err)
+	}
+
 	// 2. Seed ordering plans (Starter, Growth, Professional — monthly + yearly)
 	if err := seedOrderingPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed ordering plans: %w", err)
