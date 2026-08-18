@@ -54,6 +54,7 @@ type App struct {
 	orm             *ent.Client
 	outboxPublisher *eventslib.Publisher
 	tenantConsumer  *consumers.TenantCreatedConsumer
+	outletConsumer  *consumers.OutletCreatedConsumer
 	usageConsumer   *consumers.UsageConsumer
 	paymentConsumer *consumers.TreasuryPaymentConsumer
 	subscriptionSvc *subscriptions.Service
@@ -334,6 +335,7 @@ func New(ctx context.Context) (*App, error) {
 		orm:             ormClient,
 		outboxPublisher: outboxPublisher,
 		tenantConsumer:  consumers.NewTenantCreatedConsumer(log, subscriptionSvc),
+		outletConsumer:  consumers.NewOutletCreatedConsumer(log, subscriptionSvc),
 		usageConsumer:   usageConsumer,
 		paymentConsumer: paymentConsumer,
 		subscriptionSvc: subscriptionSvc,
@@ -402,6 +404,23 @@ func (a *App) Run(ctx context.Context) error {
 				}
 			}()
 			a.log.Info("tenant.created consumer started")
+		}
+	}
+
+	// Start auth.outlet.created consumer for multi-use-case auto-provisioning (a tenant's
+	// new outlet unlocks its PowerSuite family automatically when their existing plan already
+	// covers a different family — see subscriptions.Service.MaybeProvisionUseCaseFamily).
+	if a.outletConsumer != nil && a.events != nil {
+		js, err := a.events.JetStream()
+		if err != nil {
+			a.log.Warn("jetstream unavailable, outlet consumer not started", zap.Error(err))
+		} else {
+			go func() {
+				if err := a.outletConsumer.Start(ctx, js); err != nil {
+					a.log.Error("outlet consumer stopped", zap.Error(err))
+				}
+			}()
+			a.log.Info("outlet.created consumer started")
 		}
 	}
 
