@@ -38,6 +38,7 @@ func New(
 	backupHandler *handlers.BackupHandler,
 	backupDestHandler *handlers.BackupDestinationHandler,
 	emailLicenseHandler *handlers.EmailLicenseHandler,
+	rateLimitHandler *handlers.RateLimitHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -169,6 +170,12 @@ func New(
 			r.Get("/tenants/{tenant_id}/subscription", subscriptionHandler.GetByTenantID)
 			// Per-service-tag subscription view — used by auth-ui billing tab.
 			r.Get("/tenants/{tenant_id}/subscriptions", subscriptionHandler.GetServiceSubscriptions)
+
+			// S2S effective rate-limit resolution — used by treasury-api's external eTIMS API
+			// middleware to enforce per-tenant requests/minute before counting against Redis.
+			if rateLimitHandler != nil {
+				r.Get("/tenants/{tenant_id}/rate-limit", rateLimitHandler.GetEffectiveRateLimit)
+			}
 
 			// S2S expiring subscriptions — used by notifications-api for scheduled expiry warnings.
 			r.Get("/subscriptions/expiring", subscriptionHandler.ListExpiring)

@@ -107,6 +107,7 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"etims_transactions_per_month":      500,
 				"overage_etims_price_per_100_month": 800,
+				"api_requests_per_minute":           60,
 			},
 			features: []string{"etims_api_access"},
 		},
@@ -121,6 +122,7 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"etims_transactions_per_month":      2000,
 				"overage_etims_price_per_100_month": 600,
+				"api_requests_per_minute":           150,
 			},
 			features: []string{"etims_api_access"},
 		},
@@ -135,6 +137,7 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"etims_transactions_per_month":      10000,
 				"overage_etims_price_per_100_month": 400,
+				"api_requests_per_minute":           400,
 			},
 			features: []string{"etims_api_access"},
 		},

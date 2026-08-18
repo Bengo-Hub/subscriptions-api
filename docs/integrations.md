@@ -497,9 +497,22 @@ Content-Type: application/json
 {"error":"usage limit exceeded","metric":"order_count","limit":"1000"}
 ```
 
-Limit is loaded from `rate_limit_configs` in the DB (keyed by `metric_type` and plan tier). The Redis counter key is `usage:limit:{tenant_id}:{metric_type}:{YYYY-MM}` — resets automatically at the start of the next month via Redis `EXPIREAT`.
+The limit is loaded from the tenant's active `TenantSubscription` → `SubscriptionPlan.tier_limits_json` (matched to `metric_type` by `limitKeyForMetric`/`inferMetricType`, see `evaluateUsage` in `internal/http/handlers/usage.go`) — **not** the `rate_limit_configs` table, despite the similar name. This is a monthly quota check (has this tenant used up this metric's included allowance this billing period), distinct from request-rate throttling. The Redis counter key is `usage:limit:{tenant_id}:{metric_type}:{YYYY-MM}` — resets automatically at the start of the next month via Redis `EXPIREAT`.
 
 Domain services that receive a 429 should surface an upgrade prompt or reject the operation. Superusers and Platform Owners bypass enforcement.
+
+### Request-Rate Limiting (`rate_limit_configs`)
+
+The `rate_limit_configs` table (seeded in `cmd/seed/rate_limits.go`) is a separate mechanism: a
+requests-per-minute ceiling, not a monthly usage quota. `GET /api/v1/tenants/{tenant_id}/rate-limit`
+(S2S, `internal/http/handlers/rate_limit.go`) resolves the effective limit for a
+`(tenant, service_name, endpoint)` triple — checking the tenant's plan `tier_limits_json` first
+(e.g. `api_requests_per_minute` on the `ETIMS_API_*` plans), then falling back to a
+`rate_limit_configs` row for that `service_name`, then a hardcoded default. The first live
+consumer is treasury-api's external eTIMS API (`internal/http/middleware/apikey_auth.go`), which
+caches the resolved limit for 5 minutes and enforces it with a local Redis sliding-window
+counter — see `docs/integrations/external-etims-api.md` in treasury-api for the caller-facing
+contract (response headers, 429 shape).
 
 ### Outbox Retry Policy
 

@@ -90,6 +90,10 @@ var featureCatalog = func() []catalogEntry {
 		feat("etims_api_access", etimsAPI, "Accounting", "eTIMS API Access (external)"),
 		meteredLim("etims_transactions_per_month", etimsAPI, "Limits", "eTIMS API Transactions", "/ month", "treasury.etims.transaction.transmitted"),
 		lim("overage_etims_price_per_100_month", etimsAPI, "Overage", "eTIMS API Overage (per 100)", "KES / month"),
+		// Enforced by treasury-api's external API rate-limit middleware (resolved via
+		// subscriptions-api's GET /tenants/{id}/rate-limit, see internal/http/handlers/rate_limit.go)
+		// -- not metered via usage events, it's a hard per-minute ceiling, not a monthly quota.
+		lim("api_requests_per_minute", etimsAPI, "Limits", "API Requests", "/ minute"),
 		feat("customer_management", treasury, "Accounting", "Customer Ledger"),
 		feat("vendor_management", treasury, "Accounting", "Vendor Management"),
 		// Module-granular codes for the use-case PowerSuite tiers: Sales & Invoicing splits

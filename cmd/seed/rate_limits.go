@@ -69,6 +69,28 @@ func seedRateLimitConfigs(ctx context.Context, tx *ent.Tx) error {
 			burstMultiplier:   3.0,
 			description:       "Higher limit for usage reporting (called by other microservices)",
 		},
+		// treasury-api's external eTIMS API — first real cross-service consumer of this table
+		// (via subscriptions-api's GET /tenants/{id}/rate-limit). A tenant on an ETIMS_API_*
+		// plan resolves its limit from tier_limits_json["api_requests_per_minute"] instead (see
+		// cmd/seed/etims_api.go); these rows are the fallback for any other tenant/pattern.
+		{
+			serviceName:       "treasury-api",
+			keyType:           "tenant",
+			endpointPattern:   "/api/v1/external/etims/*",
+			requestsPerWindow: 60,
+			windowSeconds:     60,
+			burstMultiplier:   1.5,
+			description:       "Fallback per-tenant rate limit for the external eTIMS API when no plan-tier limit resolves",
+		},
+		{
+			serviceName:       "treasury-api",
+			keyType:           "tenant",
+			endpointPattern:   "*",
+			requestsPerWindow: 60,
+			windowSeconds:     60,
+			burstMultiplier:   1.5,
+			description:       "Default tenant-based rate limit for treasury-api's external API surface",
+		},
 	}
 
 	for _, c := range configs {
