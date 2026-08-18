@@ -56,6 +56,15 @@ var meteredMetrics = map[string]MeteredMetric{
 		Metric: "routing_requests", PlanLimitKey: "routing_requests_per_day",
 		OveragePriceKey: "overage_routing_price_per_1000", Unit: "per 1,000 routing requests", PriceQuantum: 1000,
 	},
+	// etims_transactions is reported ONLY by treasury-api's external eTIMS API route group
+	// (/api/v1/external/etims/*, API-key-authenticated non-tenant callers) — never by the
+	// tenant-JWT eTIMS routes, which stay covered by whatever plan the tenant already has.
+	// This is exclusively the metric for the standalone "eTIMS API access" product (see the
+	// etims_api_access Product + API Basic/Growth/Scale plans).
+	"etims_transactions": {
+		Metric: "etims_transactions", PlanLimitKey: "etims_transactions_per_month",
+		OveragePriceKey: "overage_etims_price_per_100_month", Unit: "per 100 eTIMS transactions", PriceQuantum: 100,
+	},
 }
 
 // IsOverageEligibleMetric reports whether a usage metric_type may be overaged.
