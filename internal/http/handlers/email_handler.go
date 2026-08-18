@@ -179,6 +179,13 @@ func (h *EmailLicenseHandler) PurchaseEmailLicenses(w http.ResponseWriter, r *ht
 
 type assignLicenseInput struct {
 	Email string `json:"email"`
+	// NotifyEmail is the tenant admin's own already-reachable contact
+	// address — NOT the new mailbox address, which its owner can't read
+	// yet. Stored in EmailLicense.metadata (existing JSON field, no
+	// migration needed) and forwarded to email-provisioner via the
+	// license.assigned event so it can deliver a "choose your password"
+	// link there instead of to the mailbox it's meant to unlock.
+	NotifyEmail string `json:"notify_email"`
 }
 
 // AssignEmailLicense handles PUT /api/v1/email/licenses/{id}/assign.
@@ -492,6 +499,21 @@ func (h *EmailLicenseHandler) transition(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	if in.NotifyEmail != "" {
+		meta := map[string]any{}
+		for k, v := range updated.Metadata {
+			meta[k] = v
+		}
+		meta["notify_email"] = in.NotifyEmail
+		updated, err = tx.EmailLicense.UpdateOneID(licenseID).SetMetadata(meta).Save(ctx)
+		if err != nil {
+			_ = tx.Rollback()
+			h.log.Error("store notify_email on email license failed", zap.Error(err))
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+			return
+		}
+	}
+
 	domain := "codevertexafrica.com"
 	if in.Email == "" && updated.AssignedToEmail != nil {
 		in.Email = *updated.AssignedToEmail
@@ -502,6 +524,7 @@ func (h *EmailLicenseHandler) transition(w http.ResponseWriter, r *http.Request,
 		"domain":            domain,
 		"storage_quota_gb":  updated.StorageQuotaGB,
 		"suspend_reason":    updated.SuspendReason,
+		"notify_email":      in.NotifyEmail,
 	})
 
 	if err := tx.Commit(); err != nil {
