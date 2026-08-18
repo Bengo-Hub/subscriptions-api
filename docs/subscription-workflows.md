@@ -362,6 +362,14 @@ At next renewal cycle:
 | `notifications.push.sent` | push_sent | notifications |
 | `marketflow.campaign.created` | campaigns | marketflow |
 
+**Direct-report metrics (no NATS subject mapping)**: `etims_transactions` (2026-08-18) is reported
+by treasury-api calling `POST /usage/report` directly, one call per successfully-signed external
+eTIMS sale (`internal/platform/subscriptions.Client.ReportUsage` in treasury-api) — there is no
+NATS event for it, since a signed sale to an external API-only consumer has no corresponding
+domain event any other service would need to react to. It flows into the exact same
+`meteredMetrics`/`OverageCharge` pipeline as every subject-mapped metric above; only the ingestion
+path differs.
+
 ---
 
 ## 9. Feature Gating
@@ -561,6 +569,12 @@ Addons are `PlanFeature` records with `is_included=false` that tenants can purch
 ## 13. Custom Tenant Addons (Admin-Managed)
 
 Unlike plan addons (§12) which are self-service, custom addons are bespoke line items added by platform admins per-tenant (e.g. dedicated support, custom integration hours, hardware).
+
+**Real example (2026-08-18)**: the one-time eTIMS assisted-integration fee (`billing_cycle:
+"one_time"`, `unit_price_kes: 35000|85000|180000`, `service_code: "treasury"`,
+`service_addon_type: "etims_integration"`) — created manually once a platform admin approves an
+`IntegrationRequest` (owned by auth-api) with `integration_mode: "assisted"`. Skipped entirely for
+`self_serve` requests, which pay only ongoing usage (§8, `etims_transactions`).
 
 ```
 [Platform admin] on /platform/tenants/[id] page

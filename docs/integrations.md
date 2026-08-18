@@ -229,6 +229,29 @@ Content-Type: application/json
 2. Paid plans: POSTs to Treasury `/api/v1/payments/intents` with `reference_type: "subscription_renewal"`
 3. On payment completion, Treasury calls the webhook — `completed` triggers another renewal cycle
 
+**External eTIMS API metering** (2026-08-18) — a narrower, one-directional slice of the same
+usage pipeline above, specifically for treasury-api's `/api/v1/external/etims/*` route group
+(API-key-authenticated external consumers, not tenant-JWT sessions):
+
+1. Treasury-api's `TransmitExternalSale` reports one `etims_transactions` usage event per
+   successfully-signed sale via the existing `POST /usage/report` (same call shape pos-api/
+   ordering-backend already use — see `internal/platform/subscriptions.Client.ReportUsage` in
+   treasury-api).
+2. `etims_transactions` is registered in `internal/modules/billing/overage_eligibility.go`'s
+   `meteredMetrics` map (`PlanLimitKey: etims_transactions_per_month`, `OveragePriceKey:
+   overage_etims_price_per_100_month`) — no new billing code, it flows through the exact same
+   `UsageEvent` → `OverageCharge` → renewal-invoice pipeline every other metered metric uses.
+3. This metric is meaningful ONLY for a `tenant_subscription` on the `etims-api-access` product
+   (`ETIMS_API_BASIC`/`_GROWTH`/`_SCALE` plans, seeded in `cmd/seed/etims_api.go`) — an onboarded
+   platform tenant's own eTIMS usage through its regular POS/treasury plan never reports this
+   metric and is entirely unaffected.
+4. The one-time assisted-integration fee (KES 35,000/85,000/180,000) is applied via the existing
+   `CustomAddon` mechanism (`billing_cycle=one_time`), created manually by a platform admin once
+   an `IntegrationRequest` (owned by auth-api) is approved as `integration_mode=assisted` — never
+   automatic, and never for `self_serve` requests.
+
+See treasury-api's [`docs/integrations/external-etims-api.md`](../../finance-service/treasury-api/docs/integrations/external-etims-api.md) for the full external-developer-facing reference.
+
 ---
 
 ### Ordering, POS, Logistics, Inventory, ERP, Projects Services
