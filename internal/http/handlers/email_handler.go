@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,8 +13,6 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
 	"github.com/bengobox/subscription-service/internal/ent/emailplan"
-	"github.com/bengobox/subscription-service/internal/ent/product"
-	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 )
@@ -41,6 +40,20 @@ func (h *EmailLicenseHandler) tenantID(r *http.Request) (uuid.UUID, bool) {
 	return id, err == nil
 }
 
+// resolveTenantSubscriptionID maps a tenant's own ID (from the JWT) to its
+// TenantSubscription.ID — the value EmailLicense.tenant_subscription_id
+// actually stores. These are NOT the same UUID (TenantSubscription.ID is
+// independently generated), so every tenant-scoped EmailLicense query must
+// go through this resolution rather than filtering on the raw tenant ID
+// directly — a real bug found and fixed in this pass: every handler below
+// used to compare TenantSubscriptionIDEQ(tenantID), which never matched any
+// real row after purchase.
+func (h *EmailLicenseHandler) resolveTenantSubscriptionID(ctx context.Context, client *ent.Client, tenantID uuid.UUID) (uuid.UUID, error) {
+	return client.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(tenantID)).
+		OnlyID(ctx)
+}
+
 // ListEmailPlans handles GET /api/v1/email/plans (public).
 func (h *EmailLicenseHandler) ListEmailPlans(w http.ResponseWriter, r *http.Request) {
 	plans, err := h.client.EmailPlan.Query().
@@ -63,10 +76,17 @@ func (h *EmailLicenseHandler) ListEmailLicenses(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	ctx := r.Context()
+	tenantSubID, err := h.resolveTenantSubscriptionID(ctx, h.client, tenantID)
+	if err != nil {
+		writeJSON(w, http.StatusOK, []any{}) // no subscription yet = no licenses, not an error
+		return
+	}
+
 	licenses, err := h.client.EmailLicense.Query().
-		Where(emaillicense.TenantSubscriptionIDEQ(tenantID)).
+		Where(emaillicense.TenantSubscriptionIDEQ(tenantSubID)).
 		WithEmailPlan().
-		All(r.Context())
+		All(ctx)
 	if err != nil {
 		h.log.Error("list email licenses failed", zap.Error(err))
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
@@ -76,15 +96,18 @@ func (h *EmailLicenseHandler) ListEmailLicenses(w http.ResponseWriter, r *http.R
 }
 
 type purchaseLicensesInput struct {
-	PlanCode string `json:"plan_code"`
-	Quantity int    `json:"quantity"`
+	PlanCode  string `json:"plan_code"`
+	Quantity  int    `json:"quantity"`
+	ReturnURL string `json:"return_url"`
 }
 
 // PurchaseEmailLicenses handles POST /api/v1/email/licenses/purchase.
-// Creates N AVAILABLE licenses on the tenant's email-hosting ProductSubscription
-// (creating that ProductSubscription on first purchase). Billing/payment
-// collection is out of scope here — this only provisions the license rows;
-// see Part 3's note that billing reuses existing treasury infrastructure.
+// Buying N seats is a discrete, one-off paid action — creates a Treasury
+// payment intent (mirroring AddonHandler.PurchaseAddon's pattern) and
+// returns payment_required + the intent; licenses are only actually
+// provisioned once payment completes, via
+// Service.FulfillEmailLicensePurchase, called from the Treasury webhook/NATS
+// consumer (webhook.go / payment_consumer.go), never from this handler.
 func (h *EmailLicenseHandler) PurchaseEmailLicenses(w http.ResponseWriter, r *http.Request) {
 	tenantID, ok := h.tenantID(r)
 	if !ok {
@@ -103,78 +126,40 @@ func (h *EmailLicenseHandler) PurchaseEmailLicenses(w http.ResponseWriter, r *ht
 	}
 
 	ctx := r.Context()
-	plan, err := h.client.EmailPlan.Query().
-		Where(emailplan.CodeEQ(in.PlanCode), emailplan.IsActive(true)).
-		Only(ctx)
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("unknown or inactive plan_code %q", in.PlanCode)})
-		return
-	}
 
-	tenantSub, err := h.client.TenantSubscription.Query().
-		Where(tenantsubscription.TenantIDEQ(tenantID)).
-		Only(ctx)
+	// Plan-level gate: does this tenant's subscription entitle them to the
+	// email-hosting product at all. Fails open (Entitled=true) if no
+	// FeatureDefinition is tagged service_tag="email-hosting" — a seed-data
+	// decision, not a code gap; see product_activation.go.
+	entitlement, err := h.subSvc.IsEntitledToProduct(ctx, tenantID, "email-hosting")
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant has no active subscription"})
-		return
-	}
-
-	tx, err := h.client.Tx(ctx)
-	if err != nil {
-		h.log.Error("begin tx failed", zap.Error(err))
+		h.log.Error("email-hosting entitlement check failed", zap.Error(err))
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		return
 	}
-
-	prodSub, err := tx.ProductSubscription.Query().
-		Where(productsubscription.TenantSubscriptionID(tenantSub.ID), productsubscription.ProductCode("email-hosting")).
-		Only(ctx)
-	if ent.IsNotFound(err) {
-		emailProduct, perr := tx.Product.Query().Where(product.CodeEQ("email-hosting")).Only(ctx)
-		if perr != nil {
-			_ = tx.Rollback()
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "email-hosting product not seeded"})
-			return
-		}
-		prodSub, err = tx.ProductSubscription.Create().
-			SetTenantSubscriptionID(tenantSub.ID).
-			SetProductCode("email-hosting").
-			SetProductID(emailProduct.ID).
-			Save(ctx)
+	if !entitlement.Entitled {
+		writeJSON(w, http.StatusForbidden, entitlement)
+		return
 	}
+
+	treasuryResp, err := h.subSvc.CreateEmailLicensePurchaseIntent(ctx, subscriptions.EmailLicensePurchaseInput{
+		TenantID:  tenantID,
+		PlanCode:  in.PlanCode,
+		Quantity:  in.Quantity,
+		ReturnURL: in.ReturnURL,
+	})
 	if err != nil {
-		_ = tx.Rollback()
-		h.log.Error("resolve email-hosting product subscription failed", zap.Error(err))
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		h.log.Error("create email license purchase intent failed", zap.String("tenant_id", tenantID.String()), zap.Error(err))
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
-	created := make([]*ent.EmailLicense, 0, in.Quantity)
-	for i := 0; i < in.Quantity; i++ {
-		lic, err := tx.EmailLicense.Create().
-			SetTenantSubscriptionID(tenantSub.ID).
-			SetProductSubscriptionID(prodSub.ID).
-			SetEmailPlanID(plan.ID).
-			SetStatus("AVAILABLE").
-			SetStorageQuotaGB(plan.StoragePerUserGB).
-			SetFeaturesJSON(plan.FeaturesJSON).
-			Save(ctx)
-		if err != nil {
-			_ = tx.Rollback()
-			h.log.Error("create email license failed", zap.Error(err))
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
-			return
-		}
-		created = append(created, lic)
-	}
-
-	if err := tx.Commit(); err != nil {
-		h.log.Error("commit purchase licenses failed", zap.Error(err))
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
-		return
-	}
-
-	writeJSON(w, http.StatusCreated, created)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":    "payment_required",
+		"plan_code": in.PlanCode,
+		"quantity":  in.Quantity,
+		"intent":    treasuryResp,
+	})
 }
 
 type assignLicenseInput struct {
@@ -215,8 +200,15 @@ func (h *EmailLicenseHandler) UnassignEmailLicense(w http.ResponseWriter, r *htt
 		return
 	}
 
+	tenantSubID, err := h.resolveTenantSubscriptionID(ctx, tx.Client(), tenantID)
+	if err != nil {
+		_ = tx.Rollback()
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "license not found"})
+		return
+	}
+
 	lic, err := tx.EmailLicense.Query().
-		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantID)).
+		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantSubID)).
 		Only(ctx)
 	if err != nil {
 		_ = tx.Rollback()
@@ -282,8 +274,15 @@ func (h *EmailLicenseHandler) UpgradeEmailLicense(w http.ResponseWriter, r *http
 		return
 	}
 
+	tenantSubID, err := h.resolveTenantSubscriptionID(ctx, tx.Client(), tenantID)
+	if err != nil {
+		_ = tx.Rollback()
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "license not found"})
+		return
+	}
+
 	lic, err := tx.EmailLicense.Query().
-		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantID)).
+		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantSubID)).
 		Only(ctx)
 	if err != nil {
 		_ = tx.Rollback()
@@ -365,8 +364,15 @@ func (h *EmailLicenseHandler) SuspendEmailLicense(w http.ResponseWriter, r *http
 		return
 	}
 
+	tenantSubID, err := h.resolveTenantSubscriptionID(ctx, tx.Client(), tenantID)
+	if err != nil {
+		_ = tx.Rollback()
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "license not found"})
+		return
+	}
+
 	lic, err := tx.EmailLicense.Query().
-		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantID)).
+		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantSubID)).
 		Only(ctx)
 	if err != nil {
 		_ = tx.Rollback()
@@ -424,8 +430,15 @@ func (h *EmailLicenseHandler) ExpireEmailLicense(w http.ResponseWriter, r *http.
 		return
 	}
 
+	tenantSubID, err := h.resolveTenantSubscriptionID(ctx, tx.Client(), tenantID)
+	if err != nil {
+		_ = tx.Rollback()
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "license not found"})
+		return
+	}
+
 	lic, err := tx.EmailLicense.Query().
-		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantID)).
+		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantSubID)).
 		Only(ctx)
 	if err != nil {
 		_ = tx.Rollback()
@@ -481,8 +494,15 @@ func (h *EmailLicenseHandler) transition(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	tenantSubID, err := h.resolveTenantSubscriptionID(ctx, tx.Client(), tenantID)
+	if err != nil {
+		_ = tx.Rollback()
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "license not found"})
+		return
+	}
+
 	lic, err := tx.EmailLicense.Query().
-		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantID)).
+		Where(emaillicense.ID(licenseID), emaillicense.TenantSubscriptionIDEQ(tenantSubID)).
 		WithEmailPlan().
 		Only(ctx)
 	if err != nil {

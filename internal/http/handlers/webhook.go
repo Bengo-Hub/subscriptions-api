@@ -100,6 +100,18 @@ func (h *WebhookHandler) HandleTreasuryPayment(w http.ResponseWriter, r *http.Re
 			}
 			break
 		}
+		// email_license_purchase: a discrete, one-off paid seat purchase —
+		// fulfill (provision the AVAILABLE EmailLicense rows) rather than
+		// falling through to activateSubscription, which would misinterpret
+		// this as a plan renewal.
+		if body.ReferenceType == "email_license_purchase" {
+			if err := h.fulfillEmailLicensePurchase(ctx, tenantID, body.PaymentIntentID); err != nil {
+				h.log.Error("failed to fulfill email license purchase via webhook", zap.String("tenant_id", body.TenantID), zap.Error(err))
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to fulfill email license purchase"})
+				return
+			}
+			break
+		}
 		// For subscription / renewal intents: activate/extend subscription period.
 		if err := h.activateSubscription(ctx, tenantID, body.PlanCode); err != nil {
 			h.log.Error("failed to activate subscription via webhook", zap.String("tenant_id", body.TenantID), zap.Error(err))
@@ -166,6 +178,23 @@ func (h *WebhookHandler) saveCardAuthorization(ctx context.Context, tenantID uui
 	_, err = h.orm.TenantSubscription.UpdateOneID(sub.ID).
 		SetMetadata(meta).
 		Save(ctx)
+	return err
+}
+
+// fulfillEmailLicensePurchase reads back the confirmed intent's own metadata
+// (plan_code/quantity) and provisions the AVAILABLE EmailLicense rows. See
+// Service.GetEmailLicensePurchaseIntentMetadata's own comment for why the
+// intent, not this webhook body, is the source of truth for those fields.
+func (h *WebhookHandler) fulfillEmailLicensePurchase(ctx context.Context, tenantID uuid.UUID, paymentIntentIDStr string) error {
+	intentID, err := uuid.Parse(paymentIntentIDStr)
+	if err != nil {
+		return err
+	}
+	planCode, quantity, err := h.svc.GetEmailLicensePurchaseIntentMetadata(ctx, tenantID, intentID)
+	if err != nil {
+		return err
+	}
+	_, err = h.svc.FulfillEmailLicensePurchase(ctx, tenantID, planCode, quantity)
 	return err
 }
 

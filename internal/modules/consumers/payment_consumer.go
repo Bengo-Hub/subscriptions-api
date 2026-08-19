@@ -183,6 +183,31 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 		}
 	}
 
+	// email_license_purchase: a discrete, one-off paid seat purchase — fulfil
+	// (create the AVAILABLE EmailLicense rows) rather than falling through to
+	// subscription renewal, which would misinterpret this as a plan payment.
+	if refType == "email_license_purchase" {
+		if c.svc != nil {
+			var intentID uuid.UUID
+			if intentIDStr := ev.Payload.IntentID; intentIDStr != "" {
+				intentID, _ = uuid.Parse(intentIDStr)
+			}
+			planCode, quantity, merr := c.svc.GetEmailLicensePurchaseIntentMetadata(ctx, tenantID, intentID)
+			if merr != nil {
+				c.log.Error("failed to read email license purchase intent metadata", zap.String("tenant_id", tenantIDStr), zap.Error(merr))
+				return merr
+			}
+			if _, ferr := c.svc.FulfillEmailLicensePurchase(ctx, tenantID, planCode, quantity); ferr != nil {
+				c.log.Error("failed to fulfill email license purchase", zap.String("tenant_id", tenantIDStr), zap.Error(ferr))
+				return ferr
+			}
+			c.log.Info("email license purchase fulfilled via NATS payment event",
+				zap.String("tenant_id", tenantIDStr), zap.String("plan_code", planCode), zap.Int("quantity", quantity))
+		}
+		c.markProcessed(ctx, eventID)
+		return nil
+	}
+
 	// "subscription_renewal" is the reference_type used by the auto-renewal job's intents
 	// (jobs/renewal.go) — without it here, auto-renewal payments never extended the period.
 	if refType != "subscription" && refType != "renewal" && refType != "subscription_renewal" {

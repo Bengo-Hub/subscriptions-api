@@ -79,6 +79,31 @@ func seedEmailPlans(ctx context.Context, tx *ent.Tx) error {
 		features      map[string]any
 	}
 
+	// Pricing/feature model re-benchmarked 2026-08-19 against Zoho Mail's real,
+	// current *non-WorkDrive* tiers (Mail Lite $1.00/user/mo, Mail Premium
+	// $4.00/user/mo — verified live; Zoho's WorkDrive-bundled "Workplace"
+	// tiers are a different, out-of-scope product family per the user's own
+	// explicit instruction: price below Zoho's pure-mail tiers since we don't
+	// offer WorkDrive/Writer/Sheet/Show/Cliq/Meeting yet). KES figures use
+	// this repo's existing ~130 KES/USD approximation (see the original
+	// 150≈$1.15 comment this replaces).
+	//
+	// Feature flags below are modeled on Zoho Mail Lite/Premium's real
+	// published feature list (custom domain, Calendar, Directory/Contacts,
+	// MFA, migration assistance, S/MIME, email retention & eDiscovery) — not
+	// every Zoho flag maps to a real Stalwart capability yet. Two flags are
+	// explicitly ROADMAP (tracked for entitlement/plan-comparison purposes,
+	// NOT yet enforced anywhere in email-provisioner/mail-ui — do not gate a
+	// UI feature on these until the underlying Stalwart mechanism is
+	// confirmed, per this plan's own "probe before building" discipline):
+	// smime_encryption (Zoho Premium's S/MIME — Stalwart's own S/MIME support
+	// unconfirmed) and email_retention_archival (Zoho Premium's Email
+	// Retention & eDiscovery — no Stalwart equivalent investigated per the
+	// master plan's Part 8 finding). Zoho's "Huge Attachment" mechanism
+	// (raising the effective attachment ceiling well past max_email_size_mb
+	// via a special send path) is deliberately NOT modeled — a non-trivial
+	// Stalwart-side mechanism of its own, out of scope for this pass.
+	//
 	// Rate-limit defaults per plan Part 6 (Stalwart queue.limiter.inbound Layer 1,
 	// written into Stalwart's config by email-provisioner at license-assign time).
 	plans := []planDef{
@@ -86,78 +111,93 @@ func seedEmailPlans(ctx context.Context, tx *ent.Tx) error {
 			id:             uuid.NewSHA1(uuid.NameSpaceOID, []byte("email_plan:EMAIL_LITE")),
 			code:           "EMAIL_LITE",
 			name:           "Lite",
-			description:    "Essential email hosting for individuals and small teams.",
-			monthly:        150,
-			yearly:         1620, // ~10% discount vs 12x monthly
+			description:    "Essential email hosting for individuals and small teams — custom domain, calendar, contacts, mobile access.",
+			monthly:        120, // ~$0.92/mo — below Zoho Mail Lite's $1.00/mo
+			yearly:         1152, // 20% off annual, matching Zoho's own annual discount rate
 			storageGB:      2,
 			maxAliases:     5,
 			maxEmailSizeMB: 25,
 			sortOrder:      1,
 			features: map[string]any{
-				"forwarding":            true,
-				"autoresponder":         false,
-				"calendar":              false,
-				"contacts":              false,
-				"shared_mailboxes":      false,
-				"custom_sieve_filters":  false,
-				"priority_support":      false,
-				"admin_delegation":      false,
-				"max_daily_sends":       200,
-				"max_hourly_sends":      30,
-				"max_per_minute_sends":  10,
-				"max_recipients_per_day": 500,
+				"custom_domain":            true,
+				"mfa_identity_management": true, // provided by platform SSO, not Stalwart-enforced per-plan
+				"forwarding":               true,
+				"autoresponder":            false,
+				"calendar":                 false,
+				"contacts":                 false,
+				"shared_mailboxes":         false,
+				"custom_sieve_filters":     false,
+				"migration_assistance":     false,
+				"smime_encryption":         false, // ROADMAP — see file header
+				"email_retention_archival": false, // ROADMAP — see file header
+				"priority_support":         false,
+				"admin_delegation":         false,
+				"max_daily_sends":          200,
+				"max_hourly_sends":         30,
+				"max_per_minute_sends":     10,
+				"max_recipients_per_day":   500,
 			},
 		},
 		{
 			id:             uuid.NewSHA1(uuid.NameSpaceOID, []byte("email_plan:EMAIL_STANDARD")),
 			code:           "EMAIL_STANDARD",
 			name:           "Standard",
-			description:    "Full-featured email with calendar, contacts, and custom filters for growing teams.",
-			monthly:        350,
-			yearly:         3780,
+			description:    "Full-featured email with calendar, contacts, migration assistance, and custom filters for growing teams.",
+			monthly:        280, // ~$2.15/mo — deliberately between Zoho's Lite/Premium; Zoho has no direct equivalent mid-tier
+			yearly:         2688,
 			storageGB:      5,
 			maxAliases:     20,
 			maxEmailSizeMB: 50,
 			sortOrder:      2,
 			features: map[string]any{
-				"forwarding":            true,
-				"autoresponder":         true,
-				"calendar":              true,
-				"contacts":              true,
-				"shared_mailboxes":      false,
-				"custom_sieve_filters":  true,
-				"priority_support":      false,
-				"admin_delegation":      true,
-				"max_daily_sends":       500,
-				"max_hourly_sends":      60,
-				"max_per_minute_sends":  15,
-				"max_recipients_per_day": 1500,
+				"custom_domain":            true,
+				"mfa_identity_management": true,
+				"forwarding":               true,
+				"autoresponder":            true,
+				"calendar":                 true,
+				"contacts":                 true,
+				"shared_mailboxes":         false,
+				"custom_sieve_filters":     true,
+				"migration_assistance":     true,
+				"smime_encryption":         false, // ROADMAP — see file header
+				"email_retention_archival": false, // ROADMAP — see file header
+				"priority_support":         false,
+				"admin_delegation":         true,
+				"max_daily_sends":          500,
+				"max_hourly_sends":         60,
+				"max_per_minute_sends":     15,
+				"max_recipients_per_day":   1500,
 			},
 		},
 		{
 			id:             uuid.NewSHA1(uuid.NameSpaceOID, []byte("email_plan:EMAIL_PROFESSIONAL")),
 			code:           "EMAIL_PROFESSIONAL",
 			name:           "Professional",
-			description:    "Unlimited aliases, shared mailboxes, and priority support for larger organizations.",
-			monthly:        750,
-			yearly:         8100,
+			description:    "Unlimited aliases, shared mailboxes, and priority support for larger organizations — Zoho Premium feature parity minus WorkDrive.",
+			monthly:        420, // ~$3.23/mo — below Zoho Mail Premium's $4.00/mo (we don't yet offer WorkDrive/S-MIME/retention)
+			yearly:         4032,
 			storageGB:      15,
 			maxAliases:     -1, // unlimited
 			maxEmailSizeMB: 100,
 			sortOrder:      3,
 			features: map[string]any{
-				"forwarding":            true,
-				"autoresponder":         true,
-				"calendar":              true,
-				"contacts":              true,
-				"shared_mailboxes":      true,
-				"custom_sieve_filters":  true,
-				"priority_support":      true,
-				"admin_delegation":      true,
-				"max_daily_sends":       2000,
-				"max_hourly_sends":      150,
-				"max_per_minute_sends":  25,
-				"max_recipients_per_day": 5000,
+				"custom_domain":            true,
+				"mfa_identity_management": true,
+				"forwarding":               true,
+				"autoresponder":            true,
+				"calendar":                 true,
+				"contacts":                 true,
+				"shared_mailboxes":         true,
+				"custom_sieve_filters":     true,
+				"migration_assistance":     true,
+				"smime_encryption":         false, // ROADMAP — see file header; priced below Zoho Premium partly because this is unbuilt
+				"email_retention_archival": false, // ROADMAP — see file header
+				"priority_support":         true,
+				"admin_delegation":         true,
+				"max_daily_sends":          2000,
+				"max_hourly_sends":         150,
+				"max_per_minute_sends":     25,
+				"max_recipients_per_day":   5000,
 			},
 		},
 	}
