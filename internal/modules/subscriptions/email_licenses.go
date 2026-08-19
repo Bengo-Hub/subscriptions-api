@@ -3,10 +3,13 @@ package subscriptions
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
 	"github.com/bengobox/subscription-service/internal/ent/emailplan"
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
@@ -214,4 +217,67 @@ func (s *Service) FulfillEmailLicensePurchase(ctx context.Context, tenantID uuid
 	}
 
 	return created, nil
+}
+
+// ExpireDueLicenses transitions every EmailLicense whose expires_at has
+// passed to EXPIRED and publishes the matching license.expired event —
+// closing plan Part 5's T5 gap: ExpireEmailLicense (the HTTP handler) only
+// ever ran on an explicit admin call, so a license with a real expires_at
+// set never actually expired on its own. Intended to be called periodically
+// by a StartEmailLicenseExpiryJob-style background job (internal/jobs),
+// mirroring this package's other lifecycle sweeps (dormancy.go, grace.go).
+// Terminal/inert statuses (EXPIRED, DELETED) are excluded so a re-run is a
+// safe no-op for rows already handled.
+func (s *Service) ExpireDueLicenses(ctx context.Context, log *zap.Logger) (int, error) {
+	now := time.Now().UTC()
+	due, err := s.client.EmailLicense.Query().
+		Where(
+			emaillicense.ExpiresAtNotNil(),
+			emaillicense.ExpiresAtLT(now),
+			emaillicense.StatusNotIn("EXPIRED", "DELETED"),
+		).
+		All(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("query due licenses: %w", err)
+	}
+
+	expired := 0
+	for _, lic := range due {
+		tx, err := s.client.Tx(ctx)
+		if err != nil {
+			log.Warn("expire-due: begin tx failed", zap.String("license_id", lic.ID.String()), zap.Error(err))
+			continue
+		}
+
+		tenantSub, err := tx.TenantSubscription.Get(ctx, lic.TenantSubscriptionID)
+		if err != nil {
+			_ = tx.Rollback()
+			log.Warn("expire-due: resolve tenant failed", zap.String("license_id", lic.ID.String()), zap.Error(err))
+			continue
+		}
+
+		updated, err := tx.EmailLicense.UpdateOneID(lic.ID).SetStatus("EXPIRED").Save(ctx)
+		if err != nil {
+			_ = tx.Rollback()
+			log.Warn("expire-due: transition failed", zap.String("license_id", lic.ID.String()), zap.Error(err))
+			continue
+		}
+
+		var assignedEmail *string
+		if updated.AssignedToEmail != nil {
+			assignedEmail = updated.AssignedToEmail
+		}
+		s.WriteOutboxEventPublic(ctx, tx, tenantSub.TenantID, "email", lic.ID, "license.expired", map[string]any{
+			"license_id":        lic.ID.String(),
+			"assigned_to_email": assignedEmail,
+			"expires_at":        lic.ExpiresAt.Format(time.RFC3339),
+		})
+
+		if err := tx.Commit(); err != nil {
+			log.Warn("expire-due: commit failed", zap.String("license_id", lic.ID.String()), zap.Error(err))
+			continue
+		}
+		expired++
+	}
+	return expired, nil
 }

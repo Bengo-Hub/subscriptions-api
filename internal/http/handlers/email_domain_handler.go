@@ -16,6 +16,7 @@ import (
 	httpware "github.com/Bengo-Hub/httpware"
 
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 )
 
@@ -34,6 +35,94 @@ type emailProvisionerCreateDomainResponse struct {
 	StalwartDomainID string `json:"stalwart_domain_id"`
 	DKIMSelector     string `json:"dkim_selector"`
 	DNSZoneFile      string `json:"dns_zone_file"`
+}
+
+// emailProvisionerUsageSummary mirrors email-provisioner's DomainUsageSummary.
+type emailProvisionerUsageSummary struct {
+	MailboxCount int `json:"mailbox_count"`
+	Mailboxes    []struct {
+		Email         string `json:"email"`
+		UsedDiskQuota int64  `json:"used_disk_quota"`
+	} `json:"mailboxes"`
+}
+
+// MailboxUsage is one of the caller's own mailboxes' real usage — returned by
+// GetEmailUsageSummary.
+type MailboxUsage struct {
+	Email          string `json:"email"`
+	UsedBytes      int64  `json:"used_bytes"`
+	AllocatedBytes int64  `json:"allocated_bytes"`
+}
+
+// GetEmailUsageSummary handles GET /api/v1/email/usage-summary — real
+// per-mailbox storage usage for the tenant dashboard (plan Part 2b/5, T4).
+// Derives the domain(s) to query from the tenant's OWN assigned licenses
+// (never a caller-supplied domain param) and filters email-provisioner's
+// response down to exactly those emails before returning — a shared domain
+// (the platform default) must never leak another tenant's mailbox list,
+// even if email-provisioner's own response were ever broader than expected.
+func (h *EmailLicenseHandler) GetEmailUsageSummary(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := h.tenantID(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "tenant context required"})
+		return
+	}
+	ctx := r.Context()
+
+	tenantSubID, err := h.resolveTenantSubscriptionID(ctx, h.client, tenantID)
+	if err != nil {
+		writeJSON(w, http.StatusOK, []MailboxUsage{})
+		return
+	}
+
+	licenses, err := h.client.EmailLicense.Query().
+		Where(emaillicense.TenantSubscriptionIDEQ(tenantSubID), emaillicense.StatusEQ("ASSIGNED")).
+		All(ctx)
+	if err != nil {
+		h.log.Error("list assigned licenses for usage summary failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	// allocatedByEmail + domains this tenant actually owns mailboxes on.
+	allocatedByEmail := map[string]int64{}
+	domains := map[string]bool{}
+	for _, lic := range licenses {
+		if lic.AssignedToEmail == nil {
+			continue
+		}
+		email := strings.ToLower(*lic.AssignedToEmail)
+		allocatedByEmail[email] = int64(lic.StorageQuotaGB) * 1024 * 1024 * 1024
+		if parts := strings.SplitN(email, "@", 2); len(parts) == 2 {
+			domains[parts[1]] = true
+		}
+	}
+
+	usedByEmail := map[string]int64{}
+	if h.emailProvisionerClient != nil {
+		for domain := range domains {
+			resp, err := h.emailProvisionerClient.Get(ctx, fmt.Sprintf("/internal/domains/%s/usage-summary", domain), nil)
+			if err != nil || !resp.IsSuccess() {
+				h.log.Warn("fetch domain usage summary failed", zap.String("domain", domain), zap.Error(err))
+				continue
+			}
+			var summary emailProvisionerUsageSummary
+			if err := resp.DecodeJSON(&summary); err != nil {
+				continue
+			}
+			for _, m := range summary.Mailboxes {
+				usedByEmail[strings.ToLower(m.Email)] = m.UsedDiskQuota
+			}
+		}
+	}
+
+	out := make([]MailboxUsage, 0, len(allocatedByEmail))
+	for email, allocated := range allocatedByEmail {
+		// Only ever report an email this tenant's own licenses actually assigned —
+		// usedByEmail is a lookup table, never the source of which rows to emit.
+		out = append(out, MailboxUsage{Email: email, UsedBytes: usedByEmail[email], AllocatedBytes: allocated})
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 // ListEmailDomains handles GET /api/v1/email/domains — the caller's own tenant only.
@@ -243,6 +332,54 @@ func (h *EmailLicenseHandler) MarkEmailLicenseDeleted(w http.ResponseWriter, r *
 		return
 	}
 	writeJSON(w, http.StatusOK, updated)
+}
+
+// MarkEmailLicenseDeletedByEmail handles POST /api/v1/admin/email/licenses/mark-deleted-by-email.
+// mail-ui's admin console only knows the mailbox's email address, not any
+// subscriptions-api license id — this closes that gap (plan Part 5, T1) so
+// a platform-admin hard-delete can keep the license row in sync without a
+// separate lookup round-trip. Best-effort by design: most hard-deletes won't
+// have a matching license row at all yet (e.g. the platform's own mailboxes,
+// or a mailbox created before licensing existed) — "not found" is a normal,
+// silent no-op here, not an error, since the caller's own destroy already
+// succeeded and shouldn't be reported as failed over this side-effect.
+func (h *EmailLicenseHandler) MarkEmailLicenseDeletedByEmail(w http.ResponseWriter, r *http.Request) {
+	if !httpware.IsPlatformOwner(r.Context()) {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "platform owner access required"})
+		return
+	}
+	var in struct {
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil || in.Email == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "email is required"})
+		return
+	}
+
+	ctx := r.Context()
+	ids, err := h.client.EmailLicense.Query().
+		Where(emaillicense.AssignedToEmailEQ(in.Email)).
+		IDs(ctx)
+	if err != nil {
+		h.log.Error("lookup email license by email failed", zap.String("email", in.Email), zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	if len(ids) == 0 {
+		writeJSON(w, http.StatusOK, map[string]any{"updated": 0})
+		return
+	}
+
+	n, err := h.client.EmailLicense.Update().
+		Where(emaillicense.IDIn(ids...)).
+		SetStatus("DELETED").
+		Save(ctx)
+	if err != nil {
+		h.log.Error("mark email license deleted by email failed", zap.String("email", in.Email), zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"updated": n})
 }
 
 // checkDomainDNS is a pure-ish function (only I/O is the DNS lookups

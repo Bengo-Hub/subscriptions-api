@@ -594,9 +594,11 @@ func (h *EmailLicenseHandler) RegisterEmailRoutes(r chi.Router) {
 	r.Get("/email/domains", h.ListEmailDomains)
 	r.Post("/email/domains", h.CreateEmailDomain)
 	r.Post("/email/domains/{id}/verify", h.VerifyEmailDomain)
+	r.Get("/email/usage-summary", h.GetEmailUsageSummary)
 
 	// Platform-admin-only (own httpware.IsPlatformOwner gate inside the handler,
 	// not tenant-scoped) — called by mail-ui's admin console after a real
 	// Stalwart hard-delete succeeds.
 	r.Post("/admin/email/licenses/{id}/mark-deleted", h.MarkEmailLicenseDeleted)
+	r.Post("/admin/email/licenses/mark-deleted-by-email", h.MarkEmailLicenseDeletedByEmail)
 }

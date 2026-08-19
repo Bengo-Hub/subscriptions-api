@@ -395,6 +395,12 @@ func (a *App) Run(ctx context.Context) error {
 		a.log.Info("dormancy job started")
 	}
 
+	// Start email-license expiry job (daily: transitions any EmailLicense past its expires_at to EXPIRED)
+	if a.subscriptionSvc != nil {
+		go jobs.StartEmailLicenseExpiryJob(ctx, a.log, a.subscriptionSvc)
+		a.log.Info("email license expiry job started")
+	}
+
 	// Start daily overage-calculation job (accumulates metered-overage charges for renewal invoices)
 	if a.orm != nil && a.overageSvc != nil {
 		go jobs.StartOverageJob(ctx, a.log, a.overageSvc)
