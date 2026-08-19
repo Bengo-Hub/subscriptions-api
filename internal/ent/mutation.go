@@ -38,6 +38,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsuser"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
+	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/usageevent"
 	"github.com/bengobox/subscription-service/internal/ent/userroleassignment"
@@ -78,6 +79,7 @@ const (
 	TypeSubscriptionsRole             = "SubscriptionsRole"
 	TypeSubscriptionsUser             = "SubscriptionsUser"
 	TypeTenant                        = "Tenant"
+	TypeTenantEmailDomain             = "TenantEmailDomain"
 	TypeTenantSubscription            = "TenantSubscription"
 	TypeUsageEvent                    = "UsageEvent"
 	TypeUserRoleAssignment            = "UserRoleAssignment"
@@ -26290,6 +26292,1030 @@ func (m *TenantMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Tenant edge %s", name)
 }
 
+// TenantEmailDomainMutation represents an operation that mutates the TenantEmailDomain nodes in the graph.
+type TenantEmailDomainMutation struct {
+	config
+	op                         Op
+	typ                        string
+	id                         *uuid.UUID
+	domain                     *string
+	status                     *tenantemaildomain.Status
+	dkim_selector              *string
+	stalwart_domain_id         *string
+	verified_at                *time.Time
+	last_checked_at            *time.Time
+	failure_reason             *string
+	metadata                   *map[string]interface{}
+	created_at                 *time.Time
+	updated_at                 *time.Time
+	clearedFields              map[string]struct{}
+	tenant_subscription        *uuid.UUID
+	clearedtenant_subscription bool
+	done                       bool
+	oldValue                   func(context.Context) (*TenantEmailDomain, error)
+	predicates                 []predicate.TenantEmailDomain
+}
+
+var _ ent.Mutation = (*TenantEmailDomainMutation)(nil)
+
+// tenantemaildomainOption allows management of the mutation configuration using functional options.
+type tenantemaildomainOption func(*TenantEmailDomainMutation)
+
+// newTenantEmailDomainMutation creates new mutation for the TenantEmailDomain entity.
+func newTenantEmailDomainMutation(c config, op Op, opts ...tenantemaildomainOption) *TenantEmailDomainMutation {
+	m := &TenantEmailDomainMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeTenantEmailDomain,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withTenantEmailDomainID sets the ID field of the mutation.
+func withTenantEmailDomainID(id uuid.UUID) tenantemaildomainOption {
+	return func(m *TenantEmailDomainMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *TenantEmailDomain
+		)
+		m.oldValue = func(ctx context.Context) (*TenantEmailDomain, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().TenantEmailDomain.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withTenantEmailDomain sets the old TenantEmailDomain of the mutation.
+func withTenantEmailDomain(node *TenantEmailDomain) tenantemaildomainOption {
+	return func(m *TenantEmailDomainMutation) {
+		m.oldValue = func(context.Context) (*TenantEmailDomain, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TenantEmailDomainMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TenantEmailDomainMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of TenantEmailDomain entities.
+func (m *TenantEmailDomainMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *TenantEmailDomainMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *TenantEmailDomainMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().TenantEmailDomain.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetTenantSubscriptionID sets the "tenant_subscription_id" field.
+func (m *TenantEmailDomainMutation) SetTenantSubscriptionID(u uuid.UUID) {
+	m.tenant_subscription = &u
+}
+
+// TenantSubscriptionID returns the value of the "tenant_subscription_id" field in the mutation.
+func (m *TenantEmailDomainMutation) TenantSubscriptionID() (r uuid.UUID, exists bool) {
+	v := m.tenant_subscription
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTenantSubscriptionID returns the old "tenant_subscription_id" field's value of the TenantEmailDomain entity.
+// If the TenantEmailDomain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantEmailDomainMutation) OldTenantSubscriptionID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTenantSubscriptionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTenantSubscriptionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantSubscriptionID: %w", err)
+	}
+	return oldValue.TenantSubscriptionID, nil
+}
+
+// ResetTenantSubscriptionID resets all changes to the "tenant_subscription_id" field.
+func (m *TenantEmailDomainMutation) ResetTenantSubscriptionID() {
+	m.tenant_subscription = nil
+}
+
+// SetDomain sets the "domain" field.
+func (m *TenantEmailDomainMutation) SetDomain(s string) {
+	m.domain = &s
+}
+
+// Domain returns the value of the "domain" field in the mutation.
+func (m *TenantEmailDomainMutation) Domain() (r string, exists bool) {
+	v := m.domain
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDomain returns the old "domain" field's value of the TenantEmailDomain entity.
+// If the TenantEmailDomain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantEmailDomainMutation) OldDomain(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDomain is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDomain requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDomain: %w", err)
+	}
+	return oldValue.Domain, nil
+}
+
+// ResetDomain resets all changes to the "domain" field.
+func (m *TenantEmailDomainMutation) ResetDomain() {
+	m.domain = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *TenantEmailDomainMutation) SetStatus(t tenantemaildomain.Status) {
+	m.status = &t
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *TenantEmailDomainMutation) Status() (r tenantemaildomain.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the TenantEmailDomain entity.
+// If the TenantEmailDomain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantEmailDomainMutation) OldStatus(ctx context.Context) (v tenantemaildomain.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *TenantEmailDomainMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetDkimSelector sets the "dkim_selector" field.
+func (m *TenantEmailDomainMutation) SetDkimSelector(s string) {
+	m.dkim_selector = &s
+}
+
+// DkimSelector returns the value of the "dkim_selector" field in the mutation.
+func (m *TenantEmailDomainMutation) DkimSelector() (r string, exists bool) {
+	v := m.dkim_selector
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDkimSelector returns the old "dkim_selector" field's value of the TenantEmailDomain entity.
+// If the TenantEmailDomain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantEmailDomainMutation) OldDkimSelector(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDkimSelector is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDkimSelector requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDkimSelector: %w", err)
+	}
+	return oldValue.DkimSelector, nil
+}
+
+// ClearDkimSelector clears the value of the "dkim_selector" field.
+func (m *TenantEmailDomainMutation) ClearDkimSelector() {
+	m.dkim_selector = nil
+	m.clearedFields[tenantemaildomain.FieldDkimSelector] = struct{}{}
+}
+
+// DkimSelectorCleared returns if the "dkim_selector" field was cleared in this mutation.
+func (m *TenantEmailDomainMutation) DkimSelectorCleared() bool {
+	_, ok := m.clearedFields[tenantemaildomain.FieldDkimSelector]
+	return ok
+}
+
+// ResetDkimSelector resets all changes to the "dkim_selector" field.
+func (m *TenantEmailDomainMutation) ResetDkimSelector() {
+	m.dkim_selector = nil
+	delete(m.clearedFields, tenantemaildomain.FieldDkimSelector)
+}
+
+// SetStalwartDomainID sets the "stalwart_domain_id" field.
+func (m *TenantEmailDomainMutation) SetStalwartDomainID(s string) {
+	m.stalwart_domain_id = &s
+}
+
+// StalwartDomainID returns the value of the "stalwart_domain_id" field in the mutation.
+func (m *TenantEmailDomainMutation) StalwartDomainID() (r string, exists bool) {
+	v := m.stalwart_domain_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStalwartDomainID returns the old "stalwart_domain_id" field's value of the TenantEmailDomain entity.
+// If the TenantEmailDomain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantEmailDomainMutation) OldStalwartDomainID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStalwartDomainID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStalwartDomainID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStalwartDomainID: %w", err)
+	}
+	return oldValue.StalwartDomainID, nil
+}
+
+// ClearStalwartDomainID clears the value of the "stalwart_domain_id" field.
+func (m *TenantEmailDomainMutation) ClearStalwartDomainID() {
+	m.stalwart_domain_id = nil
+	m.clearedFields[tenantemaildomain.FieldStalwartDomainID] = struct{}{}
+}
+
+// StalwartDomainIDCleared returns if the "stalwart_domain_id" field was cleared in this mutation.
+func (m *TenantEmailDomainMutation) StalwartDomainIDCleared() bool {
+	_, ok := m.clearedFields[tenantemaildomain.FieldStalwartDomainID]
+	return ok
+}
+
+// ResetStalwartDomainID resets all changes to the "stalwart_domain_id" field.
+func (m *TenantEmailDomainMutation) ResetStalwartDomainID() {
+	m.stalwart_domain_id = nil
+	delete(m.clearedFields, tenantemaildomain.FieldStalwartDomainID)
+}
+
+// SetVerifiedAt sets the "verified_at" field.
+func (m *TenantEmailDomainMutation) SetVerifiedAt(t time.Time) {
+	m.verified_at = &t
+}
+
+// VerifiedAt returns the value of the "verified_at" field in the mutation.
+func (m *TenantEmailDomainMutation) VerifiedAt() (r time.Time, exists bool) {
+	v := m.verified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVerifiedAt returns the old "verified_at" field's value of the TenantEmailDomain entity.
+// If the TenantEmailDomain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantEmailDomainMutation) OldVerifiedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVerifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVerifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVerifiedAt: %w", err)
+	}
+	return oldValue.VerifiedAt, nil
+}
+
+// ClearVerifiedAt clears the value of the "verified_at" field.
+func (m *TenantEmailDomainMutation) ClearVerifiedAt() {
+	m.verified_at = nil
+	m.clearedFields[tenantemaildomain.FieldVerifiedAt] = struct{}{}
+}
+
+// VerifiedAtCleared returns if the "verified_at" field was cleared in this mutation.
+func (m *TenantEmailDomainMutation) VerifiedAtCleared() bool {
+	_, ok := m.clearedFields[tenantemaildomain.FieldVerifiedAt]
+	return ok
+}
+
+// ResetVerifiedAt resets all changes to the "verified_at" field.
+func (m *TenantEmailDomainMutation) ResetVerifiedAt() {
+	m.verified_at = nil
+	delete(m.clearedFields, tenantemaildomain.FieldVerifiedAt)
+}
+
+// SetLastCheckedAt sets the "last_checked_at" field.
+func (m *TenantEmailDomainMutation) SetLastCheckedAt(t time.Time) {
+	m.last_checked_at = &t
+}
+
+// LastCheckedAt returns the value of the "last_checked_at" field in the mutation.
+func (m *TenantEmailDomainMutation) LastCheckedAt() (r time.Time, exists bool) {
+	v := m.last_checked_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastCheckedAt returns the old "last_checked_at" field's value of the TenantEmailDomain entity.
+// If the TenantEmailDomain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantEmailDomainMutation) OldLastCheckedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastCheckedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastCheckedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastCheckedAt: %w", err)
+	}
+	return oldValue.LastCheckedAt, nil
+}
+
+// ClearLastCheckedAt clears the value of the "last_checked_at" field.
+func (m *TenantEmailDomainMutation) ClearLastCheckedAt() {
+	m.last_checked_at = nil
+	m.clearedFields[tenantemaildomain.FieldLastCheckedAt] = struct{}{}
+}
+
+// LastCheckedAtCleared returns if the "last_checked_at" field was cleared in this mutation.
+func (m *TenantEmailDomainMutation) LastCheckedAtCleared() bool {
+	_, ok := m.clearedFields[tenantemaildomain.FieldLastCheckedAt]
+	return ok
+}
+
+// ResetLastCheckedAt resets all changes to the "last_checked_at" field.
+func (m *TenantEmailDomainMutation) ResetLastCheckedAt() {
+	m.last_checked_at = nil
+	delete(m.clearedFields, tenantemaildomain.FieldLastCheckedAt)
+}
+
+// SetFailureReason sets the "failure_reason" field.
+func (m *TenantEmailDomainMutation) SetFailureReason(s string) {
+	m.failure_reason = &s
+}
+
+// FailureReason returns the value of the "failure_reason" field in the mutation.
+func (m *TenantEmailDomainMutation) FailureReason() (r string, exists bool) {
+	v := m.failure_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFailureReason returns the old "failure_reason" field's value of the TenantEmailDomain entity.
+// If the TenantEmailDomain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantEmailDomainMutation) OldFailureReason(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFailureReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFailureReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFailureReason: %w", err)
+	}
+	return oldValue.FailureReason, nil
+}
+
+// ClearFailureReason clears the value of the "failure_reason" field.
+func (m *TenantEmailDomainMutation) ClearFailureReason() {
+	m.failure_reason = nil
+	m.clearedFields[tenantemaildomain.FieldFailureReason] = struct{}{}
+}
+
+// FailureReasonCleared returns if the "failure_reason" field was cleared in this mutation.
+func (m *TenantEmailDomainMutation) FailureReasonCleared() bool {
+	_, ok := m.clearedFields[tenantemaildomain.FieldFailureReason]
+	return ok
+}
+
+// ResetFailureReason resets all changes to the "failure_reason" field.
+func (m *TenantEmailDomainMutation) ResetFailureReason() {
+	m.failure_reason = nil
+	delete(m.clearedFields, tenantemaildomain.FieldFailureReason)
+}
+
+// SetMetadata sets the "metadata" field.
+func (m *TenantEmailDomainMutation) SetMetadata(value map[string]interface{}) {
+	m.metadata = &value
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *TenantEmailDomainMutation) Metadata() (r map[string]interface{}, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the TenantEmailDomain entity.
+// If the TenantEmailDomain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantEmailDomainMutation) OldMetadata(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *TenantEmailDomainMutation) ResetMetadata() {
+	m.metadata = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *TenantEmailDomainMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *TenantEmailDomainMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the TenantEmailDomain entity.
+// If the TenantEmailDomain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantEmailDomainMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *TenantEmailDomainMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *TenantEmailDomainMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *TenantEmailDomainMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the TenantEmailDomain entity.
+// If the TenantEmailDomain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantEmailDomainMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *TenantEmailDomainMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// ClearTenantSubscription clears the "tenant_subscription" edge to the TenantSubscription entity.
+func (m *TenantEmailDomainMutation) ClearTenantSubscription() {
+	m.clearedtenant_subscription = true
+	m.clearedFields[tenantemaildomain.FieldTenantSubscriptionID] = struct{}{}
+}
+
+// TenantSubscriptionCleared reports if the "tenant_subscription" edge to the TenantSubscription entity was cleared.
+func (m *TenantEmailDomainMutation) TenantSubscriptionCleared() bool {
+	return m.clearedtenant_subscription
+}
+
+// TenantSubscriptionIDs returns the "tenant_subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TenantSubscriptionID instead. It exists only for internal usage by the builders.
+func (m *TenantEmailDomainMutation) TenantSubscriptionIDs() (ids []uuid.UUID) {
+	if id := m.tenant_subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTenantSubscription resets all changes to the "tenant_subscription" edge.
+func (m *TenantEmailDomainMutation) ResetTenantSubscription() {
+	m.tenant_subscription = nil
+	m.clearedtenant_subscription = false
+}
+
+// Where appends a list predicates to the TenantEmailDomainMutation builder.
+func (m *TenantEmailDomainMutation) Where(ps ...predicate.TenantEmailDomain) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the TenantEmailDomainMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *TenantEmailDomainMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.TenantEmailDomain, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *TenantEmailDomainMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *TenantEmailDomainMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (TenantEmailDomain).
+func (m *TenantEmailDomainMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *TenantEmailDomainMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.tenant_subscription != nil {
+		fields = append(fields, tenantemaildomain.FieldTenantSubscriptionID)
+	}
+	if m.domain != nil {
+		fields = append(fields, tenantemaildomain.FieldDomain)
+	}
+	if m.status != nil {
+		fields = append(fields, tenantemaildomain.FieldStatus)
+	}
+	if m.dkim_selector != nil {
+		fields = append(fields, tenantemaildomain.FieldDkimSelector)
+	}
+	if m.stalwart_domain_id != nil {
+		fields = append(fields, tenantemaildomain.FieldStalwartDomainID)
+	}
+	if m.verified_at != nil {
+		fields = append(fields, tenantemaildomain.FieldVerifiedAt)
+	}
+	if m.last_checked_at != nil {
+		fields = append(fields, tenantemaildomain.FieldLastCheckedAt)
+	}
+	if m.failure_reason != nil {
+		fields = append(fields, tenantemaildomain.FieldFailureReason)
+	}
+	if m.metadata != nil {
+		fields = append(fields, tenantemaildomain.FieldMetadata)
+	}
+	if m.created_at != nil {
+		fields = append(fields, tenantemaildomain.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, tenantemaildomain.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *TenantEmailDomainMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case tenantemaildomain.FieldTenantSubscriptionID:
+		return m.TenantSubscriptionID()
+	case tenantemaildomain.FieldDomain:
+		return m.Domain()
+	case tenantemaildomain.FieldStatus:
+		return m.Status()
+	case tenantemaildomain.FieldDkimSelector:
+		return m.DkimSelector()
+	case tenantemaildomain.FieldStalwartDomainID:
+		return m.StalwartDomainID()
+	case tenantemaildomain.FieldVerifiedAt:
+		return m.VerifiedAt()
+	case tenantemaildomain.FieldLastCheckedAt:
+		return m.LastCheckedAt()
+	case tenantemaildomain.FieldFailureReason:
+		return m.FailureReason()
+	case tenantemaildomain.FieldMetadata:
+		return m.Metadata()
+	case tenantemaildomain.FieldCreatedAt:
+		return m.CreatedAt()
+	case tenantemaildomain.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *TenantEmailDomainMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case tenantemaildomain.FieldTenantSubscriptionID:
+		return m.OldTenantSubscriptionID(ctx)
+	case tenantemaildomain.FieldDomain:
+		return m.OldDomain(ctx)
+	case tenantemaildomain.FieldStatus:
+		return m.OldStatus(ctx)
+	case tenantemaildomain.FieldDkimSelector:
+		return m.OldDkimSelector(ctx)
+	case tenantemaildomain.FieldStalwartDomainID:
+		return m.OldStalwartDomainID(ctx)
+	case tenantemaildomain.FieldVerifiedAt:
+		return m.OldVerifiedAt(ctx)
+	case tenantemaildomain.FieldLastCheckedAt:
+		return m.OldLastCheckedAt(ctx)
+	case tenantemaildomain.FieldFailureReason:
+		return m.OldFailureReason(ctx)
+	case tenantemaildomain.FieldMetadata:
+		return m.OldMetadata(ctx)
+	case tenantemaildomain.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case tenantemaildomain.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown TenantEmailDomain field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TenantEmailDomainMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case tenantemaildomain.FieldTenantSubscriptionID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTenantSubscriptionID(v)
+		return nil
+	case tenantemaildomain.FieldDomain:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDomain(v)
+		return nil
+	case tenantemaildomain.FieldStatus:
+		v, ok := value.(tenantemaildomain.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case tenantemaildomain.FieldDkimSelector:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDkimSelector(v)
+		return nil
+	case tenantemaildomain.FieldStalwartDomainID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStalwartDomainID(v)
+		return nil
+	case tenantemaildomain.FieldVerifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVerifiedAt(v)
+		return nil
+	case tenantemaildomain.FieldLastCheckedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastCheckedAt(v)
+		return nil
+	case tenantemaildomain.FieldFailureReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFailureReason(v)
+		return nil
+	case tenantemaildomain.FieldMetadata:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
+		return nil
+	case tenantemaildomain.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case tenantemaildomain.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown TenantEmailDomain field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *TenantEmailDomainMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *TenantEmailDomainMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TenantEmailDomainMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown TenantEmailDomain numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *TenantEmailDomainMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(tenantemaildomain.FieldDkimSelector) {
+		fields = append(fields, tenantemaildomain.FieldDkimSelector)
+	}
+	if m.FieldCleared(tenantemaildomain.FieldStalwartDomainID) {
+		fields = append(fields, tenantemaildomain.FieldStalwartDomainID)
+	}
+	if m.FieldCleared(tenantemaildomain.FieldVerifiedAt) {
+		fields = append(fields, tenantemaildomain.FieldVerifiedAt)
+	}
+	if m.FieldCleared(tenantemaildomain.FieldLastCheckedAt) {
+		fields = append(fields, tenantemaildomain.FieldLastCheckedAt)
+	}
+	if m.FieldCleared(tenantemaildomain.FieldFailureReason) {
+		fields = append(fields, tenantemaildomain.FieldFailureReason)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *TenantEmailDomainMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *TenantEmailDomainMutation) ClearField(name string) error {
+	switch name {
+	case tenantemaildomain.FieldDkimSelector:
+		m.ClearDkimSelector()
+		return nil
+	case tenantemaildomain.FieldStalwartDomainID:
+		m.ClearStalwartDomainID()
+		return nil
+	case tenantemaildomain.FieldVerifiedAt:
+		m.ClearVerifiedAt()
+		return nil
+	case tenantemaildomain.FieldLastCheckedAt:
+		m.ClearLastCheckedAt()
+		return nil
+	case tenantemaildomain.FieldFailureReason:
+		m.ClearFailureReason()
+		return nil
+	}
+	return fmt.Errorf("unknown TenantEmailDomain nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *TenantEmailDomainMutation) ResetField(name string) error {
+	switch name {
+	case tenantemaildomain.FieldTenantSubscriptionID:
+		m.ResetTenantSubscriptionID()
+		return nil
+	case tenantemaildomain.FieldDomain:
+		m.ResetDomain()
+		return nil
+	case tenantemaildomain.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case tenantemaildomain.FieldDkimSelector:
+		m.ResetDkimSelector()
+		return nil
+	case tenantemaildomain.FieldStalwartDomainID:
+		m.ResetStalwartDomainID()
+		return nil
+	case tenantemaildomain.FieldVerifiedAt:
+		m.ResetVerifiedAt()
+		return nil
+	case tenantemaildomain.FieldLastCheckedAt:
+		m.ResetLastCheckedAt()
+		return nil
+	case tenantemaildomain.FieldFailureReason:
+		m.ResetFailureReason()
+		return nil
+	case tenantemaildomain.FieldMetadata:
+		m.ResetMetadata()
+		return nil
+	case tenantemaildomain.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case tenantemaildomain.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown TenantEmailDomain field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *TenantEmailDomainMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.tenant_subscription != nil {
+		edges = append(edges, tenantemaildomain.EdgeTenantSubscription)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *TenantEmailDomainMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case tenantemaildomain.EdgeTenantSubscription:
+		if id := m.tenant_subscription; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *TenantEmailDomainMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *TenantEmailDomainMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *TenantEmailDomainMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedtenant_subscription {
+		edges = append(edges, tenantemaildomain.EdgeTenantSubscription)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *TenantEmailDomainMutation) EdgeCleared(name string) bool {
+	switch name {
+	case tenantemaildomain.EdgeTenantSubscription:
+		return m.clearedtenant_subscription
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *TenantEmailDomainMutation) ClearEdge(name string) error {
+	switch name {
+	case tenantemaildomain.EdgeTenantSubscription:
+		m.ClearTenantSubscription()
+		return nil
+	}
+	return fmt.Errorf("unknown TenantEmailDomain unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *TenantEmailDomainMutation) ResetEdge(name string) error {
+	switch name {
+	case tenantemaildomain.EdgeTenantSubscription:
+		m.ResetTenantSubscription()
+		return nil
+	}
+	return fmt.Errorf("unknown TenantEmailDomain edge %s", name)
+}
+
 // TenantSubscriptionMutation represents an operation that mutates the TenantSubscription nodes in the graph.
 type TenantSubscriptionMutation struct {
 	config
@@ -26338,6 +27364,9 @@ type TenantSubscriptionMutation struct {
 	email_licenses               map[uuid.UUID]struct{}
 	removedemail_licenses        map[uuid.UUID]struct{}
 	clearedemail_licenses        bool
+	email_domains                map[uuid.UUID]struct{}
+	removedemail_domains         map[uuid.UUID]struct{}
+	clearedemail_domains         bool
 	done                         bool
 	oldValue                     func(context.Context) (*TenantSubscription, error)
 	predicates                   []predicate.TenantSubscription
@@ -27919,6 +28948,60 @@ func (m *TenantSubscriptionMutation) ResetEmailLicenses() {
 	m.removedemail_licenses = nil
 }
 
+// AddEmailDomainIDs adds the "email_domains" edge to the TenantEmailDomain entity by ids.
+func (m *TenantSubscriptionMutation) AddEmailDomainIDs(ids ...uuid.UUID) {
+	if m.email_domains == nil {
+		m.email_domains = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.email_domains[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEmailDomains clears the "email_domains" edge to the TenantEmailDomain entity.
+func (m *TenantSubscriptionMutation) ClearEmailDomains() {
+	m.clearedemail_domains = true
+}
+
+// EmailDomainsCleared reports if the "email_domains" edge to the TenantEmailDomain entity was cleared.
+func (m *TenantSubscriptionMutation) EmailDomainsCleared() bool {
+	return m.clearedemail_domains
+}
+
+// RemoveEmailDomainIDs removes the "email_domains" edge to the TenantEmailDomain entity by IDs.
+func (m *TenantSubscriptionMutation) RemoveEmailDomainIDs(ids ...uuid.UUID) {
+	if m.removedemail_domains == nil {
+		m.removedemail_domains = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.email_domains, ids[i])
+		m.removedemail_domains[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEmailDomains returns the removed IDs of the "email_domains" edge to the TenantEmailDomain entity.
+func (m *TenantSubscriptionMutation) RemovedEmailDomainsIDs() (ids []uuid.UUID) {
+	for id := range m.removedemail_domains {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EmailDomainsIDs returns the "email_domains" edge IDs in the mutation.
+func (m *TenantSubscriptionMutation) EmailDomainsIDs() (ids []uuid.UUID) {
+	for id := range m.email_domains {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEmailDomains resets all changes to the "email_domains" edge.
+func (m *TenantSubscriptionMutation) ResetEmailDomains() {
+	m.email_domains = nil
+	m.clearedemail_domains = false
+	m.removedemail_domains = nil
+}
+
 // Where appends a list predicates to the TenantSubscriptionMutation builder.
 func (m *TenantSubscriptionMutation) Where(ps ...predicate.TenantSubscription) {
 	m.predicates = append(m.predicates, ps...)
@@ -28637,7 +29720,7 @@ func (m *TenantSubscriptionMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TenantSubscriptionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.tenant != nil {
 		edges = append(edges, tenantsubscription.EdgeTenant)
 	}
@@ -28652,6 +29735,9 @@ func (m *TenantSubscriptionMutation) AddedEdges() []string {
 	}
 	if m.email_licenses != nil {
 		edges = append(edges, tenantsubscription.EdgeEmailLicenses)
+	}
+	if m.email_domains != nil {
+		edges = append(edges, tenantsubscription.EdgeEmailDomains)
 	}
 	return edges
 }
@@ -28686,13 +29772,19 @@ func (m *TenantSubscriptionMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case tenantsubscription.EdgeEmailDomains:
+		ids := make([]ent.Value, 0, len(m.email_domains))
+		for id := range m.email_domains {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TenantSubscriptionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedproduct_subscriptions != nil {
 		edges = append(edges, tenantsubscription.EdgeProductSubscriptions)
 	}
@@ -28701,6 +29793,9 @@ func (m *TenantSubscriptionMutation) RemovedEdges() []string {
 	}
 	if m.removedemail_licenses != nil {
 		edges = append(edges, tenantsubscription.EdgeEmailLicenses)
+	}
+	if m.removedemail_domains != nil {
+		edges = append(edges, tenantsubscription.EdgeEmailDomains)
 	}
 	return edges
 }
@@ -28727,13 +29822,19 @@ func (m *TenantSubscriptionMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case tenantsubscription.EdgeEmailDomains:
+		ids := make([]ent.Value, 0, len(m.removedemail_domains))
+		for id := range m.removedemail_domains {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TenantSubscriptionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedtenant {
 		edges = append(edges, tenantsubscription.EdgeTenant)
 	}
@@ -28748,6 +29849,9 @@ func (m *TenantSubscriptionMutation) ClearedEdges() []string {
 	}
 	if m.clearedemail_licenses {
 		edges = append(edges, tenantsubscription.EdgeEmailLicenses)
+	}
+	if m.clearedemail_domains {
+		edges = append(edges, tenantsubscription.EdgeEmailDomains)
 	}
 	return edges
 }
@@ -28766,6 +29870,8 @@ func (m *TenantSubscriptionMutation) EdgeCleared(name string) bool {
 		return m.clearedoverage_charges
 	case tenantsubscription.EdgeEmailLicenses:
 		return m.clearedemail_licenses
+	case tenantsubscription.EdgeEmailDomains:
+		return m.clearedemail_domains
 	}
 	return false
 }
@@ -28802,6 +29908,9 @@ func (m *TenantSubscriptionMutation) ResetEdge(name string) error {
 		return nil
 	case tenantsubscription.EdgeEmailLicenses:
 		m.ResetEmailLicenses()
+		return nil
+	case tenantsubscription.EdgeEmailDomains:
+		m.ResetEmailDomains()
 		return nil
 	}
 	return fmt.Errorf("unknown TenantSubscription edge %s", name)

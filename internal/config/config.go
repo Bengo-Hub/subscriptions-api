@@ -48,6 +48,18 @@ type ServicesConfig struct {
 	// ISPBillingAPI is the isp-billing backend used to fetch the exact point-in-time active
 	// PPPoE subscriber count for ISP usage billing (S2S, authenticated with INTERNAL_SERVICE_KEY).
 	ISPBillingAPI string `envconfig:"ISP_BILLING_API_URL" default:"https://ispbillingapi.codevertexafrica.com"`
+	// EmailProvisionerAPI is email-provisioner's cluster-internal-only endpoint (no Ingress,
+	// no auth — same unauthenticated cluster-network-scoped convention as its existing
+	// /internal/mail-stats//healthz endpoints, mirrored from auth-api's own client for it).
+	// Used for domain onboarding (Part 1.3): subscriptions-api never talks to Stalwart's own
+	// JMAP API directly, email-provisioner is the sole JMAP speaker.
+	EmailProvisionerAPI string `envconfig:"EMAIL_PROVISIONER_API_URL" default:"http://email-provisioner.email.svc.cluster.local:8080"`
+	// PlatformMailMXHost/PlatformMailIP are the platform's own mail-protocol hostname/IP —
+	// already public information (published in the platform's own MX/SPF/PTR records),
+	// used by VerifyEmailDomain to confirm a tenant's onboarded domain actually points at
+	// this platform rather than needing to parse Stalwart's raw dnsZoneFile text.
+	PlatformMailMXHost string `envconfig:"PLATFORM_MAIL_MX_HOST" default:"mx1.codevertexafrica.com"`
+	PlatformMailIP     string `envconfig:"PLATFORM_MAIL_IP" default:"77.237.232.66"`
 	// PlatformTenantID is the treasury/auth tenant UUID that ISSUES subscription invoices
 	// (the platform org, e.g. codevertex). Subscription invoices are owned by this tenant
 	// with the billed tenant as the customer. Must be set in prod.

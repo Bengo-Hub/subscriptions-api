@@ -95,9 +95,11 @@ type TenantSubscriptionEdges struct {
 	OverageCharges []*OverageCharge `json:"overage_charges,omitempty"`
 	// EmailLicenses holds the value of the email_licenses edge.
 	EmailLicenses []*EmailLicense `json:"email_licenses,omitempty"`
+	// EmailDomains holds the value of the email_domains edge.
+	EmailDomains []*TenantEmailDomain `json:"email_domains,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // TenantOrErr returns the Tenant value or an error if the edge
@@ -147,6 +149,15 @@ func (e TenantSubscriptionEdges) EmailLicensesOrErr() ([]*EmailLicense, error) {
 		return e.EmailLicenses, nil
 	}
 	return nil, &NotLoadedError{edge: "email_licenses"}
+}
+
+// EmailDomainsOrErr returns the EmailDomains value or an error if the edge
+// was not loaded in eager-loading.
+func (e TenantSubscriptionEdges) EmailDomainsOrErr() ([]*TenantEmailDomain, error) {
+	if e.loadedTypes[5] {
+		return e.EmailDomains, nil
+	}
+	return nil, &NotLoadedError{edge: "email_domains"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -410,6 +421,11 @@ func (_m *TenantSubscription) QueryOverageCharges() *OverageChargeQuery {
 // QueryEmailLicenses queries the "email_licenses" edge of the TenantSubscription entity.
 func (_m *TenantSubscription) QueryEmailLicenses() *EmailLicenseQuery {
 	return NewTenantSubscriptionClient(_m.config).QueryEmailLicenses(_m)
+}
+
+// QueryEmailDomains queries the "email_domains" edge of the TenantSubscription entity.
+func (_m *TenantSubscription) QueryEmailDomains() *TenantEmailDomainQuery {
+	return NewTenantSubscriptionClient(_m.config).QueryEmailDomains(_m)
 }
 
 // Update returns a builder for updating this TenantSubscription.

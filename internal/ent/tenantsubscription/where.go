@@ -1496,6 +1496,29 @@ func HasEmailLicensesWith(preds ...predicate.EmailLicense) predicate.TenantSubsc
 	})
 }
 
+// HasEmailDomains applies the HasEdge predicate on the "email_domains" edge.
+func HasEmailDomains() predicate.TenantSubscription {
+	return predicate.TenantSubscription(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EmailDomainsTable, EmailDomainsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEmailDomainsWith applies the HasEdge predicate on the "email_domains" edge with a given conditions (other predicates).
+func HasEmailDomainsWith(preds ...predicate.TenantEmailDomain) predicate.TenantSubscription {
+	return predicate.TenantSubscription(func(s *sql.Selector) {
+		step := newEmailDomainsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.TenantSubscription) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.AndPredicates(predicates...))

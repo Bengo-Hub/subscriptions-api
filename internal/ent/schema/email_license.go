@@ -39,7 +39,7 @@ func (EmailLicense) Fields() []ent.Field {
 			Nillable().
 			Comment("FK to the auth-api user this license is assigned to, if it maps to a platform account"),
 		field.Enum("status").
-			Values("AVAILABLE", "ASSIGNED", "SUSPENDED", "EXPIRED").
+			Values("AVAILABLE", "ASSIGNED", "SUSPENDED", "EXPIRED", "DELETED").
 			Default("AVAILABLE"),
 		field.String("suspend_reason").
 			Optional().

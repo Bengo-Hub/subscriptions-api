@@ -30,6 +30,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsuser"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
+	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/usageevent"
 	"github.com/bengobox/subscription-service/internal/ent/userroleassignment"
@@ -860,6 +861,30 @@ func init() {
 	tenantDescID := tenantFields[0].Descriptor()
 	// tenant.DefaultID holds the default value on creation for the id field.
 	tenant.DefaultID = tenantDescID.Default.(func() uuid.UUID)
+	tenantemaildomainFields := schema.TenantEmailDomain{}.Fields()
+	_ = tenantemaildomainFields
+	// tenantemaildomainDescDomain is the schema descriptor for domain field.
+	tenantemaildomainDescDomain := tenantemaildomainFields[2].Descriptor()
+	// tenantemaildomain.DomainValidator is a validator for the "domain" field. It is called by the builders before save.
+	tenantemaildomain.DomainValidator = tenantemaildomainDescDomain.Validators[0].(func(string) error)
+	// tenantemaildomainDescMetadata is the schema descriptor for metadata field.
+	tenantemaildomainDescMetadata := tenantemaildomainFields[9].Descriptor()
+	// tenantemaildomain.DefaultMetadata holds the default value on creation for the metadata field.
+	tenantemaildomain.DefaultMetadata = tenantemaildomainDescMetadata.Default.(map[string]interface{})
+	// tenantemaildomainDescCreatedAt is the schema descriptor for created_at field.
+	tenantemaildomainDescCreatedAt := tenantemaildomainFields[10].Descriptor()
+	// tenantemaildomain.DefaultCreatedAt holds the default value on creation for the created_at field.
+	tenantemaildomain.DefaultCreatedAt = tenantemaildomainDescCreatedAt.Default.(func() time.Time)
+	// tenantemaildomainDescUpdatedAt is the schema descriptor for updated_at field.
+	tenantemaildomainDescUpdatedAt := tenantemaildomainFields[11].Descriptor()
+	// tenantemaildomain.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	tenantemaildomain.DefaultUpdatedAt = tenantemaildomainDescUpdatedAt.Default.(func() time.Time)
+	// tenantemaildomain.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	tenantemaildomain.UpdateDefaultUpdatedAt = tenantemaildomainDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// tenantemaildomainDescID is the schema descriptor for id field.
+	tenantemaildomainDescID := tenantemaildomainFields[0].Descriptor()
+	// tenantemaildomain.DefaultID holds the default value on creation for the id field.
+	tenantemaildomain.DefaultID = tenantemaildomainDescID.Default.(func() uuid.UUID)
 	tenantsubscriptionFields := schema.TenantSubscription{}.Fields()
 	_ = tenantsubscriptionFields
 	// tenantsubscriptionDescAppliedDiscount is the schema descriptor for applied_discount field.

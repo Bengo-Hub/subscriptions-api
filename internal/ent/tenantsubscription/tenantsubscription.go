@@ -82,6 +82,8 @@ const (
 	EdgeOverageCharges = "overage_charges"
 	// EdgeEmailLicenses holds the string denoting the email_licenses edge name in mutations.
 	EdgeEmailLicenses = "email_licenses"
+	// EdgeEmailDomains holds the string denoting the email_domains edge name in mutations.
+	EdgeEmailDomains = "email_domains"
 	// Table holds the table name of the tenantsubscription in the database.
 	Table = "tenant_subscriptions"
 	// TenantTable is the table that holds the tenant relation/edge.
@@ -119,6 +121,13 @@ const (
 	EmailLicensesInverseTable = "email_licenses"
 	// EmailLicensesColumn is the table column denoting the email_licenses relation/edge.
 	EmailLicensesColumn = "tenant_subscription_id"
+	// EmailDomainsTable is the table that holds the email_domains relation/edge.
+	EmailDomainsTable = "tenant_email_domains"
+	// EmailDomainsInverseTable is the table name for the TenantEmailDomain entity.
+	// It exists in this package in order to avoid circular dependency with the "tenantemaildomain" package.
+	EmailDomainsInverseTable = "tenant_email_domains"
+	// EmailDomainsColumn is the table column denoting the email_domains relation/edge.
+	EmailDomainsColumn = "tenant_subscription_id"
 )
 
 // Columns holds all SQL columns for tenantsubscription fields.
@@ -442,6 +451,20 @@ func ByEmailLicenses(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newEmailLicensesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByEmailDomainsCount orders the results by email_domains count.
+func ByEmailDomainsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEmailDomainsStep(), opts...)
+	}
+}
+
+// ByEmailDomains orders the results by email_domains terms.
+func ByEmailDomains(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEmailDomainsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newTenantStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -475,5 +498,12 @@ func newEmailLicensesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(EmailLicensesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, EmailLicensesTable, EmailLicensesColumn),
+	)
+}
+func newEmailDomainsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EmailDomainsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EmailDomainsTable, EmailDomainsColumn),
 	)
 }

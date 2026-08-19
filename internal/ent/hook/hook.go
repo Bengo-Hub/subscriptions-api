@@ -309,6 +309,18 @@ func (f TenantFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TenantMutation", m)
 }
 
+// The TenantEmailDomainFunc type is an adapter to allow the use of ordinary
+// function as TenantEmailDomain mutator.
+type TenantEmailDomainFunc func(context.Context, *ent.TenantEmailDomainMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TenantEmailDomainFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TenantEmailDomainMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TenantEmailDomainMutation", m)
+}
+
 // The TenantSubscriptionFunc type is an adapter to allow the use of ordinary
 // function as TenantSubscription mutator.
 type TenantSubscriptionFunc func(context.Context, *ent.TenantSubscriptionMutation) (ent.Value, error)

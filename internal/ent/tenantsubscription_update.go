@@ -17,6 +17,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
+	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -561,6 +562,21 @@ func (_u *TenantSubscriptionUpdate) AddEmailLicenses(v ...*EmailLicense) *Tenant
 	return _u.AddEmailLicenseIDs(ids...)
 }
 
+// AddEmailDomainIDs adds the "email_domains" edge to the TenantEmailDomain entity by IDs.
+func (_u *TenantSubscriptionUpdate) AddEmailDomainIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.AddEmailDomainIDs(ids...)
+	return _u
+}
+
+// AddEmailDomains adds the "email_domains" edges to the TenantEmailDomain entity.
+func (_u *TenantSubscriptionUpdate) AddEmailDomains(v ...*TenantEmailDomain) *TenantSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEmailDomainIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_u *TenantSubscriptionUpdate) Mutation() *TenantSubscriptionMutation {
 	return _u.mutation
@@ -639,6 +655,27 @@ func (_u *TenantSubscriptionUpdate) RemoveEmailLicenses(v ...*EmailLicense) *Ten
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEmailLicenseIDs(ids...)
+}
+
+// ClearEmailDomains clears all "email_domains" edges to the TenantEmailDomain entity.
+func (_u *TenantSubscriptionUpdate) ClearEmailDomains() *TenantSubscriptionUpdate {
+	_u.mutation.ClearEmailDomains()
+	return _u
+}
+
+// RemoveEmailDomainIDs removes the "email_domains" edge to TenantEmailDomain entities by IDs.
+func (_u *TenantSubscriptionUpdate) RemoveEmailDomainIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.RemoveEmailDomainIDs(ids...)
+	return _u
+}
+
+// RemoveEmailDomains removes "email_domains" edges to TenantEmailDomain entities.
+func (_u *TenantSubscriptionUpdate) RemoveEmailDomains(v ...*TenantEmailDomain) *TenantSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEmailDomainIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1025,6 +1062,51 @@ func (_u *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EmailDomainsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailDomainsTable,
+			Columns: []string{tenantsubscription.EmailDomainsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenantemaildomain.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEmailDomainsIDs(); len(nodes) > 0 && !_u.mutation.EmailDomainsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailDomainsTable,
+			Columns: []string{tenantsubscription.EmailDomainsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenantemaildomain.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EmailDomainsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailDomainsTable,
+			Columns: []string{tenantsubscription.EmailDomainsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenantemaildomain.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1579,6 +1661,21 @@ func (_u *TenantSubscriptionUpdateOne) AddEmailLicenses(v ...*EmailLicense) *Ten
 	return _u.AddEmailLicenseIDs(ids...)
 }
 
+// AddEmailDomainIDs adds the "email_domains" edge to the TenantEmailDomain entity by IDs.
+func (_u *TenantSubscriptionUpdateOne) AddEmailDomainIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.AddEmailDomainIDs(ids...)
+	return _u
+}
+
+// AddEmailDomains adds the "email_domains" edges to the TenantEmailDomain entity.
+func (_u *TenantSubscriptionUpdateOne) AddEmailDomains(v ...*TenantEmailDomain) *TenantSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEmailDomainIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_u *TenantSubscriptionUpdateOne) Mutation() *TenantSubscriptionMutation {
 	return _u.mutation
@@ -1657,6 +1754,27 @@ func (_u *TenantSubscriptionUpdateOne) RemoveEmailLicenses(v ...*EmailLicense) *
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEmailLicenseIDs(ids...)
+}
+
+// ClearEmailDomains clears all "email_domains" edges to the TenantEmailDomain entity.
+func (_u *TenantSubscriptionUpdateOne) ClearEmailDomains() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearEmailDomains()
+	return _u
+}
+
+// RemoveEmailDomainIDs removes the "email_domains" edge to TenantEmailDomain entities by IDs.
+func (_u *TenantSubscriptionUpdateOne) RemoveEmailDomainIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.RemoveEmailDomainIDs(ids...)
+	return _u
+}
+
+// RemoveEmailDomains removes "email_domains" edges to TenantEmailDomain entities.
+func (_u *TenantSubscriptionUpdateOne) RemoveEmailDomains(v ...*TenantEmailDomain) *TenantSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEmailDomainIDs(ids...)
 }
 
 // Where appends a list predicates to the TenantSubscriptionUpdate builder.
@@ -2073,6 +2191,51 @@ func (_u *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Tena
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EmailDomainsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailDomainsTable,
+			Columns: []string{tenantsubscription.EmailDomainsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenantemaildomain.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEmailDomainsIDs(); len(nodes) > 0 && !_u.mutation.EmailDomainsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailDomainsTable,
+			Columns: []string{tenantsubscription.EmailDomainsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenantemaildomain.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EmailDomainsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailDomainsTable,
+			Columns: []string{tenantsubscription.EmailDomainsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenantemaildomain.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -81,6 +81,9 @@ type SubscriptionsUser func(*sql.Selector)
 // Tenant is the predicate function for tenant builders.
 type Tenant func(*sql.Selector)
 
+// TenantEmailDomain is the predicate function for tenantemaildomain builders.
+type TenantEmailDomain func(*sql.Selector)
+
 // TenantSubscription is the predicate function for tenantsubscription builders.
 type TenantSubscription func(*sql.Selector)
 

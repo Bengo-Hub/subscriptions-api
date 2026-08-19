@@ -123,6 +123,12 @@ func New(ctx context.Context) (*App, error) {
 	ispBillingCfg := serviceclient.DefaultConfig(cfg.Services.ISPBillingAPI, "isp-billing-backend", log)
 	ispBillingClient := serviceclient.New(ispBillingCfg)
 
+	// Initialize email-provisioner service client (cluster-internal only, no
+	// Ingress/auth — subscriptions-api never talks to Stalwart's own JMAP API
+	// directly; email-provisioner is the sole JMAP speaker, per plan Part 1.3).
+	emailProvisionerCfg := serviceclient.DefaultConfig(cfg.Services.EmailProvisionerAPI, "email-provisioner", log)
+	emailProvisionerClient := serviceclient.New(emailProvisionerCfg)
+
 	// Initialize auth-service JWT validator
 	var authMiddleware *authclient.AuthMiddleware
 	if cfg.Security.RequireJWT {
@@ -264,7 +270,7 @@ func New(ctx context.Context) (*App, error) {
 
 	// Custom addon handler (platform-admin managed recurring/one-time charges)
 	customAddonHandler := handlers.NewCustomAddonHandler(log, ormClient)
-	emailLicenseHandler := handlers.NewEmailLicenseHandler(log, ormClient, subscriptionSvc)
+	emailLicenseHandler := handlers.NewEmailLicenseHandler(log, ormClient, subscriptionSvc, emailProvisionerClient, cfg.Services.PlatformMailMXHost, cfg.Services.PlatformMailIP)
 
 	// Coupon + credit wallet handler
 	couponHandler := handlers.NewCouponHandler(log, ormClient)

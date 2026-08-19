@@ -41,6 +41,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsuser"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
+	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/usageevent"
 	"github.com/bengobox/subscription-service/internal/ent/userroleassignment"
@@ -101,6 +102,8 @@ type Client struct {
 	SubscriptionsUser *SubscriptionsUserClient
 	// Tenant is the client for interacting with the Tenant builders.
 	Tenant *TenantClient
+	// TenantEmailDomain is the client for interacting with the TenantEmailDomain builders.
+	TenantEmailDomain *TenantEmailDomainClient
 	// TenantSubscription is the client for interacting with the TenantSubscription builders.
 	TenantSubscription *TenantSubscriptionClient
 	// UsageEvent is the client for interacting with the UsageEvent builders.
@@ -143,6 +146,7 @@ func (c *Client) init() {
 	c.SubscriptionsRole = NewSubscriptionsRoleClient(c.config)
 	c.SubscriptionsUser = NewSubscriptionsUserClient(c.config)
 	c.Tenant = NewTenantClient(c.config)
+	c.TenantEmailDomain = NewTenantEmailDomainClient(c.config)
 	c.TenantSubscription = NewTenantSubscriptionClient(c.config)
 	c.UsageEvent = NewUsageEventClient(c.config)
 	c.UserRoleAssignment = NewUserRoleAssignmentClient(c.config)
@@ -263,6 +267,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		SubscriptionsRole:             NewSubscriptionsRoleClient(cfg),
 		SubscriptionsUser:             NewSubscriptionsUserClient(cfg),
 		Tenant:                        NewTenantClient(cfg),
+		TenantEmailDomain:             NewTenantEmailDomainClient(cfg),
 		TenantSubscription:            NewTenantSubscriptionClient(cfg),
 		UsageEvent:                    NewUsageEventClient(cfg),
 		UserRoleAssignment:            NewUserRoleAssignmentClient(cfg),
@@ -310,6 +315,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		SubscriptionsRole:             NewSubscriptionsRoleClient(cfg),
 		SubscriptionsUser:             NewSubscriptionsUserClient(cfg),
 		Tenant:                        NewTenantClient(cfg),
+		TenantEmailDomain:             NewTenantEmailDomainClient(cfg),
 		TenantSubscription:            NewTenantSubscriptionClient(cfg),
 		UsageEvent:                    NewUsageEventClient(cfg),
 		UserRoleAssignment:            NewUserRoleAssignmentClient(cfg),
@@ -348,7 +354,7 @@ func (c *Client) Use(hooks ...Hook) {
 		c.RateLimitConfig, c.RolePermission, c.ServiceChargePlan, c.ServiceConfig,
 		c.SubscriptionCredit, c.SubscriptionCreditTransaction, c.SubscriptionPlan,
 		c.SubscriptionsPermission, c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant,
-		c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
+		c.TenantEmailDomain, c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
 	} {
 		n.Use(hooks...)
 	}
@@ -364,7 +370,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.RateLimitConfig, c.RolePermission, c.ServiceChargePlan, c.ServiceConfig,
 		c.SubscriptionCredit, c.SubscriptionCreditTransaction, c.SubscriptionPlan,
 		c.SubscriptionsPermission, c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant,
-		c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
+		c.TenantEmailDomain, c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -423,6 +429,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.SubscriptionsUser.mutate(ctx, m)
 	case *TenantMutation:
 		return c.Tenant.mutate(ctx, m)
+	case *TenantEmailDomainMutation:
+		return c.TenantEmailDomain.mutate(ctx, m)
 	case *TenantSubscriptionMutation:
 		return c.TenantSubscription.mutate(ctx, m)
 	case *UsageEventMutation:
@@ -4207,6 +4215,155 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 	}
 }
 
+// TenantEmailDomainClient is a client for the TenantEmailDomain schema.
+type TenantEmailDomainClient struct {
+	config
+}
+
+// NewTenantEmailDomainClient returns a client for the TenantEmailDomain from the given config.
+func NewTenantEmailDomainClient(c config) *TenantEmailDomainClient {
+	return &TenantEmailDomainClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `tenantemaildomain.Hooks(f(g(h())))`.
+func (c *TenantEmailDomainClient) Use(hooks ...Hook) {
+	c.hooks.TenantEmailDomain = append(c.hooks.TenantEmailDomain, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `tenantemaildomain.Intercept(f(g(h())))`.
+func (c *TenantEmailDomainClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TenantEmailDomain = append(c.inters.TenantEmailDomain, interceptors...)
+}
+
+// Create returns a builder for creating a TenantEmailDomain entity.
+func (c *TenantEmailDomainClient) Create() *TenantEmailDomainCreate {
+	mutation := newTenantEmailDomainMutation(c.config, OpCreate)
+	return &TenantEmailDomainCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TenantEmailDomain entities.
+func (c *TenantEmailDomainClient) CreateBulk(builders ...*TenantEmailDomainCreate) *TenantEmailDomainCreateBulk {
+	return &TenantEmailDomainCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TenantEmailDomainClient) MapCreateBulk(slice any, setFunc func(*TenantEmailDomainCreate, int)) *TenantEmailDomainCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TenantEmailDomainCreateBulk{err: fmt.Errorf("calling to TenantEmailDomainClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TenantEmailDomainCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TenantEmailDomainCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TenantEmailDomain.
+func (c *TenantEmailDomainClient) Update() *TenantEmailDomainUpdate {
+	mutation := newTenantEmailDomainMutation(c.config, OpUpdate)
+	return &TenantEmailDomainUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TenantEmailDomainClient) UpdateOne(_m *TenantEmailDomain) *TenantEmailDomainUpdateOne {
+	mutation := newTenantEmailDomainMutation(c.config, OpUpdateOne, withTenantEmailDomain(_m))
+	return &TenantEmailDomainUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TenantEmailDomainClient) UpdateOneID(id uuid.UUID) *TenantEmailDomainUpdateOne {
+	mutation := newTenantEmailDomainMutation(c.config, OpUpdateOne, withTenantEmailDomainID(id))
+	return &TenantEmailDomainUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TenantEmailDomain.
+func (c *TenantEmailDomainClient) Delete() *TenantEmailDomainDelete {
+	mutation := newTenantEmailDomainMutation(c.config, OpDelete)
+	return &TenantEmailDomainDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TenantEmailDomainClient) DeleteOne(_m *TenantEmailDomain) *TenantEmailDomainDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TenantEmailDomainClient) DeleteOneID(id uuid.UUID) *TenantEmailDomainDeleteOne {
+	builder := c.Delete().Where(tenantemaildomain.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TenantEmailDomainDeleteOne{builder}
+}
+
+// Query returns a query builder for TenantEmailDomain.
+func (c *TenantEmailDomainClient) Query() *TenantEmailDomainQuery {
+	return &TenantEmailDomainQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTenantEmailDomain},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TenantEmailDomain entity by its id.
+func (c *TenantEmailDomainClient) Get(ctx context.Context, id uuid.UUID) (*TenantEmailDomain, error) {
+	return c.Query().Where(tenantemaildomain.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TenantEmailDomainClient) GetX(ctx context.Context, id uuid.UUID) *TenantEmailDomain {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenantSubscription queries the tenant_subscription edge of a TenantEmailDomain.
+func (c *TenantEmailDomainClient) QueryTenantSubscription(_m *TenantEmailDomain) *TenantSubscriptionQuery {
+	query := (&TenantSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tenantemaildomain.Table, tenantemaildomain.FieldID, id),
+			sqlgraph.To(tenantsubscription.Table, tenantsubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, tenantemaildomain.TenantSubscriptionTable, tenantemaildomain.TenantSubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *TenantEmailDomainClient) Hooks() []Hook {
+	return c.hooks.TenantEmailDomain
+}
+
+// Interceptors returns the client interceptors.
+func (c *TenantEmailDomainClient) Interceptors() []Interceptor {
+	return c.inters.TenantEmailDomain
+}
+
+func (c *TenantEmailDomainClient) mutate(ctx context.Context, m *TenantEmailDomainMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TenantEmailDomainCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TenantEmailDomainUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TenantEmailDomainUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TenantEmailDomainDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TenantEmailDomain mutation op: %q", m.Op())
+	}
+}
+
 // TenantSubscriptionClient is a client for the TenantSubscription schema.
 type TenantSubscriptionClient struct {
 	config
@@ -4388,6 +4545,22 @@ func (c *TenantSubscriptionClient) QueryEmailLicenses(_m *TenantSubscription) *E
 			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, id),
 			sqlgraph.To(emaillicense.Table, emaillicense.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.EmailLicensesTable, tenantsubscription.EmailLicensesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEmailDomains queries the email_domains edge of a TenantSubscription.
+func (c *TenantSubscriptionClient) QueryEmailDomains(_m *TenantSubscription) *TenantEmailDomainQuery {
+	query := (&TenantEmailDomainClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, id),
+			sqlgraph.To(tenantemaildomain.Table, tenantemaildomain.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.EmailDomainsTable, tenantsubscription.EmailDomainsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -4726,8 +4899,8 @@ type (
 		Product, ProductSubscription, RateLimitConfig, RolePermission,
 		ServiceChargePlan, ServiceConfig, SubscriptionCredit,
 		SubscriptionCreditTransaction, SubscriptionPlan, SubscriptionsPermission,
-		SubscriptionsRole, SubscriptionsUser, Tenant, TenantSubscription, UsageEvent,
-		UserRoleAssignment []ent.Hook
+		SubscriptionsRole, SubscriptionsUser, Tenant, TenantEmailDomain,
+		TenantSubscription, UsageEvent, UserRoleAssignment []ent.Hook
 	}
 	inters struct {
 		Backup, BackupSetting, Bundle, Coupon, CustomAddon, EmailLicense, EmailPlan,
@@ -4735,7 +4908,7 @@ type (
 		Product, ProductSubscription, RateLimitConfig, RolePermission,
 		ServiceChargePlan, ServiceConfig, SubscriptionCredit,
 		SubscriptionCreditTransaction, SubscriptionPlan, SubscriptionsPermission,
-		SubscriptionsRole, SubscriptionsUser, Tenant, TenantSubscription, UsageEvent,
-		UserRoleAssignment []ent.Interceptor
+		SubscriptionsRole, SubscriptionsUser, Tenant, TenantEmailDomain,
+		TenantSubscription, UsageEvent, UserRoleAssignment []ent.Interceptor
 	}
 )

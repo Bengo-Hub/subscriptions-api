@@ -10,6 +10,8 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	serviceclient "github.com/Bengo-Hub/shared-service-client"
+
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
 	"github.com/bengobox/subscription-service/internal/ent/emailplan"
@@ -22,13 +24,23 @@ import (
 // email.license.* events on every state change — email-provisioner is the
 // consumer, per .claude/plans/codevertex-email-hosting-service-plan.md Part 3.
 type EmailLicenseHandler struct {
-	log    *zap.Logger
-	client *ent.Client
-	subSvc *subscriptions.Service
+	log                    *zap.Logger
+	client                 *ent.Client
+	subSvc                 *subscriptions.Service
+	emailProvisionerClient *serviceclient.Client
+	platformMailMXHost     string
+	platformMailIP         string
 }
 
-func NewEmailLicenseHandler(log *zap.Logger, client *ent.Client, subSvc *subscriptions.Service) *EmailLicenseHandler {
-	return &EmailLicenseHandler{log: log.Named("email_license.handler"), client: client, subSvc: subSvc}
+func NewEmailLicenseHandler(log *zap.Logger, client *ent.Client, subSvc *subscriptions.Service, emailProvisionerClient *serviceclient.Client, platformMailMXHost, platformMailIP string) *EmailLicenseHandler {
+	return &EmailLicenseHandler{
+		log:                    log.Named("email_license.handler"),
+		client:                 client,
+		subSvc:                 subSvc,
+		emailProvisionerClient: emailProvisionerClient,
+		platformMailMXHost:     platformMailMXHost,
+		platformMailIP:         platformMailIP,
+	}
 }
 
 func (h *EmailLicenseHandler) tenantID(r *http.Request) (uuid.UUID, bool) {
@@ -488,6 +500,17 @@ func (h *EmailLicenseHandler) transition(w http.ResponseWriter, r *http.Request,
 	_ = json.NewDecoder(r.Body).Decode(&in)
 
 	ctx := r.Context()
+
+	// Domain gate: a tenant may only assign a license to an address on the
+	// shared platform domain, or one of their own VERIFIED custom domains
+	// (plan Part 1.3) — never an unverified/unowned domain.
+	if in.Email != "" {
+		if allowed, reason := h.emailDomainAllowed(ctx, tenantID, in.Email); !allowed {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": reason})
+			return
+		}
+	}
+
 	tx, err := h.client.Tx(ctx)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
@@ -556,7 +579,7 @@ func (h *EmailLicenseHandler) transition(w http.ResponseWriter, r *http.Request,
 	writeJSON(w, http.StatusOK, updated)
 }
 
-// RegisterEmailRoutes registers the email-hosting license routes.
+// RegisterEmailRoutes registers the email-hosting license + domain routes.
 func (h *EmailLicenseHandler) RegisterEmailRoutes(r chi.Router) {
 	r.Get("/email/plans", h.ListEmailPlans)
 	r.Get("/email/licenses", h.ListEmailLicenses)
@@ -566,4 +589,14 @@ func (h *EmailLicenseHandler) RegisterEmailRoutes(r chi.Router) {
 	r.Put("/email/licenses/{id}/upgrade", h.UpgradeEmailLicense)
 	r.Put("/email/licenses/{id}/suspend", h.SuspendEmailLicense)
 	r.Put("/email/licenses/{id}/expire", h.ExpireEmailLicense)
+
+	// Self-service custom-domain onboarding — see email_domain_handler.go.
+	r.Get("/email/domains", h.ListEmailDomains)
+	r.Post("/email/domains", h.CreateEmailDomain)
+	r.Post("/email/domains/{id}/verify", h.VerifyEmailDomain)
+
+	// Platform-admin-only (own httpware.IsPlatformOwner gate inside the handler,
+	// not tenant-scoped) — called by mail-ui's admin console after a real
+	// Stalwart hard-delete succeeds.
+	r.Post("/admin/email/licenses/{id}/mark-deleted", h.MarkEmailLicenseDeleted)
 }

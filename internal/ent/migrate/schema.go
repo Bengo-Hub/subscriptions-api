@@ -182,7 +182,7 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "assigned_to_email", Type: field.TypeString, Nullable: true},
 		{Name: "assigned_to_user_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"AVAILABLE", "ASSIGNED", "SUSPENDED", "EXPIRED"}, Default: "AVAILABLE"},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"AVAILABLE", "ASSIGNED", "SUSPENDED", "EXPIRED", "DELETED"}, Default: "AVAILABLE"},
 		{Name: "suspend_reason", Type: field.TypeString, Nullable: true},
 		{Name: "storage_quota_gb", Type: field.TypeInt},
 		{Name: "features_json", Type: field.TypeJSON},
@@ -1058,6 +1058,47 @@ var (
 			},
 		},
 	}
+	// TenantEmailDomainsColumns holds the columns for the "tenant_email_domains" table.
+	TenantEmailDomainsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "domain", Type: field.TypeString},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"PENDING_DNS", "VERIFIED", "FAILED"}, Default: "PENDING_DNS"},
+		{Name: "dkim_selector", Type: field.TypeString, Nullable: true},
+		{Name: "stalwart_domain_id", Type: field.TypeString, Nullable: true},
+		{Name: "verified_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_checked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "failure_reason", Type: field.TypeString, Nullable: true},
+		{Name: "metadata", Type: field.TypeJSON},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "tenant_subscription_id", Type: field.TypeUUID},
+	}
+	// TenantEmailDomainsTable holds the schema information for the "tenant_email_domains" table.
+	TenantEmailDomainsTable = &schema.Table{
+		Name:       "tenant_email_domains",
+		Columns:    TenantEmailDomainsColumns,
+		PrimaryKey: []*schema.Column{TenantEmailDomainsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "tenant_email_domains_tenant_subscriptions_email_domains",
+				Columns:    []*schema.Column{TenantEmailDomainsColumns[11]},
+				RefColumns: []*schema.Column{TenantSubscriptionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "tenantemaildomain_domain",
+				Unique:  true,
+				Columns: []*schema.Column{TenantEmailDomainsColumns[1]},
+			},
+			{
+				Name:    "tenantemaildomain_tenant_subscription_id_status",
+				Unique:  false,
+				Columns: []*schema.Column{TenantEmailDomainsColumns[11], TenantEmailDomainsColumns[2]},
+			},
+		},
+	}
 	// TenantSubscriptionsColumns holds the columns for the "tenant_subscriptions" table.
 	TenantSubscriptionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1273,6 +1314,7 @@ var (
 		SubscriptionsRolesTable,
 		SubscriptionsUsersTable,
 		TenantsTable,
+		TenantEmailDomainsTable,
 		TenantSubscriptionsTable,
 		UsageEventsTable,
 		UserRoleAssignmentsTable,
@@ -1293,6 +1335,7 @@ func init() {
 	RolePermissionsTable.ForeignKeys[0].RefTable = SubscriptionsRolesTable
 	RolePermissionsTable.ForeignKeys[1].RefTable = SubscriptionsPermissionsTable
 	SubscriptionCreditTransactionsTable.ForeignKeys[0].RefTable = SubscriptionCreditsTable
+	TenantEmailDomainsTable.ForeignKeys[0].RefTable = TenantSubscriptionsTable
 	TenantSubscriptionsTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
 	TenantSubscriptionsTable.ForeignKeys[1].RefTable = TenantsTable
 	UserRoleAssignmentsTable.ForeignKeys[0].RefTable = SubscriptionsRolesTable

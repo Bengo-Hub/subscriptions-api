@@ -131,6 +131,7 @@ const (
 	StatusASSIGNED  Status = "ASSIGNED"
 	StatusSUSPENDED Status = "SUSPENDED"
 	StatusEXPIRED   Status = "EXPIRED"
+	StatusDELETED   Status = "DELETED"
 )
 
 func (s Status) String() string {
@@ -140,7 +141,7 @@ func (s Status) String() string {
 // StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
 func StatusValidator(s Status) error {
 	switch s {
-	case StatusAVAILABLE, StatusASSIGNED, StatusSUSPENDED, StatusEXPIRED:
+	case StatusAVAILABLE, StatusASSIGNED, StatusSUSPENDED, StatusEXPIRED, StatusDELETED:
 		return nil
 	default:
 		return fmt.Errorf("emaillicense: invalid enum value for status field: %q", s)

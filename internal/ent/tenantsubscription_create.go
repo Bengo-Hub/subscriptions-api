@@ -17,6 +17,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
+	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -450,6 +451,21 @@ func (_c *TenantSubscriptionCreate) AddEmailLicenses(v ...*EmailLicense) *Tenant
 	return _c.AddEmailLicenseIDs(ids...)
 }
 
+// AddEmailDomainIDs adds the "email_domains" edge to the TenantEmailDomain entity by IDs.
+func (_c *TenantSubscriptionCreate) AddEmailDomainIDs(ids ...uuid.UUID) *TenantSubscriptionCreate {
+	_c.mutation.AddEmailDomainIDs(ids...)
+	return _c
+}
+
+// AddEmailDomains adds the "email_domains" edges to the TenantEmailDomain entity.
+func (_c *TenantSubscriptionCreate) AddEmailDomains(v ...*TenantEmailDomain) *TenantSubscriptionCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEmailDomainIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_c *TenantSubscriptionCreate) Mutation() *TenantSubscriptionMutation {
 	return _c.mutation
@@ -796,6 +812,22 @@ func (_c *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgraph
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(emaillicense.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EmailDomainsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.EmailDomainsTable,
+			Columns: []string{tenantsubscription.EmailDomainsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenantemaildomain.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
