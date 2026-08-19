@@ -37,3 +37,4 @@ config/certs/*.key
 *-key.pem
 KubeSecrets/
 kubeSecrets/
+pg_local.log
