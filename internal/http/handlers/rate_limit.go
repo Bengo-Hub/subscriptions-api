@@ -46,6 +46,20 @@ type rateLimitResponse struct {
 //     the service's "*" default row.
 //  3. A hardcoded safe default (60 req/min), so a misconfigured tenant/service never resolves to
 //     "unlimited" by accident.
+//
+// GetEffectiveRateLimit godoc
+// @Summary Resolve effective rate limit (S2S)
+// @Description Resolves the requests/minute ceiling a calling service should enforce for a tenant against a service+endpoint pattern. Used by treasury-api's external eTIMS API middleware.
+// @Tags Subscriptions
+// @Produce json
+// @Security BearerAuth
+// @Security ApiKeyAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Param service_name query string true "Calling service name, e.g. treasury-api"
+// @Param endpoint query string false "Endpoint pattern, e.g. /api/v1/external/etims/*"
+// @Success 200 {object} rateLimitResponse
+// @Failure 400 {object} map[string]string
+// @Router /tenants/{tenant_id}/rate-limit [get]
 func (h *RateLimitHandler) GetEffectiveRateLimit(w http.ResponseWriter, r *http.Request) {
 	tenantIDStr := chi.URLParam(r, "tenant_id")
 	tenantID, err := uuid.Parse(tenantIDStr)
