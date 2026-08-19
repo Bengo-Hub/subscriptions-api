@@ -13,8 +13,6 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	httpware "github.com/Bengo-Hub/httpware"
-
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
@@ -308,7 +306,7 @@ func (h *EmailLicenseHandler) emailDomainAllowed(ctx context.Context, tenantID u
 // elsewhere. Platform-ops bypasses tenant scoping entirely here, matching
 // the access model's "unscoped" platform-admin capability.
 func (h *EmailLicenseHandler) MarkEmailLicenseDeleted(w http.ResponseWriter, r *http.Request) {
-	if !httpware.IsPlatformOwner(r.Context()) {
+	if !h.isTrustedAdminCaller(r) {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "platform owner access required"})
 		return
 	}
@@ -344,7 +342,7 @@ func (h *EmailLicenseHandler) MarkEmailLicenseDeleted(w http.ResponseWriter, r *
 // silent no-op here, not an error, since the caller's own destroy already
 // succeeded and shouldn't be reported as failed over this side-effect.
 func (h *EmailLicenseHandler) MarkEmailLicenseDeletedByEmail(w http.ResponseWriter, r *http.Request) {
-	if !httpware.IsPlatformOwner(r.Context()) {
+	if !h.isTrustedAdminCaller(r) {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "platform owner access required"})
 		return
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	httpware "github.com/Bengo-Hub/httpware"
 	serviceclient "github.com/Bengo-Hub/shared-service-client"
 
 	"github.com/bengobox/subscription-service/internal/ent"
@@ -30,9 +31,17 @@ type EmailLicenseHandler struct {
 	emailProvisionerClient *serviceclient.Client
 	platformMailMXHost     string
 	platformMailIP         string
+	// internalAPIKey (INTERNAL_SERVICE_KEY) authenticates mail-ui's
+	// mark-deleted calls — mail-ui holds no Codevertex platform JWT at all
+	// (it authenticates admins via Stalwart's own Basic-Auth credential, a
+	// completely separate system), so httpware.IsPlatformOwner can never be
+	// true for it. This is the same fleet-wide S2S convention every other
+	// cross-service admin call in this codebase already uses (see
+	// webhook.go's X-API-Key check).
+	internalAPIKey string
 }
 
-func NewEmailLicenseHandler(log *zap.Logger, client *ent.Client, subSvc *subscriptions.Service, emailProvisionerClient *serviceclient.Client, platformMailMXHost, platformMailIP string) *EmailLicenseHandler {
+func NewEmailLicenseHandler(log *zap.Logger, client *ent.Client, subSvc *subscriptions.Service, emailProvisionerClient *serviceclient.Client, platformMailMXHost, platformMailIP, internalAPIKey string) *EmailLicenseHandler {
 	return &EmailLicenseHandler{
 		log:                    log.Named("email_license.handler"),
 		client:                 client,
@@ -40,7 +49,18 @@ func NewEmailLicenseHandler(log *zap.Logger, client *ent.Client, subSvc *subscri
 		emailProvisionerClient: emailProvisionerClient,
 		platformMailMXHost:     platformMailMXHost,
 		platformMailIP:         platformMailIP,
+		internalAPIKey:         internalAPIKey,
 	}
+}
+
+// isTrustedAdminCaller authorizes either a real platform-owner JWT (a
+// Codevertex staff member using subscriptions-ui) or the shared internal
+// S2S key (mail-ui, which has no JWT of its own to present).
+func (h *EmailLicenseHandler) isTrustedAdminCaller(r *http.Request) bool {
+	if httpware.IsPlatformOwner(r.Context()) {
+		return true
+	}
+	return h.internalAPIKey != "" && r.Header.Get("X-API-Key") == h.internalAPIKey
 }
 
 func (h *EmailLicenseHandler) tenantID(r *http.Request) (uuid.UUID, bool) {

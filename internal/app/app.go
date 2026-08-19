@@ -270,7 +270,7 @@ func New(ctx context.Context) (*App, error) {
 
 	// Custom addon handler (platform-admin managed recurring/one-time charges)
 	customAddonHandler := handlers.NewCustomAddonHandler(log, ormClient)
-	emailLicenseHandler := handlers.NewEmailLicenseHandler(log, ormClient, subscriptionSvc, emailProvisionerClient, cfg.Services.PlatformMailMXHost, cfg.Services.PlatformMailIP)
+	emailLicenseHandler := handlers.NewEmailLicenseHandler(log, ormClient, subscriptionSvc, emailProvisionerClient, cfg.Services.PlatformMailMXHost, cfg.Services.PlatformMailIP, cfg.Security.APIKey)
 
 	// Coupon + credit wallet handler
 	couponHandler := handlers.NewCouponHandler(log, ormClient)
