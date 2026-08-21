@@ -7,7 +7,9 @@ import (
 
 	eventslib "github.com/Bengo-Hub/shared-events"
 	"github.com/bengobox/subscription-service/internal/ent/emaillicense"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionsuser"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/ent/userroleassignment"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
@@ -32,6 +34,10 @@ func (s *Service) SubscribeAuthEvents(nc *nats.Conn) error {
 	_, err := eventslib.QueueSubscribe(s.log, nc, "auth.user.created", "subscriptions-auth-user-created", s.handleAuthUserCreated)
 	if err != nil {
 		return fmt.Errorf("subscribe auth.user.created: %w", err)
+	}
+	_, err = eventslib.QueueSubscribe(s.log, nc, "auth.user.deleted", "subscriptions-auth-user-deleted", s.handleAuthUserDeleted)
+	if err != nil {
+		return fmt.Errorf("subscribe auth.user.deleted: %w", err)
 	}
 	return nil
 }
@@ -113,4 +119,80 @@ func (s *Service) handleAuthUserCreated(msg *nats.Msg) {
 	}
 	s.log.Info("auto-assigned email license on user creation",
 		zap.String("tenant_id", p.TenantID), zap.String("email", p.Email))
+}
+
+type authUserDeletedPayload struct {
+	UserID string `json:"user_id"`
+}
+
+// handleAuthUserDeleted reacts to auth-api's real hard-delete (AdminPurgeUser) of a
+// platform user. Two independent, unrelated things reference this user's id here:
+//
+//  1. EmailLicense.assigned_to_user_id — a plain field, no ent edge/FK at all, so
+//     nothing blocks deleting the user without touching this row; but leaving a
+//     stale user_id on an active license would silently orphan a real, still-in-use
+//     mailbox assignment. This is NOT a delete: free the seat back to AVAILABLE.
+//  2. SubscriptionsUser (this service's own RBAC shadow, JIT-provisioned on first
+//     authenticated request — see rbac.Service.EnsureUserFromToken — never by this
+//     event consumer) + its UserRoleAssignment child (real OnDelete:NoAction FK).
+//     Hard-delete both, child first, same as every other service's cascade.
+func (s *Service) handleAuthUserDeleted(msg *nats.Msg) {
+	ctx := context.Background()
+
+	ev, err := eventslib.FromJSON(msg.Data)
+	if err != nil {
+		s.log.Error("decode auth.user.deleted event failed", zap.Error(err))
+		return
+	}
+
+	var p authUserDeletedPayload
+	if b, err := json.Marshal(ev.Payload); err == nil {
+		_ = json.Unmarshal(b, &p)
+	}
+	userID, err := uuid.Parse(p.UserID)
+	if err != nil || userID == uuid.Nil {
+		s.log.Error("auth.user.deleted: missing/invalid user_id, skipping", zap.String("user_id", p.UserID))
+		return
+	}
+
+	// (1) Free any email license seat assigned to this user — not a delete.
+	if _, err := s.client.EmailLicense.Update().
+		Where(emaillicense.AssignedToUserID(userID)).
+		ClearAssignedToUserID().
+		ClearAssignedToEmail().
+		SetStatus("AVAILABLE").
+		Save(ctx); err != nil {
+		s.log.Error("auth.user.deleted: free email license failed", zap.String("user_id", p.UserID), zap.Error(err))
+		// Not fatal to the rest of the cleanup below — continue.
+	}
+
+	// (2) Hard-delete this service's own RBAC shadow, if it was ever provisioned.
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		s.log.Error("auth.user.deleted: begin tx failed", zap.Error(err))
+		return
+	}
+
+	subUser, err := tx.SubscriptionsUser.Query().Where(subscriptionsuser.AuthServiceUserID(userID)).Only(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		return // never provisioned locally — nothing more to do
+	}
+
+	if _, err := tx.UserRoleAssignment.Delete().Where(userroleassignment.UserID(subUser.ID)).Exec(ctx); err != nil {
+		_ = tx.Rollback()
+		s.log.Error("auth.user.deleted: delete role assignments failed", zap.String("user_id", p.UserID), zap.Error(err))
+		return
+	}
+	if err := tx.SubscriptionsUser.DeleteOne(subUser).Exec(ctx); err != nil {
+		_ = tx.Rollback()
+		s.log.Error("auth.user.deleted: delete subscriptions user failed", zap.String("user_id", p.UserID), zap.Error(err))
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		s.log.Error("auth.user.deleted: commit failed", zap.String("user_id", p.UserID), zap.Error(err))
+		return
+	}
+
+	s.log.Info("user hard-deleted from auth.user.deleted event", zap.String("user_id", p.UserID))
 }
