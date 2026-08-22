@@ -355,6 +355,20 @@ func (_u *TenantSubscriptionUpdate) ClearReferralCode() *TenantSubscriptionUpdat
 	return _u
 }
 
+// SetReferralBonusPaid sets the "referral_bonus_paid" field.
+func (_u *TenantSubscriptionUpdate) SetReferralBonusPaid(v bool) *TenantSubscriptionUpdate {
+	_u.mutation.SetReferralBonusPaid(v)
+	return _u
+}
+
+// SetNillableReferralBonusPaid sets the "referral_bonus_paid" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableReferralBonusPaid(v *bool) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetReferralBonusPaid(*v)
+	}
+	return _u
+}
+
 // SetTermsVersion sets the "terms_version" field.
 func (_u *TenantSubscriptionUpdate) SetTermsVersion(v string) *TenantSubscriptionUpdate {
 	_u.mutation.SetTermsVersion(v)
@@ -827,6 +841,9 @@ func (_u *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err
 	}
 	if _u.mutation.ReferralCodeCleared() {
 		_spec.ClearField(tenantsubscription.FieldReferralCode, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReferralBonusPaid(); ok {
+		_spec.SetField(tenantsubscription.FieldReferralBonusPaid, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.TermsVersion(); ok {
 		_spec.SetField(tenantsubscription.FieldTermsVersion, field.TypeString, value)
@@ -1454,6 +1471,20 @@ func (_u *TenantSubscriptionUpdateOne) ClearReferralCode() *TenantSubscriptionUp
 	return _u
 }
 
+// SetReferralBonusPaid sets the "referral_bonus_paid" field.
+func (_u *TenantSubscriptionUpdateOne) SetReferralBonusPaid(v bool) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetReferralBonusPaid(v)
+	return _u
+}
+
+// SetNillableReferralBonusPaid sets the "referral_bonus_paid" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableReferralBonusPaid(v *bool) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetReferralBonusPaid(*v)
+	}
+	return _u
+}
+
 // SetTermsVersion sets the "terms_version" field.
 func (_u *TenantSubscriptionUpdateOne) SetTermsVersion(v string) *TenantSubscriptionUpdateOne {
 	_u.mutation.SetTermsVersion(v)
@@ -1956,6 +1987,9 @@ func (_u *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Tena
 	}
 	if _u.mutation.ReferralCodeCleared() {
 		_spec.ClearField(tenantsubscription.FieldReferralCode, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReferralBonusPaid(); ok {
+		_spec.SetField(tenantsubscription.FieldReferralBonusPaid, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.TermsVersion(); ok {
 		_spec.SetField(tenantsubscription.FieldTermsVersion, field.TypeString, value)

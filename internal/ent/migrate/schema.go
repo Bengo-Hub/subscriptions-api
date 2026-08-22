@@ -3,6 +3,7 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
@@ -850,6 +851,14 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{SubscriptionCreditTransactionsColumns[7]},
 			},
+			{
+				Name:    "subscriptioncredittransaction_tenant_id_type_ref_id",
+				Unique:  true,
+				Columns: []*schema.Column{SubscriptionCreditTransactionsColumns[1], SubscriptionCreditTransactionsColumns[2], SubscriptionCreditTransactionsColumns[4]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "type IN ('earned', 'referral_bonus')",
+				},
+			},
 		},
 	}
 	// SubscriptionPlansColumns holds the columns for the "subscription_plans" table.
@@ -1118,6 +1127,7 @@ var (
 		{Name: "payment_method_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "referred_by", Type: field.TypeUUID, Nullable: true},
 		{Name: "referral_code", Type: field.TypeString, Nullable: true},
+		{Name: "referral_bonus_paid", Type: field.TypeBool, Default: false},
 		{Name: "terms_version", Type: field.TypeString, Nullable: true},
 		{Name: "terms_accepted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "terms_accepted_by", Type: field.TypeUUID, Nullable: true},
@@ -1139,13 +1149,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "tenant_subscriptions_subscription_plans_subscriptions",
-				Columns:    []*schema.Column{TenantSubscriptionsColumns[27]},
+				Columns:    []*schema.Column{TenantSubscriptionsColumns[28]},
 				RefColumns: []*schema.Column{SubscriptionPlansColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "tenant_subscriptions_tenants_subscriptions",
-				Columns:    []*schema.Column{TenantSubscriptionsColumns[28]},
+				Columns:    []*schema.Column{TenantSubscriptionsColumns[29]},
 				RefColumns: []*schema.Column{TenantsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1154,7 +1164,7 @@ var (
 			{
 				Name:    "tenantsubscription_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{TenantSubscriptionsColumns[28]},
+				Columns: []*schema.Column{TenantSubscriptionsColumns[29]},
 			},
 			{
 				Name:    "tenantsubscription_status",
@@ -1169,7 +1179,7 @@ var (
 			{
 				Name:    "tenantsubscription_last_activity_at",
 				Unique:  false,
-				Columns: []*schema.Column{TenantSubscriptionsColumns[20]},
+				Columns: []*schema.Column{TenantSubscriptionsColumns[21]},
 			},
 			{
 				Name:    "tenantsubscription_referral_code",

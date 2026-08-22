@@ -899,20 +899,24 @@ func init() {
 	tenantsubscriptionDescAllowOverage := tenantsubscriptionFields[14].Descriptor()
 	// tenantsubscription.DefaultAllowOverage holds the default value on creation for the allow_overage field.
 	tenantsubscription.DefaultAllowOverage = tenantsubscriptionDescAllowOverage.Default.(bool)
+	// tenantsubscriptionDescReferralBonusPaid is the schema descriptor for referral_bonus_paid field.
+	tenantsubscriptionDescReferralBonusPaid := tenantsubscriptionFields[19].Descriptor()
+	// tenantsubscription.DefaultReferralBonusPaid holds the default value on creation for the referral_bonus_paid field.
+	tenantsubscription.DefaultReferralBonusPaid = tenantsubscriptionDescReferralBonusPaid.Default.(bool)
 	// tenantsubscriptionDescPendingPurge is the schema descriptor for pending_purge field.
-	tenantsubscriptionDescPendingPurge := tenantsubscriptionFields[25].Descriptor()
+	tenantsubscriptionDescPendingPurge := tenantsubscriptionFields[26].Descriptor()
 	// tenantsubscription.DefaultPendingPurge holds the default value on creation for the pending_purge field.
 	tenantsubscription.DefaultPendingPurge = tenantsubscriptionDescPendingPurge.Default.(bool)
 	// tenantsubscriptionDescMetadata is the schema descriptor for metadata field.
-	tenantsubscriptionDescMetadata := tenantsubscriptionFields[26].Descriptor()
+	tenantsubscriptionDescMetadata := tenantsubscriptionFields[27].Descriptor()
 	// tenantsubscription.DefaultMetadata holds the default value on creation for the metadata field.
 	tenantsubscription.DefaultMetadata = tenantsubscriptionDescMetadata.Default.(map[string]interface{})
 	// tenantsubscriptionDescCreatedAt is the schema descriptor for created_at field.
-	tenantsubscriptionDescCreatedAt := tenantsubscriptionFields[27].Descriptor()
+	tenantsubscriptionDescCreatedAt := tenantsubscriptionFields[28].Descriptor()
 	// tenantsubscription.DefaultCreatedAt holds the default value on creation for the created_at field.
 	tenantsubscription.DefaultCreatedAt = tenantsubscriptionDescCreatedAt.Default.(func() time.Time)
 	// tenantsubscriptionDescUpdatedAt is the schema descriptor for updated_at field.
-	tenantsubscriptionDescUpdatedAt := tenantsubscriptionFields[28].Descriptor()
+	tenantsubscriptionDescUpdatedAt := tenantsubscriptionFields[29].Descriptor()
 	// tenantsubscription.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	tenantsubscription.DefaultUpdatedAt = tenantsubscriptionDescUpdatedAt.Default.(func() time.Time)
 	// tenantsubscription.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

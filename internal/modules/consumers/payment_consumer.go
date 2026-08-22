@@ -3,13 +3,15 @@ package consumers
 import (
 	"context"
 	"encoding/json"
+	"strconv"
+	"strings"
 	"time"
 
+	eventslib "github.com/Bengo-Hub/shared-events"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
-	eventslib "github.com/Bengo-Hub/shared-events"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
@@ -21,7 +23,13 @@ const treasuryPaymentSucceededSubject = "treasury.payment.succeeded"
 // Amount is json.Number to handle both float64 and decimal string (treasury publishes
 // decimal.Decimal which marshals as a quoted string, e.g. "2500.00").
 type treasuryPaymentEvent struct {
-	EventType string `json:"event_type"`
+	// ID is the shared-events envelope event id (events.Event.ID). Every publisher using
+	// shared-events sets it, and it is STABLE across NATS redeliveries of the same event —
+	// which makes it the fallback credit idempotency key when the flat payload shape carries
+	// no intent_id. See stableCreditRef.
+	ID        string    `json:"id"`
+	Timestamp time.Time `json:"timestamp"`
+	EventType string    `json:"event_type"`
 	Payload   struct {
 		IntentID         string      `json:"intent_id"`
 		TenantID         string      `json:"tenant_id"`
@@ -121,16 +129,20 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 		return nil
 	}
 
+	// Resolve the envelope event id unconditionally — NOT only when the idempotency store is
+	// wired. It doubles as the credit idempotency key (stableCreditRef) and is stable across
+	// redeliveries, so it must be available even on deployments with no store configured.
+	var eventID uuid.UUID
+	if id, err := eventslib.EventIDFromMsg(msg); err == nil {
+		eventID = id
+	}
+
 	// Redelivery dedup: skip events this consumer already handled successfully.
 	// Fail-open when the message carries no event id or the store is unavailable.
-	var eventID uuid.UUID
-	if c.idem != nil {
-		if id, err := eventslib.EventIDFromMsg(msg); err == nil {
-			eventID = id
-			if done, err := c.idem.AlreadyProcessed(ctx, eventID, treasuryPaymentConsumerName); err == nil && done {
-				c.log.Info("treasury payment event already processed, skipping", zap.String("event_id", eventID.String()))
-				return nil
-			}
+	if c.idem != nil && eventID != uuid.Nil {
+		if done, err := c.idem.AlreadyProcessed(ctx, eventID, treasuryPaymentConsumerName); err == nil && done {
+			c.log.Info("treasury payment event already processed, skipping", zap.String("event_id", eventID.String()))
+			return nil
 		}
 	}
 
@@ -241,21 +253,18 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 		amountKes = jsonNumberToInt(ev.Amount)
 	}
 	if amountKes > 0 {
-		refID := uuid.New()
-		if intentIDStr := ev.Payload.IntentID; intentIDStr != "" {
-			if id, err := uuid.Parse(intentIDStr); err == nil {
-				refID = id
-			}
-		}
+		refID := c.stableCreditRef(&ev, eventID, tenantID, refType, amountKes)
 		if err := c.creditService.EarnLoyaltyCredits(ctx, tenantID, amountKes, refID); err != nil {
 			c.log.Warn("failed to earn loyalty credits", zap.String("tenant_id", tenantIDStr), zap.Error(err))
 		}
 
-		// Type-A referral reward: if this paying tenant was referred by another tenant,
-		// credit the referrer's wallet a share of the payment (idempotent on the payment ref).
+		// Type-A referral reward: if this paying tenant was referred by another tenant, credit
+		// the referrer's wallet a share of THIS tenant's FIRST payment. EarnReferralBonus owns
+		// both the one-time gate (referral_bonus_paid) and the per-payment redelivery dedup;
+		// the cheap flag check here just avoids the transaction on every later renewal.
 		if sub, err := c.orm.TenantSubscription.Query().
 			Where(tenantsubscription.TenantIDEQ(tenantID)).
-			Only(ctx); err == nil && sub.ReferredBy != nil {
+			Only(ctx); err == nil && sub.ReferredBy != nil && !sub.ReferralBonusPaid {
 			if err := c.creditService.EarnReferralBonus(ctx, *sub.ReferredBy, tenantID, amountKes, refID); err != nil {
 				c.log.Warn("failed to credit referral bonus", zap.String("tenant_id", tenantIDStr), zap.Error(err))
 			}
@@ -264,6 +273,59 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 
 	c.markProcessed(ctx, eventID)
 	return nil
+}
+
+// creditRefNamespace seeds the deterministic UUIDv5 derived as a last-resort credit
+// idempotency key. Arbitrary but FIXED — changing it re-randomises every derived key and
+// re-opens the double-credit window it exists to close.
+var creditRefNamespace = uuid.MustParse("6f3a1c94-5d2b-4e18-9a77-0c8b1e5f4a20")
+
+// stableCreditRef resolves the idempotency key under which this payment's credits (loyalty
+// earn and Type-A referral bonus) are recorded. It MUST be stable across redeliveries of the
+// same event: the ref_id is the dedup key both in EarnReferralBonus and in the partial unique
+// index on subscription_credit_transactions, so a fresh uuid.New() per delivery — the previous
+// behaviour — silently defeated both and credited the wallet again on every redelivery, which
+// is a routine occurrence in an at-least-once system (lost ack, AckWait expiry post-commit).
+//
+// Preference order, most to least specific:
+//  1. payload.intent_id — the treasury payment intent; present on the NESTED envelope shape.
+//  2. the shared-events envelope event id — stable per published event, so redeliveries of
+//     that event share it. Set by every shared-events publisher.
+//  3. a deterministic UUIDv5 over the stable business fields this payload actually carries
+//     (tenant + reference type + plan + amount + hour-truncated event timestamp). Not a true
+//     payment identity — two genuinely distinct identical payments inside one hour collide and
+//     the second earns nothing — but it is redelivery-safe, which is the failure mode that
+//     actually loses money. Logged at WARN because reaching it means the producer published a
+//     flat payload with neither an intent id nor an envelope id, which is a producer-side bug.
+func (c *TreasuryPaymentConsumer) stableCreditRef(ev *treasuryPaymentEvent, eventID, tenantID uuid.UUID, refType string, amountKes int) uuid.UUID {
+	if intentIDStr := ev.Payload.IntentID; intentIDStr != "" {
+		if id, err := uuid.Parse(intentIDStr); err == nil {
+			return id
+		}
+	}
+	if eventID != uuid.Nil {
+		return eventID
+	}
+
+	planCode := ev.Payload.PlanCode
+	if planCode == "" {
+		planCode = ev.PlanCode
+	}
+	// Truncate to the hour so clock skew / re-serialisation jitter between deliveries of the
+	// same event cannot change the derived key.
+	window := ev.Timestamp.UTC().Truncate(time.Hour).Format(time.RFC3339)
+	composite := strings.Join([]string{tenantID.String(), refType, planCode, strconv.Itoa(amountKes), window}, "|")
+	derived := uuid.NewSHA1(creditRefNamespace, []byte(composite))
+
+	c.log.Warn("treasury payment event carries neither payload.intent_id nor an envelope event id "+
+		"— credit idempotency degraded to a derived key; this consumer is only weakly protected "+
+		"against redelivery and the PRODUCER should be fixed to publish intent_id",
+		zap.String("tenant_id", tenantID.String()),
+		zap.String("reference_type", refType),
+		zap.String("derived_ref_id", derived.String()),
+		zap.String("composite", composite),
+	)
+	return derived
 }
 
 // markProcessed records the event as handled (no-op without a store or event id).

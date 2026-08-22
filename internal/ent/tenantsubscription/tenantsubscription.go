@@ -52,6 +52,8 @@ const (
 	FieldReferredBy = "referred_by"
 	// FieldReferralCode holds the string denoting the referral_code field in the database.
 	FieldReferralCode = "referral_code"
+	// FieldReferralBonusPaid holds the string denoting the referral_bonus_paid field in the database.
+	FieldReferralBonusPaid = "referral_bonus_paid"
 	// FieldTermsVersion holds the string denoting the terms_version field in the database.
 	FieldTermsVersion = "terms_version"
 	// FieldTermsAcceptedAt holds the string denoting the terms_accepted_at field in the database.
@@ -151,6 +153,7 @@ var Columns = []string{
 	FieldPaymentMethodID,
 	FieldReferredBy,
 	FieldReferralCode,
+	FieldReferralBonusPaid,
 	FieldTermsVersion,
 	FieldTermsAcceptedAt,
 	FieldTermsAcceptedBy,
@@ -180,6 +183,8 @@ var (
 	DefaultSetupFeeAmount float64
 	// DefaultAllowOverage holds the default value on creation for the "allow_overage" field.
 	DefaultAllowOverage bool
+	// DefaultReferralBonusPaid holds the default value on creation for the "referral_bonus_paid" field.
+	DefaultReferralBonusPaid bool
 	// DefaultPendingPurge holds the default value on creation for the "pending_purge" field.
 	DefaultPendingPurge bool
 	// DefaultMetadata holds the default value on creation for the "metadata" field.
@@ -349,6 +354,11 @@ func ByReferredBy(opts ...sql.OrderTermOption) OrderOption {
 // ByReferralCode orders the results by the referral_code field.
 func ByReferralCode(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldReferralCode, opts...).ToFunc()
+}
+
+// ByReferralBonusPaid orders the results by the referral_bonus_paid field.
+func ByReferralBonusPaid(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReferralBonusPaid, opts...).ToFunc()
 }
 
 // ByTermsVersion orders the results by the terms_version field.

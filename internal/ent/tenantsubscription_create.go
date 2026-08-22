@@ -250,6 +250,20 @@ func (_c *TenantSubscriptionCreate) SetNillableReferralCode(v *string) *TenantSu
 	return _c
 }
 
+// SetReferralBonusPaid sets the "referral_bonus_paid" field.
+func (_c *TenantSubscriptionCreate) SetReferralBonusPaid(v bool) *TenantSubscriptionCreate {
+	_c.mutation.SetReferralBonusPaid(v)
+	return _c
+}
+
+// SetNillableReferralBonusPaid sets the "referral_bonus_paid" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableReferralBonusPaid(v *bool) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetReferralBonusPaid(*v)
+	}
+	return _c
+}
+
 // SetTermsVersion sets the "terms_version" field.
 func (_c *TenantSubscriptionCreate) SetTermsVersion(v string) *TenantSubscriptionCreate {
 	_c.mutation.SetTermsVersion(v)
@@ -521,6 +535,10 @@ func (_c *TenantSubscriptionCreate) defaults() {
 		v := tenantsubscription.DefaultAllowOverage
 		_c.mutation.SetAllowOverage(v)
 	}
+	if _, ok := _c.mutation.ReferralBonusPaid(); !ok {
+		v := tenantsubscription.DefaultReferralBonusPaid
+		_c.mutation.SetReferralBonusPaid(v)
+	}
 	if _, ok := _c.mutation.PendingPurge(); !ok {
 		v := tenantsubscription.DefaultPendingPurge
 		_c.mutation.SetPendingPurge(v)
@@ -581,6 +599,9 @@ func (_c *TenantSubscriptionCreate) check() error {
 	}
 	if _, ok := _c.mutation.AllowOverage(); !ok {
 		return &ValidationError{Name: "allow_overage", err: errors.New(`ent: missing required field "TenantSubscription.allow_overage"`)}
+	}
+	if _, ok := _c.mutation.ReferralBonusPaid(); !ok {
+		return &ValidationError{Name: "referral_bonus_paid", err: errors.New(`ent: missing required field "TenantSubscription.referral_bonus_paid"`)}
 	}
 	if _, ok := _c.mutation.PendingPurge(); !ok {
 		return &ValidationError{Name: "pending_purge", err: errors.New(`ent: missing required field "TenantSubscription.pending_purge"`)}
@@ -696,6 +717,10 @@ func (_c *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgraph
 	if value, ok := _c.mutation.ReferralCode(); ok {
 		_spec.SetField(tenantsubscription.FieldReferralCode, field.TypeString, value)
 		_node.ReferralCode = &value
+	}
+	if value, ok := _c.mutation.ReferralBonusPaid(); ok {
+		_spec.SetField(tenantsubscription.FieldReferralBonusPaid, field.TypeBool, value)
+		_node.ReferralBonusPaid = value
 	}
 	if value, ok := _c.mutation.TermsVersion(); ok {
 		_spec.SetField(tenantsubscription.FieldTermsVersion, field.TypeString, value)
@@ -1166,6 +1191,18 @@ func (u *TenantSubscriptionUpsert) UpdateReferralCode() *TenantSubscriptionUpser
 // ClearReferralCode clears the value of the "referral_code" field.
 func (u *TenantSubscriptionUpsert) ClearReferralCode() *TenantSubscriptionUpsert {
 	u.SetNull(tenantsubscription.FieldReferralCode)
+	return u
+}
+
+// SetReferralBonusPaid sets the "referral_bonus_paid" field.
+func (u *TenantSubscriptionUpsert) SetReferralBonusPaid(v bool) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldReferralBonusPaid, v)
+	return u
+}
+
+// UpdateReferralBonusPaid sets the "referral_bonus_paid" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateReferralBonusPaid() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldReferralBonusPaid)
 	return u
 }
 
@@ -1696,6 +1733,20 @@ func (u *TenantSubscriptionUpsertOne) UpdateReferralCode() *TenantSubscriptionUp
 func (u *TenantSubscriptionUpsertOne) ClearReferralCode() *TenantSubscriptionUpsertOne {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.ClearReferralCode()
+	})
+}
+
+// SetReferralBonusPaid sets the "referral_bonus_paid" field.
+func (u *TenantSubscriptionUpsertOne) SetReferralBonusPaid(v bool) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetReferralBonusPaid(v)
+	})
+}
+
+// UpdateReferralBonusPaid sets the "referral_bonus_paid" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateReferralBonusPaid() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateReferralBonusPaid()
 	})
 }
 
@@ -2418,6 +2469,20 @@ func (u *TenantSubscriptionUpsertBulk) UpdateReferralCode() *TenantSubscriptionU
 func (u *TenantSubscriptionUpsertBulk) ClearReferralCode() *TenantSubscriptionUpsertBulk {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.ClearReferralCode()
+	})
+}
+
+// SetReferralBonusPaid sets the "referral_bonus_paid" field.
+func (u *TenantSubscriptionUpsertBulk) SetReferralBonusPaid(v bool) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetReferralBonusPaid(v)
+	})
+}
+
+// UpdateReferralBonusPaid sets the "referral_bonus_paid" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateReferralBonusPaid() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateReferralBonusPaid()
 	})
 }
 

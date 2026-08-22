@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -71,5 +72,17 @@ func (SubscriptionCreditTransaction) Indexes() []ent.Index {
 		index.Fields("credit_id"),
 		index.Fields("type"),
 		index.Fields("created_at"),
+		// Last-resort double-credit guard for the two EVENT-DRIVEN earn paths, whose ref_id is
+		// the payment idempotency key: an at-least-once NATS redelivery cannot insert a second
+		// credit row for the same (tenant, type, payment) even if the application-level check
+		// is bypassed or races with itself.
+		//
+		// PARTIAL by design — the other types legitimately repeat the same ref_id:
+		// auto_applied uses the tenant's own id as a self-referential ref on every renewal,
+		// and gifted uses the granting admin's user id on every gift. A blanket unique index
+		// would break both.
+		index.Fields("tenant_id", "type", "ref_id").
+			Unique().
+			Annotations(entsql.IndexWhere("type IN ('earned', 'referral_bonus')")),
 	}
 }

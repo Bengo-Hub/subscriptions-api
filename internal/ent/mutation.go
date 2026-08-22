@@ -27340,6 +27340,7 @@ type TenantSubscriptionMutation struct {
 	payment_method_id            *uuid.UUID
 	referred_by                  *uuid.UUID
 	referral_code                *string
+	referral_bonus_paid          *bool
 	terms_version                *string
 	terms_accepted_at            *time.Time
 	terms_accepted_by            *uuid.UUID
@@ -28281,6 +28282,42 @@ func (m *TenantSubscriptionMutation) ResetReferralCode() {
 	delete(m.clearedFields, tenantsubscription.FieldReferralCode)
 }
 
+// SetReferralBonusPaid sets the "referral_bonus_paid" field.
+func (m *TenantSubscriptionMutation) SetReferralBonusPaid(b bool) {
+	m.referral_bonus_paid = &b
+}
+
+// ReferralBonusPaid returns the value of the "referral_bonus_paid" field in the mutation.
+func (m *TenantSubscriptionMutation) ReferralBonusPaid() (r bool, exists bool) {
+	v := m.referral_bonus_paid
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReferralBonusPaid returns the old "referral_bonus_paid" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldReferralBonusPaid(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReferralBonusPaid is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReferralBonusPaid requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReferralBonusPaid: %w", err)
+	}
+	return oldValue.ReferralBonusPaid, nil
+}
+
+// ResetReferralBonusPaid resets all changes to the "referral_bonus_paid" field.
+func (m *TenantSubscriptionMutation) ResetReferralBonusPaid() {
+	m.referral_bonus_paid = nil
+}
+
 // SetTermsVersion sets the "terms_version" field.
 func (m *TenantSubscriptionMutation) SetTermsVersion(s string) {
 	m.terms_version = &s
@@ -29036,7 +29073,7 @@ func (m *TenantSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TenantSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 28)
+	fields := make([]string, 0, 29)
 	if m.tenant != nil {
 		fields = append(fields, tenantsubscription.FieldTenantID)
 	}
@@ -29090,6 +29127,9 @@ func (m *TenantSubscriptionMutation) Fields() []string {
 	}
 	if m.referral_code != nil {
 		fields = append(fields, tenantsubscription.FieldReferralCode)
+	}
+	if m.referral_bonus_paid != nil {
+		fields = append(fields, tenantsubscription.FieldReferralBonusPaid)
 	}
 	if m.terms_version != nil {
 		fields = append(fields, tenantsubscription.FieldTermsVersion)
@@ -29165,6 +29205,8 @@ func (m *TenantSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.ReferredBy()
 	case tenantsubscription.FieldReferralCode:
 		return m.ReferralCode()
+	case tenantsubscription.FieldReferralBonusPaid:
+		return m.ReferralBonusPaid()
 	case tenantsubscription.FieldTermsVersion:
 		return m.TermsVersion()
 	case tenantsubscription.FieldTermsAcceptedAt:
@@ -29230,6 +29272,8 @@ func (m *TenantSubscriptionMutation) OldField(ctx context.Context, name string) 
 		return m.OldReferredBy(ctx)
 	case tenantsubscription.FieldReferralCode:
 		return m.OldReferralCode(ctx)
+	case tenantsubscription.FieldReferralBonusPaid:
+		return m.OldReferralBonusPaid(ctx)
 	case tenantsubscription.FieldTermsVersion:
 		return m.OldTermsVersion(ctx)
 	case tenantsubscription.FieldTermsAcceptedAt:
@@ -29384,6 +29428,13 @@ func (m *TenantSubscriptionMutation) SetField(name string, value ent.Value) erro
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetReferralCode(v)
+		return nil
+	case tenantsubscription.FieldReferralBonusPaid:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReferralBonusPaid(v)
 		return nil
 	case tenantsubscription.FieldTermsVersion:
 		v, ok := value.(string)
@@ -29683,6 +29734,9 @@ func (m *TenantSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case tenantsubscription.FieldReferralCode:
 		m.ResetReferralCode()
+		return nil
+	case tenantsubscription.FieldReferralBonusPaid:
+		m.ResetReferralBonusPaid()
 		return nil
 	case tenantsubscription.FieldTermsVersion:
 		m.ResetTermsVersion()

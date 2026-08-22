@@ -136,6 +136,11 @@ func ReferralCode(v string) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldReferralCode, v))
 }
 
+// ReferralBonusPaid applies equality check predicate on the "referral_bonus_paid" field. It's identical to ReferralBonusPaidEQ.
+func ReferralBonusPaid(v bool) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldReferralBonusPaid, v))
+}
+
 // TermsVersion applies equality check predicate on the "terms_version" field. It's identical to TermsVersionEQ.
 func TermsVersion(v string) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldTermsVersion, v))
@@ -954,6 +959,16 @@ func ReferralCodeEqualFold(v string) predicate.TenantSubscription {
 // ReferralCodeContainsFold applies the ContainsFold predicate on the "referral_code" field.
 func ReferralCodeContainsFold(v string) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldContainsFold(FieldReferralCode, v))
+}
+
+// ReferralBonusPaidEQ applies the EQ predicate on the "referral_bonus_paid" field.
+func ReferralBonusPaidEQ(v bool) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldReferralBonusPaid, v))
+}
+
+// ReferralBonusPaidNEQ applies the NEQ predicate on the "referral_bonus_paid" field.
+func ReferralBonusPaidNEQ(v bool) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldReferralBonusPaid, v))
 }
 
 // TermsVersionEQ applies the EQ predicate on the "terms_version" field.

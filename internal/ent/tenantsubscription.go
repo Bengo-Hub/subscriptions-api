@@ -57,6 +57,8 @@ type TenantSubscription struct {
 	ReferredBy *uuid.UUID `json:"referred_by,omitempty"`
 	// This tenant's own shareable referral code; others sign up with it to attribute the referral
 	ReferralCode *string `json:"referral_code,omitempty"`
+	// True once the Type-A referral bonus for THIS tenant has been paid to its referrer. The bonus rewards bringing in the referral, so it is paid once on the first successful payment — never again on renewals
+	ReferralBonusPaid bool `json:"referral_bonus_paid,omitempty"`
 	// Version of the subscription T&C the tenant accepted (e.g. 2026-06-20)
 	TermsVersion *string `json:"terms_version,omitempty"`
 	// When the subscription T&C were accepted
@@ -169,7 +171,7 @@ func (*TenantSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case tenantsubscription.FieldMetadata:
 			values[i] = new([]byte)
-		case tenantsubscription.FieldAllowOverage, tenantsubscription.FieldPendingPurge:
+		case tenantsubscription.FieldAllowOverage, tenantsubscription.FieldReferralBonusPaid, tenantsubscription.FieldPendingPurge:
 			values[i] = new(sql.NullBool)
 		case tenantsubscription.FieldAppliedDiscount, tenantsubscription.FieldSetupFeeAmount:
 			values[i] = new(sql.NullFloat64)
@@ -316,6 +318,12 @@ func (_m *TenantSubscription) assignValues(columns []string, values []any) error
 			} else if value.Valid {
 				_m.ReferralCode = new(string)
 				*_m.ReferralCode = value.String
+			}
+		case tenantsubscription.FieldReferralBonusPaid:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field referral_bonus_paid", values[i])
+			} else if value.Valid {
+				_m.ReferralBonusPaid = value.Bool
 			}
 		case tenantsubscription.FieldTermsVersion:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -522,6 +530,9 @@ func (_m *TenantSubscription) String() string {
 		builder.WriteString("referral_code=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", ")
+	builder.WriteString("referral_bonus_paid=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ReferralBonusPaid))
 	builder.WriteString(", ")
 	if v := _m.TermsVersion; v != nil {
 		builder.WriteString("terms_version=")

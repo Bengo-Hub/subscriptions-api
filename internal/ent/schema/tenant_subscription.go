@@ -83,6 +83,9 @@ func (TenantSubscription) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("This tenant's own shareable referral code; others sign up with it to attribute the referral"),
+		field.Bool("referral_bonus_paid").
+			Default(false).
+			Comment("True once the Type-A referral bonus for THIS tenant has been paid to its referrer. The bonus rewards bringing in the referral, so it is paid once on the first successful payment — never again on renewals"),
 		// ── Subscription Terms & Conditions acceptance (captured at subscribe time) ──
 		field.String("terms_version").
 			Optional().
