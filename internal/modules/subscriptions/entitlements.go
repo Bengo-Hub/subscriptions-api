@@ -157,6 +157,24 @@ func (s *Service) GetSubscriptionResult(ctx context.Context, tenantID uuid.UUID)
 	return result, nil
 }
 
+// requireEtimsIntegrationEntitlement returns an error unless the tenant's CURRENT composite
+// entitlements (main plan + already-active products, i.e. before whatever assignment is about to
+// happen) already include etims_integration — the eligibility gate for the ETIMS_API_BUNDLED
+// cross-sell plan (see AssignProductPlan). Kept eTIMS-specific and small on purpose: a generic
+// "plan X requires feature Y" mechanism would be speculative machinery for a single case.
+func (s *Service) requireEtimsIntegrationEntitlement(ctx context.Context, tenantID uuid.UUID) error {
+	result, err := s.GetSubscriptionResult(ctx, tenantID)
+	if err != nil {
+		return fmt.Errorf("check etims_integration eligibility: %w", err)
+	}
+	for _, f := range result.Features {
+		if f == "etims_integration" {
+			return nil
+		}
+	}
+	return fmt.Errorf("ETIMS_API_BUNDLED requires the tenant to already be entitled to etims_integration on their main plan or an active product")
+}
+
 // activeServiceTags returns the set of service tags a tenant is actively subscribed to,
 // derived from the main plan plus active product subscriptions' override plans.
 func (s *Service) activeServiceTags(ctx context.Context, sub *ent.TenantSubscription, mainPlan *ent.SubscriptionPlan) map[string]bool {

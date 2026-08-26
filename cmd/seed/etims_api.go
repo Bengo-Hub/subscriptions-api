@@ -102,6 +102,7 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 		includedTx  int
 		tierLimits  map[string]any
 		features    []string
+		isPublic    bool
 	}
 
 	plans := []planDef{
@@ -121,6 +122,7 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 				"api_requests_per_minute":           60,
 			},
 			features: []string{"etims_api_access"},
+			isPublic: true,
 		},
 		{
 			id:          uuid.NewSHA1(uuid.NameSpaceOID, []byte("etims_api:GROWTH")),
@@ -138,6 +140,7 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 				"api_requests_per_minute":           150,
 			},
 			features: []string{"etims_api_access"},
+			isPublic: true,
 		},
 		{
 			id:          uuid.NewSHA1(uuid.NameSpaceOID, []byte("etims_api:SCALE")),
@@ -155,6 +158,32 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 				"api_requests_per_minute":           400,
 			},
 			features: []string{"etims_api_access"},
+			isPublic: true,
+		},
+		// ETIMS_API_BUNDLED — the PowerSuite/POS/Duka/Dawa cross-sell tier: zero monthly base
+		// fee, same token economics as Basic (5,000 included tokens/month, KES 0.80/token
+		// top-up), for a tenant that ALREADY pays for bundled etims_integration on their main
+		// plan and just wants external-API access for a downstream integration on top. NOT
+		// public (is_public: false) — self-serve POST /subscription would let anyone claim it
+		// as a free-standing plan, defeating the pricing model. Only reachable via the admin
+		// AssignProductPlan path (POST /admin/tenants/{id}/products), which enforces the
+		// eligibility check (tenant's composite entitlements must already include
+		// etims_integration) in service.go's AssignProductPlan before attaching it.
+		{
+			id:          uuid.NewSHA1(uuid.NameSpaceOID, []byte("etims_api:BUNDLED")),
+			planCode:    "ETIMS_API_BUNDLED",
+			name:        "eTIMS API (PowerSuite bundle)",
+			description: "For tenants who already pay for eTIMS on their main plan: no extra monthly fee for external API access, 5,000 tokens/month included, then KES 0.80/token top-up.",
+			price:       0,
+			tierOrder:   0,
+			includedTx:  500,
+			tierLimits: map[string]any{
+				"included_tokens":         5000,
+				"token_price_kes":         0.8,
+				"api_requests_per_minute": 60,
+			},
+			features: []string{"etims_api_access"},
+			isPublic: false,
 		},
 	}
 
@@ -167,13 +196,13 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 			_, err = tx.SubscriptionPlan.UpdateOneID(p.id).
 				SetPlanCode(p.planCode).SetName(p.name).SetDescription(p.description).
 				SetBillingCycle("MONTHLY").SetPlanType(subscriptionplan.PlanTypeSTANDALONE_SERVICE).
-				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(true).
+				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(p.isPublic).
 				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).SetServiceTag(serviceTag).SetUpdatedAt(now).Save(ctx)
 		} else {
 			_, err = tx.SubscriptionPlan.Create().
 				SetID(p.id).SetPlanCode(p.planCode).SetName(p.name).SetDescription(p.description).
 				SetBillingCycle("MONTHLY").SetPlanType(subscriptionplan.PlanTypeSTANDALONE_SERVICE).
-				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(true).
+				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(p.isPublic).
 				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).SetServiceTag(serviceTag).
 				SetCreatedAt(now).SetUpdatedAt(now).Save(ctx)
 		}

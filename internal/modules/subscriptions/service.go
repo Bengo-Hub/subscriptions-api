@@ -432,6 +432,16 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 		}
 		return nil, fmt.Errorf("lookup plan: %w", err)
 	}
+	// Non-public plans (e.g. ETIMS_API_BUNDLED, an eligibility-gated cross-sell tier — see
+	// AssignProductPlan) are admin/product-overlay-only. That other path never calls
+	// CreateSubscription (AssignPlanToTenant/AssignProductPlan write TenantSubscription/
+	// ProductSubscription directly), so this guard only ever blocks the self-serve route it's
+	// meant to close — a plan hidden from the public /plans LISTING was otherwise still directly
+	// claimable here by anyone who knew its code, since is_public was never actually enforced as
+	// an access check until now.
+	if !plan.IsPublic {
+		return nil, fmt.Errorf("plan not found: %s", in.PlanCode)
+	}
 
 	// Resolve the tenant's chosen billing period (MONTHLY/SEMI_ANNUAL/ANNUAL); empty
 	// defaults to the plan's own cycle, then MONTHLY.
@@ -993,6 +1003,15 @@ func (s *Service) AssignProductPlan(ctx context.Context, tenantID uuid.UUID, pro
 				return fmt.Errorf("plan not found: %s", planCode)
 			}
 			return fmt.Errorf("lookup plan: %w", perr)
+		}
+		// ETIMS_API_BUNDLED is a zero-fee cross-sell tier for a tenant that ALREADY pays for
+		// etims_integration via some other active plan/product — not a free-for-anyone plan.
+		// is_public=false already blocks self-serve POST /subscription; this is the second
+		// guard, on the only other path (this admin endpoint) that can attach it.
+		if planCode == "ETIMS_API_BUNDLED" {
+			if err := s.requireEtimsIntegrationEntitlement(ctx, tenantID); err != nil {
+				return err
+			}
 		}
 		overridePlanID = &plan.ID
 	}
