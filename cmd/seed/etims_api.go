@@ -13,30 +13,33 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 )
 
-// ── eTIMS API Access (external, non-tenant API consumers) ──────────────────
+// eTIMS API Access (external, non-tenant API consumers).
 //
-// Distinct from the existing "etims_integration" FEATURE bundled into onboarded
-// tenants' regular treasury/POS plans (TREASURY_GROWTH etc. already grant it,
-// unchanged by this file) — this is a standalone PRODUCT for external companies
-// consuming treasury-api's /api/v1/external/etims/* API directly, with no other
-// Codevertex SaaS relationship. See .claude/plans/etims-api-monetization-and-
-// security-2026-08-18.md.
+// Distinct from the existing "etims_integration" feature bundled into onboarded tenants'
+// regular treasury/POS plans (TREASURY_GROWTH and others already grant it, unchanged by this
+// file). This is a standalone product for external companies consuming treasury-api's
+// /api/v1/external/etims/* API directly, with no other Codevertex SaaS relationship.
 //
-// Pricing is a prepaid TOKEN BUCKET (internal/modules/billing/token_wallet.go +
-// api_token_costs.go), not the old ReportUsage/OverageCharge monthly-soft-cap pipeline —
+// Pricing is a prepaid token bucket (internal/modules/billing/token_wallet.go and
+// api_token_costs.go), not the old ReportUsage/OverageCharge monthly soft-cap pipeline;
 // etims_transactions was removed from overage_eligibility.go's meteredMetrics when this shipped.
-// included_tokens is each plan's monthly grant (added to the wallet, accumulating, every
-// renewal — see TokenWalletService.GrantTokens); token_price_kes is the price per token when a
-// subscriber tops up ad hoc between renewals. Both are derived from the ORIGINAL per-transaction
-// figures (500/2,000/10,000 included; KES 800/600/400 per 100 over) scaled by
-// ApiTokenCostTransmit=10 (the token weight of a sales/credit-note/stock-io transmission — the
-// one call type this was already metering 1:1) so a subscriber's sales-transmission capacity is
-// UNCHANGED in KES terms; cheaper lookup/write calls, previously unmetered entirely, are now
-// metered too but at a much lower weight — a strict improvement, not a new cost.
+// included_tokens is each plan's monthly grant, added to the wallet and accumulating every
+// renewal (see TokenWalletService.GrantTokens). token_price_kes is the price per token when a
+// subscriber tops up ad hoc between renewals. Both are derived from the original per-transaction
+// figures (500/2,000/10,000 included, KES 800/600/400 per 100 over) scaled by
+// ApiTokenCostTransmit=10, the token weight of a sales/credit-note/stock-io transmission, the one
+// call type this was already metering 1:1, so a subscriber's sales-transmission capacity is
+// unchanged in KES terms. Cheaper lookup/write calls, previously unmetered entirely, are now
+// metered too but at a much lower weight.
 //
-// The one-time ASSISTED-integration fee (35k/85k/180k KES, only when Codevertex's
+// Monthly base fees are priced below every comparable Starter/Growth/Enterprise figure in the
+// catalog (see pricing-model.md §6), since this product carries only eTIMS and none of Treasury's
+// other features (AR/AP, invoicing, GL). token_price_kes and included_tokens are unaffected by
+// the base fee; only `price` reflects it.
+//
+// The one-time assisted-integration fee (35k/85k/180k KES, only when Codevertex's
 // team does the setup instead of the client's own developers) is deliberately
-// NOT a plan setup_fee here — that field fires automatically for every
+// not a plan setup_fee here. That field fires automatically for every
 // subscriber to a plan, but assisted-vs-self-serve is a per-request choice
 // orthogonal to which usage tier they pick. It's applied instead via the
 // existing CustomAddon mechanism (billing_cycle=one_time), created by a
@@ -111,7 +114,7 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 			planCode:    "ETIMS_API_BASIC",
 			name:        "eTIMS API Basic",
 			description: "5,000 tokens/month included (~500 sales transmissions, or more if you mostly use cheaper lookup/write calls), then KES 0.80/token top-up.",
-			price:       4999.0,
+			price:       1500.0, // below every Starter tier in the catalog; this product is narrower than a full suite
 			tierOrder:   1,
 			includedTx:  500,
 			tierLimits: map[string]any{
@@ -129,7 +132,7 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 			planCode:    "ETIMS_API_GROWTH",
 			name:        "eTIMS API Growth",
 			description: "20,000 tokens/month included (~2,000 sales transmissions, or more if you mostly use cheaper lookup/write calls), then KES 0.60/token top-up.",
-			price:       12999.0,
+			price:       4000.0, // below every Growth/Pro tier in the catalog
 			tierOrder:   2,
 			includedTx:  2000,
 			tierLimits: map[string]any{
@@ -147,7 +150,7 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 			planCode:    "ETIMS_API_SCALE",
 			name:        "eTIMS API Scale",
 			description: "100,000 tokens/month included (~10,000 sales transmissions, or more if you mostly use cheaper lookup/write calls), then KES 0.40/token top-up.",
-			price:       29999.0,
+			price:       8000.0, // below every Enterprise tier in the catalog
 			tierOrder:   3,
 			includedTx:  10000,
 			tierLimits: map[string]any{
@@ -160,15 +163,15 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 			features: []string{"etims_api_access"},
 			isPublic: true,
 		},
-		// ETIMS_API_BUNDLED — the PowerSuite/POS/Duka/Dawa cross-sell tier: zero monthly base
-		// fee, same token economics as Basic (5,000 included tokens/month, KES 0.80/token
-		// top-up), for a tenant that ALREADY pays for bundled etims_integration on their main
-		// plan and just wants external-API access for a downstream integration on top. NOT
-		// public (is_public: false) — self-serve POST /subscription would let anyone claim it
-		// as a free-standing plan, defeating the pricing model. Only reachable via the admin
+		// ETIMS_API_BUNDLED is the PowerSuite/POS/Duka/Dawa cross-sell tier. Zero monthly base
+		// fee, same token pricing as Basic (5,000 included tokens/month, KES 0.80/token
+		// top-up), for a tenant that already pays for bundled etims_integration on their main
+		// plan and just wants external API access for a downstream integration on top. It's
+		// not public (is_public: false), since a self-serve POST /subscription would let
+		// anyone claim it as a free-standing plan. It's only reachable via the admin
 		// AssignProductPlan path (POST /admin/tenants/{id}/products), which enforces the
-		// eligibility check (tenant's composite entitlements must already include
-		// etims_integration) in service.go's AssignProductPlan before attaching it.
+		// eligibility check in service.go's AssignProductPlan (the tenant's composite
+		// entitlements must already include etims_integration) before attaching it.
 		{
 			id:          uuid.NewSHA1(uuid.NameSpaceOID, []byte("etims_api:BUNDLED")),
 			planCode:    "ETIMS_API_BUNDLED",
