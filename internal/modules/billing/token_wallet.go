@@ -65,6 +65,15 @@ func (s *TokenWalletService) GetBalance(ctx context.Context, tenantID uuid.UUID,
 	}, nil
 }
 
+// EnsureWallet provisions a zero-balance wallet row for tenant+service if one doesn't already
+// exist — the public entry point for the auth.app.promoted_to_production consumer (see
+// consumers/app_promotion.go). Idempotent: a second call for an already-provisioned wallet is a
+// harmless no-op.
+func (s *TokenWalletService) EnsureWallet(ctx context.Context, tenantID uuid.UUID, serviceTag string) error {
+	_, err := s.ensureWallet(ctx, tenantID, serviceTag)
+	return err
+}
+
 // ensureWallet returns the existing wallet or creates one at zero balance. Creating the row is
 // deliberately NOT a token grant — a freshly-provisioned integrator (see the auth.app.promoted_to_
 // production consumer) gets an empty wallet, not free tokens; they still have to subscribe to a

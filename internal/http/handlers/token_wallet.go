@@ -175,6 +175,52 @@ func (h *TokenWalletHandler) Deduct(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, result)
 }
 
+type refundRequest struct {
+	ServiceTag  string `json:"service_tag"`
+	Tokens      int64  `json:"tokens"`
+	RefID       string `json:"ref_id"`
+	Description string `json:"description"`
+}
+
+// Refund godoc
+// @Summary Refund previously-deducted API tokens (S2S)
+// @Description Reverses a Deduct when the downstream operation turned out not to have done real work (e.g. the caller's request failed validation before reaching KRA) — called by treasury-api's ExternalAPIKeyAuth middleware after the handler runs, only for status codes that indicate no real KRA attempt happened.
+// @Tags Subscriptions
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Param request body refundRequest true "Refund request"
+// @Success 200 {object} map[string]any
+// @Router /tenants/{tenant_id}/tokens/refund [post]
+func (h *TokenWalletHandler) Refund(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenant_id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+	var req refundRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if req.ServiceTag == "" || req.Tokens <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service_tag and a positive tokens value are required"})
+		return
+	}
+	var refID uuid.UUID
+	if req.RefID != "" {
+		refID, _ = uuid.Parse(req.RefID)
+	}
+	newBalance, err := h.wallet.RefundTokens(r.Context(), tenantID, req.ServiceTag, req.Tokens, refID, req.Description)
+	if err != nil {
+		h.log.Error("refund tokens failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to refund tokens"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"new_balance": newBalance, "tokens_refunded": req.Tokens})
+}
+
 type topUpRequest struct {
 	ServiceTag string  `json:"service_tag"`
 	AmountKes  float64 `json:"amount_kes"`

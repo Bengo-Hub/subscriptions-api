@@ -45,22 +45,23 @@ import (
 )
 
 type App struct {
-	cfg             *config.Config
-	log             *zap.Logger
-	httpServer      *http.Server
-	db              *pgxpool.Pool
-	cache           *redis.Client
-	events          *nats.Conn
-	orm             *ent.Client
-	outboxPublisher *eventslib.Publisher
-	tenantConsumer  *consumers.TenantCreatedConsumer
-	outletConsumer  *consumers.OutletCreatedConsumer
-	usageConsumer   *consumers.UsageConsumer
-	paymentConsumer *consumers.TreasuryPaymentConsumer
-	subscriptionSvc *subscriptions.Service
-	treasuryClient  *serviceclient.Client
-	invoiceSvc      *billing.InvoiceService
-	overageSvc      *billing.OverageService
+	cfg                  *config.Config
+	log                  *zap.Logger
+	httpServer           *http.Server
+	db                   *pgxpool.Pool
+	cache                *redis.Client
+	events               *nats.Conn
+	orm                  *ent.Client
+	outboxPublisher      *eventslib.Publisher
+	tenantConsumer       *consumers.TenantCreatedConsumer
+	outletConsumer       *consumers.OutletCreatedConsumer
+	usageConsumer        *consumers.UsageConsumer
+	paymentConsumer      *consumers.TreasuryPaymentConsumer
+	appPromotionConsumer *consumers.AppPromotionConsumer
+	subscriptionSvc      *subscriptions.Service
+	treasuryClient       *serviceclient.Client
+	invoiceSvc           *billing.InvoiceService
+	overageSvc           *billing.OverageService
 }
 
 func New(ctx context.Context) (*App, error) {
@@ -339,22 +340,23 @@ func New(ctx context.Context) (*App, error) {
 	}
 
 	return &App{
-		cfg:             cfg,
-		log:             log,
-		httpServer:      httpServer,
-		db:              dbPool,
-		cache:           redisClient,
-		events:          natsConn,
-		orm:             ormClient,
-		outboxPublisher: outboxPublisher,
-		tenantConsumer:  consumers.NewTenantCreatedConsumer(log, subscriptionSvc),
-		outletConsumer:  consumers.NewOutletCreatedConsumer(log, subscriptionSvc),
-		usageConsumer:   usageConsumer,
-		paymentConsumer: paymentConsumer,
-		subscriptionSvc: subscriptionSvc,
-		treasuryClient:  treasuryClient,
-		invoiceSvc:      invoiceSvc,
-		overageSvc:      overageSvc,
+		cfg:                  cfg,
+		log:                  log,
+		httpServer:           httpServer,
+		db:                   dbPool,
+		cache:                redisClient,
+		events:               natsConn,
+		orm:                  ormClient,
+		outboxPublisher:      outboxPublisher,
+		tenantConsumer:       consumers.NewTenantCreatedConsumer(log, subscriptionSvc),
+		outletConsumer:       consumers.NewOutletCreatedConsumer(log, subscriptionSvc),
+		usageConsumer:        usageConsumer,
+		paymentConsumer:      paymentConsumer,
+		appPromotionConsumer: consumers.NewAppPromotionConsumer(log, billing.NewTokenWalletService(log, ormClient)),
+		subscriptionSvc:      subscriptionSvc,
+		treasuryClient:       treasuryClient,
+		invoiceSvc:           invoiceSvc,
+		overageSvc:           overageSvc,
 	}, nil
 }
 
@@ -423,6 +425,13 @@ func (a *App) Run(ctx context.Context) error {
 				}
 			}()
 			a.log.Info("tenant.created consumer started")
+
+			go func() {
+				if err := a.appPromotionConsumer.Start(ctx, js); err != nil {
+					a.log.Error("app promotion consumer stopped", zap.Error(err))
+				}
+			}()
+			a.log.Info("app.promoted_to_production consumer started")
 		}
 	}
 

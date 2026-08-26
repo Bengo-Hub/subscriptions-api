@@ -191,6 +191,7 @@ func New(
 				r.Get("/tenants/{tenant_id}/tokens/balance", tokenWalletHandler.GetBalance)
 				r.Get("/tenants/{tenant_id}/tokens/transactions", tokenWalletHandler.GetTransactions)
 				r.Post("/tenants/{tenant_id}/tokens/deduct", tokenWalletHandler.Deduct)
+				r.Post("/tenants/{tenant_id}/tokens/refund", tokenWalletHandler.Refund)
 				r.Post("/tenants/{tenant_id}/tokens/topup", tokenWalletHandler.InitiateTopUp)
 			}
 
