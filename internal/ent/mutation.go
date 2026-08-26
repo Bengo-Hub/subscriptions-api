@@ -11,6 +11,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/bengobox/subscription-service/internal/ent/apitokentransaction"
+	"github.com/bengobox/subscription-service/internal/ent/apitokenwallet"
 	"github.com/bengobox/subscription-service/internal/ent/backup"
 	"github.com/bengobox/subscription-service/internal/ent/backupsetting"
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
@@ -54,6 +56,8 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeApiTokenTransaction           = "ApiTokenTransaction"
+	TypeApiTokenWallet                = "ApiTokenWallet"
 	TypeBackup                        = "Backup"
 	TypeBackupSetting                 = "BackupSetting"
 	TypeBundle                        = "Bundle"
@@ -84,6 +88,2111 @@ const (
 	TypeUsageEvent                    = "UsageEvent"
 	TypeUserRoleAssignment            = "UserRoleAssignment"
 )
+
+// ApiTokenTransactionMutation represents an operation that mutates the ApiTokenTransaction nodes in the graph.
+type ApiTokenTransactionMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	tenant_id        *uuid.UUID
+	service_tag      *string
+	action           *apitokentransaction.Action
+	tokens           *int64
+	addtokens        *int64
+	new_balance      *int64
+	addnew_balance   *int64
+	endpoint_pattern *string
+	unit_cost_kes    *float64
+	addunit_cost_kes *float64
+	ref_id           *uuid.UUID
+	ref_type         *string
+	description      *string
+	metadata         *map[string]interface{}
+	created_at       *time.Time
+	clearedFields    map[string]struct{}
+	wallet           *uuid.UUID
+	clearedwallet    bool
+	done             bool
+	oldValue         func(context.Context) (*ApiTokenTransaction, error)
+	predicates       []predicate.ApiTokenTransaction
+}
+
+var _ ent.Mutation = (*ApiTokenTransactionMutation)(nil)
+
+// apitokentransactionOption allows management of the mutation configuration using functional options.
+type apitokentransactionOption func(*ApiTokenTransactionMutation)
+
+// newApiTokenTransactionMutation creates new mutation for the ApiTokenTransaction entity.
+func newApiTokenTransactionMutation(c config, op Op, opts ...apitokentransactionOption) *ApiTokenTransactionMutation {
+	m := &ApiTokenTransactionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeApiTokenTransaction,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withApiTokenTransactionID sets the ID field of the mutation.
+func withApiTokenTransactionID(id uuid.UUID) apitokentransactionOption {
+	return func(m *ApiTokenTransactionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ApiTokenTransaction
+		)
+		m.oldValue = func(ctx context.Context) (*ApiTokenTransaction, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ApiTokenTransaction.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withApiTokenTransaction sets the old ApiTokenTransaction of the mutation.
+func withApiTokenTransaction(node *ApiTokenTransaction) apitokentransactionOption {
+	return func(m *ApiTokenTransactionMutation) {
+		m.oldValue = func(context.Context) (*ApiTokenTransaction, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ApiTokenTransactionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ApiTokenTransactionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ApiTokenTransaction entities.
+func (m *ApiTokenTransactionMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ApiTokenTransactionMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ApiTokenTransactionMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ApiTokenTransaction.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetTenantID sets the "tenant_id" field.
+func (m *ApiTokenTransactionMutation) SetTenantID(u uuid.UUID) {
+	m.tenant_id = &u
+}
+
+// TenantID returns the value of the "tenant_id" field in the mutation.
+func (m *ApiTokenTransactionMutation) TenantID() (r uuid.UUID, exists bool) {
+	v := m.tenant_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTenantID returns the old "tenant_id" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldTenantID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTenantID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTenantID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantID: %w", err)
+	}
+	return oldValue.TenantID, nil
+}
+
+// ResetTenantID resets all changes to the "tenant_id" field.
+func (m *ApiTokenTransactionMutation) ResetTenantID() {
+	m.tenant_id = nil
+}
+
+// SetWalletID sets the "wallet_id" field.
+func (m *ApiTokenTransactionMutation) SetWalletID(u uuid.UUID) {
+	m.wallet = &u
+}
+
+// WalletID returns the value of the "wallet_id" field in the mutation.
+func (m *ApiTokenTransactionMutation) WalletID() (r uuid.UUID, exists bool) {
+	v := m.wallet
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWalletID returns the old "wallet_id" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldWalletID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWalletID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWalletID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWalletID: %w", err)
+	}
+	return oldValue.WalletID, nil
+}
+
+// ResetWalletID resets all changes to the "wallet_id" field.
+func (m *ApiTokenTransactionMutation) ResetWalletID() {
+	m.wallet = nil
+}
+
+// SetServiceTag sets the "service_tag" field.
+func (m *ApiTokenTransactionMutation) SetServiceTag(s string) {
+	m.service_tag = &s
+}
+
+// ServiceTag returns the value of the "service_tag" field in the mutation.
+func (m *ApiTokenTransactionMutation) ServiceTag() (r string, exists bool) {
+	v := m.service_tag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldServiceTag returns the old "service_tag" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldServiceTag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldServiceTag is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldServiceTag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldServiceTag: %w", err)
+	}
+	return oldValue.ServiceTag, nil
+}
+
+// ResetServiceTag resets all changes to the "service_tag" field.
+func (m *ApiTokenTransactionMutation) ResetServiceTag() {
+	m.service_tag = nil
+}
+
+// SetAction sets the "action" field.
+func (m *ApiTokenTransactionMutation) SetAction(a apitokentransaction.Action) {
+	m.action = &a
+}
+
+// Action returns the value of the "action" field in the mutation.
+func (m *ApiTokenTransactionMutation) Action() (r apitokentransaction.Action, exists bool) {
+	v := m.action
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAction returns the old "action" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldAction(ctx context.Context) (v apitokentransaction.Action, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAction is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAction requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAction: %w", err)
+	}
+	return oldValue.Action, nil
+}
+
+// ResetAction resets all changes to the "action" field.
+func (m *ApiTokenTransactionMutation) ResetAction() {
+	m.action = nil
+}
+
+// SetTokens sets the "tokens" field.
+func (m *ApiTokenTransactionMutation) SetTokens(i int64) {
+	m.tokens = &i
+	m.addtokens = nil
+}
+
+// Tokens returns the value of the "tokens" field in the mutation.
+func (m *ApiTokenTransactionMutation) Tokens() (r int64, exists bool) {
+	v := m.tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTokens returns the old "tokens" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldTokens(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTokens: %w", err)
+	}
+	return oldValue.Tokens, nil
+}
+
+// AddTokens adds i to the "tokens" field.
+func (m *ApiTokenTransactionMutation) AddTokens(i int64) {
+	if m.addtokens != nil {
+		*m.addtokens += i
+	} else {
+		m.addtokens = &i
+	}
+}
+
+// AddedTokens returns the value that was added to the "tokens" field in this mutation.
+func (m *ApiTokenTransactionMutation) AddedTokens() (r int64, exists bool) {
+	v := m.addtokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTokens resets all changes to the "tokens" field.
+func (m *ApiTokenTransactionMutation) ResetTokens() {
+	m.tokens = nil
+	m.addtokens = nil
+}
+
+// SetNewBalance sets the "new_balance" field.
+func (m *ApiTokenTransactionMutation) SetNewBalance(i int64) {
+	m.new_balance = &i
+	m.addnew_balance = nil
+}
+
+// NewBalance returns the value of the "new_balance" field in the mutation.
+func (m *ApiTokenTransactionMutation) NewBalance() (r int64, exists bool) {
+	v := m.new_balance
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNewBalance returns the old "new_balance" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldNewBalance(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNewBalance is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNewBalance requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNewBalance: %w", err)
+	}
+	return oldValue.NewBalance, nil
+}
+
+// AddNewBalance adds i to the "new_balance" field.
+func (m *ApiTokenTransactionMutation) AddNewBalance(i int64) {
+	if m.addnew_balance != nil {
+		*m.addnew_balance += i
+	} else {
+		m.addnew_balance = &i
+	}
+}
+
+// AddedNewBalance returns the value that was added to the "new_balance" field in this mutation.
+func (m *ApiTokenTransactionMutation) AddedNewBalance() (r int64, exists bool) {
+	v := m.addnew_balance
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetNewBalance resets all changes to the "new_balance" field.
+func (m *ApiTokenTransactionMutation) ResetNewBalance() {
+	m.new_balance = nil
+	m.addnew_balance = nil
+}
+
+// SetEndpointPattern sets the "endpoint_pattern" field.
+func (m *ApiTokenTransactionMutation) SetEndpointPattern(s string) {
+	m.endpoint_pattern = &s
+}
+
+// EndpointPattern returns the value of the "endpoint_pattern" field in the mutation.
+func (m *ApiTokenTransactionMutation) EndpointPattern() (r string, exists bool) {
+	v := m.endpoint_pattern
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEndpointPattern returns the old "endpoint_pattern" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldEndpointPattern(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEndpointPattern is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEndpointPattern requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEndpointPattern: %w", err)
+	}
+	return oldValue.EndpointPattern, nil
+}
+
+// ClearEndpointPattern clears the value of the "endpoint_pattern" field.
+func (m *ApiTokenTransactionMutation) ClearEndpointPattern() {
+	m.endpoint_pattern = nil
+	m.clearedFields[apitokentransaction.FieldEndpointPattern] = struct{}{}
+}
+
+// EndpointPatternCleared returns if the "endpoint_pattern" field was cleared in this mutation.
+func (m *ApiTokenTransactionMutation) EndpointPatternCleared() bool {
+	_, ok := m.clearedFields[apitokentransaction.FieldEndpointPattern]
+	return ok
+}
+
+// ResetEndpointPattern resets all changes to the "endpoint_pattern" field.
+func (m *ApiTokenTransactionMutation) ResetEndpointPattern() {
+	m.endpoint_pattern = nil
+	delete(m.clearedFields, apitokentransaction.FieldEndpointPattern)
+}
+
+// SetUnitCostKes sets the "unit_cost_kes" field.
+func (m *ApiTokenTransactionMutation) SetUnitCostKes(f float64) {
+	m.unit_cost_kes = &f
+	m.addunit_cost_kes = nil
+}
+
+// UnitCostKes returns the value of the "unit_cost_kes" field in the mutation.
+func (m *ApiTokenTransactionMutation) UnitCostKes() (r float64, exists bool) {
+	v := m.unit_cost_kes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUnitCostKes returns the old "unit_cost_kes" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldUnitCostKes(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUnitCostKes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUnitCostKes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUnitCostKes: %w", err)
+	}
+	return oldValue.UnitCostKes, nil
+}
+
+// AddUnitCostKes adds f to the "unit_cost_kes" field.
+func (m *ApiTokenTransactionMutation) AddUnitCostKes(f float64) {
+	if m.addunit_cost_kes != nil {
+		*m.addunit_cost_kes += f
+	} else {
+		m.addunit_cost_kes = &f
+	}
+}
+
+// AddedUnitCostKes returns the value that was added to the "unit_cost_kes" field in this mutation.
+func (m *ApiTokenTransactionMutation) AddedUnitCostKes() (r float64, exists bool) {
+	v := m.addunit_cost_kes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUnitCostKes clears the value of the "unit_cost_kes" field.
+func (m *ApiTokenTransactionMutation) ClearUnitCostKes() {
+	m.unit_cost_kes = nil
+	m.addunit_cost_kes = nil
+	m.clearedFields[apitokentransaction.FieldUnitCostKes] = struct{}{}
+}
+
+// UnitCostKesCleared returns if the "unit_cost_kes" field was cleared in this mutation.
+func (m *ApiTokenTransactionMutation) UnitCostKesCleared() bool {
+	_, ok := m.clearedFields[apitokentransaction.FieldUnitCostKes]
+	return ok
+}
+
+// ResetUnitCostKes resets all changes to the "unit_cost_kes" field.
+func (m *ApiTokenTransactionMutation) ResetUnitCostKes() {
+	m.unit_cost_kes = nil
+	m.addunit_cost_kes = nil
+	delete(m.clearedFields, apitokentransaction.FieldUnitCostKes)
+}
+
+// SetRefID sets the "ref_id" field.
+func (m *ApiTokenTransactionMutation) SetRefID(u uuid.UUID) {
+	m.ref_id = &u
+}
+
+// RefID returns the value of the "ref_id" field in the mutation.
+func (m *ApiTokenTransactionMutation) RefID() (r uuid.UUID, exists bool) {
+	v := m.ref_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefID returns the old "ref_id" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldRefID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefID: %w", err)
+	}
+	return oldValue.RefID, nil
+}
+
+// ClearRefID clears the value of the "ref_id" field.
+func (m *ApiTokenTransactionMutation) ClearRefID() {
+	m.ref_id = nil
+	m.clearedFields[apitokentransaction.FieldRefID] = struct{}{}
+}
+
+// RefIDCleared returns if the "ref_id" field was cleared in this mutation.
+func (m *ApiTokenTransactionMutation) RefIDCleared() bool {
+	_, ok := m.clearedFields[apitokentransaction.FieldRefID]
+	return ok
+}
+
+// ResetRefID resets all changes to the "ref_id" field.
+func (m *ApiTokenTransactionMutation) ResetRefID() {
+	m.ref_id = nil
+	delete(m.clearedFields, apitokentransaction.FieldRefID)
+}
+
+// SetRefType sets the "ref_type" field.
+func (m *ApiTokenTransactionMutation) SetRefType(s string) {
+	m.ref_type = &s
+}
+
+// RefType returns the value of the "ref_type" field in the mutation.
+func (m *ApiTokenTransactionMutation) RefType() (r string, exists bool) {
+	v := m.ref_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefType returns the old "ref_type" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldRefType(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefType: %w", err)
+	}
+	return oldValue.RefType, nil
+}
+
+// ClearRefType clears the value of the "ref_type" field.
+func (m *ApiTokenTransactionMutation) ClearRefType() {
+	m.ref_type = nil
+	m.clearedFields[apitokentransaction.FieldRefType] = struct{}{}
+}
+
+// RefTypeCleared returns if the "ref_type" field was cleared in this mutation.
+func (m *ApiTokenTransactionMutation) RefTypeCleared() bool {
+	_, ok := m.clearedFields[apitokentransaction.FieldRefType]
+	return ok
+}
+
+// ResetRefType resets all changes to the "ref_type" field.
+func (m *ApiTokenTransactionMutation) ResetRefType() {
+	m.ref_type = nil
+	delete(m.clearedFields, apitokentransaction.FieldRefType)
+}
+
+// SetDescription sets the "description" field.
+func (m *ApiTokenTransactionMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *ApiTokenTransactionMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *ApiTokenTransactionMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[apitokentransaction.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *ApiTokenTransactionMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[apitokentransaction.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *ApiTokenTransactionMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, apitokentransaction.FieldDescription)
+}
+
+// SetMetadata sets the "metadata" field.
+func (m *ApiTokenTransactionMutation) SetMetadata(value map[string]interface{}) {
+	m.metadata = &value
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *ApiTokenTransactionMutation) Metadata() (r map[string]interface{}, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldMetadata(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (m *ApiTokenTransactionMutation) ClearMetadata() {
+	m.metadata = nil
+	m.clearedFields[apitokentransaction.FieldMetadata] = struct{}{}
+}
+
+// MetadataCleared returns if the "metadata" field was cleared in this mutation.
+func (m *ApiTokenTransactionMutation) MetadataCleared() bool {
+	_, ok := m.clearedFields[apitokentransaction.FieldMetadata]
+	return ok
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *ApiTokenTransactionMutation) ResetMetadata() {
+	m.metadata = nil
+	delete(m.clearedFields, apitokentransaction.FieldMetadata)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ApiTokenTransactionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ApiTokenTransactionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ApiTokenTransactionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// ClearWallet clears the "wallet" edge to the ApiTokenWallet entity.
+func (m *ApiTokenTransactionMutation) ClearWallet() {
+	m.clearedwallet = true
+	m.clearedFields[apitokentransaction.FieldWalletID] = struct{}{}
+}
+
+// WalletCleared reports if the "wallet" edge to the ApiTokenWallet entity was cleared.
+func (m *ApiTokenTransactionMutation) WalletCleared() bool {
+	return m.clearedwallet
+}
+
+// WalletIDs returns the "wallet" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WalletID instead. It exists only for internal usage by the builders.
+func (m *ApiTokenTransactionMutation) WalletIDs() (ids []uuid.UUID) {
+	if id := m.wallet; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWallet resets all changes to the "wallet" edge.
+func (m *ApiTokenTransactionMutation) ResetWallet() {
+	m.wallet = nil
+	m.clearedwallet = false
+}
+
+// Where appends a list predicates to the ApiTokenTransactionMutation builder.
+func (m *ApiTokenTransactionMutation) Where(ps ...predicate.ApiTokenTransaction) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ApiTokenTransactionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ApiTokenTransactionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ApiTokenTransaction, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ApiTokenTransactionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ApiTokenTransactionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ApiTokenTransaction).
+func (m *ApiTokenTransactionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ApiTokenTransactionMutation) Fields() []string {
+	fields := make([]string, 0, 13)
+	if m.tenant_id != nil {
+		fields = append(fields, apitokentransaction.FieldTenantID)
+	}
+	if m.wallet != nil {
+		fields = append(fields, apitokentransaction.FieldWalletID)
+	}
+	if m.service_tag != nil {
+		fields = append(fields, apitokentransaction.FieldServiceTag)
+	}
+	if m.action != nil {
+		fields = append(fields, apitokentransaction.FieldAction)
+	}
+	if m.tokens != nil {
+		fields = append(fields, apitokentransaction.FieldTokens)
+	}
+	if m.new_balance != nil {
+		fields = append(fields, apitokentransaction.FieldNewBalance)
+	}
+	if m.endpoint_pattern != nil {
+		fields = append(fields, apitokentransaction.FieldEndpointPattern)
+	}
+	if m.unit_cost_kes != nil {
+		fields = append(fields, apitokentransaction.FieldUnitCostKes)
+	}
+	if m.ref_id != nil {
+		fields = append(fields, apitokentransaction.FieldRefID)
+	}
+	if m.ref_type != nil {
+		fields = append(fields, apitokentransaction.FieldRefType)
+	}
+	if m.description != nil {
+		fields = append(fields, apitokentransaction.FieldDescription)
+	}
+	if m.metadata != nil {
+		fields = append(fields, apitokentransaction.FieldMetadata)
+	}
+	if m.created_at != nil {
+		fields = append(fields, apitokentransaction.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ApiTokenTransactionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case apitokentransaction.FieldTenantID:
+		return m.TenantID()
+	case apitokentransaction.FieldWalletID:
+		return m.WalletID()
+	case apitokentransaction.FieldServiceTag:
+		return m.ServiceTag()
+	case apitokentransaction.FieldAction:
+		return m.Action()
+	case apitokentransaction.FieldTokens:
+		return m.Tokens()
+	case apitokentransaction.FieldNewBalance:
+		return m.NewBalance()
+	case apitokentransaction.FieldEndpointPattern:
+		return m.EndpointPattern()
+	case apitokentransaction.FieldUnitCostKes:
+		return m.UnitCostKes()
+	case apitokentransaction.FieldRefID:
+		return m.RefID()
+	case apitokentransaction.FieldRefType:
+		return m.RefType()
+	case apitokentransaction.FieldDescription:
+		return m.Description()
+	case apitokentransaction.FieldMetadata:
+		return m.Metadata()
+	case apitokentransaction.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ApiTokenTransactionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case apitokentransaction.FieldTenantID:
+		return m.OldTenantID(ctx)
+	case apitokentransaction.FieldWalletID:
+		return m.OldWalletID(ctx)
+	case apitokentransaction.FieldServiceTag:
+		return m.OldServiceTag(ctx)
+	case apitokentransaction.FieldAction:
+		return m.OldAction(ctx)
+	case apitokentransaction.FieldTokens:
+		return m.OldTokens(ctx)
+	case apitokentransaction.FieldNewBalance:
+		return m.OldNewBalance(ctx)
+	case apitokentransaction.FieldEndpointPattern:
+		return m.OldEndpointPattern(ctx)
+	case apitokentransaction.FieldUnitCostKes:
+		return m.OldUnitCostKes(ctx)
+	case apitokentransaction.FieldRefID:
+		return m.OldRefID(ctx)
+	case apitokentransaction.FieldRefType:
+		return m.OldRefType(ctx)
+	case apitokentransaction.FieldDescription:
+		return m.OldDescription(ctx)
+	case apitokentransaction.FieldMetadata:
+		return m.OldMetadata(ctx)
+	case apitokentransaction.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown ApiTokenTransaction field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ApiTokenTransactionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case apitokentransaction.FieldTenantID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTenantID(v)
+		return nil
+	case apitokentransaction.FieldWalletID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWalletID(v)
+		return nil
+	case apitokentransaction.FieldServiceTag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetServiceTag(v)
+		return nil
+	case apitokentransaction.FieldAction:
+		v, ok := value.(apitokentransaction.Action)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAction(v)
+		return nil
+	case apitokentransaction.FieldTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTokens(v)
+		return nil
+	case apitokentransaction.FieldNewBalance:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNewBalance(v)
+		return nil
+	case apitokentransaction.FieldEndpointPattern:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEndpointPattern(v)
+		return nil
+	case apitokentransaction.FieldUnitCostKes:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUnitCostKes(v)
+		return nil
+	case apitokentransaction.FieldRefID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefID(v)
+		return nil
+	case apitokentransaction.FieldRefType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefType(v)
+		return nil
+	case apitokentransaction.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case apitokentransaction.FieldMetadata:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
+		return nil
+	case apitokentransaction.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ApiTokenTransaction field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ApiTokenTransactionMutation) AddedFields() []string {
+	var fields []string
+	if m.addtokens != nil {
+		fields = append(fields, apitokentransaction.FieldTokens)
+	}
+	if m.addnew_balance != nil {
+		fields = append(fields, apitokentransaction.FieldNewBalance)
+	}
+	if m.addunit_cost_kes != nil {
+		fields = append(fields, apitokentransaction.FieldUnitCostKes)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ApiTokenTransactionMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case apitokentransaction.FieldTokens:
+		return m.AddedTokens()
+	case apitokentransaction.FieldNewBalance:
+		return m.AddedNewBalance()
+	case apitokentransaction.FieldUnitCostKes:
+		return m.AddedUnitCostKes()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ApiTokenTransactionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case apitokentransaction.FieldTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTokens(v)
+		return nil
+	case apitokentransaction.FieldNewBalance:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddNewBalance(v)
+		return nil
+	case apitokentransaction.FieldUnitCostKes:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUnitCostKes(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ApiTokenTransaction numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ApiTokenTransactionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(apitokentransaction.FieldEndpointPattern) {
+		fields = append(fields, apitokentransaction.FieldEndpointPattern)
+	}
+	if m.FieldCleared(apitokentransaction.FieldUnitCostKes) {
+		fields = append(fields, apitokentransaction.FieldUnitCostKes)
+	}
+	if m.FieldCleared(apitokentransaction.FieldRefID) {
+		fields = append(fields, apitokentransaction.FieldRefID)
+	}
+	if m.FieldCleared(apitokentransaction.FieldRefType) {
+		fields = append(fields, apitokentransaction.FieldRefType)
+	}
+	if m.FieldCleared(apitokentransaction.FieldDescription) {
+		fields = append(fields, apitokentransaction.FieldDescription)
+	}
+	if m.FieldCleared(apitokentransaction.FieldMetadata) {
+		fields = append(fields, apitokentransaction.FieldMetadata)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ApiTokenTransactionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ApiTokenTransactionMutation) ClearField(name string) error {
+	switch name {
+	case apitokentransaction.FieldEndpointPattern:
+		m.ClearEndpointPattern()
+		return nil
+	case apitokentransaction.FieldUnitCostKes:
+		m.ClearUnitCostKes()
+		return nil
+	case apitokentransaction.FieldRefID:
+		m.ClearRefID()
+		return nil
+	case apitokentransaction.FieldRefType:
+		m.ClearRefType()
+		return nil
+	case apitokentransaction.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case apitokentransaction.FieldMetadata:
+		m.ClearMetadata()
+		return nil
+	}
+	return fmt.Errorf("unknown ApiTokenTransaction nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ApiTokenTransactionMutation) ResetField(name string) error {
+	switch name {
+	case apitokentransaction.FieldTenantID:
+		m.ResetTenantID()
+		return nil
+	case apitokentransaction.FieldWalletID:
+		m.ResetWalletID()
+		return nil
+	case apitokentransaction.FieldServiceTag:
+		m.ResetServiceTag()
+		return nil
+	case apitokentransaction.FieldAction:
+		m.ResetAction()
+		return nil
+	case apitokentransaction.FieldTokens:
+		m.ResetTokens()
+		return nil
+	case apitokentransaction.FieldNewBalance:
+		m.ResetNewBalance()
+		return nil
+	case apitokentransaction.FieldEndpointPattern:
+		m.ResetEndpointPattern()
+		return nil
+	case apitokentransaction.FieldUnitCostKes:
+		m.ResetUnitCostKes()
+		return nil
+	case apitokentransaction.FieldRefID:
+		m.ResetRefID()
+		return nil
+	case apitokentransaction.FieldRefType:
+		m.ResetRefType()
+		return nil
+	case apitokentransaction.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case apitokentransaction.FieldMetadata:
+		m.ResetMetadata()
+		return nil
+	case apitokentransaction.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ApiTokenTransaction field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ApiTokenTransactionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.wallet != nil {
+		edges = append(edges, apitokentransaction.EdgeWallet)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ApiTokenTransactionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case apitokentransaction.EdgeWallet:
+		if id := m.wallet; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ApiTokenTransactionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ApiTokenTransactionMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ApiTokenTransactionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedwallet {
+		edges = append(edges, apitokentransaction.EdgeWallet)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ApiTokenTransactionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case apitokentransaction.EdgeWallet:
+		return m.clearedwallet
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ApiTokenTransactionMutation) ClearEdge(name string) error {
+	switch name {
+	case apitokentransaction.EdgeWallet:
+		m.ClearWallet()
+		return nil
+	}
+	return fmt.Errorf("unknown ApiTokenTransaction unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ApiTokenTransactionMutation) ResetEdge(name string) error {
+	switch name {
+	case apitokentransaction.EdgeWallet:
+		m.ResetWallet()
+		return nil
+	}
+	return fmt.Errorf("unknown ApiTokenTransaction edge %s", name)
+}
+
+// ApiTokenWalletMutation represents an operation that mutates the ApiTokenWallet nodes in the graph.
+type ApiTokenWalletMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *uuid.UUID
+	tenant_id                *uuid.UUID
+	service_tag              *string
+	balance                  *int64
+	addbalance               *int64
+	lifetime_granted         *int64
+	addlifetime_granted      *int64
+	low_balance_threshold    *int64
+	addlow_balance_threshold *int64
+	created_at               *time.Time
+	updated_at               *time.Time
+	clearedFields            map[string]struct{}
+	transactions             map[uuid.UUID]struct{}
+	removedtransactions      map[uuid.UUID]struct{}
+	clearedtransactions      bool
+	done                     bool
+	oldValue                 func(context.Context) (*ApiTokenWallet, error)
+	predicates               []predicate.ApiTokenWallet
+}
+
+var _ ent.Mutation = (*ApiTokenWalletMutation)(nil)
+
+// apitokenwalletOption allows management of the mutation configuration using functional options.
+type apitokenwalletOption func(*ApiTokenWalletMutation)
+
+// newApiTokenWalletMutation creates new mutation for the ApiTokenWallet entity.
+func newApiTokenWalletMutation(c config, op Op, opts ...apitokenwalletOption) *ApiTokenWalletMutation {
+	m := &ApiTokenWalletMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeApiTokenWallet,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withApiTokenWalletID sets the ID field of the mutation.
+func withApiTokenWalletID(id uuid.UUID) apitokenwalletOption {
+	return func(m *ApiTokenWalletMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ApiTokenWallet
+		)
+		m.oldValue = func(ctx context.Context) (*ApiTokenWallet, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ApiTokenWallet.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withApiTokenWallet sets the old ApiTokenWallet of the mutation.
+func withApiTokenWallet(node *ApiTokenWallet) apitokenwalletOption {
+	return func(m *ApiTokenWalletMutation) {
+		m.oldValue = func(context.Context) (*ApiTokenWallet, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ApiTokenWalletMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ApiTokenWalletMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ApiTokenWallet entities.
+func (m *ApiTokenWalletMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ApiTokenWalletMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ApiTokenWalletMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ApiTokenWallet.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetTenantID sets the "tenant_id" field.
+func (m *ApiTokenWalletMutation) SetTenantID(u uuid.UUID) {
+	m.tenant_id = &u
+}
+
+// TenantID returns the value of the "tenant_id" field in the mutation.
+func (m *ApiTokenWalletMutation) TenantID() (r uuid.UUID, exists bool) {
+	v := m.tenant_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTenantID returns the old "tenant_id" field's value of the ApiTokenWallet entity.
+// If the ApiTokenWallet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenWalletMutation) OldTenantID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTenantID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTenantID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantID: %w", err)
+	}
+	return oldValue.TenantID, nil
+}
+
+// ResetTenantID resets all changes to the "tenant_id" field.
+func (m *ApiTokenWalletMutation) ResetTenantID() {
+	m.tenant_id = nil
+}
+
+// SetServiceTag sets the "service_tag" field.
+func (m *ApiTokenWalletMutation) SetServiceTag(s string) {
+	m.service_tag = &s
+}
+
+// ServiceTag returns the value of the "service_tag" field in the mutation.
+func (m *ApiTokenWalletMutation) ServiceTag() (r string, exists bool) {
+	v := m.service_tag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldServiceTag returns the old "service_tag" field's value of the ApiTokenWallet entity.
+// If the ApiTokenWallet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenWalletMutation) OldServiceTag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldServiceTag is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldServiceTag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldServiceTag: %w", err)
+	}
+	return oldValue.ServiceTag, nil
+}
+
+// ResetServiceTag resets all changes to the "service_tag" field.
+func (m *ApiTokenWalletMutation) ResetServiceTag() {
+	m.service_tag = nil
+}
+
+// SetBalance sets the "balance" field.
+func (m *ApiTokenWalletMutation) SetBalance(i int64) {
+	m.balance = &i
+	m.addbalance = nil
+}
+
+// Balance returns the value of the "balance" field in the mutation.
+func (m *ApiTokenWalletMutation) Balance() (r int64, exists bool) {
+	v := m.balance
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBalance returns the old "balance" field's value of the ApiTokenWallet entity.
+// If the ApiTokenWallet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenWalletMutation) OldBalance(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBalance is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBalance requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBalance: %w", err)
+	}
+	return oldValue.Balance, nil
+}
+
+// AddBalance adds i to the "balance" field.
+func (m *ApiTokenWalletMutation) AddBalance(i int64) {
+	if m.addbalance != nil {
+		*m.addbalance += i
+	} else {
+		m.addbalance = &i
+	}
+}
+
+// AddedBalance returns the value that was added to the "balance" field in this mutation.
+func (m *ApiTokenWalletMutation) AddedBalance() (r int64, exists bool) {
+	v := m.addbalance
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetBalance resets all changes to the "balance" field.
+func (m *ApiTokenWalletMutation) ResetBalance() {
+	m.balance = nil
+	m.addbalance = nil
+}
+
+// SetLifetimeGranted sets the "lifetime_granted" field.
+func (m *ApiTokenWalletMutation) SetLifetimeGranted(i int64) {
+	m.lifetime_granted = &i
+	m.addlifetime_granted = nil
+}
+
+// LifetimeGranted returns the value of the "lifetime_granted" field in the mutation.
+func (m *ApiTokenWalletMutation) LifetimeGranted() (r int64, exists bool) {
+	v := m.lifetime_granted
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLifetimeGranted returns the old "lifetime_granted" field's value of the ApiTokenWallet entity.
+// If the ApiTokenWallet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenWalletMutation) OldLifetimeGranted(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLifetimeGranted is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLifetimeGranted requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLifetimeGranted: %w", err)
+	}
+	return oldValue.LifetimeGranted, nil
+}
+
+// AddLifetimeGranted adds i to the "lifetime_granted" field.
+func (m *ApiTokenWalletMutation) AddLifetimeGranted(i int64) {
+	if m.addlifetime_granted != nil {
+		*m.addlifetime_granted += i
+	} else {
+		m.addlifetime_granted = &i
+	}
+}
+
+// AddedLifetimeGranted returns the value that was added to the "lifetime_granted" field in this mutation.
+func (m *ApiTokenWalletMutation) AddedLifetimeGranted() (r int64, exists bool) {
+	v := m.addlifetime_granted
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetLifetimeGranted resets all changes to the "lifetime_granted" field.
+func (m *ApiTokenWalletMutation) ResetLifetimeGranted() {
+	m.lifetime_granted = nil
+	m.addlifetime_granted = nil
+}
+
+// SetLowBalanceThreshold sets the "low_balance_threshold" field.
+func (m *ApiTokenWalletMutation) SetLowBalanceThreshold(i int64) {
+	m.low_balance_threshold = &i
+	m.addlow_balance_threshold = nil
+}
+
+// LowBalanceThreshold returns the value of the "low_balance_threshold" field in the mutation.
+func (m *ApiTokenWalletMutation) LowBalanceThreshold() (r int64, exists bool) {
+	v := m.low_balance_threshold
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLowBalanceThreshold returns the old "low_balance_threshold" field's value of the ApiTokenWallet entity.
+// If the ApiTokenWallet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenWalletMutation) OldLowBalanceThreshold(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLowBalanceThreshold is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLowBalanceThreshold requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLowBalanceThreshold: %w", err)
+	}
+	return oldValue.LowBalanceThreshold, nil
+}
+
+// AddLowBalanceThreshold adds i to the "low_balance_threshold" field.
+func (m *ApiTokenWalletMutation) AddLowBalanceThreshold(i int64) {
+	if m.addlow_balance_threshold != nil {
+		*m.addlow_balance_threshold += i
+	} else {
+		m.addlow_balance_threshold = &i
+	}
+}
+
+// AddedLowBalanceThreshold returns the value that was added to the "low_balance_threshold" field in this mutation.
+func (m *ApiTokenWalletMutation) AddedLowBalanceThreshold() (r int64, exists bool) {
+	v := m.addlow_balance_threshold
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetLowBalanceThreshold resets all changes to the "low_balance_threshold" field.
+func (m *ApiTokenWalletMutation) ResetLowBalanceThreshold() {
+	m.low_balance_threshold = nil
+	m.addlow_balance_threshold = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ApiTokenWalletMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ApiTokenWalletMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ApiTokenWallet entity.
+// If the ApiTokenWallet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenWalletMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ApiTokenWalletMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ApiTokenWalletMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ApiTokenWalletMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ApiTokenWallet entity.
+// If the ApiTokenWallet object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenWalletMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ApiTokenWalletMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// AddTransactionIDs adds the "transactions" edge to the ApiTokenTransaction entity by ids.
+func (m *ApiTokenWalletMutation) AddTransactionIDs(ids ...uuid.UUID) {
+	if m.transactions == nil {
+		m.transactions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.transactions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTransactions clears the "transactions" edge to the ApiTokenTransaction entity.
+func (m *ApiTokenWalletMutation) ClearTransactions() {
+	m.clearedtransactions = true
+}
+
+// TransactionsCleared reports if the "transactions" edge to the ApiTokenTransaction entity was cleared.
+func (m *ApiTokenWalletMutation) TransactionsCleared() bool {
+	return m.clearedtransactions
+}
+
+// RemoveTransactionIDs removes the "transactions" edge to the ApiTokenTransaction entity by IDs.
+func (m *ApiTokenWalletMutation) RemoveTransactionIDs(ids ...uuid.UUID) {
+	if m.removedtransactions == nil {
+		m.removedtransactions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.transactions, ids[i])
+		m.removedtransactions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTransactions returns the removed IDs of the "transactions" edge to the ApiTokenTransaction entity.
+func (m *ApiTokenWalletMutation) RemovedTransactionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedtransactions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TransactionsIDs returns the "transactions" edge IDs in the mutation.
+func (m *ApiTokenWalletMutation) TransactionsIDs() (ids []uuid.UUID) {
+	for id := range m.transactions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTransactions resets all changes to the "transactions" edge.
+func (m *ApiTokenWalletMutation) ResetTransactions() {
+	m.transactions = nil
+	m.clearedtransactions = false
+	m.removedtransactions = nil
+}
+
+// Where appends a list predicates to the ApiTokenWalletMutation builder.
+func (m *ApiTokenWalletMutation) Where(ps ...predicate.ApiTokenWallet) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ApiTokenWalletMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ApiTokenWalletMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ApiTokenWallet, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ApiTokenWalletMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ApiTokenWalletMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ApiTokenWallet).
+func (m *ApiTokenWalletMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ApiTokenWalletMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.tenant_id != nil {
+		fields = append(fields, apitokenwallet.FieldTenantID)
+	}
+	if m.service_tag != nil {
+		fields = append(fields, apitokenwallet.FieldServiceTag)
+	}
+	if m.balance != nil {
+		fields = append(fields, apitokenwallet.FieldBalance)
+	}
+	if m.lifetime_granted != nil {
+		fields = append(fields, apitokenwallet.FieldLifetimeGranted)
+	}
+	if m.low_balance_threshold != nil {
+		fields = append(fields, apitokenwallet.FieldLowBalanceThreshold)
+	}
+	if m.created_at != nil {
+		fields = append(fields, apitokenwallet.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, apitokenwallet.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ApiTokenWalletMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case apitokenwallet.FieldTenantID:
+		return m.TenantID()
+	case apitokenwallet.FieldServiceTag:
+		return m.ServiceTag()
+	case apitokenwallet.FieldBalance:
+		return m.Balance()
+	case apitokenwallet.FieldLifetimeGranted:
+		return m.LifetimeGranted()
+	case apitokenwallet.FieldLowBalanceThreshold:
+		return m.LowBalanceThreshold()
+	case apitokenwallet.FieldCreatedAt:
+		return m.CreatedAt()
+	case apitokenwallet.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ApiTokenWalletMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case apitokenwallet.FieldTenantID:
+		return m.OldTenantID(ctx)
+	case apitokenwallet.FieldServiceTag:
+		return m.OldServiceTag(ctx)
+	case apitokenwallet.FieldBalance:
+		return m.OldBalance(ctx)
+	case apitokenwallet.FieldLifetimeGranted:
+		return m.OldLifetimeGranted(ctx)
+	case apitokenwallet.FieldLowBalanceThreshold:
+		return m.OldLowBalanceThreshold(ctx)
+	case apitokenwallet.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case apitokenwallet.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown ApiTokenWallet field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ApiTokenWalletMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case apitokenwallet.FieldTenantID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTenantID(v)
+		return nil
+	case apitokenwallet.FieldServiceTag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetServiceTag(v)
+		return nil
+	case apitokenwallet.FieldBalance:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBalance(v)
+		return nil
+	case apitokenwallet.FieldLifetimeGranted:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLifetimeGranted(v)
+		return nil
+	case apitokenwallet.FieldLowBalanceThreshold:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLowBalanceThreshold(v)
+		return nil
+	case apitokenwallet.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case apitokenwallet.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ApiTokenWallet field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ApiTokenWalletMutation) AddedFields() []string {
+	var fields []string
+	if m.addbalance != nil {
+		fields = append(fields, apitokenwallet.FieldBalance)
+	}
+	if m.addlifetime_granted != nil {
+		fields = append(fields, apitokenwallet.FieldLifetimeGranted)
+	}
+	if m.addlow_balance_threshold != nil {
+		fields = append(fields, apitokenwallet.FieldLowBalanceThreshold)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ApiTokenWalletMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case apitokenwallet.FieldBalance:
+		return m.AddedBalance()
+	case apitokenwallet.FieldLifetimeGranted:
+		return m.AddedLifetimeGranted()
+	case apitokenwallet.FieldLowBalanceThreshold:
+		return m.AddedLowBalanceThreshold()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ApiTokenWalletMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case apitokenwallet.FieldBalance:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddBalance(v)
+		return nil
+	case apitokenwallet.FieldLifetimeGranted:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLifetimeGranted(v)
+		return nil
+	case apitokenwallet.FieldLowBalanceThreshold:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLowBalanceThreshold(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ApiTokenWallet numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ApiTokenWalletMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ApiTokenWalletMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ApiTokenWalletMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown ApiTokenWallet nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ApiTokenWalletMutation) ResetField(name string) error {
+	switch name {
+	case apitokenwallet.FieldTenantID:
+		m.ResetTenantID()
+		return nil
+	case apitokenwallet.FieldServiceTag:
+		m.ResetServiceTag()
+		return nil
+	case apitokenwallet.FieldBalance:
+		m.ResetBalance()
+		return nil
+	case apitokenwallet.FieldLifetimeGranted:
+		m.ResetLifetimeGranted()
+		return nil
+	case apitokenwallet.FieldLowBalanceThreshold:
+		m.ResetLowBalanceThreshold()
+		return nil
+	case apitokenwallet.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case apitokenwallet.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ApiTokenWallet field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ApiTokenWalletMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.transactions != nil {
+		edges = append(edges, apitokenwallet.EdgeTransactions)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ApiTokenWalletMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case apitokenwallet.EdgeTransactions:
+		ids := make([]ent.Value, 0, len(m.transactions))
+		for id := range m.transactions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ApiTokenWalletMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedtransactions != nil {
+		edges = append(edges, apitokenwallet.EdgeTransactions)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ApiTokenWalletMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case apitokenwallet.EdgeTransactions:
+		ids := make([]ent.Value, 0, len(m.removedtransactions))
+		for id := range m.removedtransactions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ApiTokenWalletMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedtransactions {
+		edges = append(edges, apitokenwallet.EdgeTransactions)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ApiTokenWalletMutation) EdgeCleared(name string) bool {
+	switch name {
+	case apitokenwallet.EdgeTransactions:
+		return m.clearedtransactions
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ApiTokenWalletMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ApiTokenWallet unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ApiTokenWalletMutation) ResetEdge(name string) error {
+	switch name {
+	case apitokenwallet.EdgeTransactions:
+		m.ResetTransactions()
+		return nil
+	}
+	return fmt.Errorf("unknown ApiTokenWallet edge %s", name)
+}
 
 // BackupMutation represents an operation that mutates the Backup nodes in the graph.
 type BackupMutation struct {

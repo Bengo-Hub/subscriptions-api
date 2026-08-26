@@ -9,6 +9,88 @@ import (
 )
 
 var (
+	// APITokenTransactionsColumns holds the columns for the "api_token_transactions" table.
+	APITokenTransactionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "service_tag", Type: field.TypeString, Size: 64},
+		{Name: "action", Type: field.TypeEnum, Enums: []string{"grant", "topup", "deduction", "refund", "adjustment"}},
+		{Name: "tokens", Type: field.TypeInt64},
+		{Name: "new_balance", Type: field.TypeInt64},
+		{Name: "endpoint_pattern", Type: field.TypeString, Nullable: true, Size: 128},
+		{Name: "unit_cost_kes", Type: field.TypeFloat64, Nullable: true},
+		{Name: "ref_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "ref_type", Type: field.TypeString, Nullable: true, Size: 64},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "wallet_id", Type: field.TypeUUID},
+	}
+	// APITokenTransactionsTable holds the schema information for the "api_token_transactions" table.
+	APITokenTransactionsTable = &schema.Table{
+		Name:       "api_token_transactions",
+		Columns:    APITokenTransactionsColumns,
+		PrimaryKey: []*schema.Column{APITokenTransactionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "api_token_transactions_api_token_wallets_transactions",
+				Columns:    []*schema.Column{APITokenTransactionsColumns[13]},
+				RefColumns: []*schema.Column{APITokenWalletsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "apitokentransaction_tenant_id",
+				Unique:  false,
+				Columns: []*schema.Column{APITokenTransactionsColumns[1]},
+			},
+			{
+				Name:    "apitokentransaction_wallet_id",
+				Unique:  false,
+				Columns: []*schema.Column{APITokenTransactionsColumns[13]},
+			},
+			{
+				Name:    "apitokentransaction_service_tag",
+				Unique:  false,
+				Columns: []*schema.Column{APITokenTransactionsColumns[2]},
+			},
+			{
+				Name:    "apitokentransaction_action",
+				Unique:  false,
+				Columns: []*schema.Column{APITokenTransactionsColumns[3]},
+			},
+			{
+				Name:    "apitokentransaction_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{APITokenTransactionsColumns[12]},
+			},
+		},
+	}
+	// APITokenWalletsColumns holds the columns for the "api_token_wallets" table.
+	APITokenWalletsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "service_tag", Type: field.TypeString, Size: 64},
+		{Name: "balance", Type: field.TypeInt64, Default: 0},
+		{Name: "lifetime_granted", Type: field.TypeInt64, Default: 0},
+		{Name: "low_balance_threshold", Type: field.TypeInt64, Default: 50},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// APITokenWalletsTable holds the schema information for the "api_token_wallets" table.
+	APITokenWalletsTable = &schema.Table{
+		Name:       "api_token_wallets",
+		Columns:    APITokenWalletsColumns,
+		PrimaryKey: []*schema.Column{APITokenWalletsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "apitokenwallet_tenant_id_service_tag",
+				Unique:  true,
+				Columns: []*schema.Column{APITokenWalletsColumns[1], APITokenWalletsColumns[2]},
+			},
+		},
+	}
 	// BackupsColumns holds the columns for the "backups" table.
 	BackupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1299,6 +1381,8 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		APITokenTransactionsTable,
+		APITokenWalletsTable,
 		BackupsTable,
 		BackupSettingsTable,
 		BundlesTable,
@@ -1332,6 +1416,7 @@ var (
 )
 
 func init() {
+	APITokenTransactionsTable.ForeignKeys[0].RefTable = APITokenWalletsTable
 	EmailLicensesTable.ForeignKeys[0].RefTable = EmailPlansTable
 	EmailLicensesTable.ForeignKeys[1].RefTable = ProductSubscriptionsTable
 	EmailLicensesTable.ForeignKeys[2].RefTable = TenantSubscriptionsTable

@@ -6,6 +6,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// ApiTokenTransaction is the predicate function for apitokentransaction builders.
+type ApiTokenTransaction func(*sql.Selector)
+
+// ApiTokenWallet is the predicate function for apitokenwallet builders.
+type ApiTokenWallet func(*sql.Selector)
+
 // Backup is the predicate function for backup builders.
 type Backup func(*sql.Selector)
 

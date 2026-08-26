@@ -12,6 +12,8 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/bengobox/subscription-service/internal/ent/apitokentransaction"
+	"github.com/bengobox/subscription-service/internal/ent/apitokenwallet"
 	"github.com/bengobox/subscription-service/internal/ent/backup"
 	"github.com/bengobox/subscription-service/internal/ent/backupsetting"
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
@@ -101,6 +103,8 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			apitokentransaction.Table:           apitokentransaction.ValidColumn,
+			apitokenwallet.Table:                apitokenwallet.ValidColumn,
 			backup.Table:                        backup.ValidColumn,
 			backupsetting.Table:                 backupsetting.ValidColumn,
 			bundle.Table:                        bundle.ValidColumn,

@@ -5,6 +5,8 @@ package ent
 import (
 	"time"
 
+	"github.com/bengobox/subscription-service/internal/ent/apitokentransaction"
+	"github.com/bengobox/subscription-service/internal/ent/apitokenwallet"
 	"github.com/bengobox/subscription-service/internal/ent/backup"
 	"github.com/bengobox/subscription-service/internal/ent/backupsetting"
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
@@ -41,6 +43,64 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	apitokentransactionFields := schema.ApiTokenTransaction{}.Fields()
+	_ = apitokentransactionFields
+	// apitokentransactionDescServiceTag is the schema descriptor for service_tag field.
+	apitokentransactionDescServiceTag := apitokentransactionFields[3].Descriptor()
+	// apitokentransaction.ServiceTagValidator is a validator for the "service_tag" field. It is called by the builders before save.
+	apitokentransaction.ServiceTagValidator = apitokentransactionDescServiceTag.Validators[0].(func(string) error)
+	// apitokentransactionDescEndpointPattern is the schema descriptor for endpoint_pattern field.
+	apitokentransactionDescEndpointPattern := apitokentransactionFields[7].Descriptor()
+	// apitokentransaction.EndpointPatternValidator is a validator for the "endpoint_pattern" field. It is called by the builders before save.
+	apitokentransaction.EndpointPatternValidator = apitokentransactionDescEndpointPattern.Validators[0].(func(string) error)
+	// apitokentransactionDescRefType is the schema descriptor for ref_type field.
+	apitokentransactionDescRefType := apitokentransactionFields[10].Descriptor()
+	// apitokentransaction.RefTypeValidator is a validator for the "ref_type" field. It is called by the builders before save.
+	apitokentransaction.RefTypeValidator = apitokentransactionDescRefType.Validators[0].(func(string) error)
+	// apitokentransactionDescDescription is the schema descriptor for description field.
+	apitokentransactionDescDescription := apitokentransactionFields[11].Descriptor()
+	// apitokentransaction.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
+	apitokentransaction.DescriptionValidator = apitokentransactionDescDescription.Validators[0].(func(string) error)
+	// apitokentransactionDescCreatedAt is the schema descriptor for created_at field.
+	apitokentransactionDescCreatedAt := apitokentransactionFields[13].Descriptor()
+	// apitokentransaction.DefaultCreatedAt holds the default value on creation for the created_at field.
+	apitokentransaction.DefaultCreatedAt = apitokentransactionDescCreatedAt.Default.(func() time.Time)
+	// apitokentransactionDescID is the schema descriptor for id field.
+	apitokentransactionDescID := apitokentransactionFields[0].Descriptor()
+	// apitokentransaction.DefaultID holds the default value on creation for the id field.
+	apitokentransaction.DefaultID = apitokentransactionDescID.Default.(func() uuid.UUID)
+	apitokenwalletFields := schema.ApiTokenWallet{}.Fields()
+	_ = apitokenwalletFields
+	// apitokenwalletDescServiceTag is the schema descriptor for service_tag field.
+	apitokenwalletDescServiceTag := apitokenwalletFields[2].Descriptor()
+	// apitokenwallet.ServiceTagValidator is a validator for the "service_tag" field. It is called by the builders before save.
+	apitokenwallet.ServiceTagValidator = apitokenwalletDescServiceTag.Validators[0].(func(string) error)
+	// apitokenwalletDescBalance is the schema descriptor for balance field.
+	apitokenwalletDescBalance := apitokenwalletFields[3].Descriptor()
+	// apitokenwallet.DefaultBalance holds the default value on creation for the balance field.
+	apitokenwallet.DefaultBalance = apitokenwalletDescBalance.Default.(int64)
+	// apitokenwalletDescLifetimeGranted is the schema descriptor for lifetime_granted field.
+	apitokenwalletDescLifetimeGranted := apitokenwalletFields[4].Descriptor()
+	// apitokenwallet.DefaultLifetimeGranted holds the default value on creation for the lifetime_granted field.
+	apitokenwallet.DefaultLifetimeGranted = apitokenwalletDescLifetimeGranted.Default.(int64)
+	// apitokenwalletDescLowBalanceThreshold is the schema descriptor for low_balance_threshold field.
+	apitokenwalletDescLowBalanceThreshold := apitokenwalletFields[5].Descriptor()
+	// apitokenwallet.DefaultLowBalanceThreshold holds the default value on creation for the low_balance_threshold field.
+	apitokenwallet.DefaultLowBalanceThreshold = apitokenwalletDescLowBalanceThreshold.Default.(int64)
+	// apitokenwalletDescCreatedAt is the schema descriptor for created_at field.
+	apitokenwalletDescCreatedAt := apitokenwalletFields[6].Descriptor()
+	// apitokenwallet.DefaultCreatedAt holds the default value on creation for the created_at field.
+	apitokenwallet.DefaultCreatedAt = apitokenwalletDescCreatedAt.Default.(func() time.Time)
+	// apitokenwalletDescUpdatedAt is the schema descriptor for updated_at field.
+	apitokenwalletDescUpdatedAt := apitokenwalletFields[7].Descriptor()
+	// apitokenwallet.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	apitokenwallet.DefaultUpdatedAt = apitokenwalletDescUpdatedAt.Default.(func() time.Time)
+	// apitokenwallet.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	apitokenwallet.UpdateDefaultUpdatedAt = apitokenwalletDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// apitokenwalletDescID is the schema descriptor for id field.
+	apitokenwalletDescID := apitokenwalletFields[0].Descriptor()
+	// apitokenwallet.DefaultID holds the default value on creation for the id field.
+	apitokenwallet.DefaultID = apitokenwalletDescID.Default.(func() uuid.UUID)
 	backupFields := schema.Backup{}.Fields()
 	_ = backupFields
 	// backupDescName is the schema descriptor for name field.

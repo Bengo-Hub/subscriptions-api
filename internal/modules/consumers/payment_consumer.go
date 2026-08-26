@@ -61,11 +61,13 @@ const treasuryPaymentConsumerName = "subscription-service-treasury-payments"
 // TreasuryPaymentConsumer listens for treasury.payment.succeeded events:
 //   - card_setup: stores Paystack authorization_code for auto-renewal
 //   - subscription/renewal: activates/renews subscription, earns loyalty credits
+//   - api_token_topup: credits an ApiTokenWallet (see token_wallet.go)
 type TreasuryPaymentConsumer struct {
 	log           *zap.Logger
 	orm           *ent.Client
 	svc           *subscriptions.Service
 	creditService *billing.CreditService
+	tokenWallet   *billing.TokenWalletService
 	idem          *eventslib.IdempotencyStore
 }
 
@@ -75,6 +77,7 @@ func NewTreasuryPaymentConsumer(log *zap.Logger, orm *ent.Client) *TreasuryPayme
 		log:           log.Named("consumers.treasury_payment"),
 		orm:           orm,
 		creditService: billing.NewCreditService(log, orm),
+		tokenWallet:   billing.NewTokenWalletService(log, orm),
 	}
 }
 
@@ -215,6 +218,36 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 			}
 			c.log.Info("email license purchase fulfilled via NATS payment event",
 				zap.String("tenant_id", tenantIDStr), zap.String("plan_code", planCode), zap.Int("quantity", quantity))
+		}
+		c.markProcessed(ctx, eventID)
+		return nil
+	}
+
+	// api_token_topup: a discrete, one-off ApiTokenWallet purchase (see subscriptions/
+	// token_topup.go's CreateTokenTopUpIntent + billing/token_wallet.go's TopUpTokens) — fulfil
+	// (credit the wallet) rather than falling through to subscription renewal.
+	if refType == "api_token_topup" {
+		if c.svc != nil && c.tokenWallet != nil {
+			var intentID uuid.UUID
+			if intentIDStr := ev.Payload.IntentID; intentIDStr != "" {
+				intentID, _ = uuid.Parse(intentIDStr)
+			}
+			serviceTag, tokens, unitCostKes, merr := c.svc.GetTokenTopUpIntentMetadata(ctx, tenantID, intentID)
+			if merr != nil {
+				c.log.Error("failed to read token top-up intent metadata", zap.String("tenant_id", tenantIDStr), zap.Error(merr))
+				return merr
+			}
+			// intentID doubles as the ledger ref_id. Redelivery-safe the same way as the
+			// email_license_purchase branch above: the idem.AlreadyProcessed/markProcessed guard
+			// at the top of handle() (keyed on the envelope eventID) is what actually prevents a
+			// redelivered event from crediting the wallet twice — this branch doesn't need its
+			// own second dedup layer.
+			if _, terr := c.tokenWallet.TopUpTokens(ctx, tenantID, serviceTag, tokens, unitCostKes, intentID); terr != nil {
+				c.log.Error("failed to credit token wallet", zap.String("tenant_id", tenantIDStr), zap.Error(terr))
+				return terr
+			}
+			c.log.Info("api token top-up fulfilled via NATS payment event",
+				zap.String("tenant_id", tenantIDStr), zap.String("service_tag", serviceTag), zap.Int64("tokens", tokens))
 		}
 		c.markProcessed(ctx, eventID)
 		return nil

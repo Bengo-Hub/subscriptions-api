@@ -16,6 +16,8 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/bengobox/subscription-service/internal/ent/apitokentransaction"
+	"github.com/bengobox/subscription-service/internal/ent/apitokenwallet"
 	"github.com/bengobox/subscription-service/internal/ent/backup"
 	"github.com/bengobox/subscription-service/internal/ent/backupsetting"
 	"github.com/bengobox/subscription-service/internal/ent/bundle"
@@ -52,6 +54,10 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// ApiTokenTransaction is the client for interacting with the ApiTokenTransaction builders.
+	ApiTokenTransaction *ApiTokenTransactionClient
+	// ApiTokenWallet is the client for interacting with the ApiTokenWallet builders.
+	ApiTokenWallet *ApiTokenWalletClient
 	// Backup is the client for interacting with the Backup builders.
 	Backup *BackupClient
 	// BackupSetting is the client for interacting with the BackupSetting builders.
@@ -121,6 +127,8 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.ApiTokenTransaction = NewApiTokenTransactionClient(c.config)
+	c.ApiTokenWallet = NewApiTokenWalletClient(c.config)
 	c.Backup = NewBackupClient(c.config)
 	c.BackupSetting = NewBackupSettingClient(c.config)
 	c.Bundle = NewBundleClient(c.config)
@@ -242,6 +250,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:                           ctx,
 		config:                        cfg,
+		ApiTokenTransaction:           NewApiTokenTransactionClient(cfg),
+		ApiTokenWallet:                NewApiTokenWalletClient(cfg),
 		Backup:                        NewBackupClient(cfg),
 		BackupSetting:                 NewBackupSettingClient(cfg),
 		Bundle:                        NewBundleClient(cfg),
@@ -290,6 +300,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:                           ctx,
 		config:                        cfg,
+		ApiTokenTransaction:           NewApiTokenTransactionClient(cfg),
+		ApiTokenWallet:                NewApiTokenWalletClient(cfg),
 		Backup:                        NewBackupClient(cfg),
 		BackupSetting:                 NewBackupSettingClient(cfg),
 		Bundle:                        NewBundleClient(cfg),
@@ -325,7 +337,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Backup.
+//		ApiTokenTransaction.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -348,13 +360,14 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Backup, c.BackupSetting, c.Bundle, c.Coupon, c.CustomAddon, c.EmailLicense,
-		c.EmailPlan, c.FeatureDefinition, c.OutboxEvent, c.OverageCharge,
-		c.PlanFeature, c.PlanPricingHistory, c.Product, c.ProductSubscription,
-		c.RateLimitConfig, c.RolePermission, c.ServiceChargePlan, c.ServiceConfig,
-		c.SubscriptionCredit, c.SubscriptionCreditTransaction, c.SubscriptionPlan,
-		c.SubscriptionsPermission, c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant,
-		c.TenantEmailDomain, c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
+		c.ApiTokenTransaction, c.ApiTokenWallet, c.Backup, c.BackupSetting, c.Bundle,
+		c.Coupon, c.CustomAddon, c.EmailLicense, c.EmailPlan, c.FeatureDefinition,
+		c.OutboxEvent, c.OverageCharge, c.PlanFeature, c.PlanPricingHistory, c.Product,
+		c.ProductSubscription, c.RateLimitConfig, c.RolePermission,
+		c.ServiceChargePlan, c.ServiceConfig, c.SubscriptionCredit,
+		c.SubscriptionCreditTransaction, c.SubscriptionPlan, c.SubscriptionsPermission,
+		c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant, c.TenantEmailDomain,
+		c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
 	} {
 		n.Use(hooks...)
 	}
@@ -364,13 +377,14 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Backup, c.BackupSetting, c.Bundle, c.Coupon, c.CustomAddon, c.EmailLicense,
-		c.EmailPlan, c.FeatureDefinition, c.OutboxEvent, c.OverageCharge,
-		c.PlanFeature, c.PlanPricingHistory, c.Product, c.ProductSubscription,
-		c.RateLimitConfig, c.RolePermission, c.ServiceChargePlan, c.ServiceConfig,
-		c.SubscriptionCredit, c.SubscriptionCreditTransaction, c.SubscriptionPlan,
-		c.SubscriptionsPermission, c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant,
-		c.TenantEmailDomain, c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
+		c.ApiTokenTransaction, c.ApiTokenWallet, c.Backup, c.BackupSetting, c.Bundle,
+		c.Coupon, c.CustomAddon, c.EmailLicense, c.EmailPlan, c.FeatureDefinition,
+		c.OutboxEvent, c.OverageCharge, c.PlanFeature, c.PlanPricingHistory, c.Product,
+		c.ProductSubscription, c.RateLimitConfig, c.RolePermission,
+		c.ServiceChargePlan, c.ServiceConfig, c.SubscriptionCredit,
+		c.SubscriptionCreditTransaction, c.SubscriptionPlan, c.SubscriptionsPermission,
+		c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant, c.TenantEmailDomain,
+		c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -379,6 +393,10 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *ApiTokenTransactionMutation:
+		return c.ApiTokenTransaction.mutate(ctx, m)
+	case *ApiTokenWalletMutation:
+		return c.ApiTokenWallet.mutate(ctx, m)
 	case *BackupMutation:
 		return c.Backup.mutate(ctx, m)
 	case *BackupSettingMutation:
@@ -439,6 +457,304 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UserRoleAssignment.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// ApiTokenTransactionClient is a client for the ApiTokenTransaction schema.
+type ApiTokenTransactionClient struct {
+	config
+}
+
+// NewApiTokenTransactionClient returns a client for the ApiTokenTransaction from the given config.
+func NewApiTokenTransactionClient(c config) *ApiTokenTransactionClient {
+	return &ApiTokenTransactionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `apitokentransaction.Hooks(f(g(h())))`.
+func (c *ApiTokenTransactionClient) Use(hooks ...Hook) {
+	c.hooks.ApiTokenTransaction = append(c.hooks.ApiTokenTransaction, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `apitokentransaction.Intercept(f(g(h())))`.
+func (c *ApiTokenTransactionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ApiTokenTransaction = append(c.inters.ApiTokenTransaction, interceptors...)
+}
+
+// Create returns a builder for creating a ApiTokenTransaction entity.
+func (c *ApiTokenTransactionClient) Create() *ApiTokenTransactionCreate {
+	mutation := newApiTokenTransactionMutation(c.config, OpCreate)
+	return &ApiTokenTransactionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ApiTokenTransaction entities.
+func (c *ApiTokenTransactionClient) CreateBulk(builders ...*ApiTokenTransactionCreate) *ApiTokenTransactionCreateBulk {
+	return &ApiTokenTransactionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ApiTokenTransactionClient) MapCreateBulk(slice any, setFunc func(*ApiTokenTransactionCreate, int)) *ApiTokenTransactionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ApiTokenTransactionCreateBulk{err: fmt.Errorf("calling to ApiTokenTransactionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ApiTokenTransactionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ApiTokenTransactionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ApiTokenTransaction.
+func (c *ApiTokenTransactionClient) Update() *ApiTokenTransactionUpdate {
+	mutation := newApiTokenTransactionMutation(c.config, OpUpdate)
+	return &ApiTokenTransactionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ApiTokenTransactionClient) UpdateOne(_m *ApiTokenTransaction) *ApiTokenTransactionUpdateOne {
+	mutation := newApiTokenTransactionMutation(c.config, OpUpdateOne, withApiTokenTransaction(_m))
+	return &ApiTokenTransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ApiTokenTransactionClient) UpdateOneID(id uuid.UUID) *ApiTokenTransactionUpdateOne {
+	mutation := newApiTokenTransactionMutation(c.config, OpUpdateOne, withApiTokenTransactionID(id))
+	return &ApiTokenTransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ApiTokenTransaction.
+func (c *ApiTokenTransactionClient) Delete() *ApiTokenTransactionDelete {
+	mutation := newApiTokenTransactionMutation(c.config, OpDelete)
+	return &ApiTokenTransactionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ApiTokenTransactionClient) DeleteOne(_m *ApiTokenTransaction) *ApiTokenTransactionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ApiTokenTransactionClient) DeleteOneID(id uuid.UUID) *ApiTokenTransactionDeleteOne {
+	builder := c.Delete().Where(apitokentransaction.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ApiTokenTransactionDeleteOne{builder}
+}
+
+// Query returns a query builder for ApiTokenTransaction.
+func (c *ApiTokenTransactionClient) Query() *ApiTokenTransactionQuery {
+	return &ApiTokenTransactionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeApiTokenTransaction},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ApiTokenTransaction entity by its id.
+func (c *ApiTokenTransactionClient) Get(ctx context.Context, id uuid.UUID) (*ApiTokenTransaction, error) {
+	return c.Query().Where(apitokentransaction.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ApiTokenTransactionClient) GetX(ctx context.Context, id uuid.UUID) *ApiTokenTransaction {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWallet queries the wallet edge of a ApiTokenTransaction.
+func (c *ApiTokenTransactionClient) QueryWallet(_m *ApiTokenTransaction) *ApiTokenWalletQuery {
+	query := (&ApiTokenWalletClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apitokentransaction.Table, apitokentransaction.FieldID, id),
+			sqlgraph.To(apitokenwallet.Table, apitokenwallet.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, apitokentransaction.WalletTable, apitokentransaction.WalletColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ApiTokenTransactionClient) Hooks() []Hook {
+	return c.hooks.ApiTokenTransaction
+}
+
+// Interceptors returns the client interceptors.
+func (c *ApiTokenTransactionClient) Interceptors() []Interceptor {
+	return c.inters.ApiTokenTransaction
+}
+
+func (c *ApiTokenTransactionClient) mutate(ctx context.Context, m *ApiTokenTransactionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ApiTokenTransactionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ApiTokenTransactionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ApiTokenTransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ApiTokenTransactionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ApiTokenTransaction mutation op: %q", m.Op())
+	}
+}
+
+// ApiTokenWalletClient is a client for the ApiTokenWallet schema.
+type ApiTokenWalletClient struct {
+	config
+}
+
+// NewApiTokenWalletClient returns a client for the ApiTokenWallet from the given config.
+func NewApiTokenWalletClient(c config) *ApiTokenWalletClient {
+	return &ApiTokenWalletClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `apitokenwallet.Hooks(f(g(h())))`.
+func (c *ApiTokenWalletClient) Use(hooks ...Hook) {
+	c.hooks.ApiTokenWallet = append(c.hooks.ApiTokenWallet, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `apitokenwallet.Intercept(f(g(h())))`.
+func (c *ApiTokenWalletClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ApiTokenWallet = append(c.inters.ApiTokenWallet, interceptors...)
+}
+
+// Create returns a builder for creating a ApiTokenWallet entity.
+func (c *ApiTokenWalletClient) Create() *ApiTokenWalletCreate {
+	mutation := newApiTokenWalletMutation(c.config, OpCreate)
+	return &ApiTokenWalletCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ApiTokenWallet entities.
+func (c *ApiTokenWalletClient) CreateBulk(builders ...*ApiTokenWalletCreate) *ApiTokenWalletCreateBulk {
+	return &ApiTokenWalletCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ApiTokenWalletClient) MapCreateBulk(slice any, setFunc func(*ApiTokenWalletCreate, int)) *ApiTokenWalletCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ApiTokenWalletCreateBulk{err: fmt.Errorf("calling to ApiTokenWalletClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ApiTokenWalletCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ApiTokenWalletCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ApiTokenWallet.
+func (c *ApiTokenWalletClient) Update() *ApiTokenWalletUpdate {
+	mutation := newApiTokenWalletMutation(c.config, OpUpdate)
+	return &ApiTokenWalletUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ApiTokenWalletClient) UpdateOne(_m *ApiTokenWallet) *ApiTokenWalletUpdateOne {
+	mutation := newApiTokenWalletMutation(c.config, OpUpdateOne, withApiTokenWallet(_m))
+	return &ApiTokenWalletUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ApiTokenWalletClient) UpdateOneID(id uuid.UUID) *ApiTokenWalletUpdateOne {
+	mutation := newApiTokenWalletMutation(c.config, OpUpdateOne, withApiTokenWalletID(id))
+	return &ApiTokenWalletUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ApiTokenWallet.
+func (c *ApiTokenWalletClient) Delete() *ApiTokenWalletDelete {
+	mutation := newApiTokenWalletMutation(c.config, OpDelete)
+	return &ApiTokenWalletDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ApiTokenWalletClient) DeleteOne(_m *ApiTokenWallet) *ApiTokenWalletDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ApiTokenWalletClient) DeleteOneID(id uuid.UUID) *ApiTokenWalletDeleteOne {
+	builder := c.Delete().Where(apitokenwallet.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ApiTokenWalletDeleteOne{builder}
+}
+
+// Query returns a query builder for ApiTokenWallet.
+func (c *ApiTokenWalletClient) Query() *ApiTokenWalletQuery {
+	return &ApiTokenWalletQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeApiTokenWallet},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ApiTokenWallet entity by its id.
+func (c *ApiTokenWalletClient) Get(ctx context.Context, id uuid.UUID) (*ApiTokenWallet, error) {
+	return c.Query().Where(apitokenwallet.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ApiTokenWalletClient) GetX(ctx context.Context, id uuid.UUID) *ApiTokenWallet {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTransactions queries the transactions edge of a ApiTokenWallet.
+func (c *ApiTokenWalletClient) QueryTransactions(_m *ApiTokenWallet) *ApiTokenTransactionQuery {
+	query := (&ApiTokenTransactionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apitokenwallet.Table, apitokenwallet.FieldID, id),
+			sqlgraph.To(apitokentransaction.Table, apitokentransaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, apitokenwallet.TransactionsTable, apitokenwallet.TransactionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ApiTokenWalletClient) Hooks() []Hook {
+	return c.hooks.ApiTokenWallet
+}
+
+// Interceptors returns the client interceptors.
+func (c *ApiTokenWalletClient) Interceptors() []Interceptor {
+	return c.inters.ApiTokenWallet
+}
+
+func (c *ApiTokenWalletClient) mutate(ctx context.Context, m *ApiTokenWalletMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ApiTokenWalletCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ApiTokenWalletUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ApiTokenWalletUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ApiTokenWalletDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ApiTokenWallet mutation op: %q", m.Op())
 	}
 }
 
@@ -4894,21 +5210,23 @@ func (c *UserRoleAssignmentClient) mutate(ctx context.Context, m *UserRoleAssign
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Backup, BackupSetting, Bundle, Coupon, CustomAddon, EmailLicense, EmailPlan,
-		FeatureDefinition, OutboxEvent, OverageCharge, PlanFeature, PlanPricingHistory,
-		Product, ProductSubscription, RateLimitConfig, RolePermission,
-		ServiceChargePlan, ServiceConfig, SubscriptionCredit,
-		SubscriptionCreditTransaction, SubscriptionPlan, SubscriptionsPermission,
-		SubscriptionsRole, SubscriptionsUser, Tenant, TenantEmailDomain,
-		TenantSubscription, UsageEvent, UserRoleAssignment []ent.Hook
+		ApiTokenTransaction, ApiTokenWallet, Backup, BackupSetting, Bundle, Coupon,
+		CustomAddon, EmailLicense, EmailPlan, FeatureDefinition, OutboxEvent,
+		OverageCharge, PlanFeature, PlanPricingHistory, Product, ProductSubscription,
+		RateLimitConfig, RolePermission, ServiceChargePlan, ServiceConfig,
+		SubscriptionCredit, SubscriptionCreditTransaction, SubscriptionPlan,
+		SubscriptionsPermission, SubscriptionsRole, SubscriptionsUser, Tenant,
+		TenantEmailDomain, TenantSubscription, UsageEvent,
+		UserRoleAssignment []ent.Hook
 	}
 	inters struct {
-		Backup, BackupSetting, Bundle, Coupon, CustomAddon, EmailLicense, EmailPlan,
-		FeatureDefinition, OutboxEvent, OverageCharge, PlanFeature, PlanPricingHistory,
-		Product, ProductSubscription, RateLimitConfig, RolePermission,
-		ServiceChargePlan, ServiceConfig, SubscriptionCredit,
-		SubscriptionCreditTransaction, SubscriptionPlan, SubscriptionsPermission,
-		SubscriptionsRole, SubscriptionsUser, Tenant, TenantEmailDomain,
-		TenantSubscription, UsageEvent, UserRoleAssignment []ent.Interceptor
+		ApiTokenTransaction, ApiTokenWallet, Backup, BackupSetting, Bundle, Coupon,
+		CustomAddon, EmailLicense, EmailPlan, FeatureDefinition, OutboxEvent,
+		OverageCharge, PlanFeature, PlanPricingHistory, Product, ProductSubscription,
+		RateLimitConfig, RolePermission, ServiceChargePlan, ServiceConfig,
+		SubscriptionCredit, SubscriptionCreditTransaction, SubscriptionPlan,
+		SubscriptionsPermission, SubscriptionsRole, SubscriptionsUser, Tenant,
+		TenantEmailDomain, TenantSubscription, UsageEvent,
+		UserRoleAssignment []ent.Interceptor
 	}
 )

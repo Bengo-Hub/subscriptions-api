@@ -12,6 +12,10 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// ApiTokenTransaction is the client for interacting with the ApiTokenTransaction builders.
+	ApiTokenTransaction *ApiTokenTransactionClient
+	// ApiTokenWallet is the client for interacting with the ApiTokenWallet builders.
+	ApiTokenWallet *ApiTokenWalletClient
 	// Backup is the client for interacting with the Backup builders.
 	Backup *BackupClient
 	// BackupSetting is the client for interacting with the BackupSetting builders.
@@ -201,6 +205,8 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.ApiTokenTransaction = NewApiTokenTransactionClient(tx.config)
+	tx.ApiTokenWallet = NewApiTokenWalletClient(tx.config)
 	tx.Backup = NewBackupClient(tx.config)
 	tx.BackupSetting = NewBackupSettingClient(tx.config)
 	tx.Bundle = NewBundleClient(tx.config)
@@ -239,7 +245,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Backup.QueryXXX(), the query will be executed
+// applies a query, for example: ApiTokenTransaction.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

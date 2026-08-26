@@ -22,10 +22,19 @@ import (
 // Codevertex SaaS relationship. See .claude/plans/etims-api-monetization-and-
 // security-2026-08-18.md.
 //
-// Pricing is usage-based (tiered included quota + overage), reusing the live
-// UsageEvent -> OverageCharge pipeline via the "etims_transactions" metered
-// metric registered in internal/modules/billing/overage_eligibility.go. The
-// one-time ASSISTED-integration fee (35k/85k/180k KES, only when Codevertex's
+// Pricing is a prepaid TOKEN BUCKET (internal/modules/billing/token_wallet.go +
+// api_token_costs.go), not the old ReportUsage/OverageCharge monthly-soft-cap pipeline —
+// etims_transactions was removed from overage_eligibility.go's meteredMetrics when this shipped.
+// included_tokens is each plan's monthly grant (added to the wallet, accumulating, every
+// renewal — see TokenWalletService.GrantTokens); token_price_kes is the price per token when a
+// subscriber tops up ad hoc between renewals. Both are derived from the ORIGINAL per-transaction
+// figures (500/2,000/10,000 included; KES 800/600/400 per 100 over) scaled by
+// ApiTokenCostTransmit=10 (the token weight of a sales/credit-note/stock-io transmission — the
+// one call type this was already metering 1:1) so a subscriber's sales-transmission capacity is
+// UNCHANGED in KES terms; cheaper lookup/write calls, previously unmetered entirely, are now
+// metered too but at a much lower weight — a strict improvement, not a new cost.
+//
+// The one-time ASSISTED-integration fee (35k/85k/180k KES, only when Codevertex's
 // team does the setup instead of the client's own developers) is deliberately
 // NOT a plan setup_fee here — that field fires automatically for every
 // subscriber to a plan, but assisted-vs-self-serve is a per-request choice
@@ -100,13 +109,15 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 			id:          uuid.NewSHA1(uuid.NameSpaceOID, []byte("etims_api:BASIC")),
 			planCode:    "ETIMS_API_BASIC",
 			name:        "eTIMS API Basic",
-			description: "500 fiscalized transactions/month included, then KES 800 per 100 over.",
+			description: "5,000 tokens/month included (~500 sales transmissions, or more if you mostly use cheaper lookup/write calls), then KES 0.80/token top-up.",
 			price:       4999.0,
 			tierOrder:   1,
 			includedTx:  500,
 			tierLimits: map[string]any{
-				"etims_transactions_per_month":      500,
-				"overage_etims_price_per_100_month": 800,
+				"etims_transactions_per_month":      500,  // display-only: sales-equivalent capacity at the transmit weight
+				"overage_etims_price_per_100_month": 800,  // display-only: legacy per-100-transaction framing
+				"included_tokens":                   5000, // authoritative: monthly token grant (500 * ApiTokenCostTransmit)
+				"token_price_kes":                   0.8,  // authoritative: KES per token on ad-hoc top-up
 				"api_requests_per_minute":           60,
 			},
 			features: []string{"etims_api_access"},
@@ -115,13 +126,15 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 			id:          uuid.NewSHA1(uuid.NameSpaceOID, []byte("etims_api:GROWTH")),
 			planCode:    "ETIMS_API_GROWTH",
 			name:        "eTIMS API Growth",
-			description: "2,000 fiscalized transactions/month included, then KES 600 per 100 over.",
+			description: "20,000 tokens/month included (~2,000 sales transmissions, or more if you mostly use cheaper lookup/write calls), then KES 0.60/token top-up.",
 			price:       12999.0,
 			tierOrder:   2,
 			includedTx:  2000,
 			tierLimits: map[string]any{
 				"etims_transactions_per_month":      2000,
 				"overage_etims_price_per_100_month": 600,
+				"included_tokens":                   20000,
+				"token_price_kes":                   0.6,
 				"api_requests_per_minute":           150,
 			},
 			features: []string{"etims_api_access"},
@@ -130,13 +143,15 @@ func seedEtimsAPIPlans(ctx context.Context, tx *ent.Tx) error {
 			id:          uuid.NewSHA1(uuid.NameSpaceOID, []byte("etims_api:SCALE")),
 			planCode:    "ETIMS_API_SCALE",
 			name:        "eTIMS API Scale",
-			description: "10,000 fiscalized transactions/month included, then KES 400 per 100 over.",
+			description: "100,000 tokens/month included (~10,000 sales transmissions, or more if you mostly use cheaper lookup/write calls), then KES 0.40/token top-up.",
 			price:       29999.0,
 			tierOrder:   3,
 			includedTx:  10000,
 			tierLimits: map[string]any{
 				"etims_transactions_per_month":      10000,
 				"overage_etims_price_per_100_month": 400,
+				"included_tokens":                   100000,
+				"token_price_kes":                   0.4,
 				"api_requests_per_minute":           400,
 			},
 			features: []string{"etims_api_access"},

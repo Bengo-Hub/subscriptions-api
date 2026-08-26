@@ -88,8 +88,18 @@ var featureCatalog = func() []catalogEntry {
 		// tag (not treasury) so plan<->catalog tier-limit validation lines up with the plan's own
 		// service_tag, even though treasury-api is what actually enforces/reports it.
 		feat("etims_api_access", etimsAPI, "Accounting", "eTIMS API Access (external)"),
-		meteredLim("etims_transactions_per_month", etimsAPI, "Limits", "eTIMS API Transactions", "/ month", "treasury.etims.transaction.transmitted"),
-		lim("overage_etims_price_per_100_month", etimsAPI, "Overage", "eTIMS API Overage (per 100)", "KES / month"),
+		// Display-only legacy per-transaction framing — no longer the enforcement mechanism (see
+		// included_tokens/token_price_kes below), kept only so existing UI copy referencing
+		// "included transactions" still resolves against the catalog.
+		lim("etims_transactions_per_month", etimsAPI, "Limits", "eTIMS API Transactions (reference)", "/ month"),
+		lim("overage_etims_price_per_100_month", etimsAPI, "Overage", "eTIMS API Overage (per 100, reference)", "KES / month"),
+		// Authoritative prepaid token-bucket figures (billing/token_wallet.go +
+		// billing/api_token_costs.go) — included_tokens is the monthly grant credited to the
+		// ApiTokenWallet each renewal (accumulates, never expires); token_price_kes is the KES
+		// price per token on a self-serve top-up. NOT usage-event-metered (plain lim, not
+		// meteredLim): consumption is tracked via ApiTokenTransaction, not usage_events.
+		lim("included_tokens", etimsAPI, "Limits", "eTIMS API Included Tokens", "tokens / month"),
+		lim("token_price_kes", etimsAPI, "Overage", "eTIMS API Token Price", "KES / token"),
 		// Enforced by treasury-api's external API rate-limit middleware (resolved via
 		// subscriptions-api's GET /tenants/{id}/rate-limit, see internal/http/handlers/rate_limit.go)
 		// -- not metered via usage events, it's a hard per-minute ceiling, not a monthly quota.

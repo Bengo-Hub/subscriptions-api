@@ -284,6 +284,10 @@ func New(ctx context.Context) (*App, error) {
 	// S2S effective rate-limit resolution — see internal/http/handlers/rate_limit.go.
 	rateLimitHandler := handlers.NewRateLimitHandler(log, ormClient)
 
+	// Prepaid API token wallet (S2S deduct/balance for treasury-api's external eTIMS API
+	// middleware, + tenant-facing top-up/estimate) — see internal/http/handlers/token_wallet.go.
+	tokenWalletHandler := handlers.NewTokenWalletHandler(log, ormClient, subscriptionSvc)
+
 	// Feature catalog handler (platform-wide feature/limit registry for the plan builder)
 	var featureCatalogHandler *handlers.FeatureCatalogHandler
 	if ormClient != nil {
@@ -306,7 +310,7 @@ func New(ctx context.Context) (*App, error) {
 		RetentionDays: cfg.Backup.RetentionDays,
 	}, log).Start(ctx)
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, productActivationHandler, backupHandler, backupDestHandler, emailLicenseHandler, rateLimitHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, productActivationHandler, backupHandler, backupDestHandler, emailLicenseHandler, rateLimitHandler, tokenWalletHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),

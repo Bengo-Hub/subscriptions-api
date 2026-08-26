@@ -9,6 +9,30 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 )
 
+// The ApiTokenTransactionFunc type is an adapter to allow the use of ordinary
+// function as ApiTokenTransaction mutator.
+type ApiTokenTransactionFunc func(context.Context, *ent.ApiTokenTransactionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ApiTokenTransactionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ApiTokenTransactionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ApiTokenTransactionMutation", m)
+}
+
+// The ApiTokenWalletFunc type is an adapter to allow the use of ordinary
+// function as ApiTokenWallet mutator.
+type ApiTokenWalletFunc func(context.Context, *ent.ApiTokenWalletMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ApiTokenWalletFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ApiTokenWalletMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ApiTokenWalletMutation", m)
+}
+
 // The BackupFunc type is an adapter to allow the use of ordinary
 // function as Backup mutator.
 type BackupFunc func(context.Context, *ent.BackupMutation) (ent.Value, error)

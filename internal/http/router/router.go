@@ -39,6 +39,7 @@ func New(
 	backupDestHandler *handlers.BackupDestinationHandler,
 	emailLicenseHandler *handlers.EmailLicenseHandler,
 	rateLimitHandler *handlers.RateLimitHandler,
+	tokenWalletHandler *handlers.TokenWalletHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -85,6 +86,12 @@ func New(
 		r.Get("/plans/code/{code}", planHandler.GetPlanByCode)
 		// Current subscription Terms & Conditions (shown + accepted in the subscribe flow)
 		r.Get("/terms", subscriptionHandler.GetTerms)
+
+		// Public API-token capacity-planning calculator — no tenant/auth needed, so a
+		// prospective external-API customer can estimate cost before signing up.
+		if tokenWalletHandler != nil {
+			r.Post("/tokens/estimate", tokenWalletHandler.Estimate)
+		}
 
 		// S2S webhook routes (API key auth handled inside handler)
 		if webhookHandler != nil {
@@ -175,6 +182,16 @@ func New(
 			// middleware to enforce per-tenant requests/minute before counting against Redis.
 			if rateLimitHandler != nil {
 				r.Get("/tenants/{tenant_id}/rate-limit", rateLimitHandler.GetEffectiveRateLimit)
+			}
+
+			// Prepaid API token wallet — GetBalance/GetTransactions/Deduct are S2S (called by
+			// treasury-api's external eTIMS API middleware, same API-key-or-platform-owner-JWT
+			// gate as rate-limit above); InitiateTopUp is tenant-facing self-serve.
+			if tokenWalletHandler != nil {
+				r.Get("/tenants/{tenant_id}/tokens/balance", tokenWalletHandler.GetBalance)
+				r.Get("/tenants/{tenant_id}/tokens/transactions", tokenWalletHandler.GetTransactions)
+				r.Post("/tenants/{tenant_id}/tokens/deduct", tokenWalletHandler.Deduct)
+				r.Post("/tenants/{tenant_id}/tokens/topup", tokenWalletHandler.InitiateTopUp)
 			}
 
 			// S2S expiring subscriptions — used by notifications-api for scheduled expiry warnings.

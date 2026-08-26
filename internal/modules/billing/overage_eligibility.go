@@ -15,11 +15,11 @@ package billing
 
 // MeteredMetric describes one overage-eligible throughput limit.
 type MeteredMetric struct {
-	Metric         string // usage_event metric_type, e.g. "orders"
-	PlanLimitKey   string // tierLimitsJSON key, e.g. "max_orders_per_day"
-	OveragePriceKey string // tierLimitsJSON key for KES unit price, e.g. "overage_orders_price_per_100_month"
-	Unit           string // human unit for UI, e.g. "per 100 orders / month"
-	PriceQuantum   float64 // how many units one price covers (100 for "per 100"); 1 = per single unit
+	Metric          string  // usage_event metric_type, e.g. "orders"
+	PlanLimitKey    string  // tierLimitsJSON key, e.g. "max_orders_per_day"
+	OveragePriceKey string  // tierLimitsJSON key for KES unit price, e.g. "overage_orders_price_per_100_month"
+	Unit            string  // human unit for UI, e.g. "per 100 orders / month"
+	PriceQuantum    float64 // how many units one price covers (100 for "per 100"); 1 = per single unit
 }
 
 // meteredMetrics is the canonical metered-overage registry, keyed by metric_type.
@@ -56,15 +56,14 @@ var meteredMetrics = map[string]MeteredMetric{
 		Metric: "routing_requests", PlanLimitKey: "routing_requests_per_day",
 		OveragePriceKey: "overage_routing_price_per_1000", Unit: "per 1,000 routing requests", PriceQuantum: 1000,
 	},
-	// etims_transactions is reported ONLY by treasury-api's external eTIMS API route group
-	// (/api/v1/external/etims/*, API-key-authenticated non-tenant callers) — never by the
-	// tenant-JWT eTIMS routes, which stay covered by whatever plan the tenant already has.
-	// This is exclusively the metric for the standalone "eTIMS API access" product (see the
-	// etims_api_access Product + API Basic/Growth/Scale plans).
-	"etims_transactions": {
-		Metric: "etims_transactions", PlanLimitKey: "etims_transactions_per_month",
-		OveragePriceKey: "overage_etims_price_per_100_month", Unit: "per 100 eTIMS transactions", PriceQuantum: 100,
-	},
+	// etims_transactions is NOT registered here — it moved off this soft-cap/monthly-overage
+	// pipeline onto the real-time prepaid ApiTokenWallet (see token_wallet.go, api_token_costs.go).
+	// The external eTIMS API's included-transaction/overage figures are now expressed as
+	// included_tokens/token_price_kes on the ETIMS_API_* plans and enforced by treasury-api's
+	// ExternalAPIKeyAuth middleware calling POST /tenants/{id}/tokens/deduct BEFORE each KRA call,
+	// not by this map + ReportUsage's Redis monthly counter. Do not re-add it here — a metric
+	// reported through the old ReportUsage/evaluateUsage path would double-gate a call that the
+	// wallet has already authorized.
 }
 
 // IsOverageEligibleMetric reports whether a usage metric_type may be overaged.
