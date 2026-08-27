@@ -270,7 +270,7 @@ func New(ctx context.Context) (*App, error) {
 	rbacHandler := handlers.NewRBACHandler(log, rbacService, rbacRepo)
 
 	// Custom addon handler (platform-admin managed recurring/one-time charges)
-	customAddonHandler := handlers.NewCustomAddonHandler(log, ormClient)
+	customAddonHandler := handlers.NewCustomAddonHandler(log, ormClient, subscriptionSvc)
 	emailLicenseHandler := handlers.NewEmailLicenseHandler(log, ormClient, subscriptionSvc, emailProvisionerClient, cfg.Services.PlatformMailMXHost, cfg.Services.PlatformMailIP, cfg.Security.APIKey)
 
 	// Coupon + credit wallet handler

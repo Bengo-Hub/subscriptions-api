@@ -148,6 +148,7 @@ func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 				if auth.Currency != "" {
 					row.Currency = auth.Currency
 				}
+				row.AmountPaid = auth.AmountPaid
 			}
 		}
 		invoices = append([]invoiceRow{row}, invoices...)
@@ -158,14 +159,15 @@ func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 }
 
 type invoiceRow struct {
-	ID          string  `json:"id"`
-	Date        string  `json:"date"`
-	Amount      float64 `json:"amount"`
-	Currency    string  `json:"currency"`
-	Status      string  `json:"status"`
-	Description string  `json:"description"`
-	PdfURL      string  `json:"pdfUrl,omitempty"`
-	PayURL      string  `json:"payUrl,omitempty"`
+	ID          string   `json:"id"`
+	Date        string   `json:"date"`
+	Amount      float64  `json:"amount"`
+	AmountPaid  *float64 `json:"amountPaid,omitempty"`
+	Currency    string   `json:"currency"`
+	Status      string   `json:"status"`
+	Description string   `json:"description"`
+	PdfURL      string   `json:"pdfUrl,omitempty"`
+	PayURL      string   `json:"payUrl,omitempty"`
 }
 
 // subscriptionInvoiceRow builds an invoice-history row from the latest subscription invoice
@@ -259,9 +261,10 @@ func (h *BillingHandler) fetchInvoices(ctx context.Context, tenantID uuid.UUID) 
 // authoritativeInvoice is the subset of a treasury invoice the billing page trusts as the
 // source of truth for the subscription invoice row.
 type authoritativeInvoice struct {
-	Status   string
-	Amount   float64
-	Currency string
+	Status     string
+	Amount     float64
+	Currency   string
+	AmountPaid *float64
 }
 
 // fetchSubscriptionInvoice returns the authoritative invoice (status + amount + currency)
@@ -283,16 +286,22 @@ func (h *BillingHandler) fetchSubscriptionInvoice(ctx context.Context, invoiceID
 	}
 	// total_amount is a decimal serialized as a JSON string (e.g. "2500") or number — json.Number handles both.
 	var inv struct {
-		Status        string      `json:"status"`
-		PaymentStatus string      `json:"payment_status"`
-		TotalAmount   json.Number `json:"total_amount"`
-		Currency      string      `json:"currency"`
+		Status        string       `json:"status"`
+		PaymentStatus string       `json:"payment_status"`
+		TotalAmount   json.Number  `json:"total_amount"`
+		AmountPaid    *json.Number `json:"amount_paid"`
+		Currency      string       `json:"currency"`
 	}
 	if err := resp.DecodeJSON(&inv); err != nil {
 		return authoritativeInvoice{}, false
 	}
 	amount, _ := inv.TotalAmount.Float64()
 	out := authoritativeInvoice{Amount: amount, Currency: inv.Currency}
+	if inv.AmountPaid != nil {
+		if paid, err := inv.AmountPaid.Float64(); err == nil {
+			out.AmountPaid = &paid
+		}
+	}
 	switch {
 	case inv.Status == "paid" || inv.PaymentStatus == "paid":
 		out.Status = "paid"
