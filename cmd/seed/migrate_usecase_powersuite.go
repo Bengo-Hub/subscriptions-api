@@ -62,6 +62,16 @@ func migrateUseCasePowerSuite(ctx context.Context, tx *ent.Tx) error {
 		case "retail", "grocery", "warehouse", "warehousing", "e_commerce", "ecommerce", "hardware":
 			return "DUKA"
 		case "pharmacy", "chemist", "agrovet":
+			// The DAWA family (bundles.go) was retired 2026-08-29 — pos-api carries no
+			// pharmacy use case any more, and a chemist tenant's real successor is
+			// hospital-api's AFYA_CHEMIST tier (service_tag "hospital", a different
+			// product family this legacy pos-api-plan migration was never scoped to
+			// redirect into). Left returning "DAWA" deliberately: this function's own
+			// safety net (below) logs and skips a doomed plan whose successor code can't
+			// be resolved rather than breaking the tenant, so a leftover legacy DAWA
+			// subscriber degrades gracefully instead of erroring. No real tenant was on a
+			// doomed POWERSUITE_DAWA_* code as of this migration (no real pharmacy client
+			// ever existed on pos-api), so this branch is effectively unreachable now.
 			return "DAWA"
 		default: // hospitality, quick_service, services, food_delivery, hotel, restaurant, …
 			return "HOSP"

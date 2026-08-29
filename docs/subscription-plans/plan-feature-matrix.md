@@ -1,13 +1,26 @@
 # Use-Case PowerSuite Plan ↔ Feature Matrix
 
-_Derived from the authoritative specs in this folder (Hospitality/Retail/Pharmacy Power-suite
+_Derived from the authoritative specs in this folder (Hospitality/Retail Power-suite
 plans). Implemented 2026-07-16 in `cmd/seed/plans_powersuite_usecase.go` (+ `_support.go`,
 `plans_powersuite_builders.go`, `migrate_usecase_powersuite.go`). Keep this file in sync with
 the builders when tiers change._
 
+> **Pharmacy (Dawa) family retired 2026-08-29.** pos-api's `pharmacy` use case was decisively
+> migrated to hospital-service (Codevertex Afya) — see
+> `hospital-service/hospital-api/docs/migration-pos-pharmacy.md`. The `powersuite-pharmacy`
+> bundle and its three `POWERSUITE_DAWA_*` plan rows are removed from `cmd/seed/bundles.go`.
+> A chemist/dispensary tenant's real successor is hospital-api's own `AFYA_CHEMIST` tier
+> (`service_tag: "hospital"`, `cmd/seed/plans_hospital.go`), a different product family, not a
+> same-family PowerSuite successor. **Known follow-up, not fixed in this pass**: auth-api's
+> `defaultTrialPlan` still routes a `pharmacy`/`chemist` use_case tenant at
+> `POWERSUITE_DAWA_BASIC` (see the Enforcement rollout section below) — that plan code no
+> longer exists, and this needs a real decision in auth-api's own repo (route to
+> `AFYA_CHEMIST` instead, or another default) before a brand-new pharmacy/chemist signup is
+> exercised again.
+
 ## Families, prices & products
 
-Three per-use-case PowerSuite families bundling **POS + Inventory + Treasury + Ordering +
+Two per-use-case PowerSuite families bundling **POS + Inventory + Treasury + Ordering +
 Logistics + CRM (MarketFlow) + ERP**. Plan rows evolved IN PLACE from the POS product lines
 (`pos:{family}:{STARTER|PRO|ENTERPRISE}` deterministic ids → stable UUIDs/FKs).
 
@@ -15,7 +28,6 @@ Logistics + CRM (MarketFlow) + ERP**. Plan rows evolved IN PLACE from the POS pr
 |---|---|---|---|---|---|---|
 | Hospitality | `POWERSUITE_HOSP_` | 2,500 (5k) | 4,000 (10k) | 6,500 (20k) | 45k / 90k / 150k | 9k / 19k / 30k |
 | Retail (Duka) | `POWERSUITE_DUKA_` | 2,500 (5k) | 4,500 (10k) | 8,500 (20k) | 45k / 90k / 150k | 9k / 18k / 30k |
-| Pharmacy (Dawa) | `POWERSUITE_DAWA_` | 1,500 (5k) | 3,000 (10k) | 6,000 (20k) | 45k / 90k / 150k | 9k / 18k / 30k |
 
 - **Billing periods:** every recurring tier is ONE monthly-priced row; the tenant chooses
   MONTHLY / SEMI_ANNUAL / ANNUAL at subscribe/renew (price = months × base; ≥6 months waives
@@ -39,32 +51,38 @@ Logistics + CRM (MarketFlow) + ERP**. Plan rows evolved IN PLACE from the POS pr
 
 \* family variances below.
 
-Treasury note: hospitality gets `vendor_management` from T2 ("All"); retail + pharmacy list
-Suppliers & Vendors at T1 so their `psTreasuryBlock(vendorAtT1=true)`.
+Treasury note: hospitality gets `vendor_management` from T2 ("All"); retail lists
+Suppliers & Vendors at T1 so its `psTreasuryBlock(vendorAtT1=true)`.
 
 ## Family-specific deltas
 
-| | Hospitality | Retail (Duka) | Pharmacy (Dawa) |
-|---|---|---|---|
-| T1 extras | table_management, kds, happy_hour | barcode_scanning | lots_batches, batch_expiry_tracking, expiry_alerts |
-| T2 extras | facility_booking, manufacturing, fixed_assets, report_stock_reconciliation, report_food_cost_variance | layaway, commissions, **warranties** (retail-only), manufacturing, fixed_assets, report_stock_reconciliation, report_food_cost_variance | prescription_management, patient_history, insurance_claims, barcode_scanning (stock_take/stock alerts still excluded) |
-| T3 extras | hotel_module, conference_events, events_module | (procurement completion only) | label_printing, stock_take, manufacturing, fixed_assets, low_stock_alerts, stock_alerts, report_stock_reconciliation |
-| Never granted | lots_batches, batch_expiry_tracking, expiry_alerts | lots_batches, batch_expiry_tracking, expiry_alerts, hotel stack | warranties, events_module, menu/food-cost reports, hotel stack |
+| | Hospitality | Retail (Duka) |
+|---|---|---|
+| T1 extras | table_management, kds, happy_hour | barcode_scanning |
+| T2 extras | facility_booking, manufacturing, fixed_assets, report_stock_reconciliation, report_food_cost_variance | layaway, commissions, **warranties** (retail-only), manufacturing, fixed_assets, report_stock_reconciliation, report_food_cost_variance |
+| T3 extras | hotel_module, conference_events, events_module | (procurement completion only) |
+| Never granted | lots_batches, batch_expiry_tracking, expiry_alerts | lots_batches, batch_expiry_tracking, expiry_alerts, hotel stack |
 
 Limits = `powerSuiteLimits(tier)` overlaid with family POS caps (`useCaseSuiteLimits`):
-HOSP 2/3/20-tables → 5/10/50 → unlimited (+rooms/conference at Gold); DUKA & DAWA 1/2 → 5/10 →
+HOSP 2/3/20-tables → 5/10/50 → unlimited (+rooms/conference at Gold); DUKA 1/2 → 5/10 →
 unlimited, no tables/rooms keys.
 
 ## Superseded rows (hard-deleted by `migrateUseCasePowerSuite`, subscribers migrated first)
 
 | Doomed | Successor |
 |---|---|
-| `POWERSUITE_{STARTER,GROWTH,PROFESSIONAL}` (+`_YEARLY`, +`_ONE_TIME`), `POS_SUITE_*` (+`_YEARLY`) | same-tier family row by tenant `use_case` (retail-ish→DUKA, pharmacy→DAWA, else HOSP); `_ONE_TIME`→family `_ONE_TIME`; `_YEARLY` subscribers keep `billing_cycle=ANNUAL` |
+| `POWERSUITE_{STARTER,GROWTH,PROFESSIONAL}` (+`_YEARLY`, +`_ONE_TIME`), `POS_SUITE_*` (+`_YEARLY`) | same-tier family row by tenant `use_case` (retail-ish→DUKA, pharmacy/chemist/agrovet→DAWA¹, else HOSP); `_ONE_TIME`→family `_ONE_TIME`; `_YEARLY` subscribers keep `billing_cycle=ANNUAL` |
 | `POS_DEVICE_{1,5,10}` (+`_YEARLY`) | family BASIC/PRO/GOLD |
 | `POS_LICENSE_PER_DEVICE` / `POS_LICENSE_COMPLETE` | family `BASIC_ONE_TIME` / `GOLD_ONE_TIME` |
-| `POS_{HOSP,DUKA,DAWA}_LICENSE` (tier-11) | family `GOLD_ONE_TIME` |
+| `POS_{HOSP,DUKA,DAWA}_LICENSE`¹ (tier-11) | family `GOLD_ONE_TIME` |
 | legacy flat `ERP_ONE_TIME` (150k) | `ERP_GROWTH_ONE_TIME` (same price) |
 | every remaining `*_YEARLY` row platform-wide | same code minus `_YEARLY` (sub keeps ANNUAL cycle); `ISP_*_YEARLY` → `ISP_BILLING_STARTER` |
+
+¹ The `DAWA` family itself was retired 2026-08-29 (see the callout at the top of this doc) —
+`migrate_usecase_powersuite.go`'s pharmacy/chemist/agrovet→DAWA mapping is left in the code
+unchanged (a leftover doomed-plan subscriber safely logs+skips rather than erroring, per the
+Safety note below, and no real tenant was ever on a doomed `POWERSUITE_DAWA_*`/`POS_DAWA_LICENSE`
+code), but it no longer resolves to a real plan for a NEW migration going forward.
 
 Safety: a doomed plan whose subscriber has no resolvable successor is logged + KEPT.
 Every re-point is logged `MIGRATE sub <id> tenant <id> <old> -> <new>` — feed that log into the

@@ -42,7 +42,6 @@ func seedSetupFees(ctx context.Context, tx *ent.Tx) error {
 			upd = upd.Where(subscriptionplan.Not(subscriptionplan.Or(
 				subscriptionplan.PlanCodeHasPrefix("POWERSUITE_HOSP_"),
 				subscriptionplan.PlanCodeHasPrefix("POWERSUITE_DUKA_"),
-				subscriptionplan.PlanCodeHasPrefix("POWERSUITE_DAWA_"),
 			)))
 		}
 		n, err := upd.SetSetupFee(fee).Save(ctx)

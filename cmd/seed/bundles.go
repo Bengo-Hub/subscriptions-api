@@ -97,27 +97,6 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 			sortOrder: 3,
 		},
 		{
-			id:          uuid.MustParse("20000000-0000-0000-0000-000000000005"),
-			code:        "powersuite-pharmacy",
-			name:        "PowerSuite Pharmacy (Dawa)",
-			description: "Chemists, pharmacies & dispensaries: dispensing POS with lots/expiry, prescriptions & claims, inventory, treasury, CRM, logistics and ERP.",
-			products: []schema.BundleProduct{
-				{ProductCode: "pos"},
-				{ProductCode: "inventory"},
-				{ProductCode: "treasury"},
-				{ProductCode: "ordering"},
-				{ProductCode: "logistics"},
-				{ProductCode: "marketflow"},
-				{ProductCode: "erp"},
-			},
-			tiers: []schema.BundleTier{
-				{PlanCode: "POWERSUITE_DAWA_BASIC", MonthlyPrice: 1500, YearlyPrice: 18000},
-				{PlanCode: "POWERSUITE_DAWA_PRO", MonthlyPrice: 3000, YearlyPrice: 36000},
-				{PlanCode: "POWERSUITE_DAWA_GOLD", MonthlyPrice: 6000, YearlyPrice: 72000},
-			},
-			sortOrder: 4,
-		},
-		{
 			id:          uuid.MustParse("20000000-0000-0000-0000-000000000004"),
 			code:        "library",
 			name:        "Codevertex Library",
