@@ -55,9 +55,13 @@ func (s *Service) exemptResult(ctx context.Context, tenantID uuid.UUID) *Subscri
 	now := time.Now()
 	features := s.allFeatureCodes(ctx)
 	return &SubscriptionResult{
-		TenantID:           tenantID,
-		PlanCode:           "EXEMPT",
-		PlanName:           "Platform Exempt",
+		TenantID: tenantID,
+		PlanCode: "EXEMPT",
+		PlanName: "Platform Exempt",
+		// Exempt tenants (platform owner, demo) are fully entitled — default to the top facility
+		// tier so hospital-ui's adaptive sidebar shows every built module rather than collapsing
+		// to a narrower facility_type it never actually resolved.
+		FacilityType:       "hospital",
 		Status:             "ACTIVE",
 		AccessStatus:       "active",
 		CurrentPeriodStart: now,

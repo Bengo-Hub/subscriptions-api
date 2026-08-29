@@ -127,7 +127,14 @@ type SubscriptionResult struct {
 	// for licenses). Lets clients gate by tier: a feature whose cheapest unlocking plan is at
 	// tier ≤ TierOrder (same family) is unlocked, so the upgrade wrapper never shows for
 	// at/below-tier features. 0 for exempt/demo (always unlocked anyway).
-	TierOrder          int            `json:"tier_order"`
+	TierOrder int `json:"tier_order"`
+	// FacilityType is the resolved plan's presentation-only facility/use-case hint (e.g.
+	// hospital-api's Afya family: "chemist" | "clinic" | "facility" | "hospital"), read from the
+	// plan's Metadata JSON (see cmd/seed/plans_hospital.go's afyaTier.facilityType). Empty for
+	// plan families that don't set it — callers must not assume it's always populated. Additive:
+	// consumed by hospital-ui's adaptive sidebar (facility-nomenclature.ts) via this same
+	// GET /subscription / GET /tenants/{id}/subscription response, no new endpoint needed.
+	FacilityType       string         `json:"facility_type,omitempty"`
 	Status             string         `json:"status"`
 	BundleCode         *string        `json:"bundle_code,omitempty"`
 	TrialEndsAt        *time.Time     `json:"trial_ends_at,omitempty"`
@@ -1476,6 +1483,9 @@ func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.Subscriptio
 		result.PlanCode = plan.PlanCode
 		result.PlanName = plan.Name
 		result.TierOrder = plan.TierOrder
+		if ft, ok := plan.Metadata["facility_type"].(string); ok && ft != "" {
+			result.FacilityType = ft
+		}
 		if result.BillingCycle == "" {
 			result.BillingCycle = plan.BillingCycle
 		}
