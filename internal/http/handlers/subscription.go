@@ -365,7 +365,7 @@ func (h *SubscriptionHandler) buildUsageLimits(ctx context.Context, tenantID uui
 	// path uses (limitKeyForMetric/inferMetricType, both in usage.go) resolves here too. A naive
 	// exact-key lookup (metricType == limitKey) would miss EVERY metric: usage_events.metric_type
 	// is always a short name ("orders") while plan limits are always prefixed
-	// (max_orders_per_day, inventory_max_sku, …). That mismatch used to fall into the "no plan
+	// (max_orders_per_month, inventory_max_sku, …). That mismatch used to fall into the "no plan
 	// limit configured" branch below and report limit:0 for every metric — making even an
 	// unlimited (-1) top-tier plan look like it was already over its limit.
 	planLimits := make(map[string]any, len(sub.Limits))

@@ -12,6 +12,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go"
@@ -108,10 +109,15 @@ var usageSubjectMappings = map[string]usageEventMapping{
 // Some publishers (e.g. the ISP transactional outbox) use the shared-events envelope, which
 // keeps tenant_id at the top level but nests the business fields (amount, …) under "payload".
 type usageEventPayload struct {
-	TenantID string             `json:"tenant_id"`
-	Roles    []string           `json:"roles"`
-	Amount   json.RawMessage    `json:"amount"`
-	Payload  *usageEventPayload `json:"payload"`
+	TenantID string          `json:"tenant_id"`
+	Roles    []string        `json:"roles"`
+	Amount   json.RawMessage `json:"amount"`
+	// OrderID is present on "ordering.order.created" and "pos.sale.finalized" — the two
+	// subjects a source-side republish bug can resend with a brand-new NATS/outbox event id
+	// for the SAME underlying order (see the dedup-by-business-key note on idempotencyKeys
+	// below). Absent on every other subject, where it is simply never consulted.
+	OrderID string             `json:"order_id"`
+	Payload *usageEventPayload `json:"payload"`
 }
 
 // UsageConsumer listens for billable events from microservices and records usage metrics.
@@ -190,19 +196,6 @@ func (c *UsageConsumer) Start(ctx context.Context, js nats.JetStreamContext) err
 }
 
 func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventMapping, consumerName string) error {
-	// Idempotency: skip events already metered by this consumer (JetStream redelivery would
-	// otherwise double-count the rolling usage). Fail-open when the store is unset or the
-	// event has no id, so billable usage is never silently dropped.
-	var eventID uuid.UUID
-	if c.idem != nil {
-		if id, err := eventslib.EventIDFromMsg(msg); err == nil {
-			eventID = id
-			if done, perr := c.idem.AlreadyProcessed(ctx, eventID, consumerName); perr == nil && done {
-				return nil
-			}
-		}
-	}
-
 	var payload usageEventPayload
 	if err := json.Unmarshal(msg.Data, &payload); err != nil || payload.TenantID == "" {
 		c.log.Warn("usage event missing tenant_id, skipping", zap.String("metric", m.metric))
@@ -222,6 +215,9 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 	if len(payload.Roles) == 0 && payload.Payload != nil {
 		payload.Roles = payload.Payload.Roles
 	}
+	if payload.OrderID == "" && payload.Payload != nil {
+		payload.OrderID = payload.Payload.OrderID
+	}
 
 	tenantID, err := uuid.Parse(payload.TenantID)
 	if err != nil {
@@ -230,6 +226,33 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 			zap.Error(err),
 		)
 		return nil
+	}
+
+	// Idempotency: skip events already metered by this consumer. Two independent keys are
+	// checked — the raw NATS/outbox event id (protects against a true JetStream redelivery,
+	// which resends the identical message) AND, when the payload carries an order_id, a
+	// deterministic key derived from (tenant, metric, order_id) (protects against a
+	// SOURCE-SIDE republish that mints a brand-new event id for the same underlying business
+	// event — confirmed to actually happen: pos-api's sale-finalized reconciler can resend
+	// pos.sale.finalized for an order it already successfully published, once its prior
+	// outbox row is pruned, with a fresh id every time; event-id-only dedup is blind to
+	// that). Fail-open throughout: an unset store or an unresolvable id never blocks
+	// metering — better a rare double than silently dropped billable usage.
+	idempotencyKeys := make([]uuid.UUID, 0, 2)
+	if c.idem != nil {
+		if id, err := eventslib.EventIDFromMsg(msg); err == nil {
+			idempotencyKeys = append(idempotencyKeys, id)
+		}
+		if payload.OrderID != "" {
+			// order_id-carrying subjects (ordering.order.created, pos.sale.finalized) never
+			// use role-aware metric bucketing, so m.metric is always the single real metric.
+			idempotencyKeys = append(idempotencyKeys, businessIdempotencyKey(payload.TenantID, m.metric, payload.OrderID))
+		}
+		for _, key := range idempotencyKeys {
+			if done, perr := c.idem.AlreadyProcessed(ctx, key, consumerName); perr == nil && done {
+				return nil
+			}
+		}
 	}
 
 	// Role-aware bucketing: auth.user.created routes to specific metric per role
@@ -275,13 +298,29 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 
 	// Mark processed only after the usage was recorded — so a recordUsage failure (Nak →
 	// redelivery) re-runs rather than being skipped. At-least-once with a crash-window double
-	// instead of double-on-every-redelivery.
-	if c.idem != nil && eventID != uuid.Nil {
-		if err := c.idem.MarkProcessed(ctx, eventID, consumerName); err != nil {
+	// instead of double-on-every-redelivery. Marks every key checked above (event id AND the
+	// business key, when present) so either one alone is enough to catch a future duplicate.
+	for _, key := range idempotencyKeys {
+		if err := c.idem.MarkProcessed(ctx, key, consumerName); err != nil {
 			c.log.Warn("mark usage event processed failed", zap.Error(err))
 		}
 	}
 	return nil
+}
+
+// businessIdempotencyNamespace is an arbitrary, fixed namespace for deriving deterministic
+// idempotency keys from business identity (tenant + metric + order) rather than a message's
+// own transient id. Any fixed UUID works here — it only needs to stay constant so the same
+// (tenant, metric, order_id) always hashes to the same key.
+var businessIdempotencyNamespace = uuid.MustParse("6f2b6f2d-6c1a-4b2e-9b1a-6b1f6c2e6f2d")
+
+// businessIdempotencyKey derives a stable, deterministic key from a usage event's real
+// business identity, independent of whatever transient event/message id the publisher
+// happened to mint for this particular send. Used alongside (never instead of) the raw
+// event-id check so a genuine at-least-once NATS redelivery is still caught even when no
+// order_id is available.
+func businessIdempotencyKey(tenantID, metric, orderID string) uuid.UUID {
+	return uuid.NewSHA1(businessIdempotencyNamespace, []byte(tenantID+":"+metric+":"+orderID))
 }
 
 // payloadAmount extracts a numeric amount from the event, tolerating both a JSON number
@@ -403,18 +442,19 @@ func (c *UsageConsumer) checkLimitAndThreshold(ctx context.Context, tenantID uui
 		return false, false, 0, 0
 	}
 
-	period := time.Now().UTC().Format("2006-01")
-	cacheKey := fmt.Sprintf("usage:limit:%s:%s:%s", tenantID.String(), metricType, period)
+	cacheKey := billing.UsageCounterKey(tenantID, metricType, sub.CurrentPeriodStart)
 
 	newTotal, err = c.cache.IncrByFloat(ctx, cacheKey, value).Result()
 	if err != nil {
 		return false, false, 0, 0
 	}
-	ttl, _ := c.cache.TTL(ctx, cacheKey).Result()
-	if ttl < 0 {
-		now := time.Now().UTC()
-		expiry := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, time.UTC)
-		_ = c.cache.ExpireAt(ctx, cacheKey, expiry).Err()
+	// Metered (period-keyed) metrics get a TTL a day past current_period_end as a safety
+	// net (the key is already unique per period). Structural (flat-keyed) metrics get no
+	// TTL — they must never reset on a timer.
+	if billing.IsOverageEligibleMetric(metricType) {
+		if ttl, _ := c.cache.TTL(ctx, cacheKey).Result(); ttl < 0 {
+			_ = c.cache.ExpireAt(ctx, cacheKey, sub.CurrentPeriodEnd.Add(24*time.Hour)).Err()
+		}
 	}
 
 	prevTotal := newTotal - value
@@ -429,11 +469,12 @@ func (c *UsageConsumer) checkLimitAndThreshold(ctx context.Context, tenantID uui
 }
 
 // decrementCounter reduces the Redis fast-path usage counter by |value|, flooring
-// at 0. Used for structural decrements (e.g. table deletions). Best-effort: any
-// Redis error is ignored since the usage_events sum is the billing source of truth.
+// at 0. Used for structural decrements (e.g. table deletions) — always a flat,
+// period-independent key (billing.UsageCounterKey needs no period_start for a
+// non-overage-eligible/structural metric). Best-effort: any Redis error is ignored
+// since the usage_events sum is the billing source of truth.
 func (c *UsageConsumer) decrementCounter(ctx context.Context, tenantID uuid.UUID, metricType string, value float64) {
-	period := time.Now().UTC().Format("2006-01")
-	cacheKey := fmt.Sprintf("usage:limit:%s:%s:%s", tenantID.String(), metricType, period)
+	cacheKey := billing.UsageCounterKey(tenantID, metricType, time.Time{})
 
 	newTotal, err := c.cache.IncrByFloat(ctx, cacheKey, value).Result() // value is negative
 	if err != nil {
@@ -494,7 +535,7 @@ func (c *UsageConsumer) isLimitExceeded(ctx context.Context, tenantID uuid.UUID,
 func usageFindLimitKey(metricType string, planLimits map[string]any) string {
 	mt := strings.ToLower(metricType)
 	candidates := map[string]string{
-		"orders":            "max_orders_per_day",
+		"orders":            "max_orders_per_month",
 		"transactions":      "max_transactions_per_month",
 		"riders":            "max_riders",
 		"devices":           "max_devices",
@@ -507,12 +548,12 @@ func usageFindLimitKey(metricType string, planLimits map[string]any) string {
 		"warehouses":        "inventory_max_warehouses",
 		"rooms":             "max_rooms",
 		"conference_events": "max_conference_events",
-		"deliveries":        "max_orders_per_day",
-		"tracking_requests": "live_tracking_requests_per_day",
-		"sms_sent":          "sms_notifications_per_day",
-		"emails_sent":       "email_notifications_per_day",
-		"push_sent":         "sms_notifications_per_day",
-		"webhooks":          "webhook_calls_per_day",
+		"deliveries":        "max_orders_per_month",
+		"tracking_requests": "live_tracking_requests_per_month",
+		"sms_sent":          "sms_notifications_per_month",
+		"emails_sent":       "email_notifications_per_month",
+		"push_sent":         "sms_notifications_per_month",
+		"webhooks":          "webhook_calls_per_month",
 		"library_members":   "max_library_members",
 		"library_titles":    "max_library_titles",
 		"library_branches":  "max_library_branches",

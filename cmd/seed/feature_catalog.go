@@ -143,10 +143,10 @@ var featureCatalog = func() []catalogEntry {
 		lim("max_admins", ordering, "Limits", "Admins", ""),
 		lim("max_staff", ordering, "Limits", "Staff Members", ""),
 		lim("max_outlets", ordering, "Limits", "Outlets / Branches", ""),
-		meteredLim("max_orders_per_day", ordering, "Limits", "Max Orders", "/ day", "ordering.order.created"),
-		meteredLim("webhook_calls_per_day", ordering, "Limits", "Webhook Calls", "/ day", "ordering.webhook.dispatched"),
-		meteredLim("email_notifications_per_day", ordering, "Limits", "Emails", "/ day", "notifications.email.sent"),
-		meteredLim("sms_notifications_per_day", ordering, "Limits", "SMS", "/ day", "notifications.sms.sent"),
+		meteredLim("max_orders_per_month", ordering, "Limits", "Max Orders", "/ month", "ordering.order.created"),
+		meteredLim("webhook_calls_per_month", ordering, "Limits", "Webhook Calls", "/ month", "ordering.webhook.dispatched"),
+		meteredLim("email_notifications_per_month", ordering, "Limits", "Emails", "/ month", "notifications.email.sent"),
+		meteredLim("sms_notifications_per_month", ordering, "Limits", "SMS", "/ month", "notifications.sms.sent"),
 		lim("overage_rider_price_per_month", ordering, "Overage", "Extra Rider Overage", "KES / rider / month"),
 		lim("overage_orders_price_per_100_month", ordering, "Overage", "Orders Overage (per 100)", "KES / month"),
 		// Bundle (POWERSUITE_*) overage pricing — stored in tier_limits_json alongside caps.
@@ -238,8 +238,8 @@ var featureCatalog = func() []catalogEntry {
 		// hospital-api/docs/integrations.md §2A. Hospital tier only (plans_hospital.go).
 		feat("ambulance_dispatch", logistics, "Logistics", "Ambulance & Emergency Dispatch"),
 		lim("max_riders", logistics, "Limits", "Riders", ""),
-		meteredLim("live_tracking_requests_per_day", logistics, "Limits", "Live Tracking Requests", "/ day", "logistics.task.eta_updated"),
-		meteredLim("routing_requests_per_day", logistics, "Limits", "Route Calculations", "/ day", ""),
+		meteredLim("live_tracking_requests_per_month", logistics, "Limits", "Live Tracking Requests", "/ month", "logistics.task.eta_updated"),
+		meteredLim("routing_requests_per_month", logistics, "Limits", "Route Calculations", "/ month", ""),
 
 		// ─── Hospital / Codevertex Afya (hospital-service) ────────────────────
 		// See plans_hospital.go + CODEVERTEX AFRICA HOSPITAL MANAGEMENT SYSTEMS PRICING

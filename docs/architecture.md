@@ -220,7 +220,7 @@ The `tenant.subscription.updated` event is emitted on **every** plan change (upg
 
 Seeded via `go run cmd/seed/main.go` (idempotent). Deployed as a Helm pre-install/upgrade job (`seed.enabled: true`, `seed.binaryName: seed`).
 
-- **85 Plans**: Distributed across 10 service tags. Each service has plans at STARTER/GROWTH/PROFESSIONAL tiers × MONTHLY/ANNUAL billing cycles (some with ONE_TIME). Plans carry `tier_limits_json` (max_riders, max_orders_per_day, etc.) and associated `plan_features`.
+- **85 Plans**: Distributed across 10 service tags. Each service has plans at STARTER/GROWTH/PROFESSIONAL tiers × MONTHLY/ANNUAL billing cycles (some with ONE_TIME). Plans carry `tier_limits_json` (max_riders, max_orders_per_month, etc.) and associated `plan_features`.
 - **Service Charge Plans**: 6 seeded commission plans (e.g. `SC_TRULOAD_10PCT` at 10% for truload, `SC_ORDERING_5PCT` at 5%).
 - **Demo Subscription**: Urban Loft tenant on GROWTH plan.
 

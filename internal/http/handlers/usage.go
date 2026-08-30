@@ -102,9 +102,11 @@ func (h *UsageHandler) ReportUsage(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("X-Overage-Active", "true")
 			} else {
 				// Roll back the Redis increment so the rejected attempt isn't counted.
-				h.rollbackUsageCounter(ctx, tenantID, req.MetricType, req.Value)
+				h.rollbackUsageCounter(ctx, dec.cacheKey, req.Value)
 				w.Header().Set("X-RateLimit-Remaining", "0")
-				w.Header().Set("X-RateLimit-Reset", time.Now().AddDate(0, 1, 0).Format(time.RFC3339))
+				if dec.periodEnd != nil {
+					w.Header().Set("X-RateLimit-Reset", dec.periodEnd.Format(time.RFC3339))
+				}
 				writeJSON(w, http.StatusPaymentRequired, map[string]any{
 					"code":                "usage_limit_exceeded",
 					"error":               "usage limit exceeded",
@@ -161,30 +163,30 @@ type metricMeta struct {
 
 // metricDisplayMap maps metric_type keys to display names and units.
 var metricDisplayMap = map[string]metricMeta{
-	"orders":         {name: "Orders", unit: "orders"},
-	"riders":         {name: "Riders", unit: "riders"},
-	"outlets":        {name: "Outlets", unit: "outlets"},
-	"api_calls":      {name: "API Calls", unit: "calls"},
-	"users":          {name: "Users", unit: "users"},
-	"products":       {name: "Products", unit: "products"},
-	"reports":        {name: "Reports", unit: "reports"},
-	"drivers":        {name: "Drivers", unit: "drivers"},
-	"vehicles":       {name: "Vehicles", unit: "vehicles"},
-	"deliveries":     {name: "Deliveries", unit: "deliveries"},
-	"contacts":       {name: "Contacts", unit: "contacts"},
-	"campaigns":      {name: "Campaigns", unit: "campaigns"},
-	"devices":        {name: "Devices", unit: "devices"},
-	"warehouses":     {name: "Warehouses", unit: "warehouses"},
-	"pos_terminals":  {name: "POS Terminals", unit: "terminals"},
-	"transactions":   {name: "Transactions", unit: "transactions"},
+	"orders":          {name: "Orders", unit: "orders"},
+	"riders":          {name: "Riders", unit: "riders"},
+	"outlets":         {name: "Outlets", unit: "outlets"},
+	"api_calls":       {name: "API Calls", unit: "calls"},
+	"users":           {name: "Users", unit: "users"},
+	"products":        {name: "Products", unit: "products"},
+	"reports":         {name: "Reports", unit: "reports"},
+	"drivers":         {name: "Drivers", unit: "drivers"},
+	"vehicles":        {name: "Vehicles", unit: "vehicles"},
+	"deliveries":      {name: "Deliveries", unit: "deliveries"},
+	"contacts":        {name: "Contacts", unit: "contacts"},
+	"campaigns":       {name: "Campaigns", unit: "campaigns"},
+	"devices":         {name: "Devices", unit: "devices"},
+	"warehouses":      {name: "Warehouses", unit: "warehouses"},
+	"pos_terminals":   {name: "POS Terminals", unit: "terminals"},
+	"transactions":    {name: "Transactions", unit: "transactions"},
 	"inventory_items": {name: "Inventory Items", unit: "items"},
 }
 
 // limitKeyForMetric finds the plan limit key that corresponds to a metric type.
-// Plan limits use keys like "max_orders_per_day", "max_riders", etc. Keys prefixed with
+// Plan limits use keys like "max_orders_per_month", "max_riders", etc. Keys prefixed with
 // "overage_" are per-unit prices (e.g. "overage_orders_price_per_100_month"), NOT limits,
 // and must never be returned — map iteration is unordered, so without this guard a metric
-// like "orders" could resolve to its price key instead of "max_orders_per_day".
+// like "orders" could resolve to its price key instead of "max_orders_per_month".
 func limitKeyForMetric(metricType string, planLimits map[string]any) (string, bool) {
 	mt := strings.ToLower(metricType)
 	for k := range planLimits {
@@ -192,7 +194,7 @@ func limitKeyForMetric(metricType string, planLimits map[string]any) (string, bo
 		if strings.HasPrefix(kl, "overage_") {
 			continue
 		}
-		// "max_orders_per_day" contains "orders", "max_riders" contains "riders"
+		// "max_orders_per_month" contains "orders", "max_riders" contains "riders"
 		if strings.Contains(kl, mt) {
 			return k, true
 		}
@@ -295,7 +297,7 @@ func (h *UsageHandler) GetUsageSummary(w http.ResponseWriter, r *http.Request) {
 			limit = int(v)
 		}
 
-		// Find matching metric type (e.g. "max_orders_per_day" -> "orders")
+		// Find matching metric type (e.g. "max_orders_per_month" -> "orders")
 		metricType := inferMetricType(limitKey)
 		if metricType == "" || seenKeys[metricType] {
 			continue
@@ -440,7 +442,7 @@ func (h *UsageHandler) GetUsageDashboard(w http.ResponseWriter, r *http.Request)
 }
 
 // inferMetricType extracts the base metric name from a limit key.
-// e.g. "max_orders_per_day" -> "orders", "max_riders" -> "riders"
+// e.g. "max_orders_per_month" -> "orders", "max_riders" -> "riders"
 func inferMetricType(limitKey string) string {
 	key := strings.ToLower(limitKey)
 	key = strings.TrimPrefix(key, "max_")
@@ -502,23 +504,19 @@ func (h *UsageHandler) queryUsageSummary(ctx context.Context, tenantID uuid.UUID
 // overageUpgradeURL is the destination the limit-reached modal links its "Upgrade" CTA to.
 const overageUpgradeURL = "/settings?tab=subscription"
 
-// usageCounterKey is the Redis key holding a tenant's running monthly usage for a metric.
-func usageCounterKey(tenantID uuid.UUID, metricType string) string {
-	period := time.Now().UTC().Format("2006-01")
-	return fmt.Sprintf("usage:limit:%s:%s:%s", tenantID.String(), metricType, period)
-}
-
 // usageDecision captures the outcome of evaluating a usage report against plan limits.
 type usageDecision struct {
-	limit             int     // plan limit for the metric (0 = unlimited / not configured)
-	used              int     // running usage including this event
-	remaining         int     // limit - used, floored at 0
-	exceeded          bool    // used > limit
-	allowOverage      bool    // exceeded but permitted (opt-in + overage-eligible + priced)
-	overageEligible   bool    // metric is a metered overage-eligible throughput limit
-	overageUnitPrice  float64 // KES per overage unit (per quantum)
-	overageUnit       string  // human unit label, e.g. "per 100 orders"
-	accruedOverageKes float64 // sum of pending overage already accrued this period
+	limit             int        // plan limit for the metric (0 = unlimited / not configured)
+	used              int        // running usage including this event
+	remaining         int        // limit - used, floored at 0
+	exceeded          bool       // used > limit
+	allowOverage      bool       // exceeded but permitted (opt-in + overage-eligible + priced)
+	overageEligible   bool       // metric is a metered overage-eligible throughput limit
+	overageUnitPrice  float64    // KES per overage unit (per quantum)
+	overageUnit       string     // human unit label, e.g. "per 100 orders"
+	accruedOverageKes float64    // sum of pending overage already accrued this period
+	cacheKey          string     // the exact Redis key incremented, for an exact rollback
+	periodEnd         *time.Time // the tenant's current_period_end, for metered metrics only
 }
 
 // evaluateUsage atomically increments the tenant's usage counter and decides whether the
@@ -553,7 +551,7 @@ func (h *UsageHandler) evaluateUsage(ctx context.Context, tenantID uuid.UUID, me
 	}
 
 	// Increment atomically
-	cacheKey := usageCounterKey(tenantID, metricType)
+	cacheKey := billing.UsageCounterKey(tenantID, metricType, sub.CurrentPeriodStart)
 	newTotal, err := h.cache.IncrByFloat(ctx, cacheKey, value).Result()
 	if err != nil {
 		// Redis failure → allow the request (fail open)
@@ -561,11 +559,15 @@ func (h *UsageHandler) evaluateUsage(ctx context.Context, tenantID uuid.UUID, me
 		return usageDecision{limit: planLimit}
 	}
 
-	// Set TTL on first write: expire at end of next month
-	if ttl, _ := h.cache.TTL(ctx, cacheKey).Result(); ttl < 0 {
-		now := time.Now().UTC()
-		expiry := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, time.UTC)
-		_ = h.cache.ExpireAt(ctx, cacheKey, expiry).Err()
+	// Set TTL on first write: for a metered (period-keyed) metric, expire a day after the
+	// tenant's own current_period_end — the key is already unique per period (it embeds
+	// current_period_start), so this TTL is just a safety net for a tenant whose period
+	// never advances (e.g. a stuck/cancelled renewal), not the primary reset mechanism.
+	// Structural (flat-keyed) metrics get no TTL at all — they must never reset on a timer.
+	if billing.IsOverageEligibleMetric(metricType) {
+		if ttl, _ := h.cache.TTL(ctx, cacheKey).Result(); ttl < 0 {
+			_ = h.cache.ExpireAt(ctx, cacheKey, sub.CurrentPeriodEnd.Add(24*time.Hour)).Err()
+		}
 	}
 
 	current := int(newTotal)
@@ -573,7 +575,9 @@ func (h *UsageHandler) evaluateUsage(ctx context.Context, tenantID uuid.UUID, me
 	if rem < 0 {
 		rem = 0
 	}
-	dec := usageDecision{limit: planLimit, used: current, remaining: rem, exceeded: current > planLimit}
+	dec := usageDecision{limit: planLimit, used: current, remaining: rem, exceeded: current > planLimit, cacheKey: cacheKey}
+	periodEnd := sub.CurrentPeriodEnd
+	dec.periodEnd = &periodEnd
 	if !dec.exceeded {
 		return dec
 	}
@@ -606,12 +610,14 @@ func (h *UsageHandler) evaluateUsage(ctx context.Context, tenantID uuid.UUID, me
 }
 
 // rollbackUsageCounter decrements a usage counter after a hard-blocked attempt so the
-// rejected event isn't counted against the tenant.
-func (h *UsageHandler) rollbackUsageCounter(ctx context.Context, tenantID uuid.UUID, metricType string, value float64) {
-	if h.cache == nil {
+// rejected event isn't counted against the tenant. cacheKey is the exact key evaluateUsage
+// incremented (usageDecision.cacheKey) — recomputing it here instead risked drifting out of
+// sync with whatever key logic actually ran the increment.
+func (h *UsageHandler) rollbackUsageCounter(ctx context.Context, cacheKey string, value float64) {
+	if h.cache == nil || cacheKey == "" {
 		return
 	}
-	_ = h.cache.IncrByFloat(ctx, usageCounterKey(tenantID, metricType), -value).Err()
+	_ = h.cache.IncrByFloat(ctx, cacheKey, -value).Err()
 }
 
 // pendingOverageTotal sums the tenant's pending (not yet invoiced) overage charges,

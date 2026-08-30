@@ -42,7 +42,7 @@ When auth-api issues a JWT, it calls `GET /api/v1/tenants/{tenant_id}/subscripti
   ],
   "sub_limits": {
     "max_riders": 15,
-    "max_orders_per_day": 1000,
+    "max_orders_per_month": 3000,
     "max_admins": 3
   },
   "sub_expires": 1751328000
@@ -120,10 +120,11 @@ func (s *OrderingService) CreateOrder(ctx context.Context, req CreateOrderReques
         return ErrSubscriptionInactive
     }
 
-    // Layer 3: Resource limits — from JWT sub_limits
-    maxOrders := claims.SubscriptionLimits["max_orders_per_day"]
-    if maxOrders > 0 && todayOrders >= maxOrders {
-        return ErrDailyLimitExceeded
+    // Layer 3: Resource limits — from JWT sub_limits. Counted against the tenant's
+    // current billing period (not a calendar day/month) — see usage.go / usage_consumer.go.
+    maxOrders := claims.SubscriptionLimits["max_orders_per_month"]
+    if maxOrders > 0 && periodOrders >= maxOrders {
+        return ErrPeriodLimitExceeded
     }
 
     return s.createOrder(ctx, req)

@@ -875,7 +875,14 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 		SetPlanID(planID).
 		SetStatus(tenantsubscription.StatusACTIVE).
 		SetBillingCycle(cycle).
-		SetCurrentPeriodStart(now).
+		// base (not now): the new cycle starts where the paid-for time actually begins — the
+		// old period's end when paying early (pay-early stacking above), or now when there was
+		// no remaining paid time. Stamping "now" unconditionally here used to record a period
+		// start that lagged behind reality by however early the tenant paid, which is also what
+		// every usage counter keys off (see billing.UsageCounterKey) — a wrong period_start
+		// otherwise drags the usage-reset boundary out of sync with the period it's supposed to
+		// represent.
+		SetCurrentPeriodStart(base).
 		SetCurrentPeriodEnd(periodEnd).
 		SetMetadata(cleanedMeta).
 		ClearCancelledAt().

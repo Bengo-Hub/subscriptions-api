@@ -28,7 +28,7 @@ func (OverageCharge) Fields() []ent.Field {
 			Comment("Denormalised for fast tenant-scoped queries"),
 		field.String("metric_type").
 			MaxLen(64).
-			Comment("Which plan limit was exceeded, e.g. max_orders_per_day, max_riders"),
+			Comment("Which plan limit was exceeded, e.g. max_orders_per_month, max_riders"),
 		field.Time("period_date").
 			Comment("The calendar date on which the overage occurred"),
 		field.Float("units_used").

@@ -256,6 +256,30 @@ func (h *TokenWalletHandler) InitiateTopUp(w http.ResponseWriter, r *http.Reques
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "top-up unavailable"})
 		return
 	}
+
+	// Gate: a tenant may only buy tokens for a service it has actually activated (its own
+	// plan or an active product overlay carries this service_tag), or is exempt. Without this,
+	// any authenticated tenant could create a payment intent — and, on payment, a funded
+	// wallet — for an external API product it never subscribed to. Resolved generically by
+	// service_tag (not hardcoded to eTIMS) so a future token-metered product reuses this same
+	// check for free. See HasActiveServiceTagSubscription's doc comment for why this, and not
+	// ActiveProducts/product_code, is the correct resolution here.
+	entitled, err := h.subsSvc.HasActiveServiceTagSubscription(r.Context(), tenantID, req.ServiceTag)
+	if err != nil {
+		h.log.Error("check token wallet entitlement failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to verify subscription"})
+		return
+	}
+	if !entitled {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"code":        "feature_not_available",
+			"service_tag": req.ServiceTag,
+			"error":       "tenant has not activated this API product",
+			"upgrade_url": "/plans?service=" + req.ServiceTag,
+		})
+		return
+	}
+
 	result, err := h.subsSvc.CreateTokenTopUpIntent(r.Context(), subscriptions.TokenTopUpInput{
 		TenantID:   tenantID,
 		ServiceTag: req.ServiceTag,

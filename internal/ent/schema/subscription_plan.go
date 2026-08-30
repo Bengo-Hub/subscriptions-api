@@ -57,7 +57,7 @@ func (SubscriptionPlan) Fields() []ent.Field {
 			Comment("Display order (1=Starter, 2=Growth, 3=Professional)"),
 		field.JSON("tier_limits_json", map[string]any{}).
 			Default(map[string]any{}).
-			Comment("Tier limits (max_admins, max_riders, max_orders_per_day, etc.)"),
+			Comment("Tier limits (max_admins, max_riders, max_orders_per_month, etc.)"),
 		field.Enum("plan_type").
 			Values("TIERED", "STANDALONE_SERVICE", "BUNDLE", "CUSTOM").
 			Default("TIERED").

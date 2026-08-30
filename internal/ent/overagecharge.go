@@ -23,7 +23,7 @@ type OverageCharge struct {
 	TenantSubscriptionID uuid.UUID `json:"tenant_subscription_id,omitempty"`
 	// Denormalised for fast tenant-scoped queries
 	TenantID uuid.UUID `json:"tenant_id,omitempty"`
-	// Which plan limit was exceeded, e.g. max_orders_per_day, max_riders
+	// Which plan limit was exceeded, e.g. max_orders_per_month, max_riders
 	MetricType string `json:"metric_type,omitempty"`
 	// The calendar date on which the overage occurred
 	PeriodDate time.Time `json:"period_date,omitempty"`

@@ -16,7 +16,7 @@ package billing
 // MeteredMetric describes one overage-eligible throughput limit.
 type MeteredMetric struct {
 	Metric          string  // usage_event metric_type, e.g. "orders"
-	PlanLimitKey    string  // tierLimitsJSON key, e.g. "max_orders_per_day"
+	PlanLimitKey    string  // tierLimitsJSON key, e.g. "max_orders_per_month"
 	OveragePriceKey string  // tierLimitsJSON key for KES unit price, e.g. "overage_orders_price_per_100_month"
 	Unit            string  // human unit for UI, e.g. "per 100 orders / month"
 	PriceQuantum    float64 // how many units one price covers (100 for "per 100"); 1 = per single unit
@@ -25,7 +25,7 @@ type MeteredMetric struct {
 // meteredMetrics is the canonical metered-overage registry, keyed by metric_type.
 var meteredMetrics = map[string]MeteredMetric{
 	"orders": {
-		Metric: "orders", PlanLimitKey: "max_orders_per_day",
+		Metric: "orders", PlanLimitKey: "max_orders_per_month",
 		OveragePriceKey: "overage_orders_price_per_100_month", Unit: "per 100 orders", PriceQuantum: 100,
 	},
 	"transactions": {
@@ -37,23 +37,23 @@ var meteredMetrics = map[string]MeteredMetric{
 		OveragePriceKey: "overage_api_calls_price_per_1000_month", Unit: "per 1,000 API calls", PriceQuantum: 1000,
 	},
 	"sms_notifications": {
-		Metric: "sms_notifications", PlanLimitKey: "sms_notifications_per_day",
+		Metric: "sms_notifications", PlanLimitKey: "sms_notifications_per_month",
 		OveragePriceKey: "overage_sms_price_per_100", Unit: "per 100 SMS", PriceQuantum: 100,
 	},
 	"email_notifications": {
-		Metric: "email_notifications", PlanLimitKey: "email_notifications_per_day",
+		Metric: "email_notifications", PlanLimitKey: "email_notifications_per_month",
 		OveragePriceKey: "overage_email_price_per_1000", Unit: "per 1,000 emails", PriceQuantum: 1000,
 	},
 	"webhook_calls": {
-		Metric: "webhook_calls", PlanLimitKey: "webhook_calls_per_day",
+		Metric: "webhook_calls", PlanLimitKey: "webhook_calls_per_month",
 		OveragePriceKey: "overage_webhook_price_per_1000", Unit: "per 1,000 webhook calls", PriceQuantum: 1000,
 	},
 	"live_tracking_requests": {
-		Metric: "live_tracking_requests", PlanLimitKey: "live_tracking_requests_per_day",
+		Metric: "live_tracking_requests", PlanLimitKey: "live_tracking_requests_per_month",
 		OveragePriceKey: "overage_live_tracking_price_per_1000", Unit: "per 1,000 tracking requests", PriceQuantum: 1000,
 	},
 	"routing_requests": {
-		Metric: "routing_requests", PlanLimitKey: "routing_requests_per_day",
+		Metric: "routing_requests", PlanLimitKey: "routing_requests_per_month",
 		OveragePriceKey: "overage_routing_price_per_1000", Unit: "per 1,000 routing requests", PriceQuantum: 1000,
 	},
 	// etims_transactions is NOT registered here — it moved off this soft-cap/monthly-overage
@@ -79,7 +79,7 @@ func MeteredMetricByType(metric string) (MeteredMetric, bool) {
 }
 
 // MeteredMetricByLimitKey finds the registry entry whose PlanLimitKey matches a
-// tierLimitsJSON key (e.g. "max_orders_per_day").
+// tierLimitsJSON key (e.g. "max_orders_per_month").
 func MeteredMetricByLimitKey(limitKey string) (MeteredMetric, bool) {
 	for _, m := range meteredMetrics {
 		if m.PlanLimitKey == limitKey {

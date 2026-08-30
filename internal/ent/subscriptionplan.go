@@ -43,7 +43,7 @@ type SubscriptionPlan struct {
 	IsPublic bool `json:"is_public,omitempty"`
 	// Display order (1=Starter, 2=Growth, 3=Professional)
 	TierOrder int `json:"tier_order,omitempty"`
-	// Tier limits (max_admins, max_riders, max_orders_per_day, etc.)
+	// Tier limits (max_admins, max_riders, max_orders_per_month, etc.)
 	TierLimitsJSON map[string]interface{} `json:"tier_limits_json,omitempty"`
 	// Type: TIERED (Urban Cafe), STANDALONE_SERVICE, BUNDLE, CUSTOM
 	PlanType subscriptionplan.PlanType `json:"plan_type,omitempty"`

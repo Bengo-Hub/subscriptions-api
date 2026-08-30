@@ -8,6 +8,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -193,4 +194,35 @@ func (s *Service) activeServiceTags(ctx context.Context, sub *ent.TenantSubscrip
 		}
 	}
 	return tags
+}
+
+// HasActiveServiceTagSubscription reports whether tenantID currently has an active or trial
+// subscription — via its main plan or an active per-product overlay plan — tagged with
+// serviceTag. Exempt tenants always pass. This is the gate for purchase/top-up flows on a
+// service-tag-scoped external product (e.g. the prepaid API token wallet in
+// billing/token_wallet.go), deliberately keyed by service_tag rather than Product.code: the
+// wallet itself is generalized by service_tag, and a tenant whose MAIN plan IS a
+// service-tag-scoped plan (e.g. ETIMS_API_BASIC) never gets a matching ProductSubscription row
+// of its own — only DefaultActivatedProducts and admin-assigned overlays (e.g.
+// ETIMS_API_BUNDLED) do — so ActiveProducts/product_code would false-negative a legitimately
+// subscribed standalone tenant. activeServiceTags already covers both enrollment paths (main
+// plan + overlay), so it's reused here rather than introducing a second resolution mechanism.
+func (s *Service) HasActiveServiceTagSubscription(ctx context.Context, tenantID uuid.UUID, serviceTag string) (bool, error) {
+	if s.IsExemptTenant(ctx, tenantID) {
+		return true, nil
+	}
+	sub, err := s.client.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(tenantID)).
+		WithPlan().
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("query subscription: %w", err)
+	}
+	if sub.Status != tenantsubscription.StatusACTIVE && sub.Status != tenantsubscription.StatusTRIAL {
+		return false, nil
+	}
+	return s.activeServiceTags(ctx, sub, sub.Edges.Plan)[serviceTag], nil
 }
