@@ -11,12 +11,14 @@ the builders when tiers change._
 > bundle and its three `POWERSUITE_DAWA_*` plan rows are removed from `cmd/seed/bundles.go`.
 > A chemist/dispensary tenant's real successor is hospital-api's own `AFYA_CHEMIST` tier
 > (`service_tag: "hospital"`, `cmd/seed/plans_hospital.go`), a different product family, not a
-> same-family PowerSuite successor. **Known follow-up, not fixed in this pass**: auth-api's
-> `defaultTrialPlan` still routes a `pharmacy`/`chemist` use_case tenant at
-> `POWERSUITE_DAWA_BASIC` (see the Enforcement rollout section below) — that plan code no
-> longer exists, and this needs a real decision in auth-api's own repo (route to
-> `AFYA_CHEMIST` instead, or another default) before a brand-new pharmacy/chemist signup is
-> exercised again.
+> same-family PowerSuite successor. **Follow-up resolved 2026-08-30**: auth-api's
+> `defaultTrialPlan` (`internal/services/auth/service.go`) now routes a `pharmacy`/`chemist`
+> use_case tenant straight to `AFYA_CHEMIST` — `CreateTrialSubscription` resolves
+> `facility_type: "chemist"` automatically from that plan's own metadata, no extra plumbing
+> needed. `agrovet` was moved out to `POWERSUITE_DUKA_BASIC` instead (it sells agricultural/
+> veterinary inputs over the counter, not human-health dispensing — it was only ever grouped
+> with pharmacy/chemist under the retired DAWA family's broad "drug-adjacent retail" umbrella,
+> not because it needs hospital-service's clinical workflow).
 
 ## Families, prices & products
 
