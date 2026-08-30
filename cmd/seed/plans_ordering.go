@@ -48,7 +48,7 @@ func seedOrderingPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"max_admins":                       2,
 				"max_riders":                       5,
-				"max_orders_per_month":             1000,
+				"max_orders_per_month":             300,
 				"max_outlets":                      1,
 				"api_calls_per_month":              30000,
 				"live_tracking_requests_per_month": 2000,
@@ -99,7 +99,7 @@ func seedOrderingPlans(ctx context.Context, tx *ent.Tx) error {
 			tierLimits: map[string]any{
 				"max_admins":                         3,
 				"max_riders":                         15,
-				"max_orders_per_month":               3000,
+				"max_orders_per_month":               1000,
 				"max_outlets":                        3,
 				"api_calls_per_month":                100000,
 				"live_tracking_requests_per_month":   10000,

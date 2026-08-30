@@ -129,7 +129,7 @@ func powerSuiteLimits(tier int) map[string]any {
 	case 1:
 		return map[string]any{
 			// Ordering
-			"max_orders_per_month":          1000,
+			"max_orders_per_month":          300,
 			"max_admins":                    2,
 			"max_staff":                     10,
 			"max_outlets":                   1,
@@ -155,7 +155,7 @@ func powerSuiteLimits(tier int) map[string]any {
 			"inventory_max_images_per_item": 1,
 			"max_suppliers":                 10,
 			// Treasury
-			"max_transactions_per_month": 10000,
+			"max_transactions_per_month": 5000,
 			"max_wallets":                3,
 			"max_payment_links":          20,
 			"max_currencies":             1,
@@ -171,7 +171,7 @@ func powerSuiteLimits(tier int) map[string]any {
 	case 2:
 		return map[string]any{
 			// Ordering
-			"max_orders_per_month":          3000,
+			"max_orders_per_month":          1000,
 			"max_admins":                    3,
 			"max_staff":                     30,
 			"max_outlets":                   3,

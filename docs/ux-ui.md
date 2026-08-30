@@ -56,7 +56,7 @@ GET /tenants/{tenant_id}/subscription
   "limits": {
     "max_admins": 3,
     "max_riders": 15,
-    "max_orders_per_month": 3000,
+    "max_orders_per_month": 1000,
     "max_outlets": 3,
     "api_calls_per_month": 50000
   }
@@ -115,7 +115,7 @@ Content-Type: application/json
   "current_period_start": "2026-03-06T00:00:00Z",
   "current_period_end": "2026-03-20T00:00:00Z",
   "features": ["customer_portal", "rider_app", "admin_dashboard", "..."],
-  "limits": {"max_admins": 2, "max_riders": 5, "max_orders_per_month": 1000}
+  "limits": {"max_admins": 2, "max_riders": 5, "max_orders_per_month": 300}
 }
 ```
 

@@ -42,7 +42,7 @@ When auth-api issues a JWT, it calls `GET /api/v1/tenants/{tenant_id}/subscripti
   ],
   "sub_limits": {
     "max_riders": 15,
-    "max_orders_per_month": 3000,
+    "max_orders_per_month": 1000,
     "max_admins": 3
   },
   "sub_expires": 1751328000

@@ -44,7 +44,7 @@ The subscription service manages all subscription and licensing operations, prov
 {
   "max_admins": 2,
   "max_riders": 5,
-  "max_orders_per_month": 1000,
+  "max_orders_per_month": 300,
   "max_outlets": 1,
   "api_calls_per_month": 10000
 }
@@ -652,8 +652,8 @@ Plans follow the naming convention `{SERVICE_TAG}-{TIER}-{BILLING_CYCLE}` (e.g. 
 
 Example plans:
 ```
-ORDERING-STARTER-MONTHLY  — 2,500 KES/mo, 5 riders, 1,000 orders/month
-ORDERING-GROWTH-MONTHLY   — 6,000 KES/mo, 15 riders, 3,000 orders/month
+ORDERING-STARTER-MONTHLY  — 2,500 KES/mo, 5 riders, 300 orders/month
+ORDERING-GROWTH-MONTHLY   — 6,000 KES/mo, 15 riders, 1,000 orders/month
 ORDERING-PROFESSIONAL-MONTHLY — 12,500 KES/mo, 30 riders, unlimited orders/month
 ```
 

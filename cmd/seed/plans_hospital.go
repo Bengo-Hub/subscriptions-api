@@ -144,7 +144,7 @@ func afyaTierLimits(tier int) map[string]any {
 			"max_devices":                1,
 			"inventory_max_sku":          300,
 			"inventory_max_warehouses":   1,
-			"max_transactions_per_month": 10000,
+			"max_transactions_per_month": 3000,
 			"api_calls_per_month":        5000,
 		}
 	case 1:
@@ -156,7 +156,7 @@ func afyaTierLimits(tier int) map[string]any {
 			"max_devices":                2,
 			"inventory_max_sku":          500,
 			"inventory_max_warehouses":   1,
-			"max_transactions_per_month": 15000,
+			"max_transactions_per_month": 5000,
 			"api_calls_per_month":        10000,
 		}
 	case 2:
