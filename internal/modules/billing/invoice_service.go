@@ -33,9 +33,11 @@ type InvoiceService struct {
 	apiKey           string
 	platformTenantID string
 	treasuryUIBase   string // e.g. https://books.codevertexafrica.com (for /pay)
-	treasuryAPIBase  string // e.g. https://booksapi.codevertexafrica.com (for public PDF)
-	vatRate          float64
-	overage          *OverageService
+	treasuryAPIBase  string // browser-facing PDF base — pass cfg.Services.TreasuryPublicAPI here,
+	// NEVER the S2S-facing TreasuryAPI value (that one is commonly pointed at the cluster-internal
+	// Service DNS, which a browser can never resolve).
+	vatRate float64
+	overage *OverageService
 }
 
 // NewInvoiceService constructs the subscription invoice service.

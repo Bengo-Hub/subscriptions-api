@@ -258,7 +258,7 @@ func New(ctx context.Context) (*App, error) {
 
 	// Subscription invoice service (platform→tenant invoices via treasury S2S) — shared by
 	// the 7-day invoice job, grace events, and the manual platform-owner endpoints.
-	invoiceSvc := billing.NewInvoiceService(log, ormClient, subscriptionSvc, treasuryClient, ispBillingClient, cfg.Services.TreasuryAPIKey, cfg.Services.PlatformTenantID, cfg.Services.TreasuryUI, cfg.Services.TreasuryAPI, cfg.Services.VATRate)
+	invoiceSvc := billing.NewInvoiceService(log, ormClient, subscriptionSvc, treasuryClient, ispBillingClient, cfg.Services.TreasuryAPIKey, cfg.Services.PlatformTenantID, cfg.Services.TreasuryUI, cfg.Services.TreasuryPublicAPI, cfg.Services.VATRate)
 	platformHandler.WithInvoiceService(invoiceSvc)
 
 	// Inbound webhook handler (Treasury payment callbacks)

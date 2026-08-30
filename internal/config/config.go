@@ -40,11 +40,19 @@ type AppConfig struct {
 }
 
 type ServicesConfig struct {
-	AuthAPI        string `envconfig:"AUTH_API_URL" default:"https://sso.codevertexafrica.com"`
-	TreasuryAPI    string `envconfig:"TREASURY_API_URL" default:"https://booksapi.codevertexafrica.com"`
-	TreasuryUI     string `envconfig:"TREASURY_UI_URL" default:"https://books.codevertexafrica.com"`
-	TreasuryAPIKey string `envconfig:"INTERNAL_SERVICE_KEY"`
-	MarketflowAPI  string `envconfig:"MARKETFLOW_API_URL" default:"https://marketflowapi.codevertexafrica.com"`
+	AuthAPI     string `envconfig:"AUTH_API_URL" default:"https://sso.codevertexafrica.com"`
+	TreasuryAPI string `envconfig:"TREASURY_API_URL" default:"https://booksapi.codevertexafrica.com"`
+	// TreasuryPublicAPI is treasury-api's browser-reachable base URL, used ONLY for links handed
+	// to a customer's browser (invoice PDF). Deliberately separate from TreasuryAPI: that value is
+	// commonly pointed at the cluster-internal Service DNS (e.g.
+	// http://treasury-api.treasury.svc.cluster.local:4000) for faster/more-reliable S2S calls,
+	// which a browser can never resolve — reusing it for a browser-facing URL produced a real
+	// broken-invoice-PDF bug in production (2026-08-30). Mirrors treasury-api's own
+	// internal/config's HTTP_PUBLIC_BASE_URL vs. its internal-only client configs.
+	TreasuryPublicAPI string `envconfig:"TREASURY_PUBLIC_API_URL" default:"https://booksapi.codevertexafrica.com"`
+	TreasuryUI        string `envconfig:"TREASURY_UI_URL" default:"https://books.codevertexafrica.com"`
+	TreasuryAPIKey    string `envconfig:"INTERNAL_SERVICE_KEY"`
+	MarketflowAPI     string `envconfig:"MARKETFLOW_API_URL" default:"https://marketflowapi.codevertexafrica.com"`
 	// ISPBillingAPI is the isp-billing backend used to fetch the exact point-in-time active
 	// PPPoE subscriber count for ISP usage billing (S2S, authenticated with INTERNAL_SERVICE_KEY).
 	ISPBillingAPI string `envconfig:"ISP_BILLING_API_URL" default:"https://ispbillingapi.codevertexafrica.com"`
