@@ -164,15 +164,54 @@ func (s *CreditService) ApplyCreditsToRenewal(ctx context.Context, tenantID uuid
 	return invoiceAmountKes - apply, apply, nil
 }
 
+// LoyaltyCashbackRateConfigKey is the platform-level service_configs key holding the
+// subscription-payment loyalty cashback rate as a bare decimal fraction (config_type
+// "float"), e.g. "0.02" = 2%. Absent by default, meaning the program is OFF — a platform
+// admin turns it on by creating this config (tenant_id NULL) via the service-configs admin
+// API (POST /platform/service-configs), same convention as ReferralBonusRateConfigKey.
+const LoyaltyCashbackRateConfigKey = "subscriptions.loyalty_cashback_rate"
+
+// DefaultLoyaltyCashbackRate is used when LoyaltyCashbackRateConfigKey is unset or
+// unparseable — the loyalty cashback program is OFF by default until a platform admin
+// explicitly opts in with a rate.
+const DefaultLoyaltyCashbackRate = 0.0
+
+// loyaltyCashbackRate resolves the configured cashback rate, falling back to
+// DefaultLoyaltyCashbackRate (disabled). Read live on every payment (not cached on the
+// wallet) so an admin toggling the config takes effect immediately for every tenant,
+// including ones whose wallet already exists.
+func (s *CreditService) loyaltyCashbackRate(ctx context.Context) float64 {
+	cfg, err := s.orm.ServiceConfig.Query().
+		Where(
+			serviceconfig.ConfigKeyEQ(LoyaltyCashbackRateConfigKey),
+			serviceconfig.TenantIDIsNil(),
+		).
+		Only(ctx)
+	if err != nil {
+		// Not configured (the default) — loyalty cashback stays off.
+		return DefaultLoyaltyCashbackRate
+	}
+	rate, perr := strconv.ParseFloat(strings.TrimSpace(cfg.ConfigValue), 64)
+	if perr != nil || rate < 0 || rate > 1 {
+		s.log.Warn("invalid loyalty cashback rate in service_configs, using default",
+			zap.String("config_key", LoyaltyCashbackRateConfigKey),
+			zap.String("config_value", cfg.ConfigValue),
+			zap.Float64("default", DefaultLoyaltyCashbackRate),
+		)
+		return DefaultLoyaltyCashbackRate
+	}
+	return rate
+}
+
 // EarnLoyaltyCredits credits the loyalty earn amount after a successful subscription payment.
 // Called by the payment consumer after treasury confirms payment.
 func (s *CreditService) EarnLoyaltyCredits(ctx context.Context, tenantID uuid.UUID, paymentAmountKes int, paymentRefID uuid.UUID) error {
-	wallet, err := s.ensureWallet(ctx, tenantID)
-	if err != nil {
-		return err
+	rate := s.loyaltyCashbackRate(ctx)
+	if rate <= 0 {
+		return nil // program disabled — no wallet, no transaction, no-op
 	}
 
-	earnKes := int(float64(paymentAmountKes) * wallet.LoyaltyRate)
+	earnKes := int(float64(paymentAmountKes) * rate)
 	if earnKes <= 0 {
 		return nil
 	}
@@ -181,7 +220,7 @@ func (s *CreditService) EarnLoyaltyCredits(ctx context.Context, tenantID uuid.UU
 	// (tenant_id, type, ref_id) IS the guard, so a NATS redelivery of the same payment is a
 	// constraint violation, not a failure. Swallow it as the no-op it is — surfacing it would
 	// make every routine redelivery look like a broken payout.
-	err = s.AddCredits(ctx, tenantID, earnKes, "earned", paymentRefID, "payment")
+	err := s.AddCredits(ctx, tenantID, earnKes, "earned", paymentRefID, "payment")
 	if err != nil && ent.IsConstraintError(err) {
 		s.log.Info("loyalty credits already earned for this payment, skipping",
 			zap.String("tenant_id", tenantID.String()),
@@ -347,12 +386,15 @@ func (s *CreditService) ensureWallet(ctx context.Context, tenantID uuid.UUID) (*
 		return nil, fmt.Errorf("query wallet: %w", err)
 	}
 
-	// Create wallet with defaults
+	// Create wallet with defaults. loyalty_rate is stamped for audit/display purposes only —
+	// EarnLoyaltyCredits always re-resolves the live loyaltyCashbackRate() at earn time, so an
+	// admin toggling the config takes effect immediately rather than only for wallets created
+	// after the change.
 	wallet, err = s.orm.SubscriptionCredit.Create().
 		SetTenantID(tenantID).
 		SetBalanceKes(0).
 		SetLifetimeEarnedKes(0).
-		SetLoyaltyRate(0.02).
+		SetLoyaltyRate(s.loyaltyCashbackRate(ctx)).
 		SetUpdatedAt(time.Now()).
 		Save(ctx)
 	if err != nil {
