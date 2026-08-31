@@ -362,7 +362,8 @@ func (h *SubscriptionHandler) buildUsageLimits(ctx context.Context, tenantID uui
 	}
 
 	// planLimits as map[string]any so the SAME metric<->limit-key matching the live enforcement
-	// path uses (limitKeyForMetric/inferMetricType, both in usage.go) resolves here too. A naive
+	// path uses (billing.ResolveLimitKey; inferMetricType in usage.go for the reverse direction)
+	// resolves here too. A naive
 	// exact-key lookup (metricType == limitKey) would miss EVERY metric: usage_events.metric_type
 	// is always a short name ("orders") while plan limits are always prefixed
 	// (max_orders_per_month, inventory_max_sku, …). That mismatch used to fall into the "no plan
@@ -392,7 +393,7 @@ func (h *SubscriptionHandler) buildUsageLimits(ctx context.Context, tenantID uui
 			continue
 		}
 		limit := 0
-		if limitKey, ok := limitKeyForMetric(metricType, planLimits); ok {
+		if limitKey, ok := billing.ResolveLimitKey(metricType, planLimits); ok {
 			limit = sub.Limits[limitKey]
 		}
 		result[metricType] = map[string]int{"used": used, "limit": limit}

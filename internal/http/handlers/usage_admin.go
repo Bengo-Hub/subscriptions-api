@@ -10,6 +10,7 @@ import (
 	authclient "github.com/Bengo-Hub/shared-auth-client"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -101,7 +102,7 @@ func (h *UsageAdminHandler) GetTenantUsage(w http.ResponseWriter, r *http.Reques
 			continue
 		}
 		limit := 0
-		if lk, ok := limitKeyForMetric(mt, planLimits); ok {
+		if lk, ok := billing.ResolveLimitKey(mt, planLimits); ok {
 			switch v := planLimits[lk].(type) {
 			case float64:
 				limit = int(v)

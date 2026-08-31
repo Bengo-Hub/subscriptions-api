@@ -11,7 +11,6 @@ import (
 	eventslib "github.com/Bengo-Hub/shared-events"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
-	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -413,59 +412,24 @@ func (c *UsageConsumer) recordUsage(ctx context.Context, tenantID uuid.UUID, met
 	return nil
 }
 
-// checkLimitAndThreshold increments the Redis counter and returns (exceeded, atThreshold, planLimit, newTotal).
-// Returns (false, false, 0, 0) on any infrastructure error (fail-open).
+// checkLimitAndThreshold increments the Redis counter (via the canonical
+// billing.IncrementUsage, shared with the HTTP /usage/report handler) and returns
+// (exceeded, atThreshold, planLimit, newTotal). Returns (false, false, 0, 0) on any
+// infrastructure error, or when the metric has no configured/finite limit (fail-open).
 func (c *UsageConsumer) checkLimitAndThreshold(ctx context.Context, tenantID uuid.UUID, metricType string, value float64) (exceeded, atThreshold bool, planLimit int, newTotal float64) {
-	sub, err := c.orm.TenantSubscription.Query().
-		Where(tenantsubscription.TenantIDEQ(tenantID)).
-		WithPlan().
-		Only(ctx)
-	if err != nil || sub.Edges.Plan == nil || sub.Edges.Plan.TierLimitsJSON == nil {
+	res := billing.IncrementUsage(ctx, c.orm, c.cache, c.log, tenantID, metricType, value)
+	if !res.Configured {
 		return false, false, 0, 0
 	}
 
-	limitKey := usageFindLimitKey(metricType, sub.Edges.Plan.TierLimitsJSON)
-	if limitKey == "" {
-		return false, false, 0, 0
-	}
-
-	var limit int
-	switch v := sub.Edges.Plan.TierLimitsJSON[limitKey].(type) {
-	case float64:
-		limit = int(v)
-	case int:
-		limit = v
-	default:
-		return false, false, 0, 0
-	}
-	if limit <= 0 { // -1 = unlimited
-		return false, false, 0, 0
-	}
-
-	cacheKey := billing.UsageCounterKey(tenantID, metricType, sub.CurrentPeriodStart)
-
-	newTotal, err = c.cache.IncrByFloat(ctx, cacheKey, value).Result()
-	if err != nil {
-		return false, false, 0, 0
-	}
-	// Metered (period-keyed) metrics get a TTL a day past current_period_end as a safety
-	// net (the key is already unique per period). Structural (flat-keyed) metrics get no
-	// TTL — they must never reset on a timer.
-	if billing.IsOverageEligibleMetric(metricType) {
-		if ttl, _ := c.cache.TTL(ctx, cacheKey).Result(); ttl < 0 {
-			_ = c.cache.ExpireAt(ctx, cacheKey, sub.CurrentPeriodEnd.Add(24*time.Hour)).Err()
-		}
-	}
-
-	prevTotal := newTotal - value
+	prevTotal := res.Used - value
 	threshold := c.getThreshold(ctx, tenantID)
 
-	exceeded = newTotal > float64(limit)
 	// Fire threshold warning exactly once: when crossing from below to at/above threshold
-	atThreshold = float64(newTotal)/float64(limit) >= threshold &&
-		float64(prevTotal)/float64(limit) < threshold
+	atThreshold = res.Used/float64(res.Limit) >= threshold &&
+		prevTotal/float64(res.Limit) < threshold
 
-	return exceeded, atThreshold, limit, newTotal
+	return res.Exceeded, atThreshold, res.Limit, res.Used
 }
 
 // decrementCounter reduces the Redis fast-path usage counter by |value|, flooring
@@ -526,50 +490,7 @@ func (c *UsageConsumer) publishThresholdWarning(ctx context.Context, tenantID uu
 	)
 }
 
-// isLimitExceeded is kept for backwards compatibility — wraps checkLimitAndThreshold.
-func (c *UsageConsumer) isLimitExceeded(ctx context.Context, tenantID uuid.UUID, metricType string, value float64) bool {
-	exceeded, _, _, _ := c.checkLimitAndThreshold(ctx, tenantID, metricType, value)
-	return exceeded
-}
-
-func usageFindLimitKey(metricType string, planLimits map[string]any) string {
-	mt := strings.ToLower(metricType)
-	candidates := map[string]string{
-		"orders":            "max_orders_per_month",
-		"transactions":      "max_transactions_per_month",
-		"riders":            "max_riders",
-		"devices":           "max_devices",
-		"cashiers":          "max_cashiers",
-		"tables":            "max_tables",
-		"outlets":           "max_outlets",
-		"admins":            "max_admins",
-		"staff":             "max_staff",
-		"products":          "inventory_max_sku",
-		"warehouses":        "inventory_max_warehouses",
-		"rooms":             "max_rooms",
-		"conference_events": "max_conference_events",
-		"deliveries":        "max_orders_per_month",
-		"tracking_requests": "live_tracking_requests_per_month",
-		"sms_sent":          "sms_notifications_per_month",
-		"emails_sent":       "email_notifications_per_month",
-		"push_sent":         "sms_notifications_per_month",
-		"webhooks":          "webhook_calls_per_month",
-		"library_members":   "max_library_members",
-		"library_titles":    "max_library_titles",
-		"library_branches":  "max_library_branches",
-	}
-
-	if key, ok := candidates[mt]; ok {
-		if _, exists := planLimits[key]; exists {
-			return key
-		}
-	}
-
-	// Fallback: fuzzy match
-	for k := range planLimits {
-		if strings.Contains(strings.ToLower(k), mt) {
-			return k
-		}
-	}
-	return ""
-}
+// isLimitExceeded and usageFindLimitKey are retired: the former had zero real callers
+// (dead code), and the latter is replaced fleet-wide by billing.ResolveLimitKey — see
+// usage_counter.go's doc comment for why a second independent copy of this mapping was
+// itself a bug.

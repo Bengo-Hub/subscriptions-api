@@ -182,25 +182,9 @@ var metricDisplayMap = map[string]metricMeta{
 	"inventory_items": {name: "Inventory Items", unit: "items"},
 }
 
-// limitKeyForMetric finds the plan limit key that corresponds to a metric type.
-// Plan limits use keys like "max_orders_per_month", "max_riders", etc. Keys prefixed with
-// "overage_" are per-unit prices (e.g. "overage_orders_price_per_100_month"), NOT limits,
-// and must never be returned — map iteration is unordered, so without this guard a metric
-// like "orders" could resolve to its price key instead of "max_orders_per_month".
-func limitKeyForMetric(metricType string, planLimits map[string]any) (string, bool) {
-	mt := strings.ToLower(metricType)
-	for k := range planLimits {
-		kl := strings.ToLower(k)
-		if strings.HasPrefix(kl, "overage_") {
-			continue
-		}
-		// "max_orders_per_month" contains "orders", "max_riders" contains "riders"
-		if strings.Contains(kl, mt) {
-			return k, true
-		}
-	}
-	return "", false
-}
+// limitKeyForMetric is retired — every caller now goes through billing.ResolveLimitKey,
+// the single canonical metric->limit-key resolver (see usage_counter.go's doc comment for
+// why two independent copies of this mapping was itself a bug).
 
 type usageMetricRow struct {
 	MetricType string  `json:"metric_type"`
@@ -424,7 +408,7 @@ func (h *UsageHandler) GetUsageDashboard(w http.ResponseWriter, r *http.Request)
 	dashboardMetrics := []string{"orders", "riders", "outlets", "api_calls"}
 	for _, mt := range dashboardMetrics {
 		limit := 0
-		if lk, ok := limitKeyForMetric(mt, planLimits); ok {
+		if lk, ok := billing.ResolveLimitKey(mt, planLimits); ok {
 			switch v := planLimits[lk].(type) {
 			case float64:
 				limit = int(v)
@@ -519,65 +503,25 @@ type usageDecision struct {
 	periodEnd         *time.Time // the tenant's current_period_end, for metered metrics only
 }
 
-// evaluateUsage atomically increments the tenant's usage counter and decides whether the
+// evaluateUsage atomically increments the tenant's usage counter (via the canonical
+// billing.IncrementUsage, shared with the NATS usage consumer) and decides whether the
 // event is within limit, soft-capped (overage), or hard-blocked. Fails open on any error.
 func (h *UsageHandler) evaluateUsage(ctx context.Context, tenantID uuid.UUID, metricType string, value float64) usageDecision {
-	// Fetch subscription + plan limits + opt-in flag
-	sub, err := h.orm.TenantSubscription.Query().
-		Where(tenantsubscription.TenantIDEQ(tenantID)).
-		WithPlan().
-		Only(ctx)
-	if err != nil || sub.Edges.Plan == nil {
-		return usageDecision{} // no subscription/plan — allow (don't block)
-	}
-
-	planLimits := sub.Edges.Plan.TierLimitsJSON
-	limitKey, ok := limitKeyForMetric(metricType, planLimits)
-	if !ok {
-		return usageDecision{} // no limit configured for this metric
-	}
-
-	var planLimit int
-	switch v := planLimits[limitKey].(type) {
-	case float64:
-		planLimit = int(v)
-	case int:
-		planLimit = v
-	default:
+	res := billing.IncrementUsage(ctx, h.orm, h.cache, h.log, tenantID, metricType, value)
+	if !res.Configured {
 		return usageDecision{}
 	}
-	if planLimit <= 0 {
-		return usageDecision{} // unlimited (-1)
-	}
 
-	// Increment atomically
-	cacheKey := billing.UsageCounterKey(tenantID, metricType, sub.CurrentPeriodStart)
-	newTotal, err := h.cache.IncrByFloat(ctx, cacheKey, value).Result()
-	if err != nil {
-		// Redis failure → allow the request (fail open)
-		h.log.Warn("redis usage counter failed, allowing request", zap.String("key", cacheKey), zap.Error(err))
-		return usageDecision{limit: planLimit}
-	}
-
-	// Set TTL on first write: for a metered (period-keyed) metric, expire a day after the
-	// tenant's own current_period_end — the key is already unique per period (it embeds
-	// current_period_start), so this TTL is just a safety net for a tenant whose period
-	// never advances (e.g. a stuck/cancelled renewal), not the primary reset mechanism.
-	// Structural (flat-keyed) metrics get no TTL at all — they must never reset on a timer.
-	if billing.IsOverageEligibleMetric(metricType) {
-		if ttl, _ := h.cache.TTL(ctx, cacheKey).Result(); ttl < 0 {
-			_ = h.cache.ExpireAt(ctx, cacheKey, sub.CurrentPeriodEnd.Add(24*time.Hour)).Err()
-		}
-	}
-
-	current := int(newTotal)
-	rem := planLimit - current
+	current := int(res.Used)
+	rem := res.Limit - current
 	if rem < 0 {
 		rem = 0
 	}
-	dec := usageDecision{limit: planLimit, used: current, remaining: rem, exceeded: current > planLimit, cacheKey: cacheKey}
-	periodEnd := sub.CurrentPeriodEnd
-	dec.periodEnd = &periodEnd
+	periodEnd := res.PeriodEnd
+	dec := usageDecision{
+		limit: res.Limit, used: current, remaining: rem, exceeded: res.Exceeded,
+		cacheKey: res.CacheKey, periodEnd: &periodEnd,
+	}
 	if !dec.exceeded {
 		return dec
 	}
@@ -586,12 +530,12 @@ func (h *UsageHandler) evaluateUsage(ctx context.Context, tenantID uuid.UUID, me
 	meta, eligible := billing.MeteredMetricByType(metricType)
 	if !eligible {
 		// fall back to matching by the plan limit key (metric naming may differ)
-		meta, eligible = billing.MeteredMetricByLimitKey(limitKey)
+		meta, eligible = billing.MeteredMetricByLimitKey(res.LimitKey)
 	}
 	dec.overageEligible = eligible
 	if eligible {
 		dec.overageUnit = meta.Unit
-		if v, ok := planLimits[meta.OveragePriceKey]; ok {
+		if v, ok := res.PlanLimits[meta.OveragePriceKey]; ok {
 			switch pv := v.(type) {
 			case float64:
 				dec.overageUnitPrice = pv
@@ -603,7 +547,7 @@ func (h *UsageHandler) evaluateUsage(ctx context.Context, tenantID uuid.UUID, me
 	dec.accruedOverageKes = h.pendingOverageTotal(ctx, tenantID)
 
 	// Soft-cap only when the tenant opted in, the metric is eligible, and a price is seeded.
-	if sub.AllowOverage && eligible && dec.overageUnitPrice > 0 {
+	if res.AllowOverage && eligible && dec.overageUnitPrice > 0 {
 		dec.allowOverage = true
 	}
 	return dec
