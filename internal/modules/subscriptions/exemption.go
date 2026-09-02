@@ -50,24 +50,17 @@ func (s *Service) SetTenantExemption(ctx context.Context, tenantID uuid.UUID, ex
 }
 
 // exemptResult builds the synthetic, fully-entitled result returned for exempt tenants:
-// status ACTIVE, every catalog feature, no limit caps, Exempt=true.
+// status ACTIVE, every catalog feature, no limit caps, Exempt=true. Billing/feature-gating
+// fields (Status/AccessStatus/Features/Limits/BillingMode/Exempt) are ALWAYS the full-access
+// exempt values below, regardless of anything found below — an exempt tenant is never billed
+// and never loses access, full stop.
 func (s *Service) exemptResult(ctx context.Context, tenantID uuid.UUID) *SubscriptionResult {
 	now := time.Now()
 	features := s.allFeatureCodes(ctx)
-	return &SubscriptionResult{
-		TenantID: tenantID,
-		PlanCode: "EXEMPT",
-		PlanName: "Platform Exempt",
-		// FacilityType is deliberately left empty (2026-09-02 fix — was hardcoded "hospital").
-		// Exemption is a LICENSING concept (bypass every feature/limit gate, enforced above via
-		// Features/Limits/Exempt on this same struct) — facility_type is a PRESENTATION concept
-		// (which facility tier's nav a consuming frontend like hospital-ui shows), and conflating
-		// them meant an exempt tenant could never see its own real facility tier, always
-		// collapsing to the richest one. guardExempt() means an exempt tenant structurally can
-		// never own a real TenantSubscription row to read a real facility_type from anyway, so
-		// there is nothing correct to assert here; consuming frontends already treat an empty/
-		// unresolved facility_type as "show the full default view," so this is not a behavior
-		// change for any tenant today — see hospital-ui's facility-nomenclature.ts.
+	result := &SubscriptionResult{
+		TenantID:           tenantID,
+		PlanCode:           "EXEMPT",
+		PlanName:           "Platform Exempt",
 		FacilityType:       "",
 		Status:             "ACTIVE",
 		AccessStatus:       "active",
@@ -79,6 +72,25 @@ func (s *Service) exemptResult(ctx context.Context, tenantID uuid.UUID) *Subscri
 		IsPerpetual:        true,
 		Exempt:             true,
 	}
+	// An exempt tenant can still carry a real TenantSubscription row purely for CLASSIFICATION/
+	// PRESENTATION purposes (facility_type -> hospital-ui's adaptive nav; plan code/name for
+	// display) — 2026-09-02, deliberately relaxed so a platform-owner-assigned plan (via the
+	// admin-only PlatformHandler.AssignPlanToTenant, never the self-serve/payment paths, which
+	// stay fully blocked by guardExempt below) can classify what an exempt tenant actually is,
+	// instead of always defaulting to the richest facility tier. This can NEVER touch billing:
+	// no field from this lookup feeds Status/AccessStatus/Features/Limits/BillingMode/Exempt
+	// above, all of which are already fixed to the full-access exempt values regardless of
+	// whether this lookup finds anything, errors, or is skipped entirely.
+	if sub, err := s.getSubscription(ctx, tenantID); err == nil {
+		if plan, perr := s.loadPlanWithFeatures(ctx, sub.PlanID); perr == nil && plan != nil {
+			if ft, ok := plan.Metadata["facility_type"].(string); ok && ft != "" {
+				result.FacilityType = ft
+			}
+			result.PlanCode = plan.PlanCode
+			result.PlanName = plan.Name
+		}
+	}
+	return result
 }
 
 // allFeatureCodes returns every boolean FEATURE code in the catalog so an exempt tenant's token

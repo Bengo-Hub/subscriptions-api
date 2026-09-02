@@ -270,14 +270,17 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Demo + platform-owner tenants are exempt and must never own a subscription record.
-	if h.subSvc != nil && h.subSvc.IsExemptTenant(ctx, tenantID) {
-		writeJSON(w, http.StatusOK, map[string]any{
-			"is_bypass": true,
-			"message":   "tenant is exempt from subscriptions; no plan assigned",
-		})
-		return
-	}
+	// Demo + platform-owner tenants stay exempt from billing/feature-gating no matter what
+	// happens below (GetSubscriptionResult/exemptResult always return the full-access exempt
+	// values for them, unconditionally). 2026-09-02: this endpoint no longer no-ops for an
+	// exempt tenant — a platform admin can now deliberately assign a plan to one purely for
+	// CLASSIFICATION (facility_type -> hospital-ui's adaptive nav, plan name for display; see
+	// exemptResult's own doc comment). This is safe specifically because this handler is the
+	// admin-direct data-assignment path (a plain TenantSubscription row write below, no payment/
+	// billing call anywhere in this function) — the self-serve CreateSubscription/
+	// InitiateSubscription paths (which DO touch real payment flows) remain fully blocked by
+	// guardExempt for exempt tenants, untouched by this change.
+	isExempt := h.subSvc != nil && h.subSvc.IsExemptTenant(ctx, tenantID)
 
 	plan, err := h.client.SubscriptionPlan.Query().
 		Where(subscriptionplan.PlanCode(body.PlanCode)).
@@ -362,6 +365,18 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 
 	if h.featureHandler != nil {
 		h.featureHandler.InvalidateCache(ctx, tenantID)
+	}
+
+	if isExempt {
+		h.log.Info("assigned plan to an exempt tenant for classification only — billing/feature-gating unaffected",
+			zap.String("tenant_id", tenantID.String()), zap.String("plan_code", body.PlanCode))
+		writeJSON(w, http.StatusOK, map[string]any{
+			"subscription":        sub,
+			"exempt":              true,
+			"classification_only": true,
+			"message":             "tenant remains exempt from billing/feature-gating; this plan only classifies its facility_type/presentation",
+		})
+		return
 	}
 
 	writeJSON(w, http.StatusOK, sub)
