@@ -58,10 +58,17 @@ func (s *Service) exemptResult(ctx context.Context, tenantID uuid.UUID) *Subscri
 		TenantID: tenantID,
 		PlanCode: "EXEMPT",
 		PlanName: "Platform Exempt",
-		// Exempt tenants (platform owner, demo) are fully entitled — default to the top facility
-		// tier so hospital-ui's adaptive sidebar shows every built module rather than collapsing
-		// to a narrower facility_type it never actually resolved.
-		FacilityType:       "hospital",
+		// FacilityType is deliberately left empty (2026-09-02 fix — was hardcoded "hospital").
+		// Exemption is a LICENSING concept (bypass every feature/limit gate, enforced above via
+		// Features/Limits/Exempt on this same struct) — facility_type is a PRESENTATION concept
+		// (which facility tier's nav a consuming frontend like hospital-ui shows), and conflating
+		// them meant an exempt tenant could never see its own real facility tier, always
+		// collapsing to the richest one. guardExempt() means an exempt tenant structurally can
+		// never own a real TenantSubscription row to read a real facility_type from anyway, so
+		// there is nothing correct to assert here; consuming frontends already treat an empty/
+		// unresolved facility_type as "show the full default view," so this is not a behavior
+		// change for any tenant today — see hospital-ui's facility-nomenclature.ts.
+		FacilityType:       "",
 		Status:             "ACTIVE",
 		AccessStatus:       "active",
 		CurrentPeriodStart: now,
