@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -63,22 +62,36 @@ func (h *UsageAdminHandler) GetTenantUsage(w http.ResponseWriter, r *http.Reques
 
 	ctx := r.Context()
 
-	// Fetch plan limits
+	// Fetch plan limits + the tenant's REAL current billing period (not a fixed 30-day
+	// approximation — see the matching fix in handlers/usage.go for why that drifts from
+	// the truth after pay-early renewal stacking or a SEMI_ANNUAL/ANNUAL cycle).
 	planLimits := map[string]any{}
+	periodStart := time.Time{}
+	periodEnd := time.Time{}
 	if h.orm != nil {
 		sub, serr := h.orm.TenantSubscription.Query().
 			Where(tenantsubscription.TenantIDEQ(tenantID)).
 			WithPlan().
 			Only(ctx)
-		if serr == nil && sub.Edges.Plan != nil && sub.Edges.Plan.TierLimitsJSON != nil {
-			planLimits = sub.Edges.Plan.TierLimitsJSON
+		if serr == nil {
+			periodStart = sub.CurrentPeriodStart
+			periodEnd = sub.CurrentPeriodEnd
+			if sub.Edges.Plan != nil && sub.Edges.Plan.TierLimitsJSON != nil {
+				planLimits = sub.Edges.Plan.TierLimitsJSON
+			}
 		}
 	}
 
 	// Current billing period
 	period := time.Now().UTC().Format("2006-01")
-	from := time.Now().UTC().AddDate(0, -1, 0)
 	to := time.Now().UTC()
+	from := to.AddDate(0, -1, 0)
+	if !periodStart.IsZero() {
+		from = periodStart
+	}
+	if !periodEnd.IsZero() {
+		to = periodEnd
+	}
 
 	rows, err := h.db.Query(ctx, `
 		SELECT metric_type, SUM(value) as total, MIN(created_at), MAX(created_at)
@@ -171,9 +184,30 @@ func (h *UsageAdminHandler) OverrideMetric(w http.ResponseWriter, r *http.Reques
 		adminUserID = claims.Subject
 	}
 
-	period := time.Now().UTC().Format("2006-01")
 	now := time.Now().UTC()
+	period := now.Format("2006-01")
+
+	// The tenant's REAL current period, needed to compute the SAME cache key
+	// billing.UsageCounterKey uses for real enforcement (IncrementUsage) — this handler used
+	// to derive its own "usage:limit:...:2026-01" (calendar-month) key independently, which
+	// never matched what IncrementUsage actually reads/writes (period_start-dated for metered
+	// metrics, or the flat ":current" key for structural ones). An admin "correction" against
+	// the wrong key silently never reached the real counter. See usage_counter.go's doc
+	// comment: exactly the class of bug this canonicalization was meant to prevent.
 	periodStart := now.AddDate(0, -1, 0)
+	periodEnd := now
+	if h.orm != nil {
+		if sub, serr := h.orm.TenantSubscription.Query().
+			Where(tenantsubscription.TenantIDEQ(tenantID)).
+			Only(ctx); serr == nil {
+			if !sub.CurrentPeriodStart.IsZero() {
+				periodStart = sub.CurrentPeriodStart
+			}
+			if !sub.CurrentPeriodEnd.IsZero() {
+				periodEnd = sub.CurrentPeriodEnd
+			}
+		}
+	}
 
 	// Current summed usage for this metric in the active window. The override sets
 	// the metric to an ABSOLUTE value, so we insert a corrective delta
@@ -189,8 +223,12 @@ func (h *UsageAdminHandler) OverrideMetric(w http.ResponseWriter, r *http.Reques
 	}
 	correctiveDelta := req.Value - currentSum
 
-	// Read old Redis value for audit, then set the fast-path counter to the absolute value.
-	cacheKey := fmt.Sprintf("usage:limit:%s:%s:%s", tenantID.String(), req.MetricType, period)
+	// Read old Redis value for audit, then set the fast-path counter to the absolute value —
+	// using the SAME key + TTL policy as IncrementUsage: period-start-dated with a
+	// period_end+24h backstop TTL for metered/overage-eligible metrics, or the flat
+	// never-expiring ":current" key for structural ones (a resource count must never reset on
+	// a timer).
+	cacheKey := billing.UsageCounterKey(tenantID, req.MetricType, periodStart)
 	oldVal := currentSum
 	if h.cache != nil {
 		if v, err := h.cache.Get(ctx, cacheKey).Float64(); err == nil {
@@ -201,9 +239,9 @@ func (h *UsageAdminHandler) OverrideMetric(w http.ResponseWriter, r *http.Reques
 		if err := h.cache.Set(ctx, cacheKey, req.Value, 0).Err(); err != nil {
 			h.log.Warn("usage override: failed to update redis counter", zap.String("key", cacheKey), zap.Error(err))
 		}
-		// Re-apply TTL
-		expiry := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, time.UTC)
-		_ = h.cache.ExpireAt(ctx, cacheKey, expiry).Err()
+		if billing.IsOverageEligibleMetric(req.MetricType) {
+			_ = h.cache.ExpireAt(ctx, cacheKey, periodEnd.Add(24*time.Hour)).Err()
+		}
 	}
 
 	// Insert a corrective usage_event row with audit metadata. The row's value is the

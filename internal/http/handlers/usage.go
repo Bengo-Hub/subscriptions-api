@@ -224,6 +224,7 @@ func (h *UsageHandler) GetUsageSummary(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch subscription + plan limits
 	planName := ""
+	periodStart := time.Time{}
 	periodEnd := time.Time{}
 	planLimits := map[string]any{}
 	if h.orm != nil {
@@ -232,6 +233,7 @@ func (h *UsageHandler) GetUsageSummary(w http.ResponseWriter, r *http.Request) {
 			WithPlan().
 			Only(ctx)
 		if serr == nil {
+			periodStart = sub.CurrentPeriodStart
 			periodEnd = sub.CurrentPeriodEnd
 			if sub.Edges.Plan != nil {
 				planName = sub.Edges.Plan.Name
@@ -242,12 +244,20 @@ func (h *UsageHandler) GetUsageSummary(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Determine billing period: use current subscription period, fallback to last 30 days
+	// Determine billing period: use the subscription's REAL current_period_start/end (not a
+	// fixed 30-day approximation — pay-early renewal stacking and SEMI_ANNUAL/ANNUAL cycles
+	// routinely make the actual period longer or shorter than one calendar month, which used
+	// to silently under/over-count this aggregate against the Redis enforcement counter that
+	// already keys correctly off current_period_start; see billing.UsageCounterKey), falling
+	// back to the last 30 days when there's no subscription on file.
 	from, to := parseUsageDateRange(r)
 	if !periodEnd.IsZero() {
 		to = periodEnd
-		// period start = period_end minus billing cycle (approx 30 days for MONTHLY)
-		from = to.AddDate(0, -1, 0)
+		if !periodStart.IsZero() {
+			from = periodStart
+		} else {
+			from = to.AddDate(0, -1, 0)
+		}
 	}
 	resetDate := to.Format("2006-01-02")
 
@@ -369,6 +379,7 @@ func (h *UsageHandler) GetUsageDashboard(w http.ResponseWriter, r *http.Request)
 
 	// Fetch subscription + plan limits
 	planLimits := map[string]any{}
+	periodStart := time.Time{}
 	periodEnd := time.Time{}
 	if h.orm != nil {
 		sub, serr := h.orm.TenantSubscription.Query().
@@ -376,6 +387,7 @@ func (h *UsageHandler) GetUsageDashboard(w http.ResponseWriter, r *http.Request)
 			WithPlan().
 			Only(ctx)
 		if serr == nil {
+			periodStart = sub.CurrentPeriodStart
 			periodEnd = sub.CurrentPeriodEnd
 			if sub.Edges.Plan != nil && sub.Edges.Plan.TierLimitsJSON != nil {
 				planLimits = sub.Edges.Plan.TierLimitsJSON
@@ -383,12 +395,16 @@ func (h *UsageHandler) GetUsageDashboard(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	// Determine period
+	// Determine period: the subscription's REAL current_period_start/end — see the matching
+	// comment in GetUsageSummary for why a fixed 30-day lookback drifts from the truth.
 	to := time.Now()
 	if !periodEnd.IsZero() {
 		to = periodEnd
 	}
 	from := to.AddDate(0, -1, 0)
+	if !periodStart.IsZero() {
+		from = periodStart
+	}
 
 	rawMetrics, err := h.queryUsageSummary(ctx, tenantID, from, to, "")
 	if err != nil {

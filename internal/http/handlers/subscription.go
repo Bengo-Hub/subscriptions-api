@@ -338,15 +338,27 @@ func (h *SubscriptionHandler) buildUsageLimits(ctx context.Context, tenantID uui
 		return result
 	}
 
+	// Use the subscription's REAL current period, not a fixed 30-day lookback — this result is
+	// cached client-side (IndexedDB) for OFFLINE enforcement, so a stale approximation here
+	// doesn't just mis-render a dashboard, it can mis-gate a tenant offline right after a
+	// renewal (pay-early stacking and SEMI_ANNUAL/ANNUAL cycles routinely make the real period
+	// longer or shorter than a month — see the matching fix in handlers/usage.go).
 	now := time.Now().UTC()
 	periodStart := now.AddDate(0, -1, 0)
+	periodEnd := now
+	if !sub.CurrentPeriodStart.IsZero() {
+		periodStart = sub.CurrentPeriodStart
+	}
+	if !sub.CurrentPeriodEnd.IsZero() {
+		periodEnd = sub.CurrentPeriodEnd
+	}
 
 	rows, err := h.db.Query(ctx, `
 		SELECT metric_type, SUM(value) as total
 		FROM usage_events
 		WHERE tenant_id = $1 AND created_at >= $2 AND created_at <= $3
 		GROUP BY metric_type
-	`, tenantID, periodStart, now)
+	`, tenantID, periodStart, periodEnd)
 	if err != nil {
 		return result
 	}

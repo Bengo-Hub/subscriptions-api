@@ -47,13 +47,19 @@ func StartInvoiceJob(ctx context.Context, log *zap.Logger, orm *ent.Client, invS
 
 func generateUpcomingInvoices(ctx context.Context, log *zap.Logger, orm *ent.Client, invSvc *billing.InvoiceService) {
 	now := time.Now().UTC()
-	windowStart := now.AddDate(0, 0, InvoiceLeadDays-1)
+	// No lower bound (was `now+(InvoiceLeadDays-1)`, a ~24h eligibility slot): a subscription
+	// whose lead-time window was missed — pod downtime, a late plan/period change that landed
+	// period_end inside a week out after the window already closed, etc. — would otherwise
+	// never be invoiced again, including tenants already past period_end and sitting in grace
+	// with no invoice on file at all (grace reminders then go out with an empty pay link/amount,
+	// see graceEventPayload). GenerateAndSend's per-period idempotency (keyed on the exact
+	// current_period_end timestamp) makes this catch-up window safe: a tenant already invoiced
+	// for its current period is skipped, never double-invoiced.
 	windowEnd := now.AddDate(0, 0, InvoiceLeadDays)
 
 	upcoming, err := orm.TenantSubscription.Query().
 		Where(
 			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
-			tenantsubscription.CurrentPeriodEndGTE(windowStart),
 			tenantsubscription.CurrentPeriodEndLTE(windowEnd),
 			notPerpetual(), // one-time/perpetual licenses are invoiced once at purchase, never recurring
 		).
