@@ -144,3 +144,20 @@ all superseded rows migrated + hard-deleted, exit 0.
    wire per-service usage reporting to /usage/report, remaining capacity limits
    (pos max_devices/max_cashiers…, ordering, inventory max_products/max_suppliers),
    discount-rule format mismatch (UI `ANNUAL_DISCOUNT`+value vs API `YEARLY`+percentage).
+
+## `use_case` column added (2026-09-05)
+
+Fixed a real, reported bug: because all PowerSuite families share `service_tag: "pos"`, a
+retail tenant browsing the pricing page saw hospitality/pharmacy family plans mixed in with
+their own (`service_tag` alone can't disambiguate the family — only `plan_code` could,
+un-queryably). `SubscriptionPlan` gained an additive, indexed `use_case` column (nullable —
+absent means "not vertical-specific, matches any tenant") and `ListPlans`/`ListPlansWithPrices`
+gained a matching `use_case` query param. `cmd/seed`'s existing `useCaseFamily` struct now
+carries `useCase` (hosp→`hospitality`, duka→`retail`, dawa→`pharmacy`) and every PowerSuite +
+`SUPPORT_*` create/update call sets it — no separate backfill script; re-running the normal
+seed Job backfills existing rows (verified locally, not yet re-run in prod — see item 1 above,
+this is now also part of that same rollout step). auth-ui's Billing tab and subscriptions-ui's
+own plans page (`app/plans/page.tsx`) both consume this to filter what a tenant sees; the
+subscriptions-ui fix also plugged a stale gap from the DAWA→AFYA_CHEMIST migration note above
+— `hospital` was never a key in that page's `USECASE_GROUPS` map at all, so a hospital-service
+tenant fell through to "show every group" instead of just its own `AFYA_*` plans.
