@@ -198,6 +198,20 @@ func (_c *SubscriptionPlanCreate) SetNillableServiceTag(v *string) *Subscription
 	return _c
 }
 
+// SetUseCase sets the "use_case" field.
+func (_c *SubscriptionPlanCreate) SetUseCase(v string) *SubscriptionPlanCreate {
+	_c.mutation.SetUseCase(v)
+	return _c
+}
+
+// SetNillableUseCase sets the "use_case" field if the given value is not nil.
+func (_c *SubscriptionPlanCreate) SetNillableUseCase(v *string) *SubscriptionPlanCreate {
+	if v != nil {
+		_c.SetUseCase(*v)
+	}
+	return _c
+}
+
 // SetFreeTrialDays sets the "free_trial_days" field.
 func (_c *SubscriptionPlanCreate) SetFreeTrialDays(v int) *SubscriptionPlanCreate {
 	_c.mutation.SetFreeTrialDays(v)
@@ -585,6 +599,10 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 		_spec.SetField(subscriptionplan.FieldServiceTag, field.TypeString, value)
 		_node.ServiceTag = &value
 	}
+	if value, ok := _c.mutation.UseCase(); ok {
+		_spec.SetField(subscriptionplan.FieldUseCase, field.TypeString, value)
+		_node.UseCase = &value
+	}
 	if value, ok := _c.mutation.FreeTrialDays(); ok {
 		_spec.SetField(subscriptionplan.FieldFreeTrialDays, field.TypeInt, value)
 		_node.FreeTrialDays = value
@@ -940,6 +958,24 @@ func (u *SubscriptionPlanUpsert) UpdateServiceTag() *SubscriptionPlanUpsert {
 // ClearServiceTag clears the value of the "service_tag" field.
 func (u *SubscriptionPlanUpsert) ClearServiceTag() *SubscriptionPlanUpsert {
 	u.SetNull(subscriptionplan.FieldServiceTag)
+	return u
+}
+
+// SetUseCase sets the "use_case" field.
+func (u *SubscriptionPlanUpsert) SetUseCase(v string) *SubscriptionPlanUpsert {
+	u.Set(subscriptionplan.FieldUseCase, v)
+	return u
+}
+
+// UpdateUseCase sets the "use_case" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsert) UpdateUseCase() *SubscriptionPlanUpsert {
+	u.SetExcluded(subscriptionplan.FieldUseCase)
+	return u
+}
+
+// ClearUseCase clears the value of the "use_case" field.
+func (u *SubscriptionPlanUpsert) ClearUseCase() *SubscriptionPlanUpsert {
+	u.SetNull(subscriptionplan.FieldUseCase)
 	return u
 }
 
@@ -1310,6 +1346,27 @@ func (u *SubscriptionPlanUpsertOne) UpdateServiceTag() *SubscriptionPlanUpsertOn
 func (u *SubscriptionPlanUpsertOne) ClearServiceTag() *SubscriptionPlanUpsertOne {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.ClearServiceTag()
+	})
+}
+
+// SetUseCase sets the "use_case" field.
+func (u *SubscriptionPlanUpsertOne) SetUseCase(v string) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetUseCase(v)
+	})
+}
+
+// UpdateUseCase sets the "use_case" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertOne) UpdateUseCase() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateUseCase()
+	})
+}
+
+// ClearUseCase clears the value of the "use_case" field.
+func (u *SubscriptionPlanUpsertOne) ClearUseCase() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.ClearUseCase()
 	})
 }
 
@@ -1857,6 +1914,27 @@ func (u *SubscriptionPlanUpsertBulk) UpdateServiceTag() *SubscriptionPlanUpsertB
 func (u *SubscriptionPlanUpsertBulk) ClearServiceTag() *SubscriptionPlanUpsertBulk {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.ClearServiceTag()
+	})
+}
+
+// SetUseCase sets the "use_case" field.
+func (u *SubscriptionPlanUpsertBulk) SetUseCase(v string) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetUseCase(v)
+	})
+}
+
+// UpdateUseCase sets the "use_case" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertBulk) UpdateUseCase() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateUseCase()
+	})
+}
+
+// ClearUseCase clears the value of the "use_case" field.
+func (u *SubscriptionPlanUpsertBulk) ClearUseCase() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.ClearUseCase()
 	})
 }
 

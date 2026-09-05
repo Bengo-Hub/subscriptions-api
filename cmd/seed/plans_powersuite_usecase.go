@@ -242,6 +242,10 @@ type useCaseFamily struct {
 	key       string // deterministic-id namespace segment (hosp/duka/dawa)
 	code      string // plan-code segment (HOSP/DUKA/DAWA)
 	label     string
+	// useCase matches auth-api's tenant.use_case values (usecase.KnownUseCases) — lets
+	// subscriptions-api's ListPlans/SubscriptionPlan.use_case filter a tenant down to
+	// ONLY its own family, since all three families otherwise share service_tag="pos".
+	useCase   string
 	features  func(tier int) []string
 	monthly   [3]float64 // tier 1..3 monthly price
 	setupFees [3]float64 // tier 1..3 setup/installation fee (shared by recurring + one-time)
@@ -251,7 +255,7 @@ type useCaseFamily struct {
 
 var useCaseFamilies = []useCaseFamily{
 	{
-		key: "hosp", code: "HOSP", label: "Hospitality",
+		key: "hosp", code: "HOSP", label: "Hospitality", useCase: "hospitality",
 		features:  hospSuiteFeatures,
 		monthly:   [3]float64{2500, 4000, 6500},
 		setupFees: [3]float64{5000, 10000, 20000},
@@ -259,7 +263,7 @@ var useCaseFamilies = []useCaseFamily{
 		support:   [3]float64{9000, 19000, 30000},
 	},
 	{
-		key: "duka", code: "DUKA", label: "Retail (Duka)",
+		key: "duka", code: "DUKA", label: "Retail (Duka)", useCase: "retail",
 		features:  dukaSuiteFeatures,
 		monthly:   [3]float64{2500, 4500, 8500},
 		setupFees: [3]float64{5000, 10000, 20000},
@@ -267,7 +271,7 @@ var useCaseFamilies = []useCaseFamily{
 		support:   [3]float64{9000, 18000, 30000},
 	},
 	{
-		key: "dawa", code: "DAWA", label: "Pharmacy (Dawa)",
+		key: "dawa", code: "DAWA", label: "Pharmacy (Dawa)", useCase: "pharmacy",
 		features:  dawaSuiteFeatures,
 		monthly:   [3]float64{1500, 3000, 6000},
 		setupFees: [3]float64{5000, 10000, 20000},
@@ -308,7 +312,7 @@ func seedUseCasePowerSuitePlans(ctx context.Context, tx *ent.Tx) error {
 					SetBasePrice(fam.monthly[t]).SetSetupFee(fam.setupFees[t]).SetCurrency("KES").
 					SetIsActive(true).SetIsPublic(true).
 					SetTierOrder(tier).SetFreeTrialDays(14).
-					SetTierLimitsJSON(limits).SetServiceTag("pos").SetUpdatedAt(now).Save(ctx)
+					SetTierLimitsJSON(limits).SetServiceTag("pos").SetUseCase(fam.useCase).SetUpdatedAt(now).Save(ctx)
 			} else {
 				_, err = tx.SubscriptionPlan.Create().
 					SetID(id).SetPlanCode(planCode).SetName(name).SetDescription(desc).
@@ -316,7 +320,7 @@ func seedUseCasePowerSuitePlans(ctx context.Context, tx *ent.Tx) error {
 					SetBasePrice(fam.monthly[t]).SetSetupFee(fam.setupFees[t]).SetCurrency("KES").
 					SetIsActive(true).SetIsPublic(true).
 					SetTierOrder(tier).SetFreeTrialDays(14).
-					SetTierLimitsJSON(limits).SetServiceTag("pos").
+					SetTierLimitsJSON(limits).SetServiceTag("pos").SetUseCase(fam.useCase).
 					SetCreatedAt(now).SetUpdatedAt(now).Save(ctx)
 			}
 			if err != nil {

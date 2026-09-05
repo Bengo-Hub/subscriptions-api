@@ -961,6 +961,7 @@ var (
 		{Name: "tier_limits_json", Type: field.TypeJSON},
 		{Name: "plan_type", Type: field.TypeEnum, Enums: []string{"TIERED", "STANDALONE_SERVICE", "BUNDLE", "CUSTOM"}, Default: "TIERED"},
 		{Name: "service_tag", Type: field.TypeString, Nullable: true},
+		{Name: "use_case", Type: field.TypeString, Nullable: true},
 		{Name: "free_trial_days", Type: field.TypeInt, Default: 14},
 		{Name: "discount_rules", Type: field.TypeJSON, Nullable: true},
 		{Name: "metadata", Type: field.TypeJSON},
@@ -992,6 +993,11 @@ var (
 				Name:    "subscriptionplan_service_tag",
 				Unique:  false,
 				Columns: []*schema.Column{SubscriptionPlansColumns[15]},
+			},
+			{
+				Name:    "subscriptionplan_use_case",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionPlansColumns[16]},
 			},
 		},
 	}

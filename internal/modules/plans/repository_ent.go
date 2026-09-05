@@ -271,8 +271,11 @@ func (r *EntRepository) FindPlanByCode(ctx context.Context, code string) (*Subsc
 	return mapEntPlan(entPlan), nil
 }
 
-// ListPlans retrieves all subscription plans, optionally filtering by active status and service tag.
-func (r *EntRepository) ListPlans(ctx context.Context, activeOnly bool, serviceTag *string) ([]*SubscriptionPlan, error) {
+// ListPlans retrieves all subscription plans, optionally filtering by active status, service
+// tag, and use_case (business vertical — e.g. distinguishing POWERSUITE_DUKA_* (retail) from
+// POWERSUITE_HOSP_* (hospitality) within the same "pos" service_tag). A plan with a NULL
+// use_case (not vertical-specific) always matches, regardless of the filter.
+func (r *EntRepository) ListPlans(ctx context.Context, activeOnly bool, serviceTag *string, useCase *string) ([]*SubscriptionPlan, error) {
 	query := r.client.SubscriptionPlan.Query()
 
 	if activeOnly {
@@ -280,6 +283,12 @@ func (r *EntRepository) ListPlans(ctx context.Context, activeOnly bool, serviceT
 	}
 	if serviceTag != nil {
 		query = query.Where(subscriptionplan.ServiceTag(*serviceTag))
+	}
+	if useCase != nil {
+		query = query.Where(subscriptionplan.Or(
+			subscriptionplan.UseCaseIsNil(),
+			subscriptionplan.UseCase(*useCase),
+		))
 	}
 
 	entPlans, err := query.
@@ -466,6 +475,7 @@ func mapEntPlan(entPlan *ent.SubscriptionPlan) *SubscriptionPlan {
 		FreeTrialDays: entPlan.FreeTrialDays,
 		Metadata:      entPlan.Metadata,
 		ServiceTag:    entPlan.ServiceTag,
+		UseCase:       entPlan.UseCase,
 		CreatedAt:    entPlan.CreatedAt,
 		UpdatedAt:    entPlan.UpdatedAt,
 		Description:  entPlan.Description,

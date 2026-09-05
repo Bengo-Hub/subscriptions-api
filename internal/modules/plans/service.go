@@ -50,14 +50,17 @@ func (s *Service) GetPlanByCodeWithPrice(ctx context.Context, code string) (*Sub
 }
 
 // ListPlansWithPrices retrieves all plans with their calculated prices (cached 1 min).
-func (s *Service) ListPlansWithPrices(ctx context.Context, activeOnly bool, serviceTag *string) ([]*SubscriptionPlan, error) {
-	serviceTagStr := "all"
+func (s *Service) ListPlansWithPrices(ctx context.Context, activeOnly bool, serviceTag *string, useCase *string) ([]*SubscriptionPlan, error) {
+	serviceTagStr, useCaseStr := "all", "all"
 	if serviceTag != nil {
 		serviceTagStr = *serviceTag
 	}
-	key := sharedcache.Key("sub", "plans", fmt.Sprintf("active=%v,svc=%s", activeOnly, serviceTagStr))
+	if useCase != nil {
+		useCaseStr = *useCase
+	}
+	key := sharedcache.Key("sub", "plans", fmt.Sprintf("active=%v,svc=%s,uc=%s", activeOnly, serviceTagStr, useCaseStr))
 	fetch := func(ctx context.Context) ([]*SubscriptionPlan, error) {
-		plans, err := s.repo.ListPlans(ctx, activeOnly, serviceTag)
+		plans, err := s.repo.ListPlans(ctx, activeOnly, serviceTag, useCase)
 		if err != nil {
 			return nil, err
 		}

@@ -282,6 +282,26 @@ func (_u *SubscriptionPlanUpdate) ClearServiceTag() *SubscriptionPlanUpdate {
 	return _u
 }
 
+// SetUseCase sets the "use_case" field.
+func (_u *SubscriptionPlanUpdate) SetUseCase(v string) *SubscriptionPlanUpdate {
+	_u.mutation.SetUseCase(v)
+	return _u
+}
+
+// SetNillableUseCase sets the "use_case" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillableUseCase(v *string) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetUseCase(*v)
+	}
+	return _u
+}
+
+// ClearUseCase clears the value of the "use_case" field.
+func (_u *SubscriptionPlanUpdate) ClearUseCase() *SubscriptionPlanUpdate {
+	_u.mutation.ClearUseCase()
+	return _u
+}
+
 // SetFreeTrialDays sets the "free_trial_days" field.
 func (_u *SubscriptionPlanUpdate) SetFreeTrialDays(v int) *SubscriptionPlanUpdate {
 	_u.mutation.ResetFreeTrialDays()
@@ -620,6 +640,12 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if _u.mutation.ServiceTagCleared() {
 		_spec.ClearField(subscriptionplan.FieldServiceTag, field.TypeString)
+	}
+	if value, ok := _u.mutation.UseCase(); ok {
+		_spec.SetField(subscriptionplan.FieldUseCase, field.TypeString, value)
+	}
+	if _u.mutation.UseCaseCleared() {
+		_spec.ClearField(subscriptionplan.FieldUseCase, field.TypeString)
 	}
 	if value, ok := _u.mutation.FreeTrialDays(); ok {
 		_spec.SetField(subscriptionplan.FieldFreeTrialDays, field.TypeInt, value)
@@ -1092,6 +1118,26 @@ func (_u *SubscriptionPlanUpdateOne) ClearServiceTag() *SubscriptionPlanUpdateOn
 	return _u
 }
 
+// SetUseCase sets the "use_case" field.
+func (_u *SubscriptionPlanUpdateOne) SetUseCase(v string) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetUseCase(v)
+	return _u
+}
+
+// SetNillableUseCase sets the "use_case" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillableUseCase(v *string) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetUseCase(*v)
+	}
+	return _u
+}
+
+// ClearUseCase clears the value of the "use_case" field.
+func (_u *SubscriptionPlanUpdateOne) ClearUseCase() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearUseCase()
+	return _u
+}
+
 // SetFreeTrialDays sets the "free_trial_days" field.
 func (_u *SubscriptionPlanUpdateOne) SetFreeTrialDays(v int) *SubscriptionPlanUpdateOne {
 	_u.mutation.ResetFreeTrialDays()
@@ -1460,6 +1506,12 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 	}
 	if _u.mutation.ServiceTagCleared() {
 		_spec.ClearField(subscriptionplan.FieldServiceTag, field.TypeString)
+	}
+	if value, ok := _u.mutation.UseCase(); ok {
+		_spec.SetField(subscriptionplan.FieldUseCase, field.TypeString, value)
+	}
+	if _u.mutation.UseCaseCleared() {
+		_spec.ClearField(subscriptionplan.FieldUseCase, field.TypeString)
 	}
 	if value, ok := _u.mutation.FreeTrialDays(); ok {
 		_spec.SetField(subscriptionplan.FieldFreeTrialDays, field.TypeInt, value)

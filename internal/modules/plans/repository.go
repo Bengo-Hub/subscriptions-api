@@ -26,6 +26,7 @@ type SubscriptionPlan struct {
 	FreeTrialDays           int              `json:"freeTrialDays"`
 	Metadata                map[string]any   `json:"metadata,omitempty"`
 	ServiceTag              *string          `json:"serviceTag,omitempty"`
+	UseCase                 *string          `json:"useCase,omitempty"`
 	PlanType                string           `json:"planType,omitempty"`
 	CreatedAt               time.Time        `json:"createdAt"`
 	UpdatedAt               time.Time        `json:"updatedAt"`
@@ -66,7 +67,7 @@ type Repository interface {
 	UpdatePlan(ctx context.Context, plan *SubscriptionPlan) error
 	FindPlanByID(ctx context.Context, id uuid.UUID) (*SubscriptionPlan, error)
 	FindPlanByCode(ctx context.Context, code string) (*SubscriptionPlan, error)
-	ListPlans(ctx context.Context, activeOnly bool, serviceTag *string) ([]*SubscriptionPlan, error)
+	ListPlans(ctx context.Context, activeOnly bool, serviceTag *string, useCase *string) ([]*SubscriptionPlan, error)
 	DeletePlan(ctx context.Context, id uuid.UUID) error
 
 	CreateFeature(ctx context.Context, feature *PlanFeature) error

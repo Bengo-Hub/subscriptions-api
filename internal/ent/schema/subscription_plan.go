@@ -66,6 +66,10 @@ func (SubscriptionPlan) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("Service this plan belongs to: ordering, truload, logistics, inventory, erp, pos, marketflow, cafe_website. Null = bundle or platform-wide."),
+		field.String("use_case").
+			Optional().
+			Nillable().
+			Comment("Business vertical this plan targets (retail, hospitality, pharmacy, ...) — matches auth-api's tenant.use_case values. Distinct from service_tag: within one service_tag (e.g. \"pos\"), the PowerSuite family plans differ ONLY by use_case (POWERSUITE_DUKA_*=retail, POWERSUITE_HOSP_*=hospitality, POWERSUITE_DAWA_*=pharmacy-legacy). Null = not vertical-specific (applies regardless of the tenant's use case)."),
 		field.Int("free_trial_days").
 			Default(14).
 			Comment("Number of free trial days for new subscribers. Platform admins can override per plan. 0 = no trial."),
@@ -101,5 +105,6 @@ func (SubscriptionPlan) Indexes() []ent.Index {
 		index.Fields("is_active"),
 		index.Fields("tier_order"),
 		index.Fields("service_tag"),
+		index.Fields("use_case"),
 	}
 }

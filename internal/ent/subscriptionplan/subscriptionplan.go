@@ -46,6 +46,8 @@ const (
 	FieldPlanType = "plan_type"
 	// FieldServiceTag holds the string denoting the service_tag field in the database.
 	FieldServiceTag = "service_tag"
+	// FieldUseCase holds the string denoting the use_case field in the database.
+	FieldUseCase = "use_case"
 	// FieldFreeTrialDays holds the string denoting the free_trial_days field in the database.
 	FieldFreeTrialDays = "free_trial_days"
 	// FieldDiscountRules holds the string denoting the discount_rules field in the database.
@@ -114,6 +116,7 @@ var Columns = []string{
 	FieldTierLimitsJSON,
 	FieldPlanType,
 	FieldServiceTag,
+	FieldUseCase,
 	FieldFreeTrialDays,
 	FieldDiscountRules,
 	FieldMetadata,
@@ -272,6 +275,11 @@ func ByPlanType(opts ...sql.OrderTermOption) OrderOption {
 // ByServiceTag orders the results by the service_tag field.
 func ByServiceTag(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldServiceTag, opts...).ToFunc()
+}
+
+// ByUseCase orders the results by the use_case field.
+func ByUseCase(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUseCase, opts...).ToFunc()
 }
 
 // ByFreeTrialDays orders the results by the free_trial_days field.

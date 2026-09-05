@@ -121,6 +121,11 @@ func ServiceTag(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldServiceTag, v))
 }
 
+// UseCase applies equality check predicate on the "use_case" field. It's identical to UseCaseEQ.
+func UseCase(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldUseCase, v))
+}
+
 // FreeTrialDays applies equality check predicate on the "free_trial_days" field. It's identical to FreeTrialDaysEQ.
 func FreeTrialDays(v int) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldFreeTrialDays, v))
@@ -764,6 +769,81 @@ func ServiceTagEqualFold(v string) predicate.SubscriptionPlan {
 // ServiceTagContainsFold applies the ContainsFold predicate on the "service_tag" field.
 func ServiceTagContainsFold(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldContainsFold(FieldServiceTag, v))
+}
+
+// UseCaseEQ applies the EQ predicate on the "use_case" field.
+func UseCaseEQ(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldUseCase, v))
+}
+
+// UseCaseNEQ applies the NEQ predicate on the "use_case" field.
+func UseCaseNEQ(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldUseCase, v))
+}
+
+// UseCaseIn applies the In predicate on the "use_case" field.
+func UseCaseIn(vs ...string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldUseCase, vs...))
+}
+
+// UseCaseNotIn applies the NotIn predicate on the "use_case" field.
+func UseCaseNotIn(vs ...string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldUseCase, vs...))
+}
+
+// UseCaseGT applies the GT predicate on the "use_case" field.
+func UseCaseGT(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGT(FieldUseCase, v))
+}
+
+// UseCaseGTE applies the GTE predicate on the "use_case" field.
+func UseCaseGTE(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGTE(FieldUseCase, v))
+}
+
+// UseCaseLT applies the LT predicate on the "use_case" field.
+func UseCaseLT(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLT(FieldUseCase, v))
+}
+
+// UseCaseLTE applies the LTE predicate on the "use_case" field.
+func UseCaseLTE(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLTE(FieldUseCase, v))
+}
+
+// UseCaseContains applies the Contains predicate on the "use_case" field.
+func UseCaseContains(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldContains(FieldUseCase, v))
+}
+
+// UseCaseHasPrefix applies the HasPrefix predicate on the "use_case" field.
+func UseCaseHasPrefix(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldHasPrefix(FieldUseCase, v))
+}
+
+// UseCaseHasSuffix applies the HasSuffix predicate on the "use_case" field.
+func UseCaseHasSuffix(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldHasSuffix(FieldUseCase, v))
+}
+
+// UseCaseIsNil applies the IsNil predicate on the "use_case" field.
+func UseCaseIsNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIsNull(FieldUseCase))
+}
+
+// UseCaseNotNil applies the NotNil predicate on the "use_case" field.
+func UseCaseNotNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotNull(FieldUseCase))
+}
+
+// UseCaseEqualFold applies the EqualFold predicate on the "use_case" field.
+func UseCaseEqualFold(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEqualFold(FieldUseCase, v))
+}
+
+// UseCaseContainsFold applies the ContainsFold predicate on the "use_case" field.
+func UseCaseContainsFold(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldContainsFold(FieldUseCase, v))
 }
 
 // FreeTrialDaysEQ applies the EQ predicate on the "free_trial_days" field.

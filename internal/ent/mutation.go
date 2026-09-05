@@ -23002,6 +23002,7 @@ type SubscriptionPlanMutation struct {
 	tier_limits_json                      *map[string]interface{}
 	plan_type                             *subscriptionplan.PlanType
 	service_tag                           *string
+	use_case                              *string
 	free_trial_days                       *int
 	addfree_trial_days                    *int
 	discount_rules                        *[]map[string]interface{}
@@ -23791,6 +23792,55 @@ func (m *SubscriptionPlanMutation) ResetServiceTag() {
 	delete(m.clearedFields, subscriptionplan.FieldServiceTag)
 }
 
+// SetUseCase sets the "use_case" field.
+func (m *SubscriptionPlanMutation) SetUseCase(s string) {
+	m.use_case = &s
+}
+
+// UseCase returns the value of the "use_case" field in the mutation.
+func (m *SubscriptionPlanMutation) UseCase() (r string, exists bool) {
+	v := m.use_case
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUseCase returns the old "use_case" field's value of the SubscriptionPlan entity.
+// If the SubscriptionPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionPlanMutation) OldUseCase(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUseCase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUseCase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUseCase: %w", err)
+	}
+	return oldValue.UseCase, nil
+}
+
+// ClearUseCase clears the value of the "use_case" field.
+func (m *SubscriptionPlanMutation) ClearUseCase() {
+	m.use_case = nil
+	m.clearedFields[subscriptionplan.FieldUseCase] = struct{}{}
+}
+
+// UseCaseCleared returns if the "use_case" field was cleared in this mutation.
+func (m *SubscriptionPlanMutation) UseCaseCleared() bool {
+	_, ok := m.clearedFields[subscriptionplan.FieldUseCase]
+	return ok
+}
+
+// ResetUseCase resets all changes to the "use_case" field.
+func (m *SubscriptionPlanMutation) ResetUseCase() {
+	m.use_case = nil
+	delete(m.clearedFields, subscriptionplan.FieldUseCase)
+}
+
 // SetFreeTrialDays sets the "free_trial_days" field.
 func (m *SubscriptionPlanMutation) SetFreeTrialDays(i int) {
 	m.free_trial_days = &i
@@ -24270,7 +24320,7 @@ func (m *SubscriptionPlanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SubscriptionPlanMutation) Fields() []string {
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 21)
 	if m.plan_code != nil {
 		fields = append(fields, subscriptionplan.FieldPlanCode)
 	}
@@ -24315,6 +24365,9 @@ func (m *SubscriptionPlanMutation) Fields() []string {
 	}
 	if m.service_tag != nil {
 		fields = append(fields, subscriptionplan.FieldServiceTag)
+	}
+	if m.use_case != nil {
+		fields = append(fields, subscriptionplan.FieldUseCase)
 	}
 	if m.free_trial_days != nil {
 		fields = append(fields, subscriptionplan.FieldFreeTrialDays)
@@ -24369,6 +24422,8 @@ func (m *SubscriptionPlanMutation) Field(name string) (ent.Value, bool) {
 		return m.PlanType()
 	case subscriptionplan.FieldServiceTag:
 		return m.ServiceTag()
+	case subscriptionplan.FieldUseCase:
+		return m.UseCase()
 	case subscriptionplan.FieldFreeTrialDays:
 		return m.FreeTrialDays()
 	case subscriptionplan.FieldDiscountRules:
@@ -24418,6 +24473,8 @@ func (m *SubscriptionPlanMutation) OldField(ctx context.Context, name string) (e
 		return m.OldPlanType(ctx)
 	case subscriptionplan.FieldServiceTag:
 		return m.OldServiceTag(ctx)
+	case subscriptionplan.FieldUseCase:
+		return m.OldUseCase(ctx)
 	case subscriptionplan.FieldFreeTrialDays:
 		return m.OldFreeTrialDays(ctx)
 	case subscriptionplan.FieldDiscountRules:
@@ -24541,6 +24598,13 @@ func (m *SubscriptionPlanMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetServiceTag(v)
+		return nil
+	case subscriptionplan.FieldUseCase:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUseCase(v)
 		return nil
 	case subscriptionplan.FieldFreeTrialDays:
 		v, ok := value.(int)
@@ -24679,6 +24743,9 @@ func (m *SubscriptionPlanMutation) ClearedFields() []string {
 	if m.FieldCleared(subscriptionplan.FieldServiceTag) {
 		fields = append(fields, subscriptionplan.FieldServiceTag)
 	}
+	if m.FieldCleared(subscriptionplan.FieldUseCase) {
+		fields = append(fields, subscriptionplan.FieldUseCase)
+	}
 	if m.FieldCleared(subscriptionplan.FieldDiscountRules) {
 		fields = append(fields, subscriptionplan.FieldDiscountRules)
 	}
@@ -24704,6 +24771,9 @@ func (m *SubscriptionPlanMutation) ClearField(name string) error {
 		return nil
 	case subscriptionplan.FieldServiceTag:
 		m.ClearServiceTag()
+		return nil
+	case subscriptionplan.FieldUseCase:
+		m.ClearUseCase()
 		return nil
 	case subscriptionplan.FieldDiscountRules:
 		m.ClearDiscountRules()
@@ -24760,6 +24830,9 @@ func (m *SubscriptionPlanMutation) ResetField(name string) error {
 		return nil
 	case subscriptionplan.FieldServiceTag:
 		m.ResetServiceTag()
+		return nil
+	case subscriptionplan.FieldUseCase:
+		m.ResetUseCase()
 		return nil
 	case subscriptionplan.FieldFreeTrialDays:
 		m.ResetFreeTrialDays()

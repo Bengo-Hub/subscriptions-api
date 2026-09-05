@@ -49,6 +49,8 @@ type SubscriptionPlan struct {
 	PlanType subscriptionplan.PlanType `json:"plan_type,omitempty"`
 	// Service this plan belongs to: ordering, truload, logistics, inventory, erp, pos, marketflow, cafe_website. Null = bundle or platform-wide.
 	ServiceTag *string `json:"service_tag,omitempty"`
+	// Business vertical this plan targets (retail, hospitality, pharmacy, ...) — matches auth-api's tenant.use_case values. Distinct from service_tag: within one service_tag (e.g. "pos"), the PowerSuite family plans differ ONLY by use_case (POWERSUITE_DUKA_*=retail, POWERSUITE_HOSP_*=hospitality, POWERSUITE_DAWA_*=pharmacy-legacy). Null = not vertical-specific (applies regardless of the tenant's use case).
+	UseCase *string `json:"use_case,omitempty"`
 	// Number of free trial days for new subscribers. Platform admins can override per plan. 0 = no trial.
 	FreeTrialDays int `json:"free_trial_days,omitempty"`
 	// Dynamic discounting rules. Types: YEARLY (percentage), LOYALTY (percentage/min_months), NEW_CUSTOMER (trial_days/percentage).
@@ -129,7 +131,7 @@ func (*SubscriptionPlan) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case subscriptionplan.FieldTierOrder, subscriptionplan.FieldFreeTrialDays:
 			values[i] = new(sql.NullInt64)
-		case subscriptionplan.FieldPlanCode, subscriptionplan.FieldName, subscriptionplan.FieldDescription, subscriptionplan.FieldBillingCycle, subscriptionplan.FieldCurrency, subscriptionplan.FieldPlanType, subscriptionplan.FieldServiceTag:
+		case subscriptionplan.FieldPlanCode, subscriptionplan.FieldName, subscriptionplan.FieldDescription, subscriptionplan.FieldBillingCycle, subscriptionplan.FieldCurrency, subscriptionplan.FieldPlanType, subscriptionplan.FieldServiceTag, subscriptionplan.FieldUseCase:
 			values[i] = new(sql.NullString)
 		case subscriptionplan.FieldCreatedAt, subscriptionplan.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -249,6 +251,13 @@ func (_m *SubscriptionPlan) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ServiceTag = new(string)
 				*_m.ServiceTag = value.String
+			}
+		case subscriptionplan.FieldUseCase:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field use_case", values[i])
+			} else if value.Valid {
+				_m.UseCase = new(string)
+				*_m.UseCase = value.String
 			}
 		case subscriptionplan.FieldFreeTrialDays:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -386,6 +395,11 @@ func (_m *SubscriptionPlan) String() string {
 	builder.WriteString(", ")
 	if v := _m.ServiceTag; v != nil {
 		builder.WriteString("service_tag=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.UseCase; v != nil {
+		builder.WriteString("use_case=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

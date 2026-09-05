@@ -44,7 +44,7 @@ func seedUseCasePowerSuiteOneTimePlans(ctx context.Context, tx *ent.Tx) error {
 					SetBasePrice(fam.oneTime[t]).SetSetupFee(fam.setupFees[t]).SetCurrency("KES").
 					SetIsActive(true).SetIsPublic(true).
 					SetTierOrder(tier).SetFreeTrialDays(0).
-					SetTierLimitsJSON(limits).SetServiceTag("pos").SetUpdatedAt(now).Save(ctx)
+					SetTierLimitsJSON(limits).SetServiceTag("pos").SetUseCase(fam.useCase).SetUpdatedAt(now).Save(ctx)
 			} else {
 				_, err = tx.SubscriptionPlan.Create().
 					SetID(id).SetPlanCode(planCode).SetName(name).SetDescription(desc).
@@ -52,7 +52,7 @@ func seedUseCasePowerSuiteOneTimePlans(ctx context.Context, tx *ent.Tx) error {
 					SetBasePrice(fam.oneTime[t]).SetSetupFee(fam.setupFees[t]).SetCurrency("KES").
 					SetIsActive(true).SetIsPublic(true).
 					SetTierOrder(tier).SetFreeTrialDays(0).
-					SetTierLimitsJSON(limits).SetServiceTag("pos").
+					SetTierLimitsJSON(limits).SetServiceTag("pos").SetUseCase(fam.useCase).
 					SetCreatedAt(now).SetUpdatedAt(now).Save(ctx)
 			}
 			if err != nil {
@@ -100,7 +100,7 @@ func seedUseCasePowerSuiteSupportPlans(ctx context.Context, tx *ent.Tx) error {
 					SetBasePrice(fam.support[t]).SetSetupFee(0).SetCurrency("KES").
 					SetIsActive(true).SetIsPublic(false).
 					SetTierOrder(tier).SetFreeTrialDays(0).
-					SetTierLimitsJSON(map[string]any{}).SetServiceTag("platform").
+					SetTierLimitsJSON(map[string]any{}).SetServiceTag("platform").SetUseCase(fam.useCase).
 					SetMetadata(map[string]any{"support_plan": true}).
 					SetUpdatedAt(now).Save(ctx)
 			} else {
@@ -110,7 +110,7 @@ func seedUseCasePowerSuiteSupportPlans(ctx context.Context, tx *ent.Tx) error {
 					SetBasePrice(fam.support[t]).SetSetupFee(0).SetCurrency("KES").
 					SetIsActive(true).SetIsPublic(false).
 					SetTierOrder(tier).SetFreeTrialDays(0).
-					SetTierLimitsJSON(map[string]any{}).SetServiceTag("platform").
+					SetTierLimitsJSON(map[string]any{}).SetServiceTag("platform").SetUseCase(fam.useCase).
 					SetMetadata(map[string]any{"support_plan": true}).
 					SetCreatedAt(now).SetUpdatedAt(now).Save(ctx)
 			}

@@ -778,23 +778,23 @@ func init() {
 	// subscriptionplan.DefaultTierLimitsJSON holds the default value on creation for the tier_limits_json field.
 	subscriptionplan.DefaultTierLimitsJSON = subscriptionplanDescTierLimitsJSON.Default.(map[string]interface{})
 	// subscriptionplanDescFreeTrialDays is the schema descriptor for free_trial_days field.
-	subscriptionplanDescFreeTrialDays := subscriptionplanFields[16].Descriptor()
+	subscriptionplanDescFreeTrialDays := subscriptionplanFields[17].Descriptor()
 	// subscriptionplan.DefaultFreeTrialDays holds the default value on creation for the free_trial_days field.
 	subscriptionplan.DefaultFreeTrialDays = subscriptionplanDescFreeTrialDays.Default.(int)
 	// subscriptionplanDescDiscountRules is the schema descriptor for discount_rules field.
-	subscriptionplanDescDiscountRules := subscriptionplanFields[17].Descriptor()
+	subscriptionplanDescDiscountRules := subscriptionplanFields[18].Descriptor()
 	// subscriptionplan.DefaultDiscountRules holds the default value on creation for the discount_rules field.
 	subscriptionplan.DefaultDiscountRules = subscriptionplanDescDiscountRules.Default.([]map[string]interface{})
 	// subscriptionplanDescMetadata is the schema descriptor for metadata field.
-	subscriptionplanDescMetadata := subscriptionplanFields[18].Descriptor()
+	subscriptionplanDescMetadata := subscriptionplanFields[19].Descriptor()
 	// subscriptionplan.DefaultMetadata holds the default value on creation for the metadata field.
 	subscriptionplan.DefaultMetadata = subscriptionplanDescMetadata.Default.(map[string]interface{})
 	// subscriptionplanDescCreatedAt is the schema descriptor for created_at field.
-	subscriptionplanDescCreatedAt := subscriptionplanFields[19].Descriptor()
+	subscriptionplanDescCreatedAt := subscriptionplanFields[20].Descriptor()
 	// subscriptionplan.DefaultCreatedAt holds the default value on creation for the created_at field.
 	subscriptionplan.DefaultCreatedAt = subscriptionplanDescCreatedAt.Default.(func() time.Time)
 	// subscriptionplanDescUpdatedAt is the schema descriptor for updated_at field.
-	subscriptionplanDescUpdatedAt := subscriptionplanFields[20].Descriptor()
+	subscriptionplanDescUpdatedAt := subscriptionplanFields[21].Descriptor()
 	// subscriptionplan.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	subscriptionplan.DefaultUpdatedAt = subscriptionplanDescUpdatedAt.Default.(func() time.Time)
 	// subscriptionplan.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

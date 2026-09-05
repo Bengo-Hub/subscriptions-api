@@ -34,6 +34,7 @@ func NewPlanHandler(log *zap.Logger, svc *plans.Service) *PlanHandler {
 // @Produce json
 // @Param active query bool false "Filter by active status"
 // @Param service query string false "Filter by service tag (ordering, truload, logistics, inventory, erp, pos, marketflow)"
+// @Param use_case query string false "Filter by business vertical (retail, hospitality, pharmacy, ...) — a plan with no use_case set always matches"
 // @Success 200 {object} listPlansResponse
 // @Failure 500 {object} errorResponse
 // @Router /plans [get]
@@ -53,7 +54,12 @@ func (h *PlanHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
 		serviceTag = &svcStr
 	}
 
-	plansList, err := h.service.ListPlansWithPrices(r.Context(), activeOnly, serviceTag)
+	var useCase *string
+	if ucStr := r.URL.Query().Get("use_case"); ucStr != "" {
+		useCase = &ucStr
+	}
+
+	plansList, err := h.service.ListPlansWithPrices(r.Context(), activeOnly, serviceTag, useCase)
 	if err != nil {
 		h.log.Error("failed to list plans", zap.Error(err))
 		h.respondWithError(w, http.StatusInternalServerError, "failed to retrieve plans")
