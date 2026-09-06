@@ -145,10 +145,11 @@ func psInventoryCore() []string {
 // Never grants lots & batches / expiry tracking / expiry alerts (excluded at every tier).
 func hospSuiteFeatures(tier int) []string {
 	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psERPBlock(tier), psTreasuryBlock(tier, false))
-	f = append(f, "table_management", "kds", "happy_hour") // Floor & Service / Display Board / Hotel→Happy Hour from tier 1
+	f = append(f, "table_management") // Floor & Service from tier 1
 	if tier >= 2 {
 		f = append(f,
 			"multi_cashier", "facility_booking", "storefront_banner",
+			"kds", "happy_hour", // Display Board / Hotel Happy Hour — moved to tier 2 2026-09-06 to match the published Professional-tier pricing copy (was granted at tier 1, contradicting the price sheet)
 			"bulk_import", "stock_take", "requisitions", "manufacturing", "fixed_assets",
 			"multi_warehouse", "inventory_multiple_images",
 			"report_stock_reconciliation", "report_food_cost_variance",

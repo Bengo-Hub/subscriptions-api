@@ -155,6 +155,25 @@ func (s *Service) GetSubscriptionResult(ctx context.Context, tenantID uuid.UUID)
 		result.ActiveProducts = codes
 	}
 
+	// Overlay platform-admin single-feature grants (add-ons like per-branch pricing / flash
+	// sale that must NOT be bundled into a whole plan overlay -- see TenantFeatureGrant's
+	// schema doc). Union only, same as plan/product-overlay features above.
+	if grantCodes, gerr := s.activeTenantFeatureGrantCodes(ctx, tenantID); gerr != nil {
+		s.log.Warn("composite entitlements: failed to load tenant feature grants",
+			zap.String("tenant_id", tenantID.String()), zap.Error(gerr))
+	} else if len(grantCodes) > 0 {
+		seen := make(map[string]bool, len(result.Features))
+		for _, f := range result.Features {
+			seen[f] = true
+		}
+		for _, code := range grantCodes {
+			if !seen[code] {
+				result.Features = append(result.Features, code)
+				seen[code] = true
+			}
+		}
+	}
+
 	return result, nil
 }
 

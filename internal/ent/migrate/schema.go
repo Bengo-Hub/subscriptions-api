@@ -1196,6 +1196,42 @@ var (
 			},
 		},
 	}
+	// TenantFeatureGrantsColumns holds the columns for the "tenant_feature_grants" table.
+	TenantFeatureGrantsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "feature_code", Type: field.TypeString},
+		{Name: "granted_by", Type: field.TypeUUID},
+		{Name: "granted_at", Type: field.TypeTime},
+		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revoked_by", Type: field.TypeUUID, Nullable: true},
+		{Name: "notes", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// TenantFeatureGrantsTable holds the schema information for the "tenant_feature_grants" table.
+	TenantFeatureGrantsTable = &schema.Table{
+		Name:       "tenant_feature_grants",
+		Columns:    TenantFeatureGrantsColumns,
+		PrimaryKey: []*schema.Column{TenantFeatureGrantsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "tenantfeaturegrant_tenant_id",
+				Unique:  false,
+				Columns: []*schema.Column{TenantFeatureGrantsColumns[1]},
+			},
+			{
+				Name:    "tenantfeaturegrant_feature_code",
+				Unique:  false,
+				Columns: []*schema.Column{TenantFeatureGrantsColumns[2]},
+			},
+			{
+				Name:    "tenantfeaturegrant_tenant_id_feature_code",
+				Unique:  true,
+				Columns: []*schema.Column{TenantFeatureGrantsColumns[1], TenantFeatureGrantsColumns[2]},
+			},
+		},
+	}
 	// TenantSubscriptionsColumns holds the columns for the "tenant_subscriptions" table.
 	TenantSubscriptionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1415,6 +1451,7 @@ var (
 		SubscriptionsUsersTable,
 		TenantsTable,
 		TenantEmailDomainsTable,
+		TenantFeatureGrantsTable,
 		TenantSubscriptionsTable,
 		UsageEventsTable,
 		UserRoleAssignmentsTable,

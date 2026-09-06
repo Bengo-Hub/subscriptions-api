@@ -60,8 +60,8 @@ Suppliers & Vendors at T1 so its `psTreasuryBlock(vendorAtT1=true)`.
 
 | | Hospitality | Retail (Duka) |
 |---|---|---|
-| T1 extras | table_management, kds, happy_hour | barcode_scanning |
-| T2 extras | facility_booking, manufacturing, fixed_assets, report_stock_reconciliation, report_food_cost_variance | layaway, commissions, **warranties** (retail-only), manufacturing, fixed_assets, report_stock_reconciliation, report_food_cost_variance |
+| T1 extras | table_management | barcode_scanning |
+| T2 extras | kds, happy_hour, facility_booking, manufacturing, fixed_assets, report_stock_reconciliation, report_food_cost_variance | layaway, commissions, **warranties** (retail-only), manufacturing, fixed_assets, report_stock_reconciliation, report_food_cost_variance |
 | T3 extras | hotel_module, conference_events, events_module | (procurement completion only) |
 | Never granted | lots_batches, batch_expiry_tracking, expiry_alerts | lots_batches, batch_expiry_tracking, expiry_alerts, hotel stack |
 
@@ -144,6 +144,39 @@ all superseded rows migrated + hard-deleted, exit 0.
    wire per-service usage reporting to /usage/report, remaining capacity limits
    (pos max_devices/max_cashiers…, ordering, inventory max_products/max_suppliers),
    discount-rule format mismatch (UI `ANNUAL_DISCOUNT`+value vs API `YEARLY`+percentage).
+
+## Add-ons (platform-grant only, 2026-09-06)
+
+Three feature codes exist in `feature_catalog.go` that are deliberately **never** included in any
+`PlanFeature` row for any tier/family, in any current plan builder (`plans_powersuite_usecase.go`,
+`plans_powersuite_builders.go`, etc.). The only way a tenant ever has one of these codes in their
+composite `features[]` is via an explicit platform-admin `TenantFeatureGrant`
+(`POST /admin/tenants/{id}/feature-grants`) — see
+`.claude/plans/pricing-multibranch-batch-flashsale-audit-and-plan-2026-09-06.md` for the full
+design. Unlike every other row in this document, these are **not** part of any tier's marketed
+feature set and should never be added to the cross-service blocks or family-deltas tables above.
+
+| Code | service_tag | Category | What it unlocks |
+|---|---|---|---|
+| `multi_branch_pricing` | inventory | Pricing | `TenantInventoryConfig.per_outlet_pricing_enabled` toggle — lets the tenant set a different base price per outlet for the same item (`ItemPricing.outlet_id`). |
+| `batch_period_pricing` | inventory | Pricing | `TenantInventoryConfig.batch_period_pricing_enabled` toggle — lets the tenant mark down old stock by receiving-batch age (`StockClearance`, the Aging Stock page). |
+| `flash_sale` | pos | Pricing | Unlocks the "Is Flash Sale" checkbox on `Promotion`'s storefront banner config (`DiscountFormModal`), rendering a live countdown on the ordering-frontend deals grid instead of a static discount badge. |
+
+Each still requires the tenant's own admin to flip the matching settings-page toggle after the
+grant — the grant only makes the toggle available, it doesn't turn anything on by itself.
+
+## `kds`/`happy_hour` moved to Hospitality T2 (2026-09-06)
+
+A pricing/tiering audit (`.claude/plans/pricing-multibranch-batch-flashsale-audit-and-plan-2026-09-06.md`)
+found `hospSuiteFeatures` granting `kds`/`happy_hour` at T1 (Starter) while the published price
+sheet (`CODEVERTEX AFRICA POS SYSTEMS PRICING MODEL.md`) has always marketed "Kitchen display
+(KDS)" and "Happy-hour pricing" as Professional-tier features. Per user decision, the code was
+moved to match the price sheet rather than the other way around — `plans_powersuite_usecase.go`'s
+`hospSuiteFeatures` now grants both starting at T2. `table_management` stays at T1 (matches the
+price sheet's Starter "Table management" line). Requires a reseed to take effect against any
+already-seeded database; any Hospitality Starter tenant currently relying on KDS/happy-hour
+(granted under the old, unintended T1 gate) will need to upgrade to Professional or receive an
+explicit `TenantFeatureGrant`/`ProductSubscription` override once that mechanism exists.
 
 ## `use_case` column added (2026-09-05)
 

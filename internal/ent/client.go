@@ -44,6 +44,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsuser"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
+	"github.com/bengobox/subscription-service/internal/ent/tenantfeaturegrant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/usageevent"
 	"github.com/bengobox/subscription-service/internal/ent/userroleassignment"
@@ -110,6 +111,8 @@ type Client struct {
 	Tenant *TenantClient
 	// TenantEmailDomain is the client for interacting with the TenantEmailDomain builders.
 	TenantEmailDomain *TenantEmailDomainClient
+	// TenantFeatureGrant is the client for interacting with the TenantFeatureGrant builders.
+	TenantFeatureGrant *TenantFeatureGrantClient
 	// TenantSubscription is the client for interacting with the TenantSubscription builders.
 	TenantSubscription *TenantSubscriptionClient
 	// UsageEvent is the client for interacting with the UsageEvent builders.
@@ -155,6 +158,7 @@ func (c *Client) init() {
 	c.SubscriptionsUser = NewSubscriptionsUserClient(c.config)
 	c.Tenant = NewTenantClient(c.config)
 	c.TenantEmailDomain = NewTenantEmailDomainClient(c.config)
+	c.TenantFeatureGrant = NewTenantFeatureGrantClient(c.config)
 	c.TenantSubscription = NewTenantSubscriptionClient(c.config)
 	c.UsageEvent = NewUsageEventClient(c.config)
 	c.UserRoleAssignment = NewUserRoleAssignmentClient(c.config)
@@ -278,6 +282,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		SubscriptionsUser:             NewSubscriptionsUserClient(cfg),
 		Tenant:                        NewTenantClient(cfg),
 		TenantEmailDomain:             NewTenantEmailDomainClient(cfg),
+		TenantFeatureGrant:            NewTenantFeatureGrantClient(cfg),
 		TenantSubscription:            NewTenantSubscriptionClient(cfg),
 		UsageEvent:                    NewUsageEventClient(cfg),
 		UserRoleAssignment:            NewUserRoleAssignmentClient(cfg),
@@ -328,6 +333,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		SubscriptionsUser:             NewSubscriptionsUserClient(cfg),
 		Tenant:                        NewTenantClient(cfg),
 		TenantEmailDomain:             NewTenantEmailDomainClient(cfg),
+		TenantFeatureGrant:            NewTenantFeatureGrantClient(cfg),
 		TenantSubscription:            NewTenantSubscriptionClient(cfg),
 		UsageEvent:                    NewUsageEventClient(cfg),
 		UserRoleAssignment:            NewUserRoleAssignmentClient(cfg),
@@ -367,7 +373,7 @@ func (c *Client) Use(hooks ...Hook) {
 		c.ServiceChargePlan, c.ServiceConfig, c.SubscriptionCredit,
 		c.SubscriptionCreditTransaction, c.SubscriptionPlan, c.SubscriptionsPermission,
 		c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant, c.TenantEmailDomain,
-		c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
+		c.TenantFeatureGrant, c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
 	} {
 		n.Use(hooks...)
 	}
@@ -384,7 +390,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.ServiceChargePlan, c.ServiceConfig, c.SubscriptionCredit,
 		c.SubscriptionCreditTransaction, c.SubscriptionPlan, c.SubscriptionsPermission,
 		c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant, c.TenantEmailDomain,
-		c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
+		c.TenantFeatureGrant, c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -449,6 +455,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Tenant.mutate(ctx, m)
 	case *TenantEmailDomainMutation:
 		return c.TenantEmailDomain.mutate(ctx, m)
+	case *TenantFeatureGrantMutation:
+		return c.TenantFeatureGrant.mutate(ctx, m)
 	case *TenantSubscriptionMutation:
 		return c.TenantSubscription.mutate(ctx, m)
 	case *UsageEventMutation:
@@ -4680,6 +4688,139 @@ func (c *TenantEmailDomainClient) mutate(ctx context.Context, m *TenantEmailDoma
 	}
 }
 
+// TenantFeatureGrantClient is a client for the TenantFeatureGrant schema.
+type TenantFeatureGrantClient struct {
+	config
+}
+
+// NewTenantFeatureGrantClient returns a client for the TenantFeatureGrant from the given config.
+func NewTenantFeatureGrantClient(c config) *TenantFeatureGrantClient {
+	return &TenantFeatureGrantClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `tenantfeaturegrant.Hooks(f(g(h())))`.
+func (c *TenantFeatureGrantClient) Use(hooks ...Hook) {
+	c.hooks.TenantFeatureGrant = append(c.hooks.TenantFeatureGrant, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `tenantfeaturegrant.Intercept(f(g(h())))`.
+func (c *TenantFeatureGrantClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TenantFeatureGrant = append(c.inters.TenantFeatureGrant, interceptors...)
+}
+
+// Create returns a builder for creating a TenantFeatureGrant entity.
+func (c *TenantFeatureGrantClient) Create() *TenantFeatureGrantCreate {
+	mutation := newTenantFeatureGrantMutation(c.config, OpCreate)
+	return &TenantFeatureGrantCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TenantFeatureGrant entities.
+func (c *TenantFeatureGrantClient) CreateBulk(builders ...*TenantFeatureGrantCreate) *TenantFeatureGrantCreateBulk {
+	return &TenantFeatureGrantCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TenantFeatureGrantClient) MapCreateBulk(slice any, setFunc func(*TenantFeatureGrantCreate, int)) *TenantFeatureGrantCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TenantFeatureGrantCreateBulk{err: fmt.Errorf("calling to TenantFeatureGrantClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TenantFeatureGrantCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TenantFeatureGrantCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TenantFeatureGrant.
+func (c *TenantFeatureGrantClient) Update() *TenantFeatureGrantUpdate {
+	mutation := newTenantFeatureGrantMutation(c.config, OpUpdate)
+	return &TenantFeatureGrantUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TenantFeatureGrantClient) UpdateOne(_m *TenantFeatureGrant) *TenantFeatureGrantUpdateOne {
+	mutation := newTenantFeatureGrantMutation(c.config, OpUpdateOne, withTenantFeatureGrant(_m))
+	return &TenantFeatureGrantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TenantFeatureGrantClient) UpdateOneID(id uuid.UUID) *TenantFeatureGrantUpdateOne {
+	mutation := newTenantFeatureGrantMutation(c.config, OpUpdateOne, withTenantFeatureGrantID(id))
+	return &TenantFeatureGrantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TenantFeatureGrant.
+func (c *TenantFeatureGrantClient) Delete() *TenantFeatureGrantDelete {
+	mutation := newTenantFeatureGrantMutation(c.config, OpDelete)
+	return &TenantFeatureGrantDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TenantFeatureGrantClient) DeleteOne(_m *TenantFeatureGrant) *TenantFeatureGrantDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TenantFeatureGrantClient) DeleteOneID(id uuid.UUID) *TenantFeatureGrantDeleteOne {
+	builder := c.Delete().Where(tenantfeaturegrant.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TenantFeatureGrantDeleteOne{builder}
+}
+
+// Query returns a query builder for TenantFeatureGrant.
+func (c *TenantFeatureGrantClient) Query() *TenantFeatureGrantQuery {
+	return &TenantFeatureGrantQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTenantFeatureGrant},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TenantFeatureGrant entity by its id.
+func (c *TenantFeatureGrantClient) Get(ctx context.Context, id uuid.UUID) (*TenantFeatureGrant, error) {
+	return c.Query().Where(tenantfeaturegrant.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TenantFeatureGrantClient) GetX(ctx context.Context, id uuid.UUID) *TenantFeatureGrant {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TenantFeatureGrantClient) Hooks() []Hook {
+	return c.hooks.TenantFeatureGrant
+}
+
+// Interceptors returns the client interceptors.
+func (c *TenantFeatureGrantClient) Interceptors() []Interceptor {
+	return c.inters.TenantFeatureGrant
+}
+
+func (c *TenantFeatureGrantClient) mutate(ctx context.Context, m *TenantFeatureGrantMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TenantFeatureGrantCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TenantFeatureGrantUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TenantFeatureGrantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TenantFeatureGrantDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TenantFeatureGrant mutation op: %q", m.Op())
+	}
+}
+
 // TenantSubscriptionClient is a client for the TenantSubscription schema.
 type TenantSubscriptionClient struct {
 	config
@@ -5216,7 +5357,7 @@ type (
 		RateLimitConfig, RolePermission, ServiceChargePlan, ServiceConfig,
 		SubscriptionCredit, SubscriptionCreditTransaction, SubscriptionPlan,
 		SubscriptionsPermission, SubscriptionsRole, SubscriptionsUser, Tenant,
-		TenantEmailDomain, TenantSubscription, UsageEvent,
+		TenantEmailDomain, TenantFeatureGrant, TenantSubscription, UsageEvent,
 		UserRoleAssignment []ent.Hook
 	}
 	inters struct {
@@ -5226,7 +5367,7 @@ type (
 		RateLimitConfig, RolePermission, ServiceChargePlan, ServiceConfig,
 		SubscriptionCredit, SubscriptionCreditTransaction, SubscriptionPlan,
 		SubscriptionsPermission, SubscriptionsRole, SubscriptionsUser, Tenant,
-		TenantEmailDomain, TenantSubscription, UsageEvent,
+		TenantEmailDomain, TenantFeatureGrant, TenantSubscription, UsageEvent,
 		UserRoleAssignment []ent.Interceptor
 	}
 )

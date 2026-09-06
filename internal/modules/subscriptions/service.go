@@ -14,6 +14,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
+	"github.com/bengobox/subscription-service/internal/ent/tenantfeaturegrant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -1137,6 +1138,148 @@ func (s *Service) DeactivateProduct(ctx context.Context, tenantID uuid.UUID, pro
 		return fmt.Errorf("commit: %w", err)
 	}
 	return nil
+}
+
+// GrantTenantFeature idempotently grants (or re-grants after a revoke) a single named
+// feature_definitions code to a tenant, independent of any subscription plan. This is the
+// mechanism for platform-admin-controlled add-ons (e.g. per-branch pricing, flash sales) that
+// should NOT be bundled into a whole plan the way ProductSubscription/AssignProductPlan
+// overlays are -- see tenant_feature_grant.go's schema doc. The grant only unlocks the feature
+// code in GetSubscriptionResult's composite features union; the owning service's own
+// tenant-facing settings page still gates the actual on/off switch behind FeatureEnabled(code).
+func (s *Service) GrantTenantFeature(ctx context.Context, tenantID uuid.UUID, featureCode string, grantedBy uuid.UUID, notes string) error {
+	if featureCode == "" {
+		return fmt.Errorf("feature_code is required")
+	}
+	// Best-effort subscription lookup purely to emit the JWT-refresh event below -- a feature
+	// grant is independent of subscription existence, so a lookup failure here isn't fatal.
+	sub, _ := s.getSubscription(ctx, tenantID)
+
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("start transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	now := time.Now().UTC()
+	existing, qerr := tx.TenantFeatureGrant.Query().
+		Where(
+			tenantfeaturegrant.TenantIDEQ(tenantID),
+			tenantfeaturegrant.FeatureCodeEQ(featureCode),
+		).
+		Only(ctx)
+	switch {
+	case qerr == nil:
+		upd := tx.TenantFeatureGrant.UpdateOneID(existing.ID).
+			SetGrantedBy(grantedBy).
+			SetGrantedAt(now).
+			ClearRevokedAt().
+			ClearRevokedBy()
+		if notes != "" {
+			upd = upd.SetNotes(notes)
+		}
+		if _, err = upd.Save(ctx); err != nil {
+			return fmt.Errorf("update feature grant: %w", err)
+		}
+	case ent.IsNotFound(qerr):
+		create := tx.TenantFeatureGrant.Create().
+			SetTenantID(tenantID).
+			SetFeatureCode(featureCode).
+			SetGrantedBy(grantedBy).
+			SetGrantedAt(now)
+		if notes != "" {
+			create = create.SetNotes(notes)
+		}
+		if _, err = create.Save(ctx); err != nil {
+			return fmt.Errorf("create feature grant: %w", err)
+		}
+	default:
+		err = fmt.Errorf("check feature grant: %w", qerr)
+		return err
+	}
+
+	if sub != nil {
+		s.emitSubscriptionUpdatedTx(ctx, tx, sub, "feature_granted")
+	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
+	return nil
+}
+
+// RevokeTenantFeature marks a tenant's feature grant revoked (soft -- the row and its
+// granted_by/granted_at/notes audit trail are kept, not deleted). Idempotent: revoking an
+// already-revoked or nonexistent grant is a no-op.
+func (s *Service) RevokeTenantFeature(ctx context.Context, tenantID uuid.UUID, featureCode string, revokedBy uuid.UUID) error {
+	existing, err := s.client.TenantFeatureGrant.Query().
+		Where(
+			tenantfeaturegrant.TenantIDEQ(tenantID),
+			tenantfeaturegrant.FeatureCodeEQ(featureCode),
+			tenantfeaturegrant.RevokedAtIsNil(),
+		).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("lookup feature grant: %w", err)
+	}
+
+	sub, _ := s.getSubscription(ctx, tenantID)
+
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("start transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	now := time.Now().UTC()
+	if err = tx.TenantFeatureGrant.UpdateOneID(existing.ID).
+		SetRevokedAt(now).
+		SetRevokedBy(revokedBy).
+		Exec(ctx); err != nil {
+		return fmt.Errorf("revoke feature grant: %w", err)
+	}
+
+	if sub != nil {
+		s.emitSubscriptionUpdatedTx(ctx, tx, sub, "feature_revoked")
+	}
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
+	return nil
+}
+
+// ListTenantFeatureGrants returns every ACTIVE (non-revoked) feature grant for a tenant, for
+// the platform-admin "Add-on Features" panel.
+func (s *Service) ListTenantFeatureGrants(ctx context.Context, tenantID uuid.UUID) ([]*ent.TenantFeatureGrant, error) {
+	return s.client.TenantFeatureGrant.Query().
+		Where(
+			tenantfeaturegrant.TenantIDEQ(tenantID),
+			tenantfeaturegrant.RevokedAtIsNil(),
+		).
+		Order(ent.Asc(tenantfeaturegrant.FieldFeatureCode)).
+		All(ctx)
+}
+
+// activeTenantFeatureGrantCodes returns the feature codes of every active (non-revoked) grant
+// for tenantID, for folding into GetSubscriptionResult's composite features union.
+func (s *Service) activeTenantFeatureGrantCodes(ctx context.Context, tenantID uuid.UUID) ([]string, error) {
+	return s.client.TenantFeatureGrant.Query().
+		Where(
+			tenantfeaturegrant.TenantIDEQ(tenantID),
+			tenantfeaturegrant.RevokedAtIsNil(),
+		).
+		Select(tenantfeaturegrant.FieldFeatureCode).
+		Strings(ctx)
 }
 
 // emitSubscriptionUpdatedTx writes the tenant.subscription.updated outbox event (with the

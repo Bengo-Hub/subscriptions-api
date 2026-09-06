@@ -68,6 +68,8 @@ type Tx struct {
 	Tenant *TenantClient
 	// TenantEmailDomain is the client for interacting with the TenantEmailDomain builders.
 	TenantEmailDomain *TenantEmailDomainClient
+	// TenantFeatureGrant is the client for interacting with the TenantFeatureGrant builders.
+	TenantFeatureGrant *TenantFeatureGrantClient
 	// TenantSubscription is the client for interacting with the TenantSubscription builders.
 	TenantSubscription *TenantSubscriptionClient
 	// UsageEvent is the client for interacting with the UsageEvent builders.
@@ -233,6 +235,7 @@ func (tx *Tx) init() {
 	tx.SubscriptionsUser = NewSubscriptionsUserClient(tx.config)
 	tx.Tenant = NewTenantClient(tx.config)
 	tx.TenantEmailDomain = NewTenantEmailDomainClient(tx.config)
+	tx.TenantFeatureGrant = NewTenantFeatureGrantClient(tx.config)
 	tx.TenantSubscription = NewTenantSubscriptionClient(tx.config)
 	tx.UsageEvent = NewUsageEventClient(tx.config)
 	tx.UserRoleAssignment = NewUserRoleAssignmentClient(tx.config)

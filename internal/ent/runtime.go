@@ -33,6 +33,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsuser"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
+	"github.com/bengobox/subscription-service/internal/ent/tenantfeaturegrant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/usageevent"
 	"github.com/bengobox/subscription-service/internal/ent/userroleassignment"
@@ -945,6 +946,30 @@ func init() {
 	tenantemaildomainDescID := tenantemaildomainFields[0].Descriptor()
 	// tenantemaildomain.DefaultID holds the default value on creation for the id field.
 	tenantemaildomain.DefaultID = tenantemaildomainDescID.Default.(func() uuid.UUID)
+	tenantfeaturegrantFields := schema.TenantFeatureGrant{}.Fields()
+	_ = tenantfeaturegrantFields
+	// tenantfeaturegrantDescFeatureCode is the schema descriptor for feature_code field.
+	tenantfeaturegrantDescFeatureCode := tenantfeaturegrantFields[2].Descriptor()
+	// tenantfeaturegrant.FeatureCodeValidator is a validator for the "feature_code" field. It is called by the builders before save.
+	tenantfeaturegrant.FeatureCodeValidator = tenantfeaturegrantDescFeatureCode.Validators[0].(func(string) error)
+	// tenantfeaturegrantDescGrantedAt is the schema descriptor for granted_at field.
+	tenantfeaturegrantDescGrantedAt := tenantfeaturegrantFields[4].Descriptor()
+	// tenantfeaturegrant.DefaultGrantedAt holds the default value on creation for the granted_at field.
+	tenantfeaturegrant.DefaultGrantedAt = tenantfeaturegrantDescGrantedAt.Default.(func() time.Time)
+	// tenantfeaturegrantDescCreatedAt is the schema descriptor for created_at field.
+	tenantfeaturegrantDescCreatedAt := tenantfeaturegrantFields[8].Descriptor()
+	// tenantfeaturegrant.DefaultCreatedAt holds the default value on creation for the created_at field.
+	tenantfeaturegrant.DefaultCreatedAt = tenantfeaturegrantDescCreatedAt.Default.(func() time.Time)
+	// tenantfeaturegrantDescUpdatedAt is the schema descriptor for updated_at field.
+	tenantfeaturegrantDescUpdatedAt := tenantfeaturegrantFields[9].Descriptor()
+	// tenantfeaturegrant.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	tenantfeaturegrant.DefaultUpdatedAt = tenantfeaturegrantDescUpdatedAt.Default.(func() time.Time)
+	// tenantfeaturegrant.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	tenantfeaturegrant.UpdateDefaultUpdatedAt = tenantfeaturegrantDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// tenantfeaturegrantDescID is the schema descriptor for id field.
+	tenantfeaturegrantDescID := tenantfeaturegrantFields[0].Descriptor()
+	// tenantfeaturegrant.DefaultID holds the default value on creation for the id field.
+	tenantfeaturegrant.DefaultID = tenantfeaturegrantDescID.Default.(func() uuid.UUID)
 	tenantsubscriptionFields := schema.TenantSubscription{}.Fields()
 	_ = tenantsubscriptionFields
 	// tenantsubscriptionDescAppliedDiscount is the schema descriptor for applied_discount field.

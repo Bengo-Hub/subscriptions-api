@@ -90,6 +90,9 @@ type Tenant func(*sql.Selector)
 // TenantEmailDomain is the predicate function for tenantemaildomain builders.
 type TenantEmailDomain func(*sql.Selector)
 
+// TenantFeatureGrant is the predicate function for tenantfeaturegrant builders.
+type TenantFeatureGrant func(*sql.Selector)
+
 // TenantSubscription is the predicate function for tenantsubscription builders.
 type TenantSubscription func(*sql.Selector)
 

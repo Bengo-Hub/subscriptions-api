@@ -177,6 +177,11 @@ var featureCatalog = func() []catalogEntry {
 		// as a banner on the customer-facing ordering storefront. Pro/Gold PowerSuite only —
 		// see plans_powersuite_usecase.go's tier>=2 blocks.
 		feat("storefront_banner", pos, "POS", "Storefront Promotions Banner"),
+		// Add-on feature (2026-09-06 pricing/tiering audit, .claude/plans/
+		// pricing-multibranch-batch-flashsale-audit-and-plan-2026-09-06.md): timed, countdown-driven
+		// storefront markdowns (Jumia-style flash sales). Deliberately NOT included in any
+		// plans_powersuite_usecase.go tier — only reachable via a platform-admin TenantFeatureGrant.
+		feat("flash_sale", pos, "Pricing", "Flash-Sale Timed Discounts (add-on)"),
 		// Pharmacy (Codevertex Dawa) — clinical & compliance features served by pos-api.
 		feat("prescription_management", pos, "Pharmacy", "Prescription Management & Dispensing"),
 		feat("patient_history", pos, "Pharmacy", "Patient History & Records"),
@@ -219,6 +224,13 @@ var featureCatalog = func() []catalogEntry {
 		feat("report_food_cost_variance", inventory, "Reports", "Food Cost Variance Report"),
 		feat("stock_alerts", inventory, "Alerts", "Low-Stock Alert Settings"),
 		feat("expiry_alerts", inventory, "Alerts", "Expiry Alert Settings"),
+		// Add-on features (2026-09-06 pricing/tiering audit, .claude/plans/
+		// pricing-multibranch-batch-flashsale-audit-and-plan-2026-09-06.md): deliberately NOT
+		// included in any plans_powersuite_usecase.go tier for any family. Only reachable via a
+		// platform-admin TenantFeatureGrant (Phase 0 of that plan) — a tenant only sees the
+		// matching TenantInventoryConfig settings toggle once granted.
+		feat("multi_branch_pricing", inventory, "Pricing", "Per-Branch/Outlet Pricing (add-on)"),
+		feat("batch_period_pricing", inventory, "Pricing", "Stock-Age / Batch Markdown Pricing (add-on)"),
 		lim("inventory_max_images_per_item", inventory, "Limits", "Images per Product", ""),
 		lim("max_warehouses", inventory, "Limits", "Warehouses", ""),
 		lim("max_products", inventory, "Limits", "Products", ""),

@@ -11,6 +11,8 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	authclient "github.com/Bengo-Hub/shared-auth-client"
+
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
@@ -572,6 +574,119 @@ func (h *PlatformHandler) RemoveProductFromTenant(w http.ResponseWriter, r *http
 	}
 	if err := h.subSvc.DeactivateProduct(ctx, tenantID, productCode); err != nil {
 		h.log.Error("failed to remove product", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if h.featureHandler != nil {
+		h.featureHandler.InvalidateCache(ctx, tenantID)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// ListTenantFeatureGrants godoc
+// @Summary List a tenant's platform-admin add-on feature grants
+// @Tags Platform
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Success 200 {object} map[string]interface{}
+// @Router /admin/tenants/{tenant_id}/feature-grants [get]
+func (h *PlatformHandler) ListTenantFeatureGrants(w http.ResponseWriter, r *http.Request) {
+	if h.subSvc == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "subscription service unavailable"})
+		return
+	}
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenant_id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+	grants, err := h.subSvc.ListTenantFeatureGrants(r.Context(), tenantID)
+	if err != nil {
+		h.log.Error("failed to list feature grants", zap.Error(err))
+		writeJSON(w, http.StatusOK, map[string]any{"grants": []any{}})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"grants": grants})
+}
+
+// GrantTenantFeature godoc
+// @Summary Grant a single named add-on feature to a tenant (platform admin)
+// @Description Unlocks one feature_definitions code for a tenant independent of its
+// @Description subscription plan (e.g. multi_branch_pricing, batch_period_pricing, flash_sale).
+// @Description The tenant's own settings page still gates the actual on/off switch.
+// @Tags Platform
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Success 200 {object} map[string]interface{}
+// @Router /admin/tenants/{tenant_id}/feature-grants [post]
+func (h *PlatformHandler) GrantTenantFeature(w http.ResponseWriter, r *http.Request) {
+	if h.subSvc == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "subscription service unavailable"})
+		return
+	}
+	ctx := r.Context()
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenant_id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+	var body struct {
+		FeatureCode string `json:"featureCode"`
+		Notes       string `json:"notes"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.FeatureCode == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "featureCode is required"})
+		return
+	}
+	var grantedBy uuid.UUID
+	if claims, ok := authclient.ClaimsFromContext(ctx); ok && claims != nil {
+		grantedBy, _ = claims.UserID()
+	}
+	if err := h.subSvc.GrantTenantFeature(ctx, tenantID, body.FeatureCode, grantedBy, body.Notes); err != nil {
+		h.log.Error("failed to grant tenant feature", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if h.featureHandler != nil {
+		h.featureHandler.InvalidateCache(ctx, tenantID)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// RevokeTenantFeature godoc
+// @Summary Revoke a tenant's add-on feature grant (platform admin)
+// @Tags Platform
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Param feature_code path string true "Feature code"
+// @Success 200 {object} map[string]interface{}
+// @Router /admin/tenants/{tenant_id}/feature-grants/{feature_code} [delete]
+func (h *PlatformHandler) RevokeTenantFeature(w http.ResponseWriter, r *http.Request) {
+	if h.subSvc == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "subscription service unavailable"})
+		return
+	}
+	ctx := r.Context()
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenant_id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant_id"})
+		return
+	}
+	featureCode := chi.URLParam(r, "feature_code")
+	if featureCode == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "feature_code is required"})
+		return
+	}
+	var revokedBy uuid.UUID
+	if claims, ok := authclient.ClaimsFromContext(ctx); ok && claims != nil {
+		revokedBy, _ = claims.UserID()
+	}
+	if err := h.subSvc.RevokeTenantFeature(ctx, tenantID, featureCode, revokedBy); err != nil {
+		h.log.Error("failed to revoke tenant feature", zap.Error(err))
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}

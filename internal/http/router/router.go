@@ -389,6 +389,12 @@ func New(
 					r.Get("/{tenant_id}/products", platformHandler.ListTenantProducts)
 					r.Post("/{tenant_id}/products", platformHandler.AssignProductToTenant)
 					r.Delete("/{tenant_id}/products/{product_code}", platformHandler.RemoveProductFromTenant)
+					// Add-on features: single named feature_definitions grants independent of any
+					// plan/product overlay (per-branch pricing, batch markdown pricing, flash sale, ...).
+					// See TenantFeatureGrant's schema doc for why this is distinct from /products above.
+					r.Get("/{tenant_id}/feature-grants", platformHandler.ListTenantFeatureGrants)
+					r.Post("/{tenant_id}/feature-grants", platformHandler.GrantTenantFeature)
+					r.Delete("/{tenant_id}/feature-grants/{feature_code}", platformHandler.RevokeTenantFeature)
 					// Subscription invoices (generate / resend / view / download PDF)
 					r.Post("/{tenant_id}/subscription/generate-invoice", platformHandler.GenerateSubscriptionInvoice)
 					r.Post("/{tenant_id}/subscription/invoice/resend", platformHandler.ResendSubscriptionInvoice)
