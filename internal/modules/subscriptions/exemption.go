@@ -3,6 +3,7 @@ package subscriptions
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	entfeaturedefinition "github.com/bengobox/subscription-service/internal/ent/featuredefinition"
@@ -45,8 +46,42 @@ func (s *Service) IsExemptTenant(ctx context.Context, tenantID uuid.UUID) bool {
 
 // SetTenantExemption flips a tenant's explicit subscription-exemption flag. Platform-admin only
 // (the caller enforces authz). Returns the new value.
+//
+// Publishes tenant.subscription.updated (same NATS subject auth-api already subscribes to for
+// plan/status sync) with a subscription_exempt field, so auth-api's SubscriptionSubscriber can
+// mirror the flag onto its OWN Tenant row — the one actually stamped into the sub_exempt JWT
+// claim every downstream service reads. Without this, flipping exemption here was previously
+// silently inert for every JWT-based gate fleet-wide: this local flag only ever fed
+// subscriptions-api's own backend jobs (dormancy/renewal/IsExemptTenant).
 func (s *Service) SetTenantExemption(ctx context.Context, tenantID uuid.UUID, exempt bool) error {
-	return s.client.Tenant.UpdateOneID(tenantID).SetSubscriptionExempt(exempt).Exec(ctx)
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("start transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	if err = tx.Tenant.UpdateOneID(tenantID).SetSubscriptionExempt(exempt).Exec(ctx); err != nil {
+		return err
+	}
+
+	tenantSlug := ""
+	if t, terr := tx.Tenant.Get(ctx, tenantID); terr == nil {
+		tenantSlug = t.Slug
+	}
+	s.writeOutboxEvent(ctx, tx, tenantID, "tenant", tenantID, "subscription.updated", map[string]any{
+		"tenant_id":           tenantID.String(),
+		"tenant_slug":         tenantSlug,
+		"subscription_exempt": exempt,
+	})
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
+	return nil
 }
 
 // exemptResult builds the synthetic, fully-entitled result returned for exempt tenants:

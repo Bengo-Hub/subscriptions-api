@@ -301,6 +301,16 @@ func (h *SubscriptionHandler) GetByTenantID(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// This route is meant for S2S callers (platform API key) or a platform-owner JWT — or a
+	// user fetching their OWN tenant's subscription. Without this check any authenticated user
+	// of any tenant could read any other tenant's plan/features/limits by guessing a UUID.
+	if claims, ok := authclient.ClaimsFromContext(r.Context()); ok && claims != nil {
+		if !claims.IsService && !claims.IsPlatformOwner && claims.TenantID != tenantIDStr {
+			h.respondWithError(w, http.StatusForbidden, "not authorized for this tenant")
+			return
+		}
+	}
+
 	sub, err := h.service.GetSubscriptionResult(r.Context(), tenantID)
 	if err != nil {
 		if h.service.IsExemptTenant(r.Context(), tenantID) {
