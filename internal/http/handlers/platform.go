@@ -90,7 +90,7 @@ func (h *PlatformHandler) GetPlatformStats(w http.ResponseWriter, r *http.Reques
 	if err == nil {
 		for _, s := range activeSubs {
 			if s.Edges.Plan != nil {
-				mrr += s.Edges.Plan.BasePrice
+				mrr += subscriptions.EffectivePrice(s, s.Edges.Plan)
 			}
 		}
 	}
@@ -172,6 +172,7 @@ func (h *PlatformHandler) ListAllSubscriptions(w http.ResponseWriter, r *http.Re
 		CurrentPeriodEnd string  `json:"currentPeriodEnd"`
 		MonthlyRevenue   float64 `json:"monthlyRevenue"`
 		Currency         string  `json:"currency"`
+		HasCustomPrice   bool    `json:"hasCustomPrice"`
 	}
 
 	searchTerm := strings.ToLower(r.URL.Query().Get("search"))
@@ -201,7 +202,7 @@ func (h *PlatformHandler) ListAllSubscriptions(w http.ResponseWriter, r *http.Re
 		if s.Edges.Plan != nil {
 			planCode = s.Edges.Plan.PlanCode
 			planName = s.Edges.Plan.Name
-			monthlyRevenue = s.Edges.Plan.BasePrice
+			monthlyRevenue = subscriptions.EffectivePrice(s, s.Edges.Plan)
 			currency = s.Edges.Plan.Currency
 			planTier = derivePlanTier(s.Edges.Plan.PlanCode, s.Edges.Plan.TierOrder)
 		}
@@ -219,6 +220,7 @@ func (h *PlatformHandler) ListAllSubscriptions(w http.ResponseWriter, r *http.Re
 			CurrentPeriodEnd: s.CurrentPeriodEnd.Format("2006-01-02T15:04:05Z"),
 			MonthlyRevenue:   monthlyRevenue,
 			Currency:         currency,
+			HasCustomPrice:   s.CustomBasePrice != nil,
 		})
 	}
 
@@ -1071,17 +1073,33 @@ func (h *PlatformHandler) UpdateSubscription(w http.ResponseWriter, r *http.Requ
 	}
 
 	var body struct {
-		TrialEndsAt      *string `json:"trial_ends_at"`      // RFC3339 or null to clear
-		CurrentPeriodEnd *string `json:"current_period_end"` // RFC3339
-		Status           *string `json:"status"`             // ACTIVE | TRIAL | EXPIRED | CANCELLED | SUSPENDED
-		PlanCode         *string `json:"plan_code"`          // switch plan
+		TrialEndsAt       *string  `json:"trial_ends_at"`      // RFC3339 or null to clear
+		CurrentPeriodEnd  *string  `json:"current_period_end"` // RFC3339
+		Status            *string  `json:"status"`             // ACTIVE | TRIAL | EXPIRED | CANCELLED | SUSPENDED
+		PlanCode          *string  `json:"plan_code"`          // switch plan
+		CustomBasePrice   *float64 `json:"custom_base_price"`  // sales-agreed recurring price override for THIS subscription only
+		CustomPriceReason *string  `json:"custom_price_reason"`
+		// ClearCustomPrice reverts this subscription to the plan's normal list price. Distinct
+		// from omitting custom_base_price (which leaves any existing override untouched) —
+		// JSON null and "field absent" are indistinguishable on a bare pointer, so this needs its
+		// own explicit flag.
+		ClearCustomPrice bool `json:"clear_custom_price"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
-	if body.TrialEndsAt == nil && body.CurrentPeriodEnd == nil && body.Status == nil && body.PlanCode == nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "at least one of trial_ends_at, current_period_end, status, plan_code is required"})
+	if body.TrialEndsAt == nil && body.CurrentPeriodEnd == nil && body.Status == nil && body.PlanCode == nil &&
+		body.CustomBasePrice == nil && !body.ClearCustomPrice {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "at least one of trial_ends_at, current_period_end, status, plan_code, custom_base_price, clear_custom_price is required"})
+		return
+	}
+	if body.CustomBasePrice != nil && *body.CustomBasePrice < 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "custom_base_price must not be negative"})
+		return
+	}
+	if body.CustomBasePrice != nil && body.ClearCustomPrice {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "custom_base_price and clear_custom_price are mutually exclusive"})
 		return
 	}
 
@@ -1138,6 +1156,27 @@ func (h *PlatformHandler) UpdateSubscription(w http.ResponseWriter, r *http.Requ
 			return
 		}
 		upd = upd.SetPlanID(plan.ID)
+	}
+
+	if body.CustomBasePrice != nil || body.ClearCustomPrice {
+		var setBy uuid.UUID
+		if claims, ok := authclient.ClaimsFromContext(ctx); ok && claims != nil {
+			setBy, _ = claims.UserID()
+		}
+		if body.ClearCustomPrice {
+			upd = upd.ClearCustomBasePrice().ClearCustomPriceReason().SetCustomPriceSetAt(time.Now())
+			if setBy != uuid.Nil {
+				upd = upd.SetCustomPriceSetBy(setBy)
+			}
+		} else {
+			upd = upd.SetCustomBasePrice(*body.CustomBasePrice).SetCustomPriceSetAt(time.Now())
+			if body.CustomPriceReason != nil {
+				upd = upd.SetCustomPriceReason(*body.CustomPriceReason)
+			}
+			if setBy != uuid.Nil {
+				upd = upd.SetCustomPriceSetBy(setBy)
+			}
+		}
 	}
 
 	updated, err := upd.Save(ctx)

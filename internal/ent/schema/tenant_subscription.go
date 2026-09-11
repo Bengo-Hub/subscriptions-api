@@ -115,6 +115,26 @@ func (TenantSubscription) Fields() []ent.Field {
 		field.Bool("pending_purge").
 			Default(false).
 			Comment("True once the grace window elapsed unpaid: account suspended and awaiting platform-owner-confirmed data purge"),
+		// ── Per-tenant custom pricing override ──────────────────────────────────
+		// Lets a platform admin charge THIS tenant a different recurring price than the
+		// plan's list price (e.g. a sales-agreed rate), without creating a new plan tier or
+		// affecting any other tenant on the same plan. Nil = use plan.base_price as normal.
+		field.Float("custom_base_price").
+			Optional().
+			Nillable().
+			Comment("Platform-admin override of the recurring price for this subscription specifically. Nil = use the plan's own base_price"),
+		field.String("custom_price_reason").
+			Optional().
+			Nillable().
+			Comment("Free-text context for why the custom price was set (sales agreement, negotiated rate, etc.)"),
+		field.UUID("custom_price_set_by", uuid.UUID{}).
+			Optional().
+			Nillable().
+			Comment("Platform-admin user id (auth-service subject) who set the custom price"),
+		field.Time("custom_price_set_at").
+			Optional().
+			Nillable().
+			Comment("When the custom price was last set or cleared"),
 		field.JSON("metadata", map[string]any{}).
 			Optional().
 			Default(map[string]any{}),

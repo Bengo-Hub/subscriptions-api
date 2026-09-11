@@ -30356,6 +30356,11 @@ type TenantSubscriptionMutation struct {
 	dormant_at                   *time.Time
 	purge_grace_ends_at          *time.Time
 	pending_purge                *bool
+	custom_base_price            *float64
+	addcustom_base_price         *float64
+	custom_price_reason          *string
+	custom_price_set_by          *uuid.UUID
+	custom_price_set_at          *time.Time
 	metadata                     *map[string]interface{}
 	created_at                   *time.Time
 	updated_at                   *time.Time
@@ -31656,6 +31661,223 @@ func (m *TenantSubscriptionMutation) ResetPendingPurge() {
 	m.pending_purge = nil
 }
 
+// SetCustomBasePrice sets the "custom_base_price" field.
+func (m *TenantSubscriptionMutation) SetCustomBasePrice(f float64) {
+	m.custom_base_price = &f
+	m.addcustom_base_price = nil
+}
+
+// CustomBasePrice returns the value of the "custom_base_price" field in the mutation.
+func (m *TenantSubscriptionMutation) CustomBasePrice() (r float64, exists bool) {
+	v := m.custom_base_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCustomBasePrice returns the old "custom_base_price" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldCustomBasePrice(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCustomBasePrice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCustomBasePrice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCustomBasePrice: %w", err)
+	}
+	return oldValue.CustomBasePrice, nil
+}
+
+// AddCustomBasePrice adds f to the "custom_base_price" field.
+func (m *TenantSubscriptionMutation) AddCustomBasePrice(f float64) {
+	if m.addcustom_base_price != nil {
+		*m.addcustom_base_price += f
+	} else {
+		m.addcustom_base_price = &f
+	}
+}
+
+// AddedCustomBasePrice returns the value that was added to the "custom_base_price" field in this mutation.
+func (m *TenantSubscriptionMutation) AddedCustomBasePrice() (r float64, exists bool) {
+	v := m.addcustom_base_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearCustomBasePrice clears the value of the "custom_base_price" field.
+func (m *TenantSubscriptionMutation) ClearCustomBasePrice() {
+	m.custom_base_price = nil
+	m.addcustom_base_price = nil
+	m.clearedFields[tenantsubscription.FieldCustomBasePrice] = struct{}{}
+}
+
+// CustomBasePriceCleared returns if the "custom_base_price" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) CustomBasePriceCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldCustomBasePrice]
+	return ok
+}
+
+// ResetCustomBasePrice resets all changes to the "custom_base_price" field.
+func (m *TenantSubscriptionMutation) ResetCustomBasePrice() {
+	m.custom_base_price = nil
+	m.addcustom_base_price = nil
+	delete(m.clearedFields, tenantsubscription.FieldCustomBasePrice)
+}
+
+// SetCustomPriceReason sets the "custom_price_reason" field.
+func (m *TenantSubscriptionMutation) SetCustomPriceReason(s string) {
+	m.custom_price_reason = &s
+}
+
+// CustomPriceReason returns the value of the "custom_price_reason" field in the mutation.
+func (m *TenantSubscriptionMutation) CustomPriceReason() (r string, exists bool) {
+	v := m.custom_price_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCustomPriceReason returns the old "custom_price_reason" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldCustomPriceReason(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCustomPriceReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCustomPriceReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCustomPriceReason: %w", err)
+	}
+	return oldValue.CustomPriceReason, nil
+}
+
+// ClearCustomPriceReason clears the value of the "custom_price_reason" field.
+func (m *TenantSubscriptionMutation) ClearCustomPriceReason() {
+	m.custom_price_reason = nil
+	m.clearedFields[tenantsubscription.FieldCustomPriceReason] = struct{}{}
+}
+
+// CustomPriceReasonCleared returns if the "custom_price_reason" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) CustomPriceReasonCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldCustomPriceReason]
+	return ok
+}
+
+// ResetCustomPriceReason resets all changes to the "custom_price_reason" field.
+func (m *TenantSubscriptionMutation) ResetCustomPriceReason() {
+	m.custom_price_reason = nil
+	delete(m.clearedFields, tenantsubscription.FieldCustomPriceReason)
+}
+
+// SetCustomPriceSetBy sets the "custom_price_set_by" field.
+func (m *TenantSubscriptionMutation) SetCustomPriceSetBy(u uuid.UUID) {
+	m.custom_price_set_by = &u
+}
+
+// CustomPriceSetBy returns the value of the "custom_price_set_by" field in the mutation.
+func (m *TenantSubscriptionMutation) CustomPriceSetBy() (r uuid.UUID, exists bool) {
+	v := m.custom_price_set_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCustomPriceSetBy returns the old "custom_price_set_by" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldCustomPriceSetBy(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCustomPriceSetBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCustomPriceSetBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCustomPriceSetBy: %w", err)
+	}
+	return oldValue.CustomPriceSetBy, nil
+}
+
+// ClearCustomPriceSetBy clears the value of the "custom_price_set_by" field.
+func (m *TenantSubscriptionMutation) ClearCustomPriceSetBy() {
+	m.custom_price_set_by = nil
+	m.clearedFields[tenantsubscription.FieldCustomPriceSetBy] = struct{}{}
+}
+
+// CustomPriceSetByCleared returns if the "custom_price_set_by" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) CustomPriceSetByCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldCustomPriceSetBy]
+	return ok
+}
+
+// ResetCustomPriceSetBy resets all changes to the "custom_price_set_by" field.
+func (m *TenantSubscriptionMutation) ResetCustomPriceSetBy() {
+	m.custom_price_set_by = nil
+	delete(m.clearedFields, tenantsubscription.FieldCustomPriceSetBy)
+}
+
+// SetCustomPriceSetAt sets the "custom_price_set_at" field.
+func (m *TenantSubscriptionMutation) SetCustomPriceSetAt(t time.Time) {
+	m.custom_price_set_at = &t
+}
+
+// CustomPriceSetAt returns the value of the "custom_price_set_at" field in the mutation.
+func (m *TenantSubscriptionMutation) CustomPriceSetAt() (r time.Time, exists bool) {
+	v := m.custom_price_set_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCustomPriceSetAt returns the old "custom_price_set_at" field's value of the TenantSubscription entity.
+// If the TenantSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantSubscriptionMutation) OldCustomPriceSetAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCustomPriceSetAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCustomPriceSetAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCustomPriceSetAt: %w", err)
+	}
+	return oldValue.CustomPriceSetAt, nil
+}
+
+// ClearCustomPriceSetAt clears the value of the "custom_price_set_at" field.
+func (m *TenantSubscriptionMutation) ClearCustomPriceSetAt() {
+	m.custom_price_set_at = nil
+	m.clearedFields[tenantsubscription.FieldCustomPriceSetAt] = struct{}{}
+}
+
+// CustomPriceSetAtCleared returns if the "custom_price_set_at" field was cleared in this mutation.
+func (m *TenantSubscriptionMutation) CustomPriceSetAtCleared() bool {
+	_, ok := m.clearedFields[tenantsubscription.FieldCustomPriceSetAt]
+	return ok
+}
+
+// ResetCustomPriceSetAt resets all changes to the "custom_price_set_at" field.
+func (m *TenantSubscriptionMutation) ResetCustomPriceSetAt() {
+	m.custom_price_set_at = nil
+	delete(m.clearedFields, tenantsubscription.FieldCustomPriceSetAt)
+}
+
 // SetMetadata sets the "metadata" field.
 func (m *TenantSubscriptionMutation) SetMetadata(value map[string]interface{}) {
 	m.metadata = &value
@@ -32081,7 +32303,7 @@ func (m *TenantSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TenantSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 29)
+	fields := make([]string, 0, 33)
 	if m.tenant != nil {
 		fields = append(fields, tenantsubscription.FieldTenantID)
 	}
@@ -32160,6 +32382,18 @@ func (m *TenantSubscriptionMutation) Fields() []string {
 	if m.pending_purge != nil {
 		fields = append(fields, tenantsubscription.FieldPendingPurge)
 	}
+	if m.custom_base_price != nil {
+		fields = append(fields, tenantsubscription.FieldCustomBasePrice)
+	}
+	if m.custom_price_reason != nil {
+		fields = append(fields, tenantsubscription.FieldCustomPriceReason)
+	}
+	if m.custom_price_set_by != nil {
+		fields = append(fields, tenantsubscription.FieldCustomPriceSetBy)
+	}
+	if m.custom_price_set_at != nil {
+		fields = append(fields, tenantsubscription.FieldCustomPriceSetAt)
+	}
 	if m.metadata != nil {
 		fields = append(fields, tenantsubscription.FieldMetadata)
 	}
@@ -32229,6 +32463,14 @@ func (m *TenantSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.PurgeGraceEndsAt()
 	case tenantsubscription.FieldPendingPurge:
 		return m.PendingPurge()
+	case tenantsubscription.FieldCustomBasePrice:
+		return m.CustomBasePrice()
+	case tenantsubscription.FieldCustomPriceReason:
+		return m.CustomPriceReason()
+	case tenantsubscription.FieldCustomPriceSetBy:
+		return m.CustomPriceSetBy()
+	case tenantsubscription.FieldCustomPriceSetAt:
+		return m.CustomPriceSetAt()
 	case tenantsubscription.FieldMetadata:
 		return m.Metadata()
 	case tenantsubscription.FieldCreatedAt:
@@ -32296,6 +32538,14 @@ func (m *TenantSubscriptionMutation) OldField(ctx context.Context, name string) 
 		return m.OldPurgeGraceEndsAt(ctx)
 	case tenantsubscription.FieldPendingPurge:
 		return m.OldPendingPurge(ctx)
+	case tenantsubscription.FieldCustomBasePrice:
+		return m.OldCustomBasePrice(ctx)
+	case tenantsubscription.FieldCustomPriceReason:
+		return m.OldCustomPriceReason(ctx)
+	case tenantsubscription.FieldCustomPriceSetBy:
+		return m.OldCustomPriceSetBy(ctx)
+	case tenantsubscription.FieldCustomPriceSetAt:
+		return m.OldCustomPriceSetAt(ctx)
 	case tenantsubscription.FieldMetadata:
 		return m.OldMetadata(ctx)
 	case tenantsubscription.FieldCreatedAt:
@@ -32493,6 +32743,34 @@ func (m *TenantSubscriptionMutation) SetField(name string, value ent.Value) erro
 		}
 		m.SetPendingPurge(v)
 		return nil
+	case tenantsubscription.FieldCustomBasePrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCustomBasePrice(v)
+		return nil
+	case tenantsubscription.FieldCustomPriceReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCustomPriceReason(v)
+		return nil
+	case tenantsubscription.FieldCustomPriceSetBy:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCustomPriceSetBy(v)
+		return nil
+	case tenantsubscription.FieldCustomPriceSetAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCustomPriceSetAt(v)
+		return nil
 	case tenantsubscription.FieldMetadata:
 		v, ok := value.(map[string]interface{})
 		if !ok {
@@ -32528,6 +32806,9 @@ func (m *TenantSubscriptionMutation) AddedFields() []string {
 	if m.addsetup_fee_amount != nil {
 		fields = append(fields, tenantsubscription.FieldSetupFeeAmount)
 	}
+	if m.addcustom_base_price != nil {
+		fields = append(fields, tenantsubscription.FieldCustomBasePrice)
+	}
 	return fields
 }
 
@@ -32540,6 +32821,8 @@ func (m *TenantSubscriptionMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedAppliedDiscount()
 	case tenantsubscription.FieldSetupFeeAmount:
 		return m.AddedSetupFeeAmount()
+	case tenantsubscription.FieldCustomBasePrice:
+		return m.AddedCustomBasePrice()
 	}
 	return nil, false
 }
@@ -32562,6 +32845,13 @@ func (m *TenantSubscriptionMutation) AddField(name string, value ent.Value) erro
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddSetupFeeAmount(v)
+		return nil
+	case tenantsubscription.FieldCustomBasePrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCustomBasePrice(v)
 		return nil
 	}
 	return fmt.Errorf("unknown TenantSubscription numeric field %s", name)
@@ -32615,6 +32905,18 @@ func (m *TenantSubscriptionMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(tenantsubscription.FieldPurgeGraceEndsAt) {
 		fields = append(fields, tenantsubscription.FieldPurgeGraceEndsAt)
+	}
+	if m.FieldCleared(tenantsubscription.FieldCustomBasePrice) {
+		fields = append(fields, tenantsubscription.FieldCustomBasePrice)
+	}
+	if m.FieldCleared(tenantsubscription.FieldCustomPriceReason) {
+		fields = append(fields, tenantsubscription.FieldCustomPriceReason)
+	}
+	if m.FieldCleared(tenantsubscription.FieldCustomPriceSetBy) {
+		fields = append(fields, tenantsubscription.FieldCustomPriceSetBy)
+	}
+	if m.FieldCleared(tenantsubscription.FieldCustomPriceSetAt) {
+		fields = append(fields, tenantsubscription.FieldCustomPriceSetAt)
 	}
 	if m.FieldCleared(tenantsubscription.FieldMetadata) {
 		fields = append(fields, tenantsubscription.FieldMetadata)
@@ -32677,6 +32979,18 @@ func (m *TenantSubscriptionMutation) ClearField(name string) error {
 		return nil
 	case tenantsubscription.FieldPurgeGraceEndsAt:
 		m.ClearPurgeGraceEndsAt()
+		return nil
+	case tenantsubscription.FieldCustomBasePrice:
+		m.ClearCustomBasePrice()
+		return nil
+	case tenantsubscription.FieldCustomPriceReason:
+		m.ClearCustomPriceReason()
+		return nil
+	case tenantsubscription.FieldCustomPriceSetBy:
+		m.ClearCustomPriceSetBy()
+		return nil
+	case tenantsubscription.FieldCustomPriceSetAt:
+		m.ClearCustomPriceSetAt()
 		return nil
 	case tenantsubscription.FieldMetadata:
 		m.ClearMetadata()
@@ -32766,6 +33080,18 @@ func (m *TenantSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case tenantsubscription.FieldPendingPurge:
 		m.ResetPendingPurge()
+		return nil
+	case tenantsubscription.FieldCustomBasePrice:
+		m.ResetCustomBasePrice()
+		return nil
+	case tenantsubscription.FieldCustomPriceReason:
+		m.ResetCustomPriceReason()
+		return nil
+	case tenantsubscription.FieldCustomPriceSetBy:
+		m.ResetCustomPriceSetBy()
+		return nil
+	case tenantsubscription.FieldCustomPriceSetAt:
+		m.ResetCustomPriceSetAt()
 		return nil
 	case tenantsubscription.FieldMetadata:
 		m.ResetMetadata()

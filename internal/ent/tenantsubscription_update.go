@@ -503,6 +503,93 @@ func (_u *TenantSubscriptionUpdate) SetNillablePendingPurge(v *bool) *TenantSubs
 	return _u
 }
 
+// SetCustomBasePrice sets the "custom_base_price" field.
+func (_u *TenantSubscriptionUpdate) SetCustomBasePrice(v float64) *TenantSubscriptionUpdate {
+	_u.mutation.ResetCustomBasePrice()
+	_u.mutation.SetCustomBasePrice(v)
+	return _u
+}
+
+// SetNillableCustomBasePrice sets the "custom_base_price" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableCustomBasePrice(v *float64) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetCustomBasePrice(*v)
+	}
+	return _u
+}
+
+// AddCustomBasePrice adds value to the "custom_base_price" field.
+func (_u *TenantSubscriptionUpdate) AddCustomBasePrice(v float64) *TenantSubscriptionUpdate {
+	_u.mutation.AddCustomBasePrice(v)
+	return _u
+}
+
+// ClearCustomBasePrice clears the value of the "custom_base_price" field.
+func (_u *TenantSubscriptionUpdate) ClearCustomBasePrice() *TenantSubscriptionUpdate {
+	_u.mutation.ClearCustomBasePrice()
+	return _u
+}
+
+// SetCustomPriceReason sets the "custom_price_reason" field.
+func (_u *TenantSubscriptionUpdate) SetCustomPriceReason(v string) *TenantSubscriptionUpdate {
+	_u.mutation.SetCustomPriceReason(v)
+	return _u
+}
+
+// SetNillableCustomPriceReason sets the "custom_price_reason" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableCustomPriceReason(v *string) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetCustomPriceReason(*v)
+	}
+	return _u
+}
+
+// ClearCustomPriceReason clears the value of the "custom_price_reason" field.
+func (_u *TenantSubscriptionUpdate) ClearCustomPriceReason() *TenantSubscriptionUpdate {
+	_u.mutation.ClearCustomPriceReason()
+	return _u
+}
+
+// SetCustomPriceSetBy sets the "custom_price_set_by" field.
+func (_u *TenantSubscriptionUpdate) SetCustomPriceSetBy(v uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.SetCustomPriceSetBy(v)
+	return _u
+}
+
+// SetNillableCustomPriceSetBy sets the "custom_price_set_by" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableCustomPriceSetBy(v *uuid.UUID) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetCustomPriceSetBy(*v)
+	}
+	return _u
+}
+
+// ClearCustomPriceSetBy clears the value of the "custom_price_set_by" field.
+func (_u *TenantSubscriptionUpdate) ClearCustomPriceSetBy() *TenantSubscriptionUpdate {
+	_u.mutation.ClearCustomPriceSetBy()
+	return _u
+}
+
+// SetCustomPriceSetAt sets the "custom_price_set_at" field.
+func (_u *TenantSubscriptionUpdate) SetCustomPriceSetAt(v time.Time) *TenantSubscriptionUpdate {
+	_u.mutation.SetCustomPriceSetAt(v)
+	return _u
+}
+
+// SetNillableCustomPriceSetAt sets the "custom_price_set_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdate) SetNillableCustomPriceSetAt(v *time.Time) *TenantSubscriptionUpdate {
+	if v != nil {
+		_u.SetCustomPriceSetAt(*v)
+	}
+	return _u
+}
+
+// ClearCustomPriceSetAt clears the value of the "custom_price_set_at" field.
+func (_u *TenantSubscriptionUpdate) ClearCustomPriceSetAt() *TenantSubscriptionUpdate {
+	_u.mutation.ClearCustomPriceSetAt()
+	return _u
+}
+
 // SetMetadata sets the "metadata" field.
 func (_u *TenantSubscriptionUpdate) SetMetadata(v map[string]interface{}) *TenantSubscriptionUpdate {
 	_u.mutation.SetMetadata(v)
@@ -883,6 +970,33 @@ func (_u *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err
 	}
 	if value, ok := _u.mutation.PendingPurge(); ok {
 		_spec.SetField(tenantsubscription.FieldPendingPurge, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.CustomBasePrice(); ok {
+		_spec.SetField(tenantsubscription.FieldCustomBasePrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedCustomBasePrice(); ok {
+		_spec.AddField(tenantsubscription.FieldCustomBasePrice, field.TypeFloat64, value)
+	}
+	if _u.mutation.CustomBasePriceCleared() {
+		_spec.ClearField(tenantsubscription.FieldCustomBasePrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.CustomPriceReason(); ok {
+		_spec.SetField(tenantsubscription.FieldCustomPriceReason, field.TypeString, value)
+	}
+	if _u.mutation.CustomPriceReasonCleared() {
+		_spec.ClearField(tenantsubscription.FieldCustomPriceReason, field.TypeString)
+	}
+	if value, ok := _u.mutation.CustomPriceSetBy(); ok {
+		_spec.SetField(tenantsubscription.FieldCustomPriceSetBy, field.TypeUUID, value)
+	}
+	if _u.mutation.CustomPriceSetByCleared() {
+		_spec.ClearField(tenantsubscription.FieldCustomPriceSetBy, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.CustomPriceSetAt(); ok {
+		_spec.SetField(tenantsubscription.FieldCustomPriceSetAt, field.TypeTime, value)
+	}
+	if _u.mutation.CustomPriceSetAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldCustomPriceSetAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(tenantsubscription.FieldMetadata, field.TypeJSON, value)
@@ -1619,6 +1733,93 @@ func (_u *TenantSubscriptionUpdateOne) SetNillablePendingPurge(v *bool) *TenantS
 	return _u
 }
 
+// SetCustomBasePrice sets the "custom_base_price" field.
+func (_u *TenantSubscriptionUpdateOne) SetCustomBasePrice(v float64) *TenantSubscriptionUpdateOne {
+	_u.mutation.ResetCustomBasePrice()
+	_u.mutation.SetCustomBasePrice(v)
+	return _u
+}
+
+// SetNillableCustomBasePrice sets the "custom_base_price" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableCustomBasePrice(v *float64) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCustomBasePrice(*v)
+	}
+	return _u
+}
+
+// AddCustomBasePrice adds value to the "custom_base_price" field.
+func (_u *TenantSubscriptionUpdateOne) AddCustomBasePrice(v float64) *TenantSubscriptionUpdateOne {
+	_u.mutation.AddCustomBasePrice(v)
+	return _u
+}
+
+// ClearCustomBasePrice clears the value of the "custom_base_price" field.
+func (_u *TenantSubscriptionUpdateOne) ClearCustomBasePrice() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearCustomBasePrice()
+	return _u
+}
+
+// SetCustomPriceReason sets the "custom_price_reason" field.
+func (_u *TenantSubscriptionUpdateOne) SetCustomPriceReason(v string) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetCustomPriceReason(v)
+	return _u
+}
+
+// SetNillableCustomPriceReason sets the "custom_price_reason" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableCustomPriceReason(v *string) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCustomPriceReason(*v)
+	}
+	return _u
+}
+
+// ClearCustomPriceReason clears the value of the "custom_price_reason" field.
+func (_u *TenantSubscriptionUpdateOne) ClearCustomPriceReason() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearCustomPriceReason()
+	return _u
+}
+
+// SetCustomPriceSetBy sets the "custom_price_set_by" field.
+func (_u *TenantSubscriptionUpdateOne) SetCustomPriceSetBy(v uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetCustomPriceSetBy(v)
+	return _u
+}
+
+// SetNillableCustomPriceSetBy sets the "custom_price_set_by" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableCustomPriceSetBy(v *uuid.UUID) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCustomPriceSetBy(*v)
+	}
+	return _u
+}
+
+// ClearCustomPriceSetBy clears the value of the "custom_price_set_by" field.
+func (_u *TenantSubscriptionUpdateOne) ClearCustomPriceSetBy() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearCustomPriceSetBy()
+	return _u
+}
+
+// SetCustomPriceSetAt sets the "custom_price_set_at" field.
+func (_u *TenantSubscriptionUpdateOne) SetCustomPriceSetAt(v time.Time) *TenantSubscriptionUpdateOne {
+	_u.mutation.SetCustomPriceSetAt(v)
+	return _u
+}
+
+// SetNillableCustomPriceSetAt sets the "custom_price_set_at" field if the given value is not nil.
+func (_u *TenantSubscriptionUpdateOne) SetNillableCustomPriceSetAt(v *time.Time) *TenantSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetCustomPriceSetAt(*v)
+	}
+	return _u
+}
+
+// ClearCustomPriceSetAt clears the value of the "custom_price_set_at" field.
+func (_u *TenantSubscriptionUpdateOne) ClearCustomPriceSetAt() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearCustomPriceSetAt()
+	return _u
+}
+
 // SetMetadata sets the "metadata" field.
 func (_u *TenantSubscriptionUpdateOne) SetMetadata(v map[string]interface{}) *TenantSubscriptionUpdateOne {
 	_u.mutation.SetMetadata(v)
@@ -2029,6 +2230,33 @@ func (_u *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Tena
 	}
 	if value, ok := _u.mutation.PendingPurge(); ok {
 		_spec.SetField(tenantsubscription.FieldPendingPurge, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.CustomBasePrice(); ok {
+		_spec.SetField(tenantsubscription.FieldCustomBasePrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedCustomBasePrice(); ok {
+		_spec.AddField(tenantsubscription.FieldCustomBasePrice, field.TypeFloat64, value)
+	}
+	if _u.mutation.CustomBasePriceCleared() {
+		_spec.ClearField(tenantsubscription.FieldCustomBasePrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.CustomPriceReason(); ok {
+		_spec.SetField(tenantsubscription.FieldCustomPriceReason, field.TypeString, value)
+	}
+	if _u.mutation.CustomPriceReasonCleared() {
+		_spec.ClearField(tenantsubscription.FieldCustomPriceReason, field.TypeString)
+	}
+	if value, ok := _u.mutation.CustomPriceSetBy(); ok {
+		_spec.SetField(tenantsubscription.FieldCustomPriceSetBy, field.TypeUUID, value)
+	}
+	if _u.mutation.CustomPriceSetByCleared() {
+		_spec.ClearField(tenantsubscription.FieldCustomPriceSetBy, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.CustomPriceSetAt(); ok {
+		_spec.SetField(tenantsubscription.FieldCustomPriceSetAt, field.TypeTime, value)
+	}
+	if _u.mutation.CustomPriceSetAtCleared() {
+		_spec.ClearField(tenantsubscription.FieldCustomPriceSetAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(tenantsubscription.FieldMetadata, field.TypeJSON, value)

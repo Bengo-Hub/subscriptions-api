@@ -199,8 +199,8 @@ func initiateRenewals(ctx context.Context, log *zap.Logger, orm *ent.Client, svc
 			continue
 		}
 
-		if plan.BasePrice == 0 {
-			// Free plan: extend period directly
+		if subscriptions.EffectivePrice(sub, plan) == 0 {
+			// Free plan (or a custom price waived to 0): extend period directly
 			extendFreePlan(ctx, log, orm, svc, sub)
 		} else {
 			// Paid plan: initiate Treasury payment intent
@@ -264,7 +264,7 @@ func initiatePaymentRenewal(ctx context.Context, log *zap.Logger, orm *ent.Clien
 	if months <= 0 {
 		months = 1
 	}
-	amount := plan.BasePrice * float64(months)
+	amount := subscriptions.EffectivePrice(sub, plan) * float64(months)
 
 	req := map[string]any{
 		"amount":         amount,
@@ -298,7 +298,7 @@ func initiatePaymentRenewal(ctx context.Context, log *zap.Logger, orm *ent.Clien
 	svc.WriteOutboxEventPublic(ctx, tx, sub.TenantID, "subscription", sub.ID, "renewal_initiated", map[string]any{
 		"tenant_id": sub.TenantID.String(),
 		"plan_code": plan.PlanCode,
-		"amount":    plan.BasePrice,
+		"amount":    subscriptions.EffectivePrice(sub, plan),
 		"currency":  plan.Currency,
 	})
 

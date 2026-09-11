@@ -362,6 +362,62 @@ func (_c *TenantSubscriptionCreate) SetNillablePendingPurge(v *bool) *TenantSubs
 	return _c
 }
 
+// SetCustomBasePrice sets the "custom_base_price" field.
+func (_c *TenantSubscriptionCreate) SetCustomBasePrice(v float64) *TenantSubscriptionCreate {
+	_c.mutation.SetCustomBasePrice(v)
+	return _c
+}
+
+// SetNillableCustomBasePrice sets the "custom_base_price" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableCustomBasePrice(v *float64) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetCustomBasePrice(*v)
+	}
+	return _c
+}
+
+// SetCustomPriceReason sets the "custom_price_reason" field.
+func (_c *TenantSubscriptionCreate) SetCustomPriceReason(v string) *TenantSubscriptionCreate {
+	_c.mutation.SetCustomPriceReason(v)
+	return _c
+}
+
+// SetNillableCustomPriceReason sets the "custom_price_reason" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableCustomPriceReason(v *string) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetCustomPriceReason(*v)
+	}
+	return _c
+}
+
+// SetCustomPriceSetBy sets the "custom_price_set_by" field.
+func (_c *TenantSubscriptionCreate) SetCustomPriceSetBy(v uuid.UUID) *TenantSubscriptionCreate {
+	_c.mutation.SetCustomPriceSetBy(v)
+	return _c
+}
+
+// SetNillableCustomPriceSetBy sets the "custom_price_set_by" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableCustomPriceSetBy(v *uuid.UUID) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetCustomPriceSetBy(*v)
+	}
+	return _c
+}
+
+// SetCustomPriceSetAt sets the "custom_price_set_at" field.
+func (_c *TenantSubscriptionCreate) SetCustomPriceSetAt(v time.Time) *TenantSubscriptionCreate {
+	_c.mutation.SetCustomPriceSetAt(v)
+	return _c
+}
+
+// SetNillableCustomPriceSetAt sets the "custom_price_set_at" field if the given value is not nil.
+func (_c *TenantSubscriptionCreate) SetNillableCustomPriceSetAt(v *time.Time) *TenantSubscriptionCreate {
+	if v != nil {
+		_c.SetCustomPriceSetAt(*v)
+	}
+	return _c
+}
+
 // SetMetadata sets the "metadata" field.
 func (_c *TenantSubscriptionCreate) SetMetadata(v map[string]interface{}) *TenantSubscriptionCreate {
 	_c.mutation.SetMetadata(v)
@@ -749,6 +805,22 @@ func (_c *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgraph
 	if value, ok := _c.mutation.PendingPurge(); ok {
 		_spec.SetField(tenantsubscription.FieldPendingPurge, field.TypeBool, value)
 		_node.PendingPurge = value
+	}
+	if value, ok := _c.mutation.CustomBasePrice(); ok {
+		_spec.SetField(tenantsubscription.FieldCustomBasePrice, field.TypeFloat64, value)
+		_node.CustomBasePrice = &value
+	}
+	if value, ok := _c.mutation.CustomPriceReason(); ok {
+		_spec.SetField(tenantsubscription.FieldCustomPriceReason, field.TypeString, value)
+		_node.CustomPriceReason = &value
+	}
+	if value, ok := _c.mutation.CustomPriceSetBy(); ok {
+		_spec.SetField(tenantsubscription.FieldCustomPriceSetBy, field.TypeUUID, value)
+		_node.CustomPriceSetBy = &value
+	}
+	if value, ok := _c.mutation.CustomPriceSetAt(); ok {
+		_spec.SetField(tenantsubscription.FieldCustomPriceSetAt, field.TypeTime, value)
+		_node.CustomPriceSetAt = &value
 	}
 	if value, ok := _c.mutation.Metadata(); ok {
 		_spec.SetField(tenantsubscription.FieldMetadata, field.TypeJSON, value)
@@ -1326,6 +1398,84 @@ func (u *TenantSubscriptionUpsert) UpdatePendingPurge() *TenantSubscriptionUpser
 	return u
 }
 
+// SetCustomBasePrice sets the "custom_base_price" field.
+func (u *TenantSubscriptionUpsert) SetCustomBasePrice(v float64) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldCustomBasePrice, v)
+	return u
+}
+
+// UpdateCustomBasePrice sets the "custom_base_price" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateCustomBasePrice() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldCustomBasePrice)
+	return u
+}
+
+// AddCustomBasePrice adds v to the "custom_base_price" field.
+func (u *TenantSubscriptionUpsert) AddCustomBasePrice(v float64) *TenantSubscriptionUpsert {
+	u.Add(tenantsubscription.FieldCustomBasePrice, v)
+	return u
+}
+
+// ClearCustomBasePrice clears the value of the "custom_base_price" field.
+func (u *TenantSubscriptionUpsert) ClearCustomBasePrice() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldCustomBasePrice)
+	return u
+}
+
+// SetCustomPriceReason sets the "custom_price_reason" field.
+func (u *TenantSubscriptionUpsert) SetCustomPriceReason(v string) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldCustomPriceReason, v)
+	return u
+}
+
+// UpdateCustomPriceReason sets the "custom_price_reason" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateCustomPriceReason() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldCustomPriceReason)
+	return u
+}
+
+// ClearCustomPriceReason clears the value of the "custom_price_reason" field.
+func (u *TenantSubscriptionUpsert) ClearCustomPriceReason() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldCustomPriceReason)
+	return u
+}
+
+// SetCustomPriceSetBy sets the "custom_price_set_by" field.
+func (u *TenantSubscriptionUpsert) SetCustomPriceSetBy(v uuid.UUID) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldCustomPriceSetBy, v)
+	return u
+}
+
+// UpdateCustomPriceSetBy sets the "custom_price_set_by" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateCustomPriceSetBy() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldCustomPriceSetBy)
+	return u
+}
+
+// ClearCustomPriceSetBy clears the value of the "custom_price_set_by" field.
+func (u *TenantSubscriptionUpsert) ClearCustomPriceSetBy() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldCustomPriceSetBy)
+	return u
+}
+
+// SetCustomPriceSetAt sets the "custom_price_set_at" field.
+func (u *TenantSubscriptionUpsert) SetCustomPriceSetAt(v time.Time) *TenantSubscriptionUpsert {
+	u.Set(tenantsubscription.FieldCustomPriceSetAt, v)
+	return u
+}
+
+// UpdateCustomPriceSetAt sets the "custom_price_set_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsert) UpdateCustomPriceSetAt() *TenantSubscriptionUpsert {
+	u.SetExcluded(tenantsubscription.FieldCustomPriceSetAt)
+	return u
+}
+
+// ClearCustomPriceSetAt clears the value of the "custom_price_set_at" field.
+func (u *TenantSubscriptionUpsert) ClearCustomPriceSetAt() *TenantSubscriptionUpsert {
+	u.SetNull(tenantsubscription.FieldCustomPriceSetAt)
+	return u
+}
+
 // SetMetadata sets the "metadata" field.
 func (u *TenantSubscriptionUpsert) SetMetadata(v map[string]interface{}) *TenantSubscriptionUpsert {
 	u.Set(tenantsubscription.FieldMetadata, v)
@@ -1887,6 +2037,97 @@ func (u *TenantSubscriptionUpsertOne) SetPendingPurge(v bool) *TenantSubscriptio
 func (u *TenantSubscriptionUpsertOne) UpdatePendingPurge() *TenantSubscriptionUpsertOne {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.UpdatePendingPurge()
+	})
+}
+
+// SetCustomBasePrice sets the "custom_base_price" field.
+func (u *TenantSubscriptionUpsertOne) SetCustomBasePrice(v float64) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetCustomBasePrice(v)
+	})
+}
+
+// AddCustomBasePrice adds v to the "custom_base_price" field.
+func (u *TenantSubscriptionUpsertOne) AddCustomBasePrice(v float64) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.AddCustomBasePrice(v)
+	})
+}
+
+// UpdateCustomBasePrice sets the "custom_base_price" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateCustomBasePrice() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateCustomBasePrice()
+	})
+}
+
+// ClearCustomBasePrice clears the value of the "custom_base_price" field.
+func (u *TenantSubscriptionUpsertOne) ClearCustomBasePrice() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearCustomBasePrice()
+	})
+}
+
+// SetCustomPriceReason sets the "custom_price_reason" field.
+func (u *TenantSubscriptionUpsertOne) SetCustomPriceReason(v string) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetCustomPriceReason(v)
+	})
+}
+
+// UpdateCustomPriceReason sets the "custom_price_reason" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateCustomPriceReason() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateCustomPriceReason()
+	})
+}
+
+// ClearCustomPriceReason clears the value of the "custom_price_reason" field.
+func (u *TenantSubscriptionUpsertOne) ClearCustomPriceReason() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearCustomPriceReason()
+	})
+}
+
+// SetCustomPriceSetBy sets the "custom_price_set_by" field.
+func (u *TenantSubscriptionUpsertOne) SetCustomPriceSetBy(v uuid.UUID) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetCustomPriceSetBy(v)
+	})
+}
+
+// UpdateCustomPriceSetBy sets the "custom_price_set_by" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateCustomPriceSetBy() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateCustomPriceSetBy()
+	})
+}
+
+// ClearCustomPriceSetBy clears the value of the "custom_price_set_by" field.
+func (u *TenantSubscriptionUpsertOne) ClearCustomPriceSetBy() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearCustomPriceSetBy()
+	})
+}
+
+// SetCustomPriceSetAt sets the "custom_price_set_at" field.
+func (u *TenantSubscriptionUpsertOne) SetCustomPriceSetAt(v time.Time) *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetCustomPriceSetAt(v)
+	})
+}
+
+// UpdateCustomPriceSetAt sets the "custom_price_set_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertOne) UpdateCustomPriceSetAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateCustomPriceSetAt()
+	})
+}
+
+// ClearCustomPriceSetAt clears the value of the "custom_price_set_at" field.
+func (u *TenantSubscriptionUpsertOne) ClearCustomPriceSetAt() *TenantSubscriptionUpsertOne {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearCustomPriceSetAt()
 	})
 }
 
@@ -2623,6 +2864,97 @@ func (u *TenantSubscriptionUpsertBulk) SetPendingPurge(v bool) *TenantSubscripti
 func (u *TenantSubscriptionUpsertBulk) UpdatePendingPurge() *TenantSubscriptionUpsertBulk {
 	return u.Update(func(s *TenantSubscriptionUpsert) {
 		s.UpdatePendingPurge()
+	})
+}
+
+// SetCustomBasePrice sets the "custom_base_price" field.
+func (u *TenantSubscriptionUpsertBulk) SetCustomBasePrice(v float64) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetCustomBasePrice(v)
+	})
+}
+
+// AddCustomBasePrice adds v to the "custom_base_price" field.
+func (u *TenantSubscriptionUpsertBulk) AddCustomBasePrice(v float64) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.AddCustomBasePrice(v)
+	})
+}
+
+// UpdateCustomBasePrice sets the "custom_base_price" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateCustomBasePrice() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateCustomBasePrice()
+	})
+}
+
+// ClearCustomBasePrice clears the value of the "custom_base_price" field.
+func (u *TenantSubscriptionUpsertBulk) ClearCustomBasePrice() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearCustomBasePrice()
+	})
+}
+
+// SetCustomPriceReason sets the "custom_price_reason" field.
+func (u *TenantSubscriptionUpsertBulk) SetCustomPriceReason(v string) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetCustomPriceReason(v)
+	})
+}
+
+// UpdateCustomPriceReason sets the "custom_price_reason" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateCustomPriceReason() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateCustomPriceReason()
+	})
+}
+
+// ClearCustomPriceReason clears the value of the "custom_price_reason" field.
+func (u *TenantSubscriptionUpsertBulk) ClearCustomPriceReason() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearCustomPriceReason()
+	})
+}
+
+// SetCustomPriceSetBy sets the "custom_price_set_by" field.
+func (u *TenantSubscriptionUpsertBulk) SetCustomPriceSetBy(v uuid.UUID) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetCustomPriceSetBy(v)
+	})
+}
+
+// UpdateCustomPriceSetBy sets the "custom_price_set_by" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateCustomPriceSetBy() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateCustomPriceSetBy()
+	})
+}
+
+// ClearCustomPriceSetBy clears the value of the "custom_price_set_by" field.
+func (u *TenantSubscriptionUpsertBulk) ClearCustomPriceSetBy() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearCustomPriceSetBy()
+	})
+}
+
+// SetCustomPriceSetAt sets the "custom_price_set_at" field.
+func (u *TenantSubscriptionUpsertBulk) SetCustomPriceSetAt(v time.Time) *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.SetCustomPriceSetAt(v)
+	})
+}
+
+// UpdateCustomPriceSetAt sets the "custom_price_set_at" field to the value that was provided on create.
+func (u *TenantSubscriptionUpsertBulk) UpdateCustomPriceSetAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.UpdateCustomPriceSetAt()
+	})
+}
+
+// ClearCustomPriceSetAt clears the value of the "custom_price_set_at" field.
+func (u *TenantSubscriptionUpsertBulk) ClearCustomPriceSetAt() *TenantSubscriptionUpsertBulk {
+	return u.Update(func(s *TenantSubscriptionUpsert) {
+		s.ClearCustomPriceSetAt()
 	})
 }
 

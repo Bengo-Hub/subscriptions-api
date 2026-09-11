@@ -1259,6 +1259,10 @@ var (
 		{Name: "dormant_at", Type: field.TypeTime, Nullable: true},
 		{Name: "purge_grace_ends_at", Type: field.TypeTime, Nullable: true},
 		{Name: "pending_purge", Type: field.TypeBool, Default: false},
+		{Name: "custom_base_price", Type: field.TypeFloat64, Nullable: true},
+		{Name: "custom_price_reason", Type: field.TypeString, Nullable: true},
+		{Name: "custom_price_set_by", Type: field.TypeUUID, Nullable: true},
+		{Name: "custom_price_set_at", Type: field.TypeTime, Nullable: true},
 		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
@@ -1273,13 +1277,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "tenant_subscriptions_subscription_plans_subscriptions",
-				Columns:    []*schema.Column{TenantSubscriptionsColumns[28]},
+				Columns:    []*schema.Column{TenantSubscriptionsColumns[32]},
 				RefColumns: []*schema.Column{SubscriptionPlansColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "tenant_subscriptions_tenants_subscriptions",
-				Columns:    []*schema.Column{TenantSubscriptionsColumns[29]},
+				Columns:    []*schema.Column{TenantSubscriptionsColumns[33]},
 				RefColumns: []*schema.Column{TenantsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1288,7 +1292,7 @@ var (
 			{
 				Name:    "tenantsubscription_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{TenantSubscriptionsColumns[29]},
+				Columns: []*schema.Column{TenantSubscriptionsColumns[33]},
 			},
 			{
 				Name:    "tenantsubscription_status",

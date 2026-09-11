@@ -11,6 +11,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptioncredit"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 )
 
 type overageLineItem struct {
@@ -32,15 +33,15 @@ type addonLineItem struct {
 }
 
 type invoicePreviewResponse struct {
-	BasePlanPriceKes float64           `json:"base_plan_price_kes"`
-	Currency         string            `json:"currency"`
-	OverageCharges   []overageLineItem `json:"overage_charges"`
-	OverageTotalKes  float64           `json:"overage_total_kes"`
-	CustomAddons     []addonLineItem   `json:"custom_addons"`
-	AddonsTotalKes   int               `json:"addons_total_kes"`
-	CreditsAvailable int               `json:"credits_available_kes"`
-	CreditsToApply   int               `json:"credits_to_apply_kes"`
-	EstimatedTotalKes float64          `json:"estimated_total_kes"`
+	BasePlanPriceKes  float64           `json:"base_plan_price_kes"`
+	Currency          string            `json:"currency"`
+	OverageCharges    []overageLineItem `json:"overage_charges"`
+	OverageTotalKes   float64           `json:"overage_total_kes"`
+	CustomAddons      []addonLineItem   `json:"custom_addons"`
+	AddonsTotalKes    int               `json:"addons_total_kes"`
+	CreditsAvailable  int               `json:"credits_available_kes"`
+	CreditsToApply    int               `json:"credits_to_apply_kes"`
+	EstimatedTotalKes float64           `json:"estimated_total_kes"`
 }
 
 // InvoicePreview returns the projected next billing amount breakdown.
@@ -77,7 +78,7 @@ func (h *BillingHandler) InvoicePreview(w http.ResponseWriter, r *http.Request) 
 	preview := invoicePreviewResponse{Currency: "KES"}
 
 	if sub.Edges.Plan != nil {
-		preview.BasePlanPriceKes = sub.Edges.Plan.BasePrice
+		preview.BasePlanPriceKes = subscriptions.EffectivePrice(sub, sub.Edges.Plan)
 		preview.Currency = sub.Edges.Plan.Currency
 	}
 

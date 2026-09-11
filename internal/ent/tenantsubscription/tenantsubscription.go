@@ -68,6 +68,14 @@ const (
 	FieldPurgeGraceEndsAt = "purge_grace_ends_at"
 	// FieldPendingPurge holds the string denoting the pending_purge field in the database.
 	FieldPendingPurge = "pending_purge"
+	// FieldCustomBasePrice holds the string denoting the custom_base_price field in the database.
+	FieldCustomBasePrice = "custom_base_price"
+	// FieldCustomPriceReason holds the string denoting the custom_price_reason field in the database.
+	FieldCustomPriceReason = "custom_price_reason"
+	// FieldCustomPriceSetBy holds the string denoting the custom_price_set_by field in the database.
+	FieldCustomPriceSetBy = "custom_price_set_by"
+	// FieldCustomPriceSetAt holds the string denoting the custom_price_set_at field in the database.
+	FieldCustomPriceSetAt = "custom_price_set_at"
 	// FieldMetadata holds the string denoting the metadata field in the database.
 	FieldMetadata = "metadata"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -161,6 +169,10 @@ var Columns = []string{
 	FieldDormantAt,
 	FieldPurgeGraceEndsAt,
 	FieldPendingPurge,
+	FieldCustomBasePrice,
+	FieldCustomPriceReason,
+	FieldCustomPriceSetBy,
+	FieldCustomPriceSetAt,
 	FieldMetadata,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -394,6 +406,26 @@ func ByPurgeGraceEndsAt(opts ...sql.OrderTermOption) OrderOption {
 // ByPendingPurge orders the results by the pending_purge field.
 func ByPendingPurge(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPendingPurge, opts...).ToFunc()
+}
+
+// ByCustomBasePrice orders the results by the custom_base_price field.
+func ByCustomBasePrice(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCustomBasePrice, opts...).ToFunc()
+}
+
+// ByCustomPriceReason orders the results by the custom_price_reason field.
+func ByCustomPriceReason(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCustomPriceReason, opts...).ToFunc()
+}
+
+// ByCustomPriceSetBy orders the results by the custom_price_set_by field.
+func ByCustomPriceSetBy(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCustomPriceSetBy, opts...).ToFunc()
+}
+
+// ByCustomPriceSetAt orders the results by the custom_price_set_at field.
+func ByCustomPriceSetAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCustomPriceSetAt, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

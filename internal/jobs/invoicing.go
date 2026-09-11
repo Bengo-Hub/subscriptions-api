@@ -9,6 +9,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 )
 
 // InvoiceLeadDays is how many days before period end a subscription invoice is generated
@@ -78,8 +79,8 @@ func generateUpcomingInvoices(ctx context.Context, log *zap.Logger, orm *ent.Cli
 		if sub.Edges.Tenant != nil && exemptTenantSlug(sub.Edges.Tenant.Slug) {
 			continue
 		}
-		if sub.Edges.Plan == nil || sub.Edges.Plan.BasePrice == 0 {
-			continue // free plans are extended directly by the renewal job
+		if sub.Edges.Plan == nil || subscriptions.EffectivePrice(sub, sub.Edges.Plan) == 0 {
+			continue // free plans (or a custom price waived to 0) are extended directly by the renewal job
 		}
 		res, err := invSvc.GenerateAndSend(ctx, sub, false)
 		if err != nil {

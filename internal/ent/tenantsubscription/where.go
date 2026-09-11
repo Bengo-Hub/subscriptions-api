@@ -176,6 +176,26 @@ func PendingPurge(v bool) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldPendingPurge, v))
 }
 
+// CustomBasePrice applies equality check predicate on the "custom_base_price" field. It's identical to CustomBasePriceEQ.
+func CustomBasePrice(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldCustomBasePrice, v))
+}
+
+// CustomPriceReason applies equality check predicate on the "custom_price_reason" field. It's identical to CustomPriceReasonEQ.
+func CustomPriceReason(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldCustomPriceReason, v))
+}
+
+// CustomPriceSetBy applies equality check predicate on the "custom_price_set_by" field. It's identical to CustomPriceSetByEQ.
+func CustomPriceSetBy(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldCustomPriceSetBy, v))
+}
+
+// CustomPriceSetAt applies equality check predicate on the "custom_price_set_at" field. It's identical to CustomPriceSetAtEQ.
+func CustomPriceSetAt(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldCustomPriceSetAt, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldEQ(FieldCreatedAt, v))
@@ -1304,6 +1324,231 @@ func PendingPurgeEQ(v bool) predicate.TenantSubscription {
 // PendingPurgeNEQ applies the NEQ predicate on the "pending_purge" field.
 func PendingPurgeNEQ(v bool) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.FieldNEQ(FieldPendingPurge, v))
+}
+
+// CustomBasePriceEQ applies the EQ predicate on the "custom_base_price" field.
+func CustomBasePriceEQ(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldCustomBasePrice, v))
+}
+
+// CustomBasePriceNEQ applies the NEQ predicate on the "custom_base_price" field.
+func CustomBasePriceNEQ(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldCustomBasePrice, v))
+}
+
+// CustomBasePriceIn applies the In predicate on the "custom_base_price" field.
+func CustomBasePriceIn(vs ...float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldCustomBasePrice, vs...))
+}
+
+// CustomBasePriceNotIn applies the NotIn predicate on the "custom_base_price" field.
+func CustomBasePriceNotIn(vs ...float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldCustomBasePrice, vs...))
+}
+
+// CustomBasePriceGT applies the GT predicate on the "custom_base_price" field.
+func CustomBasePriceGT(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldCustomBasePrice, v))
+}
+
+// CustomBasePriceGTE applies the GTE predicate on the "custom_base_price" field.
+func CustomBasePriceGTE(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldCustomBasePrice, v))
+}
+
+// CustomBasePriceLT applies the LT predicate on the "custom_base_price" field.
+func CustomBasePriceLT(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldCustomBasePrice, v))
+}
+
+// CustomBasePriceLTE applies the LTE predicate on the "custom_base_price" field.
+func CustomBasePriceLTE(v float64) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldCustomBasePrice, v))
+}
+
+// CustomBasePriceIsNil applies the IsNil predicate on the "custom_base_price" field.
+func CustomBasePriceIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldCustomBasePrice))
+}
+
+// CustomBasePriceNotNil applies the NotNil predicate on the "custom_base_price" field.
+func CustomBasePriceNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldCustomBasePrice))
+}
+
+// CustomPriceReasonEQ applies the EQ predicate on the "custom_price_reason" field.
+func CustomPriceReasonEQ(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldCustomPriceReason, v))
+}
+
+// CustomPriceReasonNEQ applies the NEQ predicate on the "custom_price_reason" field.
+func CustomPriceReasonNEQ(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldCustomPriceReason, v))
+}
+
+// CustomPriceReasonIn applies the In predicate on the "custom_price_reason" field.
+func CustomPriceReasonIn(vs ...string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldCustomPriceReason, vs...))
+}
+
+// CustomPriceReasonNotIn applies the NotIn predicate on the "custom_price_reason" field.
+func CustomPriceReasonNotIn(vs ...string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldCustomPriceReason, vs...))
+}
+
+// CustomPriceReasonGT applies the GT predicate on the "custom_price_reason" field.
+func CustomPriceReasonGT(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldCustomPriceReason, v))
+}
+
+// CustomPriceReasonGTE applies the GTE predicate on the "custom_price_reason" field.
+func CustomPriceReasonGTE(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldCustomPriceReason, v))
+}
+
+// CustomPriceReasonLT applies the LT predicate on the "custom_price_reason" field.
+func CustomPriceReasonLT(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldCustomPriceReason, v))
+}
+
+// CustomPriceReasonLTE applies the LTE predicate on the "custom_price_reason" field.
+func CustomPriceReasonLTE(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldCustomPriceReason, v))
+}
+
+// CustomPriceReasonContains applies the Contains predicate on the "custom_price_reason" field.
+func CustomPriceReasonContains(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldContains(FieldCustomPriceReason, v))
+}
+
+// CustomPriceReasonHasPrefix applies the HasPrefix predicate on the "custom_price_reason" field.
+func CustomPriceReasonHasPrefix(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldHasPrefix(FieldCustomPriceReason, v))
+}
+
+// CustomPriceReasonHasSuffix applies the HasSuffix predicate on the "custom_price_reason" field.
+func CustomPriceReasonHasSuffix(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldHasSuffix(FieldCustomPriceReason, v))
+}
+
+// CustomPriceReasonIsNil applies the IsNil predicate on the "custom_price_reason" field.
+func CustomPriceReasonIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldCustomPriceReason))
+}
+
+// CustomPriceReasonNotNil applies the NotNil predicate on the "custom_price_reason" field.
+func CustomPriceReasonNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldCustomPriceReason))
+}
+
+// CustomPriceReasonEqualFold applies the EqualFold predicate on the "custom_price_reason" field.
+func CustomPriceReasonEqualFold(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEqualFold(FieldCustomPriceReason, v))
+}
+
+// CustomPriceReasonContainsFold applies the ContainsFold predicate on the "custom_price_reason" field.
+func CustomPriceReasonContainsFold(v string) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldContainsFold(FieldCustomPriceReason, v))
+}
+
+// CustomPriceSetByEQ applies the EQ predicate on the "custom_price_set_by" field.
+func CustomPriceSetByEQ(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldCustomPriceSetBy, v))
+}
+
+// CustomPriceSetByNEQ applies the NEQ predicate on the "custom_price_set_by" field.
+func CustomPriceSetByNEQ(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldCustomPriceSetBy, v))
+}
+
+// CustomPriceSetByIn applies the In predicate on the "custom_price_set_by" field.
+func CustomPriceSetByIn(vs ...uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldCustomPriceSetBy, vs...))
+}
+
+// CustomPriceSetByNotIn applies the NotIn predicate on the "custom_price_set_by" field.
+func CustomPriceSetByNotIn(vs ...uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldCustomPriceSetBy, vs...))
+}
+
+// CustomPriceSetByGT applies the GT predicate on the "custom_price_set_by" field.
+func CustomPriceSetByGT(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldCustomPriceSetBy, v))
+}
+
+// CustomPriceSetByGTE applies the GTE predicate on the "custom_price_set_by" field.
+func CustomPriceSetByGTE(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldCustomPriceSetBy, v))
+}
+
+// CustomPriceSetByLT applies the LT predicate on the "custom_price_set_by" field.
+func CustomPriceSetByLT(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldCustomPriceSetBy, v))
+}
+
+// CustomPriceSetByLTE applies the LTE predicate on the "custom_price_set_by" field.
+func CustomPriceSetByLTE(v uuid.UUID) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldCustomPriceSetBy, v))
+}
+
+// CustomPriceSetByIsNil applies the IsNil predicate on the "custom_price_set_by" field.
+func CustomPriceSetByIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldCustomPriceSetBy))
+}
+
+// CustomPriceSetByNotNil applies the NotNil predicate on the "custom_price_set_by" field.
+func CustomPriceSetByNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldCustomPriceSetBy))
+}
+
+// CustomPriceSetAtEQ applies the EQ predicate on the "custom_price_set_at" field.
+func CustomPriceSetAtEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldEQ(FieldCustomPriceSetAt, v))
+}
+
+// CustomPriceSetAtNEQ applies the NEQ predicate on the "custom_price_set_at" field.
+func CustomPriceSetAtNEQ(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNEQ(FieldCustomPriceSetAt, v))
+}
+
+// CustomPriceSetAtIn applies the In predicate on the "custom_price_set_at" field.
+func CustomPriceSetAtIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIn(FieldCustomPriceSetAt, vs...))
+}
+
+// CustomPriceSetAtNotIn applies the NotIn predicate on the "custom_price_set_at" field.
+func CustomPriceSetAtNotIn(vs ...time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotIn(FieldCustomPriceSetAt, vs...))
+}
+
+// CustomPriceSetAtGT applies the GT predicate on the "custom_price_set_at" field.
+func CustomPriceSetAtGT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGT(FieldCustomPriceSetAt, v))
+}
+
+// CustomPriceSetAtGTE applies the GTE predicate on the "custom_price_set_at" field.
+func CustomPriceSetAtGTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldGTE(FieldCustomPriceSetAt, v))
+}
+
+// CustomPriceSetAtLT applies the LT predicate on the "custom_price_set_at" field.
+func CustomPriceSetAtLT(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLT(FieldCustomPriceSetAt, v))
+}
+
+// CustomPriceSetAtLTE applies the LTE predicate on the "custom_price_set_at" field.
+func CustomPriceSetAtLTE(v time.Time) predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldLTE(FieldCustomPriceSetAt, v))
+}
+
+// CustomPriceSetAtIsNil applies the IsNil predicate on the "custom_price_set_at" field.
+func CustomPriceSetAtIsNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldIsNull(FieldCustomPriceSetAt))
+}
+
+// CustomPriceSetAtNotNil applies the NotNil predicate on the "custom_price_set_at" field.
+func CustomPriceSetAtNotNil() predicate.TenantSubscription {
+	return predicate.TenantSubscription(sql.FieldNotNull(FieldCustomPriceSetAt))
 }
 
 // MetadataIsNil applies the IsNil predicate on the "metadata" field.

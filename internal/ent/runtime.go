@@ -993,15 +993,15 @@ func init() {
 	// tenantsubscription.DefaultPendingPurge holds the default value on creation for the pending_purge field.
 	tenantsubscription.DefaultPendingPurge = tenantsubscriptionDescPendingPurge.Default.(bool)
 	// tenantsubscriptionDescMetadata is the schema descriptor for metadata field.
-	tenantsubscriptionDescMetadata := tenantsubscriptionFields[27].Descriptor()
+	tenantsubscriptionDescMetadata := tenantsubscriptionFields[31].Descriptor()
 	// tenantsubscription.DefaultMetadata holds the default value on creation for the metadata field.
 	tenantsubscription.DefaultMetadata = tenantsubscriptionDescMetadata.Default.(map[string]interface{})
 	// tenantsubscriptionDescCreatedAt is the schema descriptor for created_at field.
-	tenantsubscriptionDescCreatedAt := tenantsubscriptionFields[28].Descriptor()
+	tenantsubscriptionDescCreatedAt := tenantsubscriptionFields[32].Descriptor()
 	// tenantsubscription.DefaultCreatedAt holds the default value on creation for the created_at field.
 	tenantsubscription.DefaultCreatedAt = tenantsubscriptionDescCreatedAt.Default.(func() time.Time)
 	// tenantsubscriptionDescUpdatedAt is the schema descriptor for updated_at field.
-	tenantsubscriptionDescUpdatedAt := tenantsubscriptionFields[29].Descriptor()
+	tenantsubscriptionDescUpdatedAt := tenantsubscriptionFields[33].Descriptor()
 	// tenantsubscription.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	tenantsubscription.DefaultUpdatedAt = tenantsubscriptionDescUpdatedAt.Default.(func() time.Time)
 	// tenantsubscription.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

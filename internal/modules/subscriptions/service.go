@@ -1598,6 +1598,22 @@ func (s *Service) SetAllowOverage(ctx context.Context, tenantID uuid.UUID, enabl
 	return s.GetSubscriptionResult(ctx, tenantID)
 }
 
+// EffectivePrice returns the recurring price that should actually be charged for sub: its own
+// platform-admin custom_base_price override when set, else the plan's list base_price. Lets one
+// tenant be billed a sales-agreed rate on the same plan tier every other tenant pays the standard
+// price for, without creating a new plan row. Every recurring-billing call site (renewal,
+// invoicing, dunning retries, admin revenue listings, billing previews) must read through this
+// instead of plan.BasePrice directly — see the ent schema doc on custom_base_price.
+func EffectivePrice(sub *ent.TenantSubscription, plan *ent.SubscriptionPlan) float64 {
+	if sub != nil && sub.CustomBasePrice != nil {
+		return *sub.CustomBasePrice
+	}
+	if plan == nil {
+		return 0
+	}
+	return plan.BasePrice
+}
+
 func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.SubscriptionPlan) *SubscriptionResult {
 	result := &SubscriptionResult{
 		ID:                 sub.ID,

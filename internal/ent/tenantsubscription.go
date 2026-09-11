@@ -73,6 +73,14 @@ type TenantSubscription struct {
 	PurgeGraceEndsAt *time.Time `json:"purge_grace_ends_at,omitempty"`
 	// True once the grace window elapsed unpaid: account suspended and awaiting platform-owner-confirmed data purge
 	PendingPurge bool `json:"pending_purge,omitempty"`
+	// Platform-admin override of the recurring price for this subscription specifically. Nil = use the plan's own base_price
+	CustomBasePrice *float64 `json:"custom_base_price,omitempty"`
+	// Free-text context for why the custom price was set (sales agreement, negotiated rate, etc.)
+	CustomPriceReason *string `json:"custom_price_reason,omitempty"`
+	// Platform-admin user id (auth-service subject) who set the custom price
+	CustomPriceSetBy *uuid.UUID `json:"custom_price_set_by,omitempty"`
+	// When the custom price was last set or cleared
+	CustomPriceSetAt *time.Time `json:"custom_price_set_at,omitempty"`
 	// Metadata holds the value of the "metadata" field.
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -167,17 +175,17 @@ func (*TenantSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case tenantsubscription.FieldPaymentMethodID, tenantsubscription.FieldReferredBy, tenantsubscription.FieldTermsAcceptedBy:
+		case tenantsubscription.FieldPaymentMethodID, tenantsubscription.FieldReferredBy, tenantsubscription.FieldTermsAcceptedBy, tenantsubscription.FieldCustomPriceSetBy:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case tenantsubscription.FieldMetadata:
 			values[i] = new([]byte)
 		case tenantsubscription.FieldAllowOverage, tenantsubscription.FieldReferralBonusPaid, tenantsubscription.FieldPendingPurge:
 			values[i] = new(sql.NullBool)
-		case tenantsubscription.FieldAppliedDiscount, tenantsubscription.FieldSetupFeeAmount:
+		case tenantsubscription.FieldAppliedDiscount, tenantsubscription.FieldSetupFeeAmount, tenantsubscription.FieldCustomBasePrice:
 			values[i] = new(sql.NullFloat64)
-		case tenantsubscription.FieldStatus, tenantsubscription.FieldCancelReason, tenantsubscription.FieldBillingCycle, tenantsubscription.FieldBundleCode, tenantsubscription.FieldReferralCode, tenantsubscription.FieldTermsVersion:
+		case tenantsubscription.FieldStatus, tenantsubscription.FieldCancelReason, tenantsubscription.FieldBillingCycle, tenantsubscription.FieldBundleCode, tenantsubscription.FieldReferralCode, tenantsubscription.FieldTermsVersion, tenantsubscription.FieldCustomPriceReason:
 			values[i] = new(sql.NullString)
-		case tenantsubscription.FieldTrialEndsAt, tenantsubscription.FieldCurrentPeriodStart, tenantsubscription.FieldCurrentPeriodEnd, tenantsubscription.FieldCancelledAt, tenantsubscription.FieldSetupFeeChargedAt, tenantsubscription.FieldOverageEnabledAt, tenantsubscription.FieldTermsAcceptedAt, tenantsubscription.FieldLastActivityAt, tenantsubscription.FieldDormantAt, tenantsubscription.FieldPurgeGraceEndsAt, tenantsubscription.FieldCreatedAt, tenantsubscription.FieldUpdatedAt:
+		case tenantsubscription.FieldTrialEndsAt, tenantsubscription.FieldCurrentPeriodStart, tenantsubscription.FieldCurrentPeriodEnd, tenantsubscription.FieldCancelledAt, tenantsubscription.FieldSetupFeeChargedAt, tenantsubscription.FieldOverageEnabledAt, tenantsubscription.FieldTermsAcceptedAt, tenantsubscription.FieldLastActivityAt, tenantsubscription.FieldDormantAt, tenantsubscription.FieldPurgeGraceEndsAt, tenantsubscription.FieldCustomPriceSetAt, tenantsubscription.FieldCreatedAt, tenantsubscription.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		case tenantsubscription.FieldID, tenantsubscription.FieldTenantID, tenantsubscription.FieldPlanID:
 			values[i] = new(uuid.UUID)
@@ -373,6 +381,34 @@ func (_m *TenantSubscription) assignValues(columns []string, values []any) error
 			} else if value.Valid {
 				_m.PendingPurge = value.Bool
 			}
+		case tenantsubscription.FieldCustomBasePrice:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field custom_base_price", values[i])
+			} else if value.Valid {
+				_m.CustomBasePrice = new(float64)
+				*_m.CustomBasePrice = value.Float64
+			}
+		case tenantsubscription.FieldCustomPriceReason:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field custom_price_reason", values[i])
+			} else if value.Valid {
+				_m.CustomPriceReason = new(string)
+				*_m.CustomPriceReason = value.String
+			}
+		case tenantsubscription.FieldCustomPriceSetBy:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field custom_price_set_by", values[i])
+			} else if value.Valid {
+				_m.CustomPriceSetBy = new(uuid.UUID)
+				*_m.CustomPriceSetBy = *value.S.(*uuid.UUID)
+			}
+		case tenantsubscription.FieldCustomPriceSetAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field custom_price_set_at", values[i])
+			} else if value.Valid {
+				_m.CustomPriceSetAt = new(time.Time)
+				*_m.CustomPriceSetAt = value.Time
+			}
 		case tenantsubscription.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
@@ -566,6 +602,26 @@ func (_m *TenantSubscription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("pending_purge=")
 	builder.WriteString(fmt.Sprintf("%v", _m.PendingPurge))
+	builder.WriteString(", ")
+	if v := _m.CustomBasePrice; v != nil {
+		builder.WriteString("custom_base_price=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.CustomPriceReason; v != nil {
+		builder.WriteString("custom_price_reason=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.CustomPriceSetBy; v != nil {
+		builder.WriteString("custom_price_set_by=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.CustomPriceSetAt; v != nil {
+		builder.WriteString("custom_price_set_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))

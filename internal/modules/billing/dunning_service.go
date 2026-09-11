@@ -141,7 +141,7 @@ func initiateAutoCharge(ctx context.Context, log *zap.Logger, sub *ent.TenantSub
 	}
 
 	req := map[string]any{
-		"amount":         plan.BasePrice,
+		"amount":         subscriptions.EffectivePrice(sub, plan),
 		"currency":       plan.Currency,
 		"payment_method": "auto",
 		"reference_id":   sub.ID.String(),

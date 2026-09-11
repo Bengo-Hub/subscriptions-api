@@ -13,6 +13,7 @@ import (
 	serviceclient "github.com/Bengo-Hub/shared-service-client"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -94,8 +95,9 @@ func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 	if sub.Edges.Plan != nil {
 		billing["planCode"] = sub.Edges.Plan.PlanCode
 		billing["planName"] = sub.Edges.Plan.Name
-		billing["amount"] = sub.Edges.Plan.BasePrice
-		billing["nextAmount"] = sub.Edges.Plan.BasePrice // alias for UI compatibility
+		effectivePrice := subscriptions.EffectivePrice(sub, sub.Edges.Plan)
+		billing["amount"] = effectivePrice
+		billing["nextAmount"] = effectivePrice // alias for UI compatibility
 		billing["currency"] = sub.Edges.Plan.Currency
 		billing["planType"] = string(sub.Edges.Plan.PlanType)
 		// Resolve billing scenario so the UI can hide renewal/auto-renew for

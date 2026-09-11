@@ -105,13 +105,14 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 	if months <= 0 {
 		months = 1
 	}
+	unitPrice := subscriptions.EffectivePrice(sub, plan)
 	lines = append(lines, map[string]any{
-		"description": fmt.Sprintf("Subscription: %s (%s — %d month(s) × %s %.2f)", plan.Name, sub.BillingCycle, months, currency, plan.BasePrice),
+		"description": fmt.Sprintf("Subscription: %s (%s — %d month(s) × %s %.2f)", plan.Name, sub.BillingCycle, months, currency, unitPrice),
 		"quantity":    months,
-		"unit_price":  plan.BasePrice,
+		"unit_price":  unitPrice,
 		"tax_rate":    s.vatRate,
 	})
-	taxable += plan.BasePrice * float64(months)
+	taxable += unitPrice * float64(months)
 
 	// ISP Billing usage charges (service_tag "isp_billing"): threshold-gated service
 	// charge on monthly hotspot sales + per-active-PPPoE-subscriber fee, read from the

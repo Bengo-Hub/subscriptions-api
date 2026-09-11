@@ -13,6 +13,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 )
 
 // CouponHandler manages subscription coupon redemption.
@@ -76,7 +77,7 @@ func (h *CouponHandler) RedeemCoupon(w http.ResponseWriter, r *http.Request) {
 	planPrice := 0.0
 	if sub.Edges.Plan != nil {
 		planCode = sub.Edges.Plan.PlanCode
-		planPrice = sub.Edges.Plan.BasePrice
+		planPrice = subscriptions.EffectivePrice(sub, sub.Edges.Plan)
 	}
 
 	creditsEarned, err := h.couponService.RedeemCoupon(ctx, tenantID, body.Code, planCode, planPrice)
