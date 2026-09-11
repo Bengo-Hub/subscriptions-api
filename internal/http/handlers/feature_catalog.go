@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -13,6 +14,29 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/featuredefinition"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 )
+
+// planFamily mirrors shared-ui-lib's feature-gate.tsx planFamily() exactly: a plan code's
+// family, upper-cased. PowerSuite plans return their first TWO segments (POWERSUITE_DUKA_GOLD
+// -> "POWERSUITE_DUKA") because the PowerSuite line encodes a further disjoint use-case
+// sub-family (Hospitality/Retail/Pharmacy) as its second segment; every other product line
+// (ERP_*, LIBRARY_*, TRULOAD_*, ...) has no such split, so the first segment is correct there.
+// Used to prefer an in-family upgrade suggestion (e.g. "upgrade your own PowerSuite Duka tier")
+// over a globally-cheaper but practically-irrelevant cross-product one (e.g. suggesting a bare
+// ERP_STARTER purchase to a PowerSuite tenant just because it has a lower tier_order).
+func planFamily(code string) string {
+	upper := strings.ToUpper(code)
+	if strings.HasPrefix(upper, "POWERSUITE_") {
+		parts := strings.SplitN(upper, "_", 3)
+		if len(parts) >= 2 {
+			return parts[0] + "_" + parts[1]
+		}
+		return upper
+	}
+	if i := strings.Index(upper, "_"); i != -1 {
+		return upper[:i]
+	}
+	return upper
+}
 
 // FeatureCatalogHandler serves the platform-wide feature/limit catalog that
 // powers the admin plan-builder UI (service-grouped, categorized feature picker)
@@ -96,15 +120,26 @@ func (h *FeatureCatalogHandler) minUnlockingPlans(ctx context.Context) map[strin
 // is the "which plan unlocks this WHOLE MODULE" resolver that minUnlockingPlans (feature-code
 // -keyed) can't answer on its own; it powers the "service_not_subscribed" gate's "Upgrade to
 // <specific plan>" UX rather than a generic toast.
-func (h *FeatureCatalogHandler) minUnlockingPlansByServiceTag(ctx context.Context) map[string]minPlan {
-	res := map[string]minPlan{}
+//
+// currentPlanCode, when non-empty, biases the pick toward the CALLER'S OWN product family
+// (via planFamily) — e.g. a PowerSuite Duka tenant missing "erp" gets "upgrade to PowerSuite
+// Duka Professional", not the globally-cheapest-by-tier_order candidate, which could be an
+// unrelated standalone product like ERP_STARTER (tier_order 1) that nobody actually wants to
+// bolt on beside their existing PowerSuite subscription. Falls back to the global cheapest when
+// no same-family plan grants the tag (e.g. a Library tenant has no in-family path to "erp") or
+// when currentPlanCode is empty (unauthenticated/tenant-agnostic callers).
+func (h *FeatureCatalogHandler) minUnlockingPlansByServiceTag(ctx context.Context, currentPlanCode string) map[string]minPlan {
+	overall := map[string]minPlan{}
+	sameFamily := map[string]minPlan{}
+	family := planFamily(currentPlanCode)
+
 	plans, err := h.orm.SubscriptionPlan.Query().
 		Where(subscriptionplan.IsActive(true)).
 		WithFeatures().
 		All(ctx)
 	if err != nil {
 		h.log.Warn("min-unlocking-plans-by-tag: load plans failed (service upgrade targets omitted)", zap.Error(err))
-		return res
+		return overall
 	}
 
 	featureCodeSet := map[string]bool{}
@@ -126,7 +161,7 @@ func (h *FeatureCatalogHandler) minUnlockingPlansByServiceTag(ctx context.Contex
 			All(ctx)
 		if err != nil {
 			h.log.Warn("min-unlocking-plans-by-tag: load feature definitions failed (service upgrade targets omitted)", zap.Error(err))
-			return res
+			return overall
 		}
 		for _, r := range rows {
 			tagByFeature[r.FeatureCode] = r.ServiceTag
@@ -147,14 +182,25 @@ func (h *FeatureCatalogHandler) minUnlockingPlansByServiceTag(ctx context.Contex
 			}
 		}
 		cand := minPlan{Code: p.PlanCode, Name: p.Name, Tier: p.TierOrder, Price: p.BasePrice}
+		inFamily := family != "" && planFamily(p.PlanCode) == family
 		for tag := range tags {
-			cur, ok := res[tag]
-			if !ok || cand.Tier < cur.Tier || (cand.Tier == cur.Tier && cand.Price < cur.Price) {
-				res[tag] = cand
+			if cur, ok := overall[tag]; !ok || cand.Tier < cur.Tier || (cand.Tier == cur.Tier && cand.Price < cur.Price) {
+				overall[tag] = cand
+			}
+			if inFamily {
+				if cur, ok := sameFamily[tag]; !ok || cand.Tier < cur.Tier || (cand.Tier == cur.Tier && cand.Price < cur.Price) {
+					sameFamily[tag] = cand
+				}
 			}
 		}
 	}
-	return res
+
+	// Prefer the in-family candidate per tag; fall back to the global cheapest where the
+	// tenant's own family grants nothing (or currentPlanCode was empty).
+	for tag, cand := range sameFamily {
+		overall[tag] = cand
+	}
+	return overall
 }
 
 func toFeatureDefinitionDTO(e *ent.FeatureDefinition) featureDefinitionDTO {
@@ -187,11 +233,13 @@ func toFeatureDefinitionDTO(e *ent.FeatureDefinition) featureDefinitionDTO {
 // @Produce json
 // @Param service query string false "Filter by service_tag (ordering, pos, inventory, treasury, ...)"
 // @Param kind query string false "Filter by kind (FEATURE | LIMIT)"
+// @Param plan query string false "Caller's current plan_code — biases serviceUnlockPlans toward an in-family upgrade (e.g. POWERSUITE_DUKA_BASIC -> POWERSUITE_DUKA_PRO) instead of the globally cheapest cross-product plan"
 // @Success 200 {object} map[string]interface{}
 // @Router /features/catalog [get]
 func (h *FeatureCatalogHandler) ListCatalog(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	q := h.orm.FeatureDefinition.Query().Where(featuredefinition.IsActive(true))
+	currentPlanCode := r.URL.Query().Get("plan")
 
 	if svc := r.URL.Query().Get("service"); svc != "" {
 		q = q.Where(featuredefinition.ServiceTagEQ(svc))
@@ -237,7 +285,7 @@ func (h *FeatureCatalogHandler) ListCatalog(w http.ResponseWriter, r *http.Reque
 		// serviceUnlockPlans: serviceTag -> cheapest plan that grants whole-module access to it
 		// (e.g. {"erp": {"planCode":"POWERSUITE_DUKA_PRO", "tierOrder":2, ...}}). Powers the
 		// RequireServiceAccess "service_not_subscribed" gate's named-plan upgrade UX.
-		"serviceUnlockPlans": h.minUnlockingPlansByServiceTag(ctx),
+		"serviceUnlockPlans": h.minUnlockingPlansByServiceTag(ctx, currentPlanCode),
 	})
 }
 
