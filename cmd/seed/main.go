@@ -170,6 +170,12 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 		return fmt.Errorf("seed library plans: %w", err)
 	}
 
+	// 2.15b Seed Library annual support plans (SUPPORT_LIBRARY_*), mirroring the PowerSuite
+	// support-plan schedule (12k/18k/25k/yr) — same entitlement-only, is_public=false shape.
+	if err := seedLibrarySupportPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed library support plans: %w", err)
+	}
+
 	// 2.16 Retire the per-cycle ANNUAL plan rows (*_YEARLY duplicates). Billing period is
 	// now a per-subscription choice (MONTHLY/SEMI_ANNUAL/ANNUAL on one monthly-priced plan;
 	// 6+ months waives the setup fee). Must run after every plan seed above.
