@@ -52,12 +52,15 @@ type featureDefinitionDTO struct {
 	MinTierOrder int    `json:"minTierOrder,omitempty"`
 }
 
-// minPlan is the cheapest plan that unlocks a given feature code.
+// minPlan is the cheapest plan that unlocks a given feature code or service tag. Exported
+// fields so it can also be marshalled directly as the serviceUnlockPlans DTO (minUnlockingPlans
+// keeps mapping it into featureDefinitionDTO's own Min* fields, so both resolvers share the
+// same candidate-comparison shape).
 type minPlan struct {
-	code  string
-	name  string
-	tier  int
-	price float64
+	Code  string  `json:"planCode"`
+	Name  string  `json:"planName"`
+	Tier  int     `json:"tierOrder"`
+	Price float64 `json:"price"`
 }
 
 // minUnlockingPlans builds featureCode → cheapest unlocking plan, by lowest (tier_order, base_price)
@@ -77,10 +80,77 @@ func (h *FeatureCatalogHandler) minUnlockingPlans(ctx context.Context) map[strin
 			if !pf.IsIncluded {
 				continue
 			}
-			cand := minPlan{code: p.PlanCode, name: p.Name, tier: p.TierOrder, price: p.BasePrice}
+			cand := minPlan{Code: p.PlanCode, Name: p.Name, Tier: p.TierOrder, Price: p.BasePrice}
 			cur, ok := res[pf.FeatureCode]
-			if !ok || cand.tier < cur.tier || (cand.tier == cur.tier && cand.price < cur.price) {
+			if !ok || cand.Tier < cur.Tier || (cand.Tier == cur.Tier && cand.Price < cur.Price) {
 				res[pf.FeatureCode] = cand
+			}
+		}
+	}
+	return res
+}
+
+// minUnlockingPlansByServiceTag builds serviceTag → cheapest plan whose UNION of (its own
+// service_tag + every included feature's service_tag) contains that tag — the same union logic
+// entitlements.go's resolveActiveServiceTags applies per-tenant, applied per-plan instead. This
+// is the "which plan unlocks this WHOLE MODULE" resolver that minUnlockingPlans (feature-code
+// -keyed) can't answer on its own; it powers the "service_not_subscribed" gate's "Upgrade to
+// <specific plan>" UX rather than a generic toast.
+func (h *FeatureCatalogHandler) minUnlockingPlansByServiceTag(ctx context.Context) map[string]minPlan {
+	res := map[string]minPlan{}
+	plans, err := h.orm.SubscriptionPlan.Query().
+		Where(subscriptionplan.IsActive(true)).
+		WithFeatures().
+		All(ctx)
+	if err != nil {
+		h.log.Warn("min-unlocking-plans-by-tag: load plans failed (service upgrade targets omitted)", zap.Error(err))
+		return res
+	}
+
+	featureCodeSet := map[string]bool{}
+	for _, p := range plans {
+		for _, pf := range p.Edges.Features {
+			if pf.IsIncluded {
+				featureCodeSet[pf.FeatureCode] = true
+			}
+		}
+	}
+	featureCodes := make([]string, 0, len(featureCodeSet))
+	for c := range featureCodeSet {
+		featureCodes = append(featureCodes, c)
+	}
+	tagByFeature := map[string]string{}
+	if len(featureCodes) > 0 {
+		rows, err := h.orm.FeatureDefinition.Query().
+			Where(featuredefinition.FeatureCodeIn(featureCodes...)).
+			All(ctx)
+		if err != nil {
+			h.log.Warn("min-unlocking-plans-by-tag: load feature definitions failed (service upgrade targets omitted)", zap.Error(err))
+			return res
+		}
+		for _, r := range rows {
+			tagByFeature[r.FeatureCode] = r.ServiceTag
+		}
+	}
+
+	for _, p := range plans {
+		tags := map[string]bool{}
+		if p.ServiceTag != nil && *p.ServiceTag != "" {
+			tags[*p.ServiceTag] = true
+		}
+		for _, pf := range p.Edges.Features {
+			if !pf.IsIncluded {
+				continue
+			}
+			if t := tagByFeature[pf.FeatureCode]; t != "" {
+				tags[t] = true
+			}
+		}
+		cand := minPlan{Code: p.PlanCode, Name: p.Name, Tier: p.TierOrder, Price: p.BasePrice}
+		for tag := range tags {
+			cur, ok := res[tag]
+			if !ok || cand.Tier < cur.Tier || (cand.Tier == cur.Tier && cand.Price < cur.Price) {
+				res[tag] = cand
 			}
 		}
 	}
@@ -149,9 +219,9 @@ func (h *FeatureCatalogHandler) ListCatalog(w http.ResponseWriter, r *http.Reque
 	for i, d := range defs {
 		items[i] = toFeatureDefinitionDTO(d)
 		if mp, ok := minPlans[d.FeatureCode]; ok {
-			items[i].MinPlanCode = mp.code
-			items[i].MinTierLabel = mp.name
-			items[i].MinTierOrder = mp.tier
+			items[i].MinPlanCode = mp.Code
+			items[i].MinTierLabel = mp.Name
+			items[i].MinTierOrder = mp.Tier
 		}
 		services[d.ServiceTag] = true
 	}
@@ -164,6 +234,10 @@ func (h *FeatureCatalogHandler) ListCatalog(w http.ResponseWriter, r *http.Reque
 		"features": items,
 		"services": serviceTags,
 		"count":    len(items),
+		// serviceUnlockPlans: serviceTag -> cheapest plan that grants whole-module access to it
+		// (e.g. {"erp": {"planCode":"POWERSUITE_DUKA_PRO", "tierOrder":2, ...}}). Powers the
+		// RequireServiceAccess "service_not_subscribed" gate's named-plan upgrade UX.
+		"serviceUnlockPlans": h.minUnlockingPlansByServiceTag(ctx),
 	})
 }
 
