@@ -9,6 +9,7 @@ import (
 
 	eventslib "github.com/Bengo-Hub/shared-events"
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
@@ -253,6 +254,21 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 		return nil
 	}
 
+	// support_fee_cycle: annual support-fee payment for a perpetual/one-time-license tenant
+	// (internal/modules/billing/support_fee_invoice.go's GenerateAndSendSupportFeeInvoice) —
+	// mark the SupportFeeCycle PAID and clear its grace block, rather than falling through to
+	// subscription renewal below (a support-fee payment never changes the tenant's actual
+	// license/plan, so RenewSubscription must never be called for it).
+	if refType == "support_fee_cycle" {
+		if err := c.markSupportFeeCyclePaid(ctx, tenantID); err != nil {
+			c.log.Error("failed to mark support fee cycle paid", zap.String("tenant_id", tenantIDStr), zap.Error(err))
+			return err
+		}
+		c.log.Info("support fee cycle paid via NATS payment event", zap.String("tenant_id", tenantIDStr))
+		c.markProcessed(ctx, eventID)
+		return nil
+	}
+
 	// "subscription_renewal" is the reference_type used by the auto-renewal job's intents
 	// (jobs/renewal.go) — without it here, auto-renewal payments never extended the period.
 	if refType != "subscription" && refType != "renewal" && refType != "subscription_renewal" {
@@ -376,6 +392,35 @@ func jsonNumberToInt(n json.Number) int {
 		return int(f)
 	}
 	return 0
+}
+
+// markSupportFeeCyclePaid marks the tenant's most recent payable (INVOICED or OVERDUE)
+// SupportFeeCycle as PAID and clears its grace block. A tenant only ever has at most one cycle
+// in a payable state at a time (the enrollment job only creates the NEXT cycle once the current
+// one's due_date has passed), so resolving by tenant_id + latest cycle_number is unambiguous —
+// mirrors the existing "one subscription per tenant" lookup pattern used elsewhere in this file
+// (saveCardAuthorization) rather than requiring the event to carry the cycle id explicitly.
+func (c *TreasuryPaymentConsumer) markSupportFeeCyclePaid(ctx context.Context, tenantID uuid.UUID) error {
+	cycle, err := c.orm.SupportFeeCycle.Query().
+		Where(
+			supportfeecycle.TenantIDEQ(tenantID),
+			supportfeecycle.StatusIn(supportfeecycle.StatusINVOICED, supportfeecycle.StatusOVERDUE),
+		).
+		Order(ent.Desc(supportfeecycle.FieldCycleNumber)).
+		First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			c.log.Warn("support fee payment received but no payable cycle found", zap.String("tenant_id", tenantID.String()))
+			return nil
+		}
+		return err
+	}
+	_, err = c.orm.SupportFeeCycle.UpdateOneID(cycle.ID).
+		SetStatus(supportfeecycle.StatusPAID).
+		SetPaidAt(time.Now().UTC()).
+		ClearGraceUntil().
+		Save(ctx)
+	return err
 }
 
 func (c *TreasuryPaymentConsumer) saveCardAuthorization(ctx context.Context, tenantID uuid.UUID, authCode, cardType, last4, expMonth, expYear string) error {

@@ -1614,6 +1614,20 @@ func EffectivePrice(sub *ent.TenantSubscription, plan *ent.SubscriptionPlan) flo
 	return plan.BasePrice
 }
 
+// EffectiveSupportPrice mirrors EffectivePrice's nil-check pattern for a SupportFeeCycle's
+// own custom_price override — the same per-tenant sales-agreement mechanism as
+// TenantSubscription.custom_base_price, applied to annual support-fee billing instead of the
+// recurring subscription price.
+func EffectiveSupportPrice(cycle *ent.SupportFeeCycle) float64 {
+	if cycle == nil {
+		return 0
+	}
+	if cycle.CustomPrice != nil {
+		return *cycle.CustomPrice
+	}
+	return cycle.BasePrice
+}
+
 func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.SubscriptionPlan) *SubscriptionResult {
 	result := &SubscriptionResult{
 		ID:                 sub.ID,

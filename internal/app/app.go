@@ -395,6 +395,13 @@ func (a *App) Run(ctx context.Context) error {
 		a.log.Info("grace reminder job started")
 	}
 
+	// Start annual support-fee jobs (enrollment, T-7 invoicing, overdue/grace transition,
+	// grace reminders) for perpetual/one-time-license tenants (e.g. boi-enterprises, mccl).
+	if a.orm != nil && a.subscriptionSvc != nil {
+		go jobs.StartSupportFeeJob(ctx, a.log, a.orm, a.subscriptionSvc, a.invoiceSvc)
+		a.log.Info("support fee jobs started")
+	}
+
 	// Start dormancy job (daily: flag >60d-idle accounts, 7-day grace, then suspend + queue purge)
 	if a.orm != nil && a.subscriptionSvc != nil {
 		go jobs.StartDormancyJob(ctx, a.log, a.orm, a.subscriptionSvc)
