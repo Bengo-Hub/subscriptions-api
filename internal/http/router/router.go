@@ -400,6 +400,8 @@ func New(
 					r.Post("/{tenant_id}/subscription/invoice/resend", platformHandler.ResendSubscriptionInvoice)
 					r.Get("/{tenant_id}/subscription/invoice", platformHandler.GetSubscriptionInvoice)
 					r.Get("/{tenant_id}/subscription/invoice/pdf", platformHandler.DownloadSubscriptionInvoicePDF)
+					// Annual support-fee cycle (perpetual/one-time-license tenants only)
+					r.Get("/{tenant_id}/support-fee-cycle", platformHandler.GetTenantSupportFeeCycle)
 				})
 
 				r.Route("/admin/subscriptions", func(r chi.Router) {
@@ -417,6 +419,21 @@ func New(
 					r.Put("/{id}", platformHandler.UpdateSubscription)
 					// Convenience alias for status-only updates (kept for backward compatibility)
 					r.Put("/{id}/status", platformHandler.UpdateSubscriptionStatus)
+				})
+
+				// Per-tenant custom annual support-fee price (sales-agreement basis) — mirrors
+				// admin/subscriptions' custom_base_price mechanism, applied to a SupportFeeCycle.
+				r.Route("/admin/support-fee-cycles", func(r chi.Router) {
+					r.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							if !httpware.IsPlatformOwner(r.Context()) {
+								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+								return
+							}
+							next.ServeHTTP(w, r)
+						})
+					})
+					r.Put("/{id}", platformHandler.UpdateSupportFeeCycle)
 				})
 
 				// Platform admin: custom addon CRUD per tenant

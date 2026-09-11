@@ -16,6 +16,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
@@ -1195,6 +1196,185 @@ func (h *PlatformHandler) UpdateSubscription(w http.ResponseWriter, r *http.Requ
 		zap.String("tenant_id", sub.TenantID.String()),
 	)
 	writeJSON(w, http.StatusOK, updated)
+}
+
+// supportFeeCycleDTO is the admin-facing shape for a SupportFeeCycle row — mirrors the
+// tenant-subscription list's HasCustomPrice/effective-price presentation.
+type supportFeeCycleDTO struct {
+	ID              uuid.UUID  `json:"id"`
+	TenantID        uuid.UUID  `json:"tenant_id"`
+	SupportPlanCode string     `json:"support_plan_code"`
+	CycleNumber     int        `json:"cycle_number"`
+	AnchorDate      time.Time  `json:"anchor_date"`
+	DueDate         time.Time  `json:"due_date"`
+	Status          string     `json:"status"`
+	PaidAt          *time.Time `json:"paid_at,omitempty"`
+	GraceUntil      *time.Time `json:"grace_until,omitempty"`
+	BasePrice       float64    `json:"base_price"`
+	CustomPrice     *float64   `json:"custom_price,omitempty"`
+	EffectivePrice  float64    `json:"effective_price"`
+	HasCustomPrice  bool       `json:"has_custom_price"`
+	CustomReason    *string    `json:"custom_price_reason,omitempty"`
+}
+
+func toSupportFeeCycleDTO(c *ent.SupportFeeCycle, planCode string) supportFeeCycleDTO {
+	dto := supportFeeCycleDTO{
+		ID:              c.ID,
+		TenantID:        c.TenantID,
+		SupportPlanCode: planCode,
+		CycleNumber:     c.CycleNumber,
+		AnchorDate:      c.AnchorDate,
+		DueDate:         c.DueDate,
+		Status:          string(c.Status),
+		PaidAt:          c.PaidAt,
+		GraceUntil:      c.GraceUntil,
+		BasePrice:       c.BasePrice,
+		CustomPrice:     c.CustomPrice,
+		EffectivePrice:  subscriptions.EffectiveSupportPrice(c),
+		HasCustomPrice:  c.CustomPrice != nil,
+		CustomReason:    c.CustomPriceReason,
+	}
+	return dto
+}
+
+// GetTenantSupportFeeCycle godoc
+// @Summary Get a tenant's current annual support-fee cycle (admin)
+// @Description Returns the tenant's latest SupportFeeCycle (by cycle_number), or 404 if the
+// @Description tenant has no support-fee obligation at all (not a one-time-license tenant, or
+// @Description its family has no SUPPORT_* plan, or the enrollment job hasn't run yet).
+// @Tags Platform
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Success 200 {object} supportFeeCycleDTO
+// @Failure 404 {object} map[string]string
+// @Router /admin/tenants/{tenant_id}/support-fee-cycle [get]
+func (h *PlatformHandler) GetTenantSupportFeeCycle(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	tenantIDStr := chi.URLParam(r, "tenant_id")
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant id"})
+		return
+	}
+
+	cycle, err := h.client.SupportFeeCycle.Query().
+		Where(supportfeecycle.TenantIDEQ(tenantID)).
+		Order(ent.Desc(supportfeecycle.FieldCycleNumber)).
+		WithSupportPlan().
+		First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "tenant has no support-fee cycle"})
+			return
+		}
+		h.log.Error("failed to get support fee cycle", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	planCode := ""
+	if cycle.Edges.SupportPlan != nil {
+		planCode = cycle.Edges.SupportPlan.PlanCode
+	}
+	writeJSON(w, http.StatusOK, toSupportFeeCycleDTO(cycle, planCode))
+}
+
+// UpdateSupportFeeCycle godoc
+// @Summary Set or clear a tenant's custom annual support-fee price (admin)
+// @Description Mirrors UpdateSubscription's custom_base_price mechanism exactly, applied to a
+// @Description SupportFeeCycle instead of a TenantSubscription — a per-tenant sales-agreement
+// @Description override on top of the SUPPORT_* catalog's base price. Other tenants on the same
+// @Description support plan are unaffected; clearing reverts this tenant to the base price.
+// @Tags Platform
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "SupportFeeCycle UUID"
+// @Success 200 {object} supportFeeCycleDTO
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /admin/support-fee-cycles/{id} [put]
+func (h *PlatformHandler) UpdateSupportFeeCycle(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid support fee cycle id"})
+		return
+	}
+
+	var body struct {
+		CustomPrice       *float64 `json:"custom_price"`
+		CustomPriceReason *string  `json:"custom_price_reason"`
+		// ClearCustomPrice reverts this cycle to the support plan's base price. Distinct from
+		// omitting custom_price (which leaves any existing override untouched) — mirrors
+		// UpdateSubscription's clear_custom_price flag exactly.
+		ClearCustomPrice bool `json:"clear_custom_price"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if body.CustomPrice == nil && !body.ClearCustomPrice {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "one of custom_price or clear_custom_price is required"})
+		return
+	}
+	if body.CustomPrice != nil && *body.CustomPrice < 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "custom_price must not be negative"})
+		return
+	}
+	if body.CustomPrice != nil && body.ClearCustomPrice {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "custom_price and clear_custom_price are mutually exclusive"})
+		return
+	}
+
+	cycle, err := h.client.SupportFeeCycle.Query().Where(supportfeecycle.IDEQ(id)).WithSupportPlan().Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "support fee cycle not found"})
+			return
+		}
+		h.log.Error("failed to get support fee cycle", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	upd := h.client.SupportFeeCycle.UpdateOneID(id)
+	var setBy uuid.UUID
+	if claims, ok := authclient.ClaimsFromContext(ctx); ok && claims != nil {
+		setBy, _ = claims.UserID()
+	}
+	if body.ClearCustomPrice {
+		upd = upd.ClearCustomPrice().ClearCustomPriceReason().SetCustomPriceSetAt(time.Now())
+		if setBy != uuid.Nil {
+			upd = upd.SetCustomPriceSetBy(setBy)
+		}
+	} else {
+		upd = upd.SetCustomPrice(*body.CustomPrice).SetCustomPriceSetAt(time.Now())
+		if body.CustomPriceReason != nil {
+			upd = upd.SetCustomPriceReason(*body.CustomPriceReason)
+		}
+		if setBy != uuid.Nil {
+			upd = upd.SetCustomPriceSetBy(setBy)
+		}
+	}
+
+	updated, err := upd.Save(ctx)
+	if err != nil {
+		h.log.Error("failed to update support fee cycle", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update support fee cycle"})
+		return
+	}
+
+	planCode := ""
+	if cycle.Edges.SupportPlan != nil {
+		planCode = cycle.Edges.SupportPlan.PlanCode
+	}
+	h.log.Info("support fee cycle custom price updated by admin",
+		zap.String("cycle_id", id.String()),
+		zap.String("tenant_id", updated.TenantID.String()),
+	)
+	writeJSON(w, http.StatusOK, toSupportFeeCycleDTO(updated, planCode))
 }
 
 // derivePlanTier returns a human-readable tier label from the plan code or tier order.
