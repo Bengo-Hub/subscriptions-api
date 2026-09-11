@@ -180,6 +180,12 @@ type SubscriptionResult struct {
 	// (platform/demo tenants + explicitly-flagged tenants). auth-api embeds this as the
 	// JWT sub_exempt claim so every downstream service bypasses subscription gating.
 	Exempt bool `json:"exempt"`
+	// SupportFeeStatus/SupportFeeDueAt reflect the tenant's CURRENT SupportFeeCycle (perpetual/
+	// one-time-license tenants only — see internal/ent/schema/support_fee_cycle.go). Empty/nil
+	// when the tenant has no support-fee obligation at all. Minted into the JWT
+	// support_fee_status/support_fee_due_at claims for RequireSupportFeeCurrentForMutations.
+	SupportFeeStatus string     `json:"support_fee_status,omitempty"`
+	SupportFeeDueAt  *time.Time `json:"support_fee_due_at,omitempty"`
 }
 
 // --- State machine ---

@@ -3,12 +3,14 @@ package subscriptions
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	entfeaturedefinition "github.com/bengobox/subscription-service/internal/ent/featuredefinition"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -182,7 +184,43 @@ func (s *Service) GetSubscriptionResult(ctx context.Context, tenantID uuid.UUID)
 		result.ActiveServiceTags = tags
 	}
 
+	// Support-fee obligation (perpetual/one-time-license tenants only — see SupportFeeCycle).
+	// Fail-open like every other lookup here: a query failure must never break login/entitlement
+	// resolution, it just means this token mints without the support-fee claim (same "absent =
+	// pass" convention RequireSupportFeeCurrentForMutations already honors).
+	if status, dueAt, serr := s.currentSupportFeeStatus(ctx, sub.ID); serr != nil {
+		s.log.Warn("composite entitlements: failed to resolve support fee status",
+			zap.String("tenant_id", tenantID.String()), zap.Error(serr))
+	} else {
+		result.SupportFeeStatus = status
+		result.SupportFeeDueAt = dueAt
+	}
+
 	return result, nil
+}
+
+// currentSupportFeeStatus returns the latest SupportFeeCycle for a tenant subscription (by
+// cycle_number) and derives a coarse status string ("CURRENT"/"OVERDUE") plus the due date, for
+// the JWT support_fee_status/support_fee_due_at claims. Returns ("", nil, nil) when the tenant
+// has no support-fee cycle at all (not a one-time-license tenant, or its family has no SUPPORT_*
+// plan) — RequireSupportFeeCurrentForMutations treats an absent due date as "always pass".
+func (s *Service) currentSupportFeeStatus(ctx context.Context, tenantSubscriptionID uuid.UUID) (string, *time.Time, error) {
+	cycle, err := s.client.SupportFeeCycle.Query().
+		Where(supportfeecycle.TenantSubscriptionIDEQ(tenantSubscriptionID)).
+		Order(ent.Desc(supportfeecycle.FieldCycleNumber)).
+		First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return "", nil, nil
+		}
+		return "", nil, err
+	}
+	due := cycle.DueDate.UTC()
+	status := "CURRENT"
+	if cycle.Status == supportfeecycle.StatusOVERDUE {
+		status = "OVERDUE"
+	}
+	return status, &due, nil
 }
 
 // resolveActiveServiceTags returns the set of FeatureDefinition.service_tag values the tenant
