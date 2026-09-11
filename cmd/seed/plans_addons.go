@@ -27,35 +27,16 @@ func seedPlanAddonFeatures(ctx context.Context, tx *ent.Tx) error {
 	}
 
 	plans := []planAddon{
-		// ── ORDERING_STARTER addons ────────────────────────────────────────────
-		{
-			planID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_STARTER")),
-			addons: []addonDef{
-				{featureCode: "extra_rider_slot", overageUnitPrice: 250.0},
-				{featureCode: "extra_outlet", overageUnitPrice: 500.0},
-				{featureCode: "advanced_analytics_addon", overageUnitPrice: 500.0},
-				{featureCode: "sms_bundle_100", overageUnitPrice: 200.0, limitValue: 100},
-			},
-		},
-		// ── ORDERING_GROWTH addons ─────────────────────────────────────────────
-		{
-			planID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_GROWTH")),
-			addons: []addonDef{
-				{featureCode: "extra_rider_slot", overageUnitPrice: 250.0},
-				{featureCode: "extra_outlet", overageUnitPrice: 400.0},
-				{featureCode: "hotel_module_addon", overageUnitPrice: 2000.0},
-				{featureCode: "route_optimization_addon", overageUnitPrice: 1000.0},
-				{featureCode: "sms_bundle_500", overageUnitPrice: 800.0, limitValue: 500},
-			},
-		},
-		// ── ORDERING_PROFESSIONAL addons ───────────────────────────────────────
-		{
-			planID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("plan:ORDERING_PROFESSIONAL")),
-			addons: []addonDef{
-				{featureCode: "extra_api_quota_bundle", overageUnitPrice: 500.0},
-				{featureCode: "dedicated_support_addon", overageUnitPrice: 5000.0},
-			},
-		},
+		// ORDERING_STARTER/GROWTH/PROFESSIONAL addon blocks removed 2026-09-11: those plan
+		// rows were hard-deleted by migrateUseCasePowerSuite's 2026-09-11 Ordering/Inventory/
+		// Treasury consolidation (superseded by PowerSuite), but this file kept referencing
+		// their old plan IDs — every seed run since has hit a foreign-key violation here
+		// ("insert or update on table plan_features violates foreign key constraint
+		// plan_features_subscription_plans_features"), which rolled back the ENTIRE seed
+		// transaction (entrypoint.sh's `|| echo ... non-fatal` swallowed the failure at the
+		// container-startup log level, masking that nothing after this point in runSeed had
+		// been committing). PowerSuite has no equivalent per-tenant Ordering overage-addon
+		// model, so these are dropped rather than redirected to a successor plan.
 		// *_YEARLY addon blocks removed — annual plan rows are hard-deleted (billing
 		// period is now a per-subscription choice on the monthly rows).
 		// ── TRULOAD_STARTER addons ─────────────────────────────────────────────
