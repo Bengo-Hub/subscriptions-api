@@ -149,6 +149,14 @@ type SubscriptionResult struct {
 	// into the JWT active_products claim so the app-switcher can show only activated apps
 	// without an extra network call. See ActiveProductCodes.
 	ActiveProducts []string `json:"active_products,omitempty"`
+	// ActiveServiceTags is the set of FeatureDefinition.service_tag values the tenant currently
+	// has ANY entitlement in (main plan's own service_tag + the service_tag of every feature
+	// code in Features, including product-overlay and TenantFeatureGrant additions), minted into
+	// the JWT active_service_tags claim. This is coarser than Features: it answers "is this whole
+	// module part of the tenant's plan at all" (e.g. "erp"), which a PowerSuite tenant below the
+	// tier that unlocks its first ERP feature has none of — distinct from activeServiceTags()
+	// below, which only looks at a plan's single primary service_tag and is wrong for a bundle.
+	ActiveServiceTags []string `json:"active_service_tags,omitempty"`
 	// AccessStatus is derived gating state for clients: "active" (full access),
 	// "grace" (past period end but within the grace window — still accessible, pay soon),
 	// or "blocked" (expired/cancelled/suspended). GraceEndsAt is set while in grace.

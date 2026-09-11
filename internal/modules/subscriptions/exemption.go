@@ -106,6 +106,7 @@ func (s *Service) exemptResult(ctx context.Context, tenantID uuid.UUID) *Subscri
 		BillingMode:        "exempt",
 		IsPerpetual:        true,
 		Exempt:             true,
+		ActiveServiceTags:  s.allServiceTags(ctx),
 	}
 	// An exempt tenant can still carry a real TenantSubscription row purely for CLASSIFICATION/
 	// PRESENTATION purposes (facility_type -> hospital-ui's adaptive nav; plan code/name for
@@ -144,6 +145,20 @@ func (s *Service) allFeatureCodes(ctx context.Context) []string {
 		out = append(out, r.FeatureCode)
 	}
 	return out
+}
+
+// allServiceTags returns every distinct service_tag in the feature catalog, so an exempt
+// tenant's token carries every module (belt-and-braces for RequireServiceAccess, mirroring
+// allFeatureCodes' role for FeatureEnabled).
+func (s *Service) allServiceTags(ctx context.Context) []string {
+	rows, err := s.client.FeatureDefinition.Query().
+		Unique(true).
+		Select(entfeaturedefinition.FieldServiceTag).
+		Strings(ctx)
+	if err != nil {
+		return []string{}
+	}
+	return rows
 }
 
 // guardExempt returns ErrExemptTenant when the tenant must not own a subscription.

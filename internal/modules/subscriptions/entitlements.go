@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bengobox/subscription-service/internal/ent"
+	entfeaturedefinition "github.com/bengobox/subscription-service/internal/ent/featuredefinition"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
@@ -174,7 +175,47 @@ func (s *Service) GetSubscriptionResult(ctx context.Context, tenantID uuid.UUID)
 		}
 	}
 
+	if tags, terr := s.resolveActiveServiceTags(ctx, result.Features, plan); terr != nil {
+		s.log.Warn("composite entitlements: failed to resolve active service tags",
+			zap.String("tenant_id", tenantID.String()), zap.Error(terr))
+	} else {
+		result.ActiveServiceTags = tags
+	}
+
 	return result, nil
+}
+
+// resolveActiveServiceTags returns the set of FeatureDefinition.service_tag values the tenant
+// currently has ANY entitlement in: the owning service_tag of every feature code in `features`
+// (batch-queried once), plus the main plan's own primary service_tag (covers a standalone plan
+// whose base tier grants zero features yet, e.g. bare wallet access). This is deliberately
+// separate from activeServiceTags() above — that one only sees a plan's single service_tag field
+// and can't see a PowerSuite bundle's per-feature-tagged modules (inventory/treasury/ordering/
+// erp/logistics/marketflow all live under one "pos"-tagged plan row).
+func (s *Service) resolveActiveServiceTags(ctx context.Context, features []string, mainPlan *ent.SubscriptionPlan) ([]string, error) {
+	tags := map[string]bool{}
+	if mainPlan != nil && mainPlan.ServiceTag != nil && *mainPlan.ServiceTag != "" {
+		tags[*mainPlan.ServiceTag] = true
+	}
+	if len(features) > 0 {
+		rows, err := s.client.FeatureDefinition.Query().
+			Where(entfeaturedefinition.FeatureCodeIn(features...)).
+			Select(entfeaturedefinition.FieldServiceTag).
+			Strings(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("query feature service tags: %w", err)
+		}
+		for _, t := range rows {
+			if t != "" {
+				tags[t] = true
+			}
+		}
+	}
+	out := make([]string, 0, len(tags))
+	for t := range tags {
+		out = append(out, t)
+	}
+	return out, nil
 }
 
 // requireEtimsIntegrationEntitlement returns an error unless the tenant's CURRENT composite
