@@ -105,6 +105,19 @@ func migrateUseCasePowerSuite(ctx context.Context, tx *ent.Tx) error {
 				return ""
 			}
 			return fmt.Sprintf("POWERSUITE_%s_%s", familyForTenant(tenantID), seg)
+		case strings.HasPrefix(base, "ORDERING_") || strings.HasPrefix(base, "INVENTORY_") || strings.HasPrefix(base, "TREASURY_"):
+			// Standalone single-module plans (2026-09-11): no real tenant runs ordering/
+			// inventory/treasury without the others, and PowerSuite already covers 100% of
+			// their catalog — same-tier family row by tenant use_case.
+			seg := tierSeg[strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(base, "ORDERING_"), "INVENTORY_"), "TREASURY_")]
+			if seg == "" {
+				return ""
+			}
+			return fmt.Sprintf("POWERSUITE_%s_%s", familyForTenant(tenantID), seg)
+		case oldCode == "INVENTORY_ONE_TIME":
+			// The one standalone perpetual license among the three (no ORDERING/TREASURY
+			// equivalent existed) → richest one-time tier, mirroring POS_LICENSE_COMPLETE.
+			return fmt.Sprintf("POWERSUITE_%s_GOLD_ONE_TIME", familyForTenant(tenantID))
 		case base == "POS_LICENSE_PER_DEVICE":
 			return fmt.Sprintf("POWERSUITE_%s_BASIC_ONE_TIME", familyForTenant(tenantID))
 		case base == "POS_LICENSE_COMPLETE":
@@ -136,7 +149,12 @@ func migrateUseCasePowerSuite(ctx context.Context, tx *ent.Tx) error {
 			strings.HasPrefix(code, "POS_DEVICE_"),
 			strings.HasPrefix(code, "POS_LICENSE_"),
 			code == "POS_HOSP_LICENSE" || code == "POS_DUKA_LICENSE" || code == "POS_DAWA_LICENSE",
-			code == "ERP_ONE_TIME":
+			code == "ERP_ONE_TIME",
+			// Standalone single-module plans (2026-09-11): confirmed-unused, PowerSuite already
+			// covers their full catalog. POS has no equivalent — already fully retired above.
+			strings.HasPrefix(code, "ORDERING_"),
+			strings.HasPrefix(code, "INVENTORY_"),
+			strings.HasPrefix(code, "TREASURY_"):
 			return true
 		}
 		return false

@@ -79,6 +79,7 @@ unlimited, no tables/rooms keys.
 | `POS_{HOSP,DUKA,DAWA}_LICENSE`¹ (tier-11) | family `GOLD_ONE_TIME` |
 | legacy flat `ERP_ONE_TIME` (150k) | `ERP_GROWTH_ONE_TIME` (same price) |
 | every remaining `*_YEARLY` row platform-wide | same code minus `_YEARLY` (sub keeps ANNUAL cycle); `ISP_*_YEARLY` → `ISP_BILLING_STARTER` |
+| `ORDERING_{STARTER,GROWTH,PROFESSIONAL}`, `INVENTORY_{STARTER,GROWTH,PROFESSIONAL}` (+`INVENTORY_ONE_TIME`), `TREASURY_{STARTER,GROWTH,PROFESSIONAL}` (2026-09-11) | same-tier family row by tenant `use_case`; `INVENTORY_ONE_TIME` → family `GOLD_ONE_TIME` (no ORDERING/TREASURY one-time equivalent existed). Confirmed no real tenant runs ordering/inventory/treasury standalone without the others in practice, and every feature/limit these plans granted already exists in the PowerSuite cross-service blocks above — removed from `cmd/seed` entirely (`plans_ordering.go`/`plans_inventory.go`/`plans_treasury.go` deleted). POS has no standalone equivalent — already fully retired in the original 2026-07-16 pass. |
 
 ¹ The `DAWA` family itself was retired 2026-08-29 (see the callout at the top of this doc) —
 `migrate_usecase_powersuite.go`'s pharmacy/chemist/agrovet→DAWA mapping is left in the code
@@ -94,10 +95,16 @@ price changed; PAID invoices are never touched).
 ## Kept as-is (per spec notes)
 
 ERP standalone plans (`ERP_{STARTER,GROWTH,PROFESSIONAL}` + `_ONE_TIME` tiers — now with
-attendance from T1 and appraisals/recruitment/training from T2), all TruLoad plans, and every
-standalone service line (INVENTORY_/TREASURY_/LOGISTICS_/MARKETFLOW/ISP/PROJECTS/LIBRARY,
-service-charge plans). ERP-suite `_ONE_TIME` licenses still union `powerSuiteFeatures(tier)`
-(generic builders kept in `plans_powersuite_builders.go`).
+attendance from T1 and appraisals/recruitment/training from T2), all TruLoad plans, and the
+remaining standalone service lines (LOGISTICS_/MARKETFLOW/ISP/PROJECTS/LIBRARY, service-charge
+plans) — these ARE genuinely sold to tenants who want one module without the full PowerSuite
+bundle. ERP-suite `_ONE_TIME` licenses still union `powerSuiteFeatures(tier)` (generic builders
+kept in `plans_powersuite_builders.go`).
+
+**ORDERING_/INVENTORY_/TREASURY_ removed 2026-09-11** (see "Superseded rows" above) — unlike the
+lines still kept, no real tenant runs ordering, inventory, or treasury as a true standalone
+module without the others, so these three were reclassified from "legitimate standalone
+product" to "redundant duplicate of PowerSuite" and hard-deleted rather than kept.
 
 ## Enforcement rollout (2026-07-16, same session — backends + UIs)
 

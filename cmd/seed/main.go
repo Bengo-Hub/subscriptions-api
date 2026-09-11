@@ -103,11 +103,6 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 		return fmt.Errorf("seed etims api plans: %w", err)
 	}
 
-	// 2. Seed ordering plans (Starter, Growth, Professional — monthly + yearly)
-	if err := seedOrderingPlans(ctx, tx); err != nil {
-		return fmt.Errorf("seed ordering plans: %w", err)
-	}
-
 	// 2.1 Seed the use-case PowerSuite families (POWERSUITE_{HOSP,DUKA,DAWA}_{BASIC,PRO,GOLD})
 	// — evolved in place from the POS product lines; supersede the generic POWERSUITE_* and
 	// POS_SUITE_* bundles (hard-deleted by migrateUseCasePowerSuite below).
@@ -150,11 +145,6 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 		return fmt.Errorf("seed logistics plans: %w", err)
 	}
 
-	// 2.8 Seed inventory standalone plans
-	if err := seedInventoryPlans(ctx, tx); err != nil {
-		return fmt.Errorf("seed inventory plans: %w", err)
-	}
-
 	// 2.9 Seed ERP standalone plans
 	if err := seedERPPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed erp plans: %w", err)
@@ -163,11 +153,6 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 	// 2.11 Seed MarketFlow CRM plans
 	if err := seedMarketFlowPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed marketflow plans: %w", err)
-	}
-
-	// 2.12 Seed Treasury & Finance standalone plans
-	if err := seedTreasuryPlans(ctx, tx); err != nil {
-		return fmt.Errorf("seed treasury plans: %w", err)
 	}
 
 	// 2.13 Seed ISP Billing standalone plans (hotspot + PPPoE product lines)
