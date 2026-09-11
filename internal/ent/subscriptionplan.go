@@ -77,9 +77,11 @@ type SubscriptionPlanEdges struct {
 	Subscriptions []*TenantSubscription `json:"subscriptions,omitempty"`
 	// OverrideProductSubscriptions holds the value of the override_product_subscriptions edge.
 	OverrideProductSubscriptions []*ProductSubscription `json:"override_product_subscriptions,omitempty"`
+	// SupportFeeCycles holds the value of the support_fee_cycles edge.
+	SupportFeeCycles []*SupportFeeCycle `json:"support_fee_cycles,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // FeaturesOrErr returns the Features value or an error if the edge
@@ -116,6 +118,15 @@ func (e SubscriptionPlanEdges) OverrideProductSubscriptionsOrErr() ([]*ProductSu
 		return e.OverrideProductSubscriptions, nil
 	}
 	return nil, &NotLoadedError{edge: "override_product_subscriptions"}
+}
+
+// SupportFeeCyclesOrErr returns the SupportFeeCycles value or an error if the edge
+// was not loaded in eager-loading.
+func (e SubscriptionPlanEdges) SupportFeeCyclesOrErr() ([]*SupportFeeCycle, error) {
+	if e.loadedTypes[4] {
+		return e.SupportFeeCycles, nil
+	}
+	return nil, &NotLoadedError{edge: "support_fee_cycles"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -324,6 +335,11 @@ func (_m *SubscriptionPlan) QuerySubscriptions() *TenantSubscriptionQuery {
 // QueryOverrideProductSubscriptions queries the "override_product_subscriptions" edge of the SubscriptionPlan entity.
 func (_m *SubscriptionPlan) QueryOverrideProductSubscriptions() *ProductSubscriptionQuery {
 	return NewSubscriptionPlanClient(_m.config).QueryOverrideProductSubscriptions(_m)
+}
+
+// QuerySupportFeeCycles queries the "support_fee_cycles" edge of the SubscriptionPlan entity.
+func (_m *SubscriptionPlan) QuerySupportFeeCycles() *SupportFeeCycleQuery {
+	return NewSubscriptionPlanClient(_m.config).QuerySupportFeeCycles(_m)
 }
 
 // Update returns a builder for updating this SubscriptionPlan.

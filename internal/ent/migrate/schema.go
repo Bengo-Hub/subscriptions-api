@@ -1124,6 +1124,75 @@ var (
 			},
 		},
 	}
+	// SupportFeeCyclesColumns holds the columns for the "support_fee_cycles" table.
+	SupportFeeCyclesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "anchor_date", Type: field.TypeTime},
+		{Name: "cycle_number", Type: field.TypeInt},
+		{Name: "period_start", Type: field.TypeTime},
+		{Name: "due_date", Type: field.TypeTime},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"PENDING", "INVOICED", "PAID", "OVERDUE", "WAIVED"}, Default: "PENDING"},
+		{Name: "paid_at", Type: field.TypeTime, Nullable: true},
+		{Name: "grace_until", Type: field.TypeTime, Nullable: true},
+		{Name: "base_price", Type: field.TypeFloat64},
+		{Name: "custom_price", Type: field.TypeFloat64, Nullable: true},
+		{Name: "custom_price_reason", Type: field.TypeString, Nullable: true},
+		{Name: "custom_price_set_by", Type: field.TypeUUID, Nullable: true},
+		{Name: "custom_price_set_at", Type: field.TypeTime, Nullable: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "support_plan_id", Type: field.TypeUUID},
+		{Name: "tenant_subscription_id", Type: field.TypeUUID},
+	}
+	// SupportFeeCyclesTable holds the schema information for the "support_fee_cycles" table.
+	SupportFeeCyclesTable = &schema.Table{
+		Name:       "support_fee_cycles",
+		Columns:    SupportFeeCyclesColumns,
+		PrimaryKey: []*schema.Column{SupportFeeCyclesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "support_fee_cycles_subscription_plans_support_fee_cycles",
+				Columns:    []*schema.Column{SupportFeeCyclesColumns[17]},
+				RefColumns: []*schema.Column{SubscriptionPlansColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "support_fee_cycles_tenant_subscriptions_support_fee_cycles",
+				Columns:    []*schema.Column{SupportFeeCyclesColumns[18]},
+				RefColumns: []*schema.Column{TenantSubscriptionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "supportfeecycle_tenant_id",
+				Unique:  false,
+				Columns: []*schema.Column{SupportFeeCyclesColumns[1]},
+			},
+			{
+				Name:    "supportfeecycle_tenant_subscription_id",
+				Unique:  false,
+				Columns: []*schema.Column{SupportFeeCyclesColumns[18]},
+			},
+			{
+				Name:    "supportfeecycle_status",
+				Unique:  false,
+				Columns: []*schema.Column{SupportFeeCyclesColumns[6]},
+			},
+			{
+				Name:    "supportfeecycle_due_date",
+				Unique:  false,
+				Columns: []*schema.Column{SupportFeeCyclesColumns[5]},
+			},
+			{
+				Name:    "supportfeecycle_tenant_subscription_id_cycle_number",
+				Unique:  true,
+				Columns: []*schema.Column{SupportFeeCyclesColumns[18], SupportFeeCyclesColumns[3]},
+			},
+		},
+	}
 	// TenantsColumns holds the columns for the "tenants" table.
 	TenantsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1453,6 +1522,7 @@ var (
 		SubscriptionsPermissionsTable,
 		SubscriptionsRolesTable,
 		SubscriptionsUsersTable,
+		SupportFeeCyclesTable,
 		TenantsTable,
 		TenantEmailDomainsTable,
 		TenantFeatureGrantsTable,
@@ -1477,6 +1547,8 @@ func init() {
 	RolePermissionsTable.ForeignKeys[0].RefTable = SubscriptionsRolesTable
 	RolePermissionsTable.ForeignKeys[1].RefTable = SubscriptionsPermissionsTable
 	SubscriptionCreditTransactionsTable.ForeignKeys[0].RefTable = SubscriptionCreditsTable
+	SupportFeeCyclesTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
+	SupportFeeCyclesTable.ForeignKeys[1].RefTable = TenantSubscriptionsTable
 	TenantEmailDomainsTable.ForeignKeys[0].RefTable = TenantSubscriptionsTable
 	TenantSubscriptionsTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
 	TenantSubscriptionsTable.ForeignKeys[1].RefTable = TenantsTable

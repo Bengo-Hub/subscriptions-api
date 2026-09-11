@@ -38,6 +38,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionspermission"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsuser"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 	"github.com/bengobox/subscription-service/internal/ent/tenantfeaturegrant"
@@ -130,6 +131,7 @@ func checkColumn(t, c string) error {
 			subscriptionspermission.Table:       subscriptionspermission.ValidColumn,
 			subscriptionsrole.Table:             subscriptionsrole.ValidColumn,
 			subscriptionsuser.Table:             subscriptionsuser.ValidColumn,
+			supportfeecycle.Table:               supportfeecycle.ValidColumn,
 			tenant.Table:                        tenant.ValidColumn,
 			tenantemaildomain.Table:             tenantemaildomain.ValidColumn,
 			tenantfeaturegrant.Table:            tenantfeaturegrant.ValidColumn,

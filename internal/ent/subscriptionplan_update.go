@@ -17,6 +17,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -413,6 +414,21 @@ func (_u *SubscriptionPlanUpdate) AddOverrideProductSubscriptions(v ...*ProductS
 	return _u.AddOverrideProductSubscriptionIDs(ids...)
 }
 
+// AddSupportFeeCycleIDs adds the "support_fee_cycles" edge to the SupportFeeCycle entity by IDs.
+func (_u *SubscriptionPlanUpdate) AddSupportFeeCycleIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
+	_u.mutation.AddSupportFeeCycleIDs(ids...)
+	return _u
+}
+
+// AddSupportFeeCycles adds the "support_fee_cycles" edges to the SupportFeeCycle entity.
+func (_u *SubscriptionPlanUpdate) AddSupportFeeCycles(v ...*SupportFeeCycle) *SubscriptionPlanUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSupportFeeCycleIDs(ids...)
+}
+
 // Mutation returns the SubscriptionPlanMutation object of the builder.
 func (_u *SubscriptionPlanUpdate) Mutation() *SubscriptionPlanMutation {
 	return _u.mutation
@@ -500,6 +516,27 @@ func (_u *SubscriptionPlanUpdate) RemoveOverrideProductSubscriptions(v ...*Produ
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveOverrideProductSubscriptionIDs(ids...)
+}
+
+// ClearSupportFeeCycles clears all "support_fee_cycles" edges to the SupportFeeCycle entity.
+func (_u *SubscriptionPlanUpdate) ClearSupportFeeCycles() *SubscriptionPlanUpdate {
+	_u.mutation.ClearSupportFeeCycles()
+	return _u
+}
+
+// RemoveSupportFeeCycleIDs removes the "support_fee_cycles" edge to SupportFeeCycle entities by IDs.
+func (_u *SubscriptionPlanUpdate) RemoveSupportFeeCycleIDs(ids ...uuid.UUID) *SubscriptionPlanUpdate {
+	_u.mutation.RemoveSupportFeeCycleIDs(ids...)
+	return _u
+}
+
+// RemoveSupportFeeCycles removes "support_fee_cycles" edges to SupportFeeCycle entities.
+func (_u *SubscriptionPlanUpdate) RemoveSupportFeeCycles(v ...*SupportFeeCycle) *SubscriptionPlanUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSupportFeeCycleIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -843,6 +880,51 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SupportFeeCyclesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SupportFeeCyclesTable,
+			Columns: []string{subscriptionplan.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSupportFeeCyclesIDs(); len(nodes) > 0 && !_u.mutation.SupportFeeCyclesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SupportFeeCyclesTable,
+			Columns: []string{subscriptionplan.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SupportFeeCyclesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SupportFeeCyclesTable,
+			Columns: []string{subscriptionplan.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1249,6 +1331,21 @@ func (_u *SubscriptionPlanUpdateOne) AddOverrideProductSubscriptions(v ...*Produ
 	return _u.AddOverrideProductSubscriptionIDs(ids...)
 }
 
+// AddSupportFeeCycleIDs adds the "support_fee_cycles" edge to the SupportFeeCycle entity by IDs.
+func (_u *SubscriptionPlanUpdateOne) AddSupportFeeCycleIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddSupportFeeCycleIDs(ids...)
+	return _u
+}
+
+// AddSupportFeeCycles adds the "support_fee_cycles" edges to the SupportFeeCycle entity.
+func (_u *SubscriptionPlanUpdateOne) AddSupportFeeCycles(v ...*SupportFeeCycle) *SubscriptionPlanUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSupportFeeCycleIDs(ids...)
+}
+
 // Mutation returns the SubscriptionPlanMutation object of the builder.
 func (_u *SubscriptionPlanUpdateOne) Mutation() *SubscriptionPlanMutation {
 	return _u.mutation
@@ -1336,6 +1433,27 @@ func (_u *SubscriptionPlanUpdateOne) RemoveOverrideProductSubscriptions(v ...*Pr
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveOverrideProductSubscriptionIDs(ids...)
+}
+
+// ClearSupportFeeCycles clears all "support_fee_cycles" edges to the SupportFeeCycle entity.
+func (_u *SubscriptionPlanUpdateOne) ClearSupportFeeCycles() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearSupportFeeCycles()
+	return _u
+}
+
+// RemoveSupportFeeCycleIDs removes the "support_fee_cycles" edge to SupportFeeCycle entities by IDs.
+func (_u *SubscriptionPlanUpdateOne) RemoveSupportFeeCycleIDs(ids ...uuid.UUID) *SubscriptionPlanUpdateOne {
+	_u.mutation.RemoveSupportFeeCycleIDs(ids...)
+	return _u
+}
+
+// RemoveSupportFeeCycles removes "support_fee_cycles" edges to SupportFeeCycle entities.
+func (_u *SubscriptionPlanUpdateOne) RemoveSupportFeeCycles(v ...*SupportFeeCycle) *SubscriptionPlanUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSupportFeeCycleIDs(ids...)
 }
 
 // Where appends a list predicates to the SubscriptionPlanUpdate builder.
@@ -1709,6 +1827,51 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SupportFeeCyclesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SupportFeeCyclesTable,
+			Columns: []string{subscriptionplan.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSupportFeeCyclesIDs(); len(nodes) > 0 && !_u.mutation.SupportFeeCyclesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SupportFeeCyclesTable,
+			Columns: []string{subscriptionplan.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SupportFeeCyclesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SupportFeeCyclesTable,
+			Columns: []string{subscriptionplan.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

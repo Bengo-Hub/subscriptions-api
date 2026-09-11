@@ -16,6 +16,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
@@ -536,6 +537,21 @@ func (_c *TenantSubscriptionCreate) AddEmailDomains(v ...*TenantEmailDomain) *Te
 	return _c.AddEmailDomainIDs(ids...)
 }
 
+// AddSupportFeeCycleIDs adds the "support_fee_cycles" edge to the SupportFeeCycle entity by IDs.
+func (_c *TenantSubscriptionCreate) AddSupportFeeCycleIDs(ids ...uuid.UUID) *TenantSubscriptionCreate {
+	_c.mutation.AddSupportFeeCycleIDs(ids...)
+	return _c
+}
+
+// AddSupportFeeCycles adds the "support_fee_cycles" edges to the SupportFeeCycle entity.
+func (_c *TenantSubscriptionCreate) AddSupportFeeCycles(v ...*SupportFeeCycle) *TenantSubscriptionCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddSupportFeeCycleIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_c *TenantSubscriptionCreate) Mutation() *TenantSubscriptionMutation {
 	return _c.mutation
@@ -925,6 +941,22 @@ func (_c *TenantSubscriptionCreate) createSpec() (*TenantSubscription, *sqlgraph
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tenantemaildomain.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SupportFeeCyclesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportFeeCyclesTable,
+			Columns: []string{tenantsubscription.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

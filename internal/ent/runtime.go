@@ -31,6 +31,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionspermission"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsuser"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 	"github.com/bengobox/subscription-service/internal/ent/tenantfeaturegrant"
@@ -886,6 +887,26 @@ func init() {
 	subscriptionsuserDescID := subscriptionsuserFields[0].Descriptor()
 	// subscriptionsuser.DefaultID holds the default value on creation for the id field.
 	subscriptionsuser.DefaultID = subscriptionsuserDescID.Default.(func() uuid.UUID)
+	supportfeecycleFields := schema.SupportFeeCycle{}.Fields()
+	_ = supportfeecycleFields
+	// supportfeecycleDescMetadata is the schema descriptor for metadata field.
+	supportfeecycleDescMetadata := supportfeecycleFields[16].Descriptor()
+	// supportfeecycle.DefaultMetadata holds the default value on creation for the metadata field.
+	supportfeecycle.DefaultMetadata = supportfeecycleDescMetadata.Default.(map[string]interface{})
+	// supportfeecycleDescCreatedAt is the schema descriptor for created_at field.
+	supportfeecycleDescCreatedAt := supportfeecycleFields[17].Descriptor()
+	// supportfeecycle.DefaultCreatedAt holds the default value on creation for the created_at field.
+	supportfeecycle.DefaultCreatedAt = supportfeecycleDescCreatedAt.Default.(func() time.Time)
+	// supportfeecycleDescUpdatedAt is the schema descriptor for updated_at field.
+	supportfeecycleDescUpdatedAt := supportfeecycleFields[18].Descriptor()
+	// supportfeecycle.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	supportfeecycle.DefaultUpdatedAt = supportfeecycleDescUpdatedAt.Default.(func() time.Time)
+	// supportfeecycle.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	supportfeecycle.UpdateDefaultUpdatedAt = supportfeecycleDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// supportfeecycleDescID is the schema descriptor for id field.
+	supportfeecycleDescID := supportfeecycleFields[0].Descriptor()
+	// supportfeecycle.DefaultID holds the default value on creation for the id field.
+	supportfeecycle.DefaultID = supportfeecycleDescID.Default.(func() uuid.UUID)
 	tenantFields := schema.Tenant{}.Fields()
 	_ = tenantFields
 	// tenantDescName is the schema descriptor for name field.

@@ -16,6 +16,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/planpricinghistory"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -338,6 +339,21 @@ func (_c *SubscriptionPlanCreate) AddOverrideProductSubscriptions(v ...*ProductS
 		ids[i] = v[i].ID
 	}
 	return _c.AddOverrideProductSubscriptionIDs(ids...)
+}
+
+// AddSupportFeeCycleIDs adds the "support_fee_cycles" edge to the SupportFeeCycle entity by IDs.
+func (_c *SubscriptionPlanCreate) AddSupportFeeCycleIDs(ids ...uuid.UUID) *SubscriptionPlanCreate {
+	_c.mutation.AddSupportFeeCycleIDs(ids...)
+	return _c
+}
+
+// AddSupportFeeCycles adds the "support_fee_cycles" edges to the SupportFeeCycle entity.
+func (_c *SubscriptionPlanCreate) AddSupportFeeCycles(v ...*SupportFeeCycle) *SubscriptionPlanCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddSupportFeeCycleIDs(ids...)
 }
 
 // Mutation returns the SubscriptionPlanMutation object of the builder.
@@ -680,6 +696,22 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(productsubscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SupportFeeCyclesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SupportFeeCyclesTable,
+			Columns: []string{subscriptionplan.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

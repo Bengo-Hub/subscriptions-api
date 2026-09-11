@@ -17,6 +17,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
@@ -36,6 +37,7 @@ type TenantSubscriptionQuery struct {
 	withOverageCharges       *OverageChargeQuery
 	withEmailLicenses        *EmailLicenseQuery
 	withEmailDomains         *TenantEmailDomainQuery
+	withSupportFeeCycles     *SupportFeeCycleQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -197,6 +199,28 @@ func (_q *TenantSubscriptionQuery) QueryEmailDomains() *TenantEmailDomainQuery {
 			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, selector),
 			sqlgraph.To(tenantemaildomain.Table, tenantemaildomain.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.EmailDomainsTable, tenantsubscription.EmailDomainsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySupportFeeCycles chains the current query on the "support_fee_cycles" edge.
+func (_q *TenantSubscriptionQuery) QuerySupportFeeCycles() *SupportFeeCycleQuery {
+	query := (&SupportFeeCycleClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, selector),
+			sqlgraph.To(supportfeecycle.Table, supportfeecycle.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.SupportFeeCyclesTable, tenantsubscription.SupportFeeCyclesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -402,6 +426,7 @@ func (_q *TenantSubscriptionQuery) Clone() *TenantSubscriptionQuery {
 		withOverageCharges:       _q.withOverageCharges.Clone(),
 		withEmailLicenses:        _q.withEmailLicenses.Clone(),
 		withEmailDomains:         _q.withEmailDomains.Clone(),
+		withSupportFeeCycles:     _q.withSupportFeeCycles.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -471,6 +496,17 @@ func (_q *TenantSubscriptionQuery) WithEmailDomains(opts ...func(*TenantEmailDom
 		opt(query)
 	}
 	_q.withEmailDomains = query
+	return _q
+}
+
+// WithSupportFeeCycles tells the query-builder to eager-load the nodes that are connected to
+// the "support_fee_cycles" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TenantSubscriptionQuery) WithSupportFeeCycles(opts ...func(*SupportFeeCycleQuery)) *TenantSubscriptionQuery {
+	query := (&SupportFeeCycleClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSupportFeeCycles = query
 	return _q
 }
 
@@ -552,13 +588,14 @@ func (_q *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 	var (
 		nodes       = []*TenantSubscription{}
 		_spec       = _q.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [7]bool{
 			_q.withTenant != nil,
 			_q.withPlan != nil,
 			_q.withProductSubscriptions != nil,
 			_q.withOverageCharges != nil,
 			_q.withEmailLicenses != nil,
 			_q.withEmailDomains != nil,
+			_q.withSupportFeeCycles != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -621,6 +658,15 @@ func (_q *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 			func(n *TenantSubscription) { n.Edges.EmailDomains = []*TenantEmailDomain{} },
 			func(n *TenantSubscription, e *TenantEmailDomain) {
 				n.Edges.EmailDomains = append(n.Edges.EmailDomains, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withSupportFeeCycles; query != nil {
+		if err := _q.loadSupportFeeCycles(ctx, query, nodes,
+			func(n *TenantSubscription) { n.Edges.SupportFeeCycles = []*SupportFeeCycle{} },
+			func(n *TenantSubscription, e *SupportFeeCycle) {
+				n.Edges.SupportFeeCycles = append(n.Edges.SupportFeeCycles, e)
 			}); err != nil {
 			return nil, err
 		}
@@ -791,6 +837,36 @@ func (_q *TenantSubscriptionQuery) loadEmailDomains(ctx context.Context, query *
 	}
 	query.Where(predicate.TenantEmailDomain(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(tenantsubscription.EmailDomainsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.TenantSubscriptionID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "tenant_subscription_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *TenantSubscriptionQuery) loadSupportFeeCycles(ctx context.Context, query *SupportFeeCycleQuery, nodes []*TenantSubscription, init func(*TenantSubscription), assign func(*TenantSubscription, *SupportFeeCycle)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*TenantSubscription)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(supportfeecycle.FieldTenantSubscriptionID)
+	}
+	query.Where(predicate.SupportFeeCycle(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(tenantsubscription.SupportFeeCyclesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

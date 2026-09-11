@@ -66,6 +66,8 @@ const (
 	EdgeSubscriptions = "subscriptions"
 	// EdgeOverrideProductSubscriptions holds the string denoting the override_product_subscriptions edge name in mutations.
 	EdgeOverrideProductSubscriptions = "override_product_subscriptions"
+	// EdgeSupportFeeCycles holds the string denoting the support_fee_cycles edge name in mutations.
+	EdgeSupportFeeCycles = "support_fee_cycles"
 	// Table holds the table name of the subscriptionplan in the database.
 	Table = "subscription_plans"
 	// FeaturesTable is the table that holds the features relation/edge.
@@ -96,6 +98,13 @@ const (
 	OverrideProductSubscriptionsInverseTable = "product_subscriptions"
 	// OverrideProductSubscriptionsColumn is the table column denoting the override_product_subscriptions relation/edge.
 	OverrideProductSubscriptionsColumn = "override_plan_id"
+	// SupportFeeCyclesTable is the table that holds the support_fee_cycles relation/edge.
+	SupportFeeCyclesTable = "support_fee_cycles"
+	// SupportFeeCyclesInverseTable is the table name for the SupportFeeCycle entity.
+	// It exists in this package in order to avoid circular dependency with the "supportfeecycle" package.
+	SupportFeeCyclesInverseTable = "support_fee_cycles"
+	// SupportFeeCyclesColumn is the table column denoting the support_fee_cycles relation/edge.
+	SupportFeeCyclesColumn = "support_plan_id"
 )
 
 // Columns holds all SQL columns for subscriptionplan fields.
@@ -352,6 +361,20 @@ func ByOverrideProductSubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) 
 		sqlgraph.OrderByNeighborTerms(s, newOverrideProductSubscriptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// BySupportFeeCyclesCount orders the results by support_fee_cycles count.
+func BySupportFeeCyclesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSupportFeeCyclesStep(), opts...)
+	}
+}
+
+// BySupportFeeCycles orders the results by support_fee_cycles terms.
+func BySupportFeeCycles(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSupportFeeCyclesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newFeaturesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -378,5 +401,12 @@ func newOverrideProductSubscriptionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OverrideProductSubscriptionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, OverrideProductSubscriptionsTable, OverrideProductSubscriptionsColumn),
+	)
+}
+func newSupportFeeCyclesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SupportFeeCyclesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SupportFeeCyclesTable, SupportFeeCyclesColumn),
 	)
 }

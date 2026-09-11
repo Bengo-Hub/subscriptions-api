@@ -42,6 +42,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionspermission"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsuser"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 	"github.com/bengobox/subscription-service/internal/ent/tenantfeaturegrant"
@@ -107,6 +108,8 @@ type Client struct {
 	SubscriptionsRole *SubscriptionsRoleClient
 	// SubscriptionsUser is the client for interacting with the SubscriptionsUser builders.
 	SubscriptionsUser *SubscriptionsUserClient
+	// SupportFeeCycle is the client for interacting with the SupportFeeCycle builders.
+	SupportFeeCycle *SupportFeeCycleClient
 	// Tenant is the client for interacting with the Tenant builders.
 	Tenant *TenantClient
 	// TenantEmailDomain is the client for interacting with the TenantEmailDomain builders.
@@ -156,6 +159,7 @@ func (c *Client) init() {
 	c.SubscriptionsPermission = NewSubscriptionsPermissionClient(c.config)
 	c.SubscriptionsRole = NewSubscriptionsRoleClient(c.config)
 	c.SubscriptionsUser = NewSubscriptionsUserClient(c.config)
+	c.SupportFeeCycle = NewSupportFeeCycleClient(c.config)
 	c.Tenant = NewTenantClient(c.config)
 	c.TenantEmailDomain = NewTenantEmailDomainClient(c.config)
 	c.TenantFeatureGrant = NewTenantFeatureGrantClient(c.config)
@@ -280,6 +284,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		SubscriptionsPermission:       NewSubscriptionsPermissionClient(cfg),
 		SubscriptionsRole:             NewSubscriptionsRoleClient(cfg),
 		SubscriptionsUser:             NewSubscriptionsUserClient(cfg),
+		SupportFeeCycle:               NewSupportFeeCycleClient(cfg),
 		Tenant:                        NewTenantClient(cfg),
 		TenantEmailDomain:             NewTenantEmailDomainClient(cfg),
 		TenantFeatureGrant:            NewTenantFeatureGrantClient(cfg),
@@ -331,6 +336,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		SubscriptionsPermission:       NewSubscriptionsPermissionClient(cfg),
 		SubscriptionsRole:             NewSubscriptionsRoleClient(cfg),
 		SubscriptionsUser:             NewSubscriptionsUserClient(cfg),
+		SupportFeeCycle:               NewSupportFeeCycleClient(cfg),
 		Tenant:                        NewTenantClient(cfg),
 		TenantEmailDomain:             NewTenantEmailDomainClient(cfg),
 		TenantFeatureGrant:            NewTenantFeatureGrantClient(cfg),
@@ -372,8 +378,9 @@ func (c *Client) Use(hooks ...Hook) {
 		c.ProductSubscription, c.RateLimitConfig, c.RolePermission,
 		c.ServiceChargePlan, c.ServiceConfig, c.SubscriptionCredit,
 		c.SubscriptionCreditTransaction, c.SubscriptionPlan, c.SubscriptionsPermission,
-		c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant, c.TenantEmailDomain,
-		c.TenantFeatureGrant, c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
+		c.SubscriptionsRole, c.SubscriptionsUser, c.SupportFeeCycle, c.Tenant,
+		c.TenantEmailDomain, c.TenantFeatureGrant, c.TenantSubscription, c.UsageEvent,
+		c.UserRoleAssignment,
 	} {
 		n.Use(hooks...)
 	}
@@ -389,8 +396,9 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.ProductSubscription, c.RateLimitConfig, c.RolePermission,
 		c.ServiceChargePlan, c.ServiceConfig, c.SubscriptionCredit,
 		c.SubscriptionCreditTransaction, c.SubscriptionPlan, c.SubscriptionsPermission,
-		c.SubscriptionsRole, c.SubscriptionsUser, c.Tenant, c.TenantEmailDomain,
-		c.TenantFeatureGrant, c.TenantSubscription, c.UsageEvent, c.UserRoleAssignment,
+		c.SubscriptionsRole, c.SubscriptionsUser, c.SupportFeeCycle, c.Tenant,
+		c.TenantEmailDomain, c.TenantFeatureGrant, c.TenantSubscription, c.UsageEvent,
+		c.UserRoleAssignment,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -451,6 +459,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.SubscriptionsRole.mutate(ctx, m)
 	case *SubscriptionsUserMutation:
 		return c.SubscriptionsUser.mutate(ctx, m)
+	case *SupportFeeCycleMutation:
+		return c.SupportFeeCycle.mutate(ctx, m)
 	case *TenantMutation:
 		return c.Tenant.mutate(ctx, m)
 	case *TenantEmailDomainMutation:
@@ -3886,6 +3896,22 @@ func (c *SubscriptionPlanClient) QueryOverrideProductSubscriptions(_m *Subscript
 	return query
 }
 
+// QuerySupportFeeCycles queries the support_fee_cycles edge of a SubscriptionPlan.
+func (c *SubscriptionPlanClient) QuerySupportFeeCycles(_m *SubscriptionPlan) *SupportFeeCycleQuery {
+	query := (&SupportFeeCycleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionplan.Table, subscriptionplan.FieldID, id),
+			sqlgraph.To(supportfeecycle.Table, supportfeecycle.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionplan.SupportFeeCyclesTable, subscriptionplan.SupportFeeCyclesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *SubscriptionPlanClient) Hooks() []Hook {
 	return c.hooks.SubscriptionPlan
@@ -4387,6 +4413,171 @@ func (c *SubscriptionsUserClient) mutate(ctx context.Context, m *SubscriptionsUs
 		return (&SubscriptionsUserDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown SubscriptionsUser mutation op: %q", m.Op())
+	}
+}
+
+// SupportFeeCycleClient is a client for the SupportFeeCycle schema.
+type SupportFeeCycleClient struct {
+	config
+}
+
+// NewSupportFeeCycleClient returns a client for the SupportFeeCycle from the given config.
+func NewSupportFeeCycleClient(c config) *SupportFeeCycleClient {
+	return &SupportFeeCycleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `supportfeecycle.Hooks(f(g(h())))`.
+func (c *SupportFeeCycleClient) Use(hooks ...Hook) {
+	c.hooks.SupportFeeCycle = append(c.hooks.SupportFeeCycle, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `supportfeecycle.Intercept(f(g(h())))`.
+func (c *SupportFeeCycleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.SupportFeeCycle = append(c.inters.SupportFeeCycle, interceptors...)
+}
+
+// Create returns a builder for creating a SupportFeeCycle entity.
+func (c *SupportFeeCycleClient) Create() *SupportFeeCycleCreate {
+	mutation := newSupportFeeCycleMutation(c.config, OpCreate)
+	return &SupportFeeCycleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of SupportFeeCycle entities.
+func (c *SupportFeeCycleClient) CreateBulk(builders ...*SupportFeeCycleCreate) *SupportFeeCycleCreateBulk {
+	return &SupportFeeCycleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *SupportFeeCycleClient) MapCreateBulk(slice any, setFunc func(*SupportFeeCycleCreate, int)) *SupportFeeCycleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &SupportFeeCycleCreateBulk{err: fmt.Errorf("calling to SupportFeeCycleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*SupportFeeCycleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &SupportFeeCycleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for SupportFeeCycle.
+func (c *SupportFeeCycleClient) Update() *SupportFeeCycleUpdate {
+	mutation := newSupportFeeCycleMutation(c.config, OpUpdate)
+	return &SupportFeeCycleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SupportFeeCycleClient) UpdateOne(_m *SupportFeeCycle) *SupportFeeCycleUpdateOne {
+	mutation := newSupportFeeCycleMutation(c.config, OpUpdateOne, withSupportFeeCycle(_m))
+	return &SupportFeeCycleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SupportFeeCycleClient) UpdateOneID(id uuid.UUID) *SupportFeeCycleUpdateOne {
+	mutation := newSupportFeeCycleMutation(c.config, OpUpdateOne, withSupportFeeCycleID(id))
+	return &SupportFeeCycleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for SupportFeeCycle.
+func (c *SupportFeeCycleClient) Delete() *SupportFeeCycleDelete {
+	mutation := newSupportFeeCycleMutation(c.config, OpDelete)
+	return &SupportFeeCycleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SupportFeeCycleClient) DeleteOne(_m *SupportFeeCycle) *SupportFeeCycleDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SupportFeeCycleClient) DeleteOneID(id uuid.UUID) *SupportFeeCycleDeleteOne {
+	builder := c.Delete().Where(supportfeecycle.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SupportFeeCycleDeleteOne{builder}
+}
+
+// Query returns a query builder for SupportFeeCycle.
+func (c *SupportFeeCycleClient) Query() *SupportFeeCycleQuery {
+	return &SupportFeeCycleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeSupportFeeCycle},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a SupportFeeCycle entity by its id.
+func (c *SupportFeeCycleClient) Get(ctx context.Context, id uuid.UUID) (*SupportFeeCycle, error) {
+	return c.Query().Where(supportfeecycle.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SupportFeeCycleClient) GetX(ctx context.Context, id uuid.UUID) *SupportFeeCycle {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenantSubscription queries the tenant_subscription edge of a SupportFeeCycle.
+func (c *SupportFeeCycleClient) QueryTenantSubscription(_m *SupportFeeCycle) *TenantSubscriptionQuery {
+	query := (&TenantSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(supportfeecycle.Table, supportfeecycle.FieldID, id),
+			sqlgraph.To(tenantsubscription.Table, tenantsubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, supportfeecycle.TenantSubscriptionTable, supportfeecycle.TenantSubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySupportPlan queries the support_plan edge of a SupportFeeCycle.
+func (c *SupportFeeCycleClient) QuerySupportPlan(_m *SupportFeeCycle) *SubscriptionPlanQuery {
+	query := (&SubscriptionPlanClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(supportfeecycle.Table, supportfeecycle.FieldID, id),
+			sqlgraph.To(subscriptionplan.Table, subscriptionplan.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, supportfeecycle.SupportPlanTable, supportfeecycle.SupportPlanColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *SupportFeeCycleClient) Hooks() []Hook {
+	return c.hooks.SupportFeeCycle
+}
+
+// Interceptors returns the client interceptors.
+func (c *SupportFeeCycleClient) Interceptors() []Interceptor {
+	return c.inters.SupportFeeCycle
+}
+
+func (c *SupportFeeCycleClient) mutate(ctx context.Context, m *SupportFeeCycleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&SupportFeeCycleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&SupportFeeCycleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&SupportFeeCycleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&SupportFeeCycleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown SupportFeeCycle mutation op: %q", m.Op())
 	}
 }
 
@@ -5025,6 +5216,22 @@ func (c *TenantSubscriptionClient) QueryEmailDomains(_m *TenantSubscription) *Te
 	return query
 }
 
+// QuerySupportFeeCycles queries the support_fee_cycles edge of a TenantSubscription.
+func (c *TenantSubscriptionClient) QuerySupportFeeCycles(_m *TenantSubscription) *SupportFeeCycleQuery {
+	query := (&SupportFeeCycleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, id),
+			sqlgraph.To(supportfeecycle.Table, supportfeecycle.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.SupportFeeCyclesTable, tenantsubscription.SupportFeeCyclesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *TenantSubscriptionClient) Hooks() []Hook {
 	return c.hooks.TenantSubscription
@@ -5356,8 +5563,8 @@ type (
 		OverageCharge, PlanFeature, PlanPricingHistory, Product, ProductSubscription,
 		RateLimitConfig, RolePermission, ServiceChargePlan, ServiceConfig,
 		SubscriptionCredit, SubscriptionCreditTransaction, SubscriptionPlan,
-		SubscriptionsPermission, SubscriptionsRole, SubscriptionsUser, Tenant,
-		TenantEmailDomain, TenantFeatureGrant, TenantSubscription, UsageEvent,
+		SubscriptionsPermission, SubscriptionsRole, SubscriptionsUser, SupportFeeCycle,
+		Tenant, TenantEmailDomain, TenantFeatureGrant, TenantSubscription, UsageEvent,
 		UserRoleAssignment []ent.Hook
 	}
 	inters struct {
@@ -5366,8 +5573,8 @@ type (
 		OverageCharge, PlanFeature, PlanPricingHistory, Product, ProductSubscription,
 		RateLimitConfig, RolePermission, ServiceChargePlan, ServiceConfig,
 		SubscriptionCredit, SubscriptionCreditTransaction, SubscriptionPlan,
-		SubscriptionsPermission, SubscriptionsRole, SubscriptionsUser, Tenant,
-		TenantEmailDomain, TenantFeatureGrant, TenantSubscription, UsageEvent,
+		SubscriptionsPermission, SubscriptionsRole, SubscriptionsUser, SupportFeeCycle,
+		Tenant, TenantEmailDomain, TenantFeatureGrant, TenantSubscription, UsageEvent,
 		UserRoleAssignment []ent.Interceptor
 	}
 )

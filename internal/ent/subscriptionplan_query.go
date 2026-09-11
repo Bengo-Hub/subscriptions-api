@@ -17,6 +17,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -32,6 +33,7 @@ type SubscriptionPlanQuery struct {
 	withPricingHistory               *PlanPricingHistoryQuery
 	withSubscriptions                *TenantSubscriptionQuery
 	withOverrideProductSubscriptions *ProductSubscriptionQuery
+	withSupportFeeCycles             *SupportFeeCycleQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -149,6 +151,28 @@ func (_q *SubscriptionPlanQuery) QueryOverrideProductSubscriptions() *ProductSub
 			sqlgraph.From(subscriptionplan.Table, subscriptionplan.FieldID, selector),
 			sqlgraph.To(productsubscription.Table, productsubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionplan.OverrideProductSubscriptionsTable, subscriptionplan.OverrideProductSubscriptionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySupportFeeCycles chains the current query on the "support_fee_cycles" edge.
+func (_q *SubscriptionPlanQuery) QuerySupportFeeCycles() *SupportFeeCycleQuery {
+	query := (&SupportFeeCycleClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionplan.Table, subscriptionplan.FieldID, selector),
+			sqlgraph.To(supportfeecycle.Table, supportfeecycle.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionplan.SupportFeeCyclesTable, subscriptionplan.SupportFeeCyclesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -352,6 +376,7 @@ func (_q *SubscriptionPlanQuery) Clone() *SubscriptionPlanQuery {
 		withPricingHistory:               _q.withPricingHistory.Clone(),
 		withSubscriptions:                _q.withSubscriptions.Clone(),
 		withOverrideProductSubscriptions: _q.withOverrideProductSubscriptions.Clone(),
+		withSupportFeeCycles:             _q.withSupportFeeCycles.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -399,6 +424,17 @@ func (_q *SubscriptionPlanQuery) WithOverrideProductSubscriptions(opts ...func(*
 		opt(query)
 	}
 	_q.withOverrideProductSubscriptions = query
+	return _q
+}
+
+// WithSupportFeeCycles tells the query-builder to eager-load the nodes that are connected to
+// the "support_fee_cycles" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *SubscriptionPlanQuery) WithSupportFeeCycles(opts ...func(*SupportFeeCycleQuery)) *SubscriptionPlanQuery {
+	query := (&SupportFeeCycleClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSupportFeeCycles = query
 	return _q
 }
 
@@ -480,11 +516,12 @@ func (_q *SubscriptionPlanQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	var (
 		nodes       = []*SubscriptionPlan{}
 		_spec       = _q.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			_q.withFeatures != nil,
 			_q.withPricingHistory != nil,
 			_q.withSubscriptions != nil,
 			_q.withOverrideProductSubscriptions != nil,
+			_q.withSupportFeeCycles != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -535,6 +572,15 @@ func (_q *SubscriptionPlanQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			func(n *SubscriptionPlan) { n.Edges.OverrideProductSubscriptions = []*ProductSubscription{} },
 			func(n *SubscriptionPlan, e *ProductSubscription) {
 				n.Edges.OverrideProductSubscriptions = append(n.Edges.OverrideProductSubscriptions, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withSupportFeeCycles; query != nil {
+		if err := _q.loadSupportFeeCycles(ctx, query, nodes,
+			func(n *SubscriptionPlan) { n.Edges.SupportFeeCycles = []*SupportFeeCycle{} },
+			func(n *SubscriptionPlan, e *SupportFeeCycle) {
+				n.Edges.SupportFeeCycles = append(n.Edges.SupportFeeCycles, e)
 			}); err != nil {
 			return nil, err
 		}
@@ -660,6 +706,36 @@ func (_q *SubscriptionPlanQuery) loadOverrideProductSubscriptions(ctx context.Co
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "override_plan_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *SubscriptionPlanQuery) loadSupportFeeCycles(ctx context.Context, query *SupportFeeCycleQuery, nodes []*SubscriptionPlan, init func(*SubscriptionPlan), assign func(*SubscriptionPlan, *SupportFeeCycle)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*SubscriptionPlan)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(supportfeecycle.FieldSupportPlanID)
+	}
+	query.Where(predicate.SupportFeeCycle(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(subscriptionplan.SupportFeeCyclesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.SupportPlanID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "support_plan_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

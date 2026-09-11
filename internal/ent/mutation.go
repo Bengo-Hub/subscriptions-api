@@ -39,6 +39,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionspermission"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsuser"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 	"github.com/bengobox/subscription-service/internal/ent/tenantfeaturegrant"
@@ -83,6 +84,7 @@ const (
 	TypeSubscriptionsPermission       = "SubscriptionsPermission"
 	TypeSubscriptionsRole             = "SubscriptionsRole"
 	TypeSubscriptionsUser             = "SubscriptionsUser"
+	TypeSupportFeeCycle               = "SupportFeeCycle"
 	TypeTenant                        = "Tenant"
 	TypeTenantEmailDomain             = "TenantEmailDomain"
 	TypeTenantFeatureGrant            = "TenantFeatureGrant"
@@ -23025,6 +23027,9 @@ type SubscriptionPlanMutation struct {
 	override_product_subscriptions        map[uuid.UUID]struct{}
 	removedoverride_product_subscriptions map[uuid.UUID]struct{}
 	clearedoverride_product_subscriptions bool
+	support_fee_cycles                    map[uuid.UUID]struct{}
+	removedsupport_fee_cycles             map[uuid.UUID]struct{}
+	clearedsupport_fee_cycles             bool
 	done                                  bool
 	oldValue                              func(context.Context) (*SubscriptionPlan, error)
 	predicates                            []predicate.SubscriptionPlan
@@ -24288,6 +24293,60 @@ func (m *SubscriptionPlanMutation) ResetOverrideProductSubscriptions() {
 	m.removedoverride_product_subscriptions = nil
 }
 
+// AddSupportFeeCycleIDs adds the "support_fee_cycles" edge to the SupportFeeCycle entity by ids.
+func (m *SubscriptionPlanMutation) AddSupportFeeCycleIDs(ids ...uuid.UUID) {
+	if m.support_fee_cycles == nil {
+		m.support_fee_cycles = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.support_fee_cycles[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSupportFeeCycles clears the "support_fee_cycles" edge to the SupportFeeCycle entity.
+func (m *SubscriptionPlanMutation) ClearSupportFeeCycles() {
+	m.clearedsupport_fee_cycles = true
+}
+
+// SupportFeeCyclesCleared reports if the "support_fee_cycles" edge to the SupportFeeCycle entity was cleared.
+func (m *SubscriptionPlanMutation) SupportFeeCyclesCleared() bool {
+	return m.clearedsupport_fee_cycles
+}
+
+// RemoveSupportFeeCycleIDs removes the "support_fee_cycles" edge to the SupportFeeCycle entity by IDs.
+func (m *SubscriptionPlanMutation) RemoveSupportFeeCycleIDs(ids ...uuid.UUID) {
+	if m.removedsupport_fee_cycles == nil {
+		m.removedsupport_fee_cycles = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.support_fee_cycles, ids[i])
+		m.removedsupport_fee_cycles[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSupportFeeCycles returns the removed IDs of the "support_fee_cycles" edge to the SupportFeeCycle entity.
+func (m *SubscriptionPlanMutation) RemovedSupportFeeCyclesIDs() (ids []uuid.UUID) {
+	for id := range m.removedsupport_fee_cycles {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SupportFeeCyclesIDs returns the "support_fee_cycles" edge IDs in the mutation.
+func (m *SubscriptionPlanMutation) SupportFeeCyclesIDs() (ids []uuid.UUID) {
+	for id := range m.support_fee_cycles {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSupportFeeCycles resets all changes to the "support_fee_cycles" edge.
+func (m *SubscriptionPlanMutation) ResetSupportFeeCycles() {
+	m.support_fee_cycles = nil
+	m.clearedsupport_fee_cycles = false
+	m.removedsupport_fee_cycles = nil
+}
+
 // Where appends a list predicates to the SubscriptionPlanMutation builder.
 func (m *SubscriptionPlanMutation) Where(ps ...predicate.SubscriptionPlan) {
 	m.predicates = append(m.predicates, ps...)
@@ -24857,7 +24916,7 @@ func (m *SubscriptionPlanMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *SubscriptionPlanMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.features != nil {
 		edges = append(edges, subscriptionplan.EdgeFeatures)
 	}
@@ -24869,6 +24928,9 @@ func (m *SubscriptionPlanMutation) AddedEdges() []string {
 	}
 	if m.override_product_subscriptions != nil {
 		edges = append(edges, subscriptionplan.EdgeOverrideProductSubscriptions)
+	}
+	if m.support_fee_cycles != nil {
+		edges = append(edges, subscriptionplan.EdgeSupportFeeCycles)
 	}
 	return edges
 }
@@ -24901,13 +24963,19 @@ func (m *SubscriptionPlanMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case subscriptionplan.EdgeSupportFeeCycles:
+		ids := make([]ent.Value, 0, len(m.support_fee_cycles))
+		for id := range m.support_fee_cycles {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *SubscriptionPlanMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.removedfeatures != nil {
 		edges = append(edges, subscriptionplan.EdgeFeatures)
 	}
@@ -24919,6 +24987,9 @@ func (m *SubscriptionPlanMutation) RemovedEdges() []string {
 	}
 	if m.removedoverride_product_subscriptions != nil {
 		edges = append(edges, subscriptionplan.EdgeOverrideProductSubscriptions)
+	}
+	if m.removedsupport_fee_cycles != nil {
+		edges = append(edges, subscriptionplan.EdgeSupportFeeCycles)
 	}
 	return edges
 }
@@ -24951,13 +25022,19 @@ func (m *SubscriptionPlanMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case subscriptionplan.EdgeSupportFeeCycles:
+		ids := make([]ent.Value, 0, len(m.removedsupport_fee_cycles))
+		for id := range m.removedsupport_fee_cycles {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *SubscriptionPlanMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.clearedfeatures {
 		edges = append(edges, subscriptionplan.EdgeFeatures)
 	}
@@ -24969,6 +25046,9 @@ func (m *SubscriptionPlanMutation) ClearedEdges() []string {
 	}
 	if m.clearedoverride_product_subscriptions {
 		edges = append(edges, subscriptionplan.EdgeOverrideProductSubscriptions)
+	}
+	if m.clearedsupport_fee_cycles {
+		edges = append(edges, subscriptionplan.EdgeSupportFeeCycles)
 	}
 	return edges
 }
@@ -24985,6 +25065,8 @@ func (m *SubscriptionPlanMutation) EdgeCleared(name string) bool {
 		return m.clearedsubscriptions
 	case subscriptionplan.EdgeOverrideProductSubscriptions:
 		return m.clearedoverride_product_subscriptions
+	case subscriptionplan.EdgeSupportFeeCycles:
+		return m.clearedsupport_fee_cycles
 	}
 	return false
 }
@@ -25012,6 +25094,9 @@ func (m *SubscriptionPlanMutation) ResetEdge(name string) error {
 		return nil
 	case subscriptionplan.EdgeOverrideProductSubscriptions:
 		m.ResetOverrideProductSubscriptions()
+		return nil
+	case subscriptionplan.EdgeSupportFeeCycles:
+		m.ResetSupportFeeCycles()
 		return nil
 	}
 	return fmt.Errorf("unknown SubscriptionPlan edge %s", name)
@@ -27576,6 +27661,1595 @@ func (m *SubscriptionsUserMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *SubscriptionsUserMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown SubscriptionsUser edge %s", name)
+}
+
+// SupportFeeCycleMutation represents an operation that mutates the SupportFeeCycle nodes in the graph.
+type SupportFeeCycleMutation struct {
+	config
+	op                         Op
+	typ                        string
+	id                         *uuid.UUID
+	tenant_id                  *uuid.UUID
+	anchor_date                *time.Time
+	cycle_number               *int
+	addcycle_number            *int
+	period_start               *time.Time
+	due_date                   *time.Time
+	status                     *supportfeecycle.Status
+	paid_at                    *time.Time
+	grace_until                *time.Time
+	base_price                 *float64
+	addbase_price              *float64
+	custom_price               *float64
+	addcustom_price            *float64
+	custom_price_reason        *string
+	custom_price_set_by        *uuid.UUID
+	custom_price_set_at        *time.Time
+	metadata                   *map[string]interface{}
+	created_at                 *time.Time
+	updated_at                 *time.Time
+	clearedFields              map[string]struct{}
+	tenant_subscription        *uuid.UUID
+	clearedtenant_subscription bool
+	support_plan               *uuid.UUID
+	clearedsupport_plan        bool
+	done                       bool
+	oldValue                   func(context.Context) (*SupportFeeCycle, error)
+	predicates                 []predicate.SupportFeeCycle
+}
+
+var _ ent.Mutation = (*SupportFeeCycleMutation)(nil)
+
+// supportfeecycleOption allows management of the mutation configuration using functional options.
+type supportfeecycleOption func(*SupportFeeCycleMutation)
+
+// newSupportFeeCycleMutation creates new mutation for the SupportFeeCycle entity.
+func newSupportFeeCycleMutation(c config, op Op, opts ...supportfeecycleOption) *SupportFeeCycleMutation {
+	m := &SupportFeeCycleMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeSupportFeeCycle,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withSupportFeeCycleID sets the ID field of the mutation.
+func withSupportFeeCycleID(id uuid.UUID) supportfeecycleOption {
+	return func(m *SupportFeeCycleMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *SupportFeeCycle
+		)
+		m.oldValue = func(ctx context.Context) (*SupportFeeCycle, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().SupportFeeCycle.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withSupportFeeCycle sets the old SupportFeeCycle of the mutation.
+func withSupportFeeCycle(node *SupportFeeCycle) supportfeecycleOption {
+	return func(m *SupportFeeCycleMutation) {
+		m.oldValue = func(context.Context) (*SupportFeeCycle, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m SupportFeeCycleMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m SupportFeeCycleMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of SupportFeeCycle entities.
+func (m *SupportFeeCycleMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *SupportFeeCycleMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *SupportFeeCycleMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().SupportFeeCycle.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetTenantID sets the "tenant_id" field.
+func (m *SupportFeeCycleMutation) SetTenantID(u uuid.UUID) {
+	m.tenant_id = &u
+}
+
+// TenantID returns the value of the "tenant_id" field in the mutation.
+func (m *SupportFeeCycleMutation) TenantID() (r uuid.UUID, exists bool) {
+	v := m.tenant_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTenantID returns the old "tenant_id" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldTenantID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTenantID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTenantID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantID: %w", err)
+	}
+	return oldValue.TenantID, nil
+}
+
+// ResetTenantID resets all changes to the "tenant_id" field.
+func (m *SupportFeeCycleMutation) ResetTenantID() {
+	m.tenant_id = nil
+}
+
+// SetTenantSubscriptionID sets the "tenant_subscription_id" field.
+func (m *SupportFeeCycleMutation) SetTenantSubscriptionID(u uuid.UUID) {
+	m.tenant_subscription = &u
+}
+
+// TenantSubscriptionID returns the value of the "tenant_subscription_id" field in the mutation.
+func (m *SupportFeeCycleMutation) TenantSubscriptionID() (r uuid.UUID, exists bool) {
+	v := m.tenant_subscription
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTenantSubscriptionID returns the old "tenant_subscription_id" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldTenantSubscriptionID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTenantSubscriptionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTenantSubscriptionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantSubscriptionID: %w", err)
+	}
+	return oldValue.TenantSubscriptionID, nil
+}
+
+// ResetTenantSubscriptionID resets all changes to the "tenant_subscription_id" field.
+func (m *SupportFeeCycleMutation) ResetTenantSubscriptionID() {
+	m.tenant_subscription = nil
+}
+
+// SetSupportPlanID sets the "support_plan_id" field.
+func (m *SupportFeeCycleMutation) SetSupportPlanID(u uuid.UUID) {
+	m.support_plan = &u
+}
+
+// SupportPlanID returns the value of the "support_plan_id" field in the mutation.
+func (m *SupportFeeCycleMutation) SupportPlanID() (r uuid.UUID, exists bool) {
+	v := m.support_plan
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSupportPlanID returns the old "support_plan_id" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldSupportPlanID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSupportPlanID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSupportPlanID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSupportPlanID: %w", err)
+	}
+	return oldValue.SupportPlanID, nil
+}
+
+// ResetSupportPlanID resets all changes to the "support_plan_id" field.
+func (m *SupportFeeCycleMutation) ResetSupportPlanID() {
+	m.support_plan = nil
+}
+
+// SetAnchorDate sets the "anchor_date" field.
+func (m *SupportFeeCycleMutation) SetAnchorDate(t time.Time) {
+	m.anchor_date = &t
+}
+
+// AnchorDate returns the value of the "anchor_date" field in the mutation.
+func (m *SupportFeeCycleMutation) AnchorDate() (r time.Time, exists bool) {
+	v := m.anchor_date
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAnchorDate returns the old "anchor_date" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldAnchorDate(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAnchorDate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAnchorDate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAnchorDate: %w", err)
+	}
+	return oldValue.AnchorDate, nil
+}
+
+// ResetAnchorDate resets all changes to the "anchor_date" field.
+func (m *SupportFeeCycleMutation) ResetAnchorDate() {
+	m.anchor_date = nil
+}
+
+// SetCycleNumber sets the "cycle_number" field.
+func (m *SupportFeeCycleMutation) SetCycleNumber(i int) {
+	m.cycle_number = &i
+	m.addcycle_number = nil
+}
+
+// CycleNumber returns the value of the "cycle_number" field in the mutation.
+func (m *SupportFeeCycleMutation) CycleNumber() (r int, exists bool) {
+	v := m.cycle_number
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCycleNumber returns the old "cycle_number" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldCycleNumber(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCycleNumber is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCycleNumber requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCycleNumber: %w", err)
+	}
+	return oldValue.CycleNumber, nil
+}
+
+// AddCycleNumber adds i to the "cycle_number" field.
+func (m *SupportFeeCycleMutation) AddCycleNumber(i int) {
+	if m.addcycle_number != nil {
+		*m.addcycle_number += i
+	} else {
+		m.addcycle_number = &i
+	}
+}
+
+// AddedCycleNumber returns the value that was added to the "cycle_number" field in this mutation.
+func (m *SupportFeeCycleMutation) AddedCycleNumber() (r int, exists bool) {
+	v := m.addcycle_number
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCycleNumber resets all changes to the "cycle_number" field.
+func (m *SupportFeeCycleMutation) ResetCycleNumber() {
+	m.cycle_number = nil
+	m.addcycle_number = nil
+}
+
+// SetPeriodStart sets the "period_start" field.
+func (m *SupportFeeCycleMutation) SetPeriodStart(t time.Time) {
+	m.period_start = &t
+}
+
+// PeriodStart returns the value of the "period_start" field in the mutation.
+func (m *SupportFeeCycleMutation) PeriodStart() (r time.Time, exists bool) {
+	v := m.period_start
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPeriodStart returns the old "period_start" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldPeriodStart(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPeriodStart is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPeriodStart requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPeriodStart: %w", err)
+	}
+	return oldValue.PeriodStart, nil
+}
+
+// ResetPeriodStart resets all changes to the "period_start" field.
+func (m *SupportFeeCycleMutation) ResetPeriodStart() {
+	m.period_start = nil
+}
+
+// SetDueDate sets the "due_date" field.
+func (m *SupportFeeCycleMutation) SetDueDate(t time.Time) {
+	m.due_date = &t
+}
+
+// DueDate returns the value of the "due_date" field in the mutation.
+func (m *SupportFeeCycleMutation) DueDate() (r time.Time, exists bool) {
+	v := m.due_date
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDueDate returns the old "due_date" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldDueDate(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDueDate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDueDate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDueDate: %w", err)
+	}
+	return oldValue.DueDate, nil
+}
+
+// ResetDueDate resets all changes to the "due_date" field.
+func (m *SupportFeeCycleMutation) ResetDueDate() {
+	m.due_date = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *SupportFeeCycleMutation) SetStatus(s supportfeecycle.Status) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *SupportFeeCycleMutation) Status() (r supportfeecycle.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldStatus(ctx context.Context) (v supportfeecycle.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *SupportFeeCycleMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetPaidAt sets the "paid_at" field.
+func (m *SupportFeeCycleMutation) SetPaidAt(t time.Time) {
+	m.paid_at = &t
+}
+
+// PaidAt returns the value of the "paid_at" field in the mutation.
+func (m *SupportFeeCycleMutation) PaidAt() (r time.Time, exists bool) {
+	v := m.paid_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPaidAt returns the old "paid_at" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldPaidAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPaidAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPaidAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPaidAt: %w", err)
+	}
+	return oldValue.PaidAt, nil
+}
+
+// ClearPaidAt clears the value of the "paid_at" field.
+func (m *SupportFeeCycleMutation) ClearPaidAt() {
+	m.paid_at = nil
+	m.clearedFields[supportfeecycle.FieldPaidAt] = struct{}{}
+}
+
+// PaidAtCleared returns if the "paid_at" field was cleared in this mutation.
+func (m *SupportFeeCycleMutation) PaidAtCleared() bool {
+	_, ok := m.clearedFields[supportfeecycle.FieldPaidAt]
+	return ok
+}
+
+// ResetPaidAt resets all changes to the "paid_at" field.
+func (m *SupportFeeCycleMutation) ResetPaidAt() {
+	m.paid_at = nil
+	delete(m.clearedFields, supportfeecycle.FieldPaidAt)
+}
+
+// SetGraceUntil sets the "grace_until" field.
+func (m *SupportFeeCycleMutation) SetGraceUntil(t time.Time) {
+	m.grace_until = &t
+}
+
+// GraceUntil returns the value of the "grace_until" field in the mutation.
+func (m *SupportFeeCycleMutation) GraceUntil() (r time.Time, exists bool) {
+	v := m.grace_until
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGraceUntil returns the old "grace_until" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldGraceUntil(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGraceUntil is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGraceUntil requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGraceUntil: %w", err)
+	}
+	return oldValue.GraceUntil, nil
+}
+
+// ClearGraceUntil clears the value of the "grace_until" field.
+func (m *SupportFeeCycleMutation) ClearGraceUntil() {
+	m.grace_until = nil
+	m.clearedFields[supportfeecycle.FieldGraceUntil] = struct{}{}
+}
+
+// GraceUntilCleared returns if the "grace_until" field was cleared in this mutation.
+func (m *SupportFeeCycleMutation) GraceUntilCleared() bool {
+	_, ok := m.clearedFields[supportfeecycle.FieldGraceUntil]
+	return ok
+}
+
+// ResetGraceUntil resets all changes to the "grace_until" field.
+func (m *SupportFeeCycleMutation) ResetGraceUntil() {
+	m.grace_until = nil
+	delete(m.clearedFields, supportfeecycle.FieldGraceUntil)
+}
+
+// SetBasePrice sets the "base_price" field.
+func (m *SupportFeeCycleMutation) SetBasePrice(f float64) {
+	m.base_price = &f
+	m.addbase_price = nil
+}
+
+// BasePrice returns the value of the "base_price" field in the mutation.
+func (m *SupportFeeCycleMutation) BasePrice() (r float64, exists bool) {
+	v := m.base_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBasePrice returns the old "base_price" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldBasePrice(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBasePrice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBasePrice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBasePrice: %w", err)
+	}
+	return oldValue.BasePrice, nil
+}
+
+// AddBasePrice adds f to the "base_price" field.
+func (m *SupportFeeCycleMutation) AddBasePrice(f float64) {
+	if m.addbase_price != nil {
+		*m.addbase_price += f
+	} else {
+		m.addbase_price = &f
+	}
+}
+
+// AddedBasePrice returns the value that was added to the "base_price" field in this mutation.
+func (m *SupportFeeCycleMutation) AddedBasePrice() (r float64, exists bool) {
+	v := m.addbase_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetBasePrice resets all changes to the "base_price" field.
+func (m *SupportFeeCycleMutation) ResetBasePrice() {
+	m.base_price = nil
+	m.addbase_price = nil
+}
+
+// SetCustomPrice sets the "custom_price" field.
+func (m *SupportFeeCycleMutation) SetCustomPrice(f float64) {
+	m.custom_price = &f
+	m.addcustom_price = nil
+}
+
+// CustomPrice returns the value of the "custom_price" field in the mutation.
+func (m *SupportFeeCycleMutation) CustomPrice() (r float64, exists bool) {
+	v := m.custom_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCustomPrice returns the old "custom_price" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldCustomPrice(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCustomPrice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCustomPrice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCustomPrice: %w", err)
+	}
+	return oldValue.CustomPrice, nil
+}
+
+// AddCustomPrice adds f to the "custom_price" field.
+func (m *SupportFeeCycleMutation) AddCustomPrice(f float64) {
+	if m.addcustom_price != nil {
+		*m.addcustom_price += f
+	} else {
+		m.addcustom_price = &f
+	}
+}
+
+// AddedCustomPrice returns the value that was added to the "custom_price" field in this mutation.
+func (m *SupportFeeCycleMutation) AddedCustomPrice() (r float64, exists bool) {
+	v := m.addcustom_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearCustomPrice clears the value of the "custom_price" field.
+func (m *SupportFeeCycleMutation) ClearCustomPrice() {
+	m.custom_price = nil
+	m.addcustom_price = nil
+	m.clearedFields[supportfeecycle.FieldCustomPrice] = struct{}{}
+}
+
+// CustomPriceCleared returns if the "custom_price" field was cleared in this mutation.
+func (m *SupportFeeCycleMutation) CustomPriceCleared() bool {
+	_, ok := m.clearedFields[supportfeecycle.FieldCustomPrice]
+	return ok
+}
+
+// ResetCustomPrice resets all changes to the "custom_price" field.
+func (m *SupportFeeCycleMutation) ResetCustomPrice() {
+	m.custom_price = nil
+	m.addcustom_price = nil
+	delete(m.clearedFields, supportfeecycle.FieldCustomPrice)
+}
+
+// SetCustomPriceReason sets the "custom_price_reason" field.
+func (m *SupportFeeCycleMutation) SetCustomPriceReason(s string) {
+	m.custom_price_reason = &s
+}
+
+// CustomPriceReason returns the value of the "custom_price_reason" field in the mutation.
+func (m *SupportFeeCycleMutation) CustomPriceReason() (r string, exists bool) {
+	v := m.custom_price_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCustomPriceReason returns the old "custom_price_reason" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldCustomPriceReason(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCustomPriceReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCustomPriceReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCustomPriceReason: %w", err)
+	}
+	return oldValue.CustomPriceReason, nil
+}
+
+// ClearCustomPriceReason clears the value of the "custom_price_reason" field.
+func (m *SupportFeeCycleMutation) ClearCustomPriceReason() {
+	m.custom_price_reason = nil
+	m.clearedFields[supportfeecycle.FieldCustomPriceReason] = struct{}{}
+}
+
+// CustomPriceReasonCleared returns if the "custom_price_reason" field was cleared in this mutation.
+func (m *SupportFeeCycleMutation) CustomPriceReasonCleared() bool {
+	_, ok := m.clearedFields[supportfeecycle.FieldCustomPriceReason]
+	return ok
+}
+
+// ResetCustomPriceReason resets all changes to the "custom_price_reason" field.
+func (m *SupportFeeCycleMutation) ResetCustomPriceReason() {
+	m.custom_price_reason = nil
+	delete(m.clearedFields, supportfeecycle.FieldCustomPriceReason)
+}
+
+// SetCustomPriceSetBy sets the "custom_price_set_by" field.
+func (m *SupportFeeCycleMutation) SetCustomPriceSetBy(u uuid.UUID) {
+	m.custom_price_set_by = &u
+}
+
+// CustomPriceSetBy returns the value of the "custom_price_set_by" field in the mutation.
+func (m *SupportFeeCycleMutation) CustomPriceSetBy() (r uuid.UUID, exists bool) {
+	v := m.custom_price_set_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCustomPriceSetBy returns the old "custom_price_set_by" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldCustomPriceSetBy(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCustomPriceSetBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCustomPriceSetBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCustomPriceSetBy: %w", err)
+	}
+	return oldValue.CustomPriceSetBy, nil
+}
+
+// ClearCustomPriceSetBy clears the value of the "custom_price_set_by" field.
+func (m *SupportFeeCycleMutation) ClearCustomPriceSetBy() {
+	m.custom_price_set_by = nil
+	m.clearedFields[supportfeecycle.FieldCustomPriceSetBy] = struct{}{}
+}
+
+// CustomPriceSetByCleared returns if the "custom_price_set_by" field was cleared in this mutation.
+func (m *SupportFeeCycleMutation) CustomPriceSetByCleared() bool {
+	_, ok := m.clearedFields[supportfeecycle.FieldCustomPriceSetBy]
+	return ok
+}
+
+// ResetCustomPriceSetBy resets all changes to the "custom_price_set_by" field.
+func (m *SupportFeeCycleMutation) ResetCustomPriceSetBy() {
+	m.custom_price_set_by = nil
+	delete(m.clearedFields, supportfeecycle.FieldCustomPriceSetBy)
+}
+
+// SetCustomPriceSetAt sets the "custom_price_set_at" field.
+func (m *SupportFeeCycleMutation) SetCustomPriceSetAt(t time.Time) {
+	m.custom_price_set_at = &t
+}
+
+// CustomPriceSetAt returns the value of the "custom_price_set_at" field in the mutation.
+func (m *SupportFeeCycleMutation) CustomPriceSetAt() (r time.Time, exists bool) {
+	v := m.custom_price_set_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCustomPriceSetAt returns the old "custom_price_set_at" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldCustomPriceSetAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCustomPriceSetAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCustomPriceSetAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCustomPriceSetAt: %w", err)
+	}
+	return oldValue.CustomPriceSetAt, nil
+}
+
+// ClearCustomPriceSetAt clears the value of the "custom_price_set_at" field.
+func (m *SupportFeeCycleMutation) ClearCustomPriceSetAt() {
+	m.custom_price_set_at = nil
+	m.clearedFields[supportfeecycle.FieldCustomPriceSetAt] = struct{}{}
+}
+
+// CustomPriceSetAtCleared returns if the "custom_price_set_at" field was cleared in this mutation.
+func (m *SupportFeeCycleMutation) CustomPriceSetAtCleared() bool {
+	_, ok := m.clearedFields[supportfeecycle.FieldCustomPriceSetAt]
+	return ok
+}
+
+// ResetCustomPriceSetAt resets all changes to the "custom_price_set_at" field.
+func (m *SupportFeeCycleMutation) ResetCustomPriceSetAt() {
+	m.custom_price_set_at = nil
+	delete(m.clearedFields, supportfeecycle.FieldCustomPriceSetAt)
+}
+
+// SetMetadata sets the "metadata" field.
+func (m *SupportFeeCycleMutation) SetMetadata(value map[string]interface{}) {
+	m.metadata = &value
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *SupportFeeCycleMutation) Metadata() (r map[string]interface{}, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldMetadata(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (m *SupportFeeCycleMutation) ClearMetadata() {
+	m.metadata = nil
+	m.clearedFields[supportfeecycle.FieldMetadata] = struct{}{}
+}
+
+// MetadataCleared returns if the "metadata" field was cleared in this mutation.
+func (m *SupportFeeCycleMutation) MetadataCleared() bool {
+	_, ok := m.clearedFields[supportfeecycle.FieldMetadata]
+	return ok
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *SupportFeeCycleMutation) ResetMetadata() {
+	m.metadata = nil
+	delete(m.clearedFields, supportfeecycle.FieldMetadata)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *SupportFeeCycleMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *SupportFeeCycleMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *SupportFeeCycleMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *SupportFeeCycleMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *SupportFeeCycleMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the SupportFeeCycle entity.
+// If the SupportFeeCycle object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SupportFeeCycleMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *SupportFeeCycleMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// ClearTenantSubscription clears the "tenant_subscription" edge to the TenantSubscription entity.
+func (m *SupportFeeCycleMutation) ClearTenantSubscription() {
+	m.clearedtenant_subscription = true
+	m.clearedFields[supportfeecycle.FieldTenantSubscriptionID] = struct{}{}
+}
+
+// TenantSubscriptionCleared reports if the "tenant_subscription" edge to the TenantSubscription entity was cleared.
+func (m *SupportFeeCycleMutation) TenantSubscriptionCleared() bool {
+	return m.clearedtenant_subscription
+}
+
+// TenantSubscriptionIDs returns the "tenant_subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TenantSubscriptionID instead. It exists only for internal usage by the builders.
+func (m *SupportFeeCycleMutation) TenantSubscriptionIDs() (ids []uuid.UUID) {
+	if id := m.tenant_subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTenantSubscription resets all changes to the "tenant_subscription" edge.
+func (m *SupportFeeCycleMutation) ResetTenantSubscription() {
+	m.tenant_subscription = nil
+	m.clearedtenant_subscription = false
+}
+
+// ClearSupportPlan clears the "support_plan" edge to the SubscriptionPlan entity.
+func (m *SupportFeeCycleMutation) ClearSupportPlan() {
+	m.clearedsupport_plan = true
+	m.clearedFields[supportfeecycle.FieldSupportPlanID] = struct{}{}
+}
+
+// SupportPlanCleared reports if the "support_plan" edge to the SubscriptionPlan entity was cleared.
+func (m *SupportFeeCycleMutation) SupportPlanCleared() bool {
+	return m.clearedsupport_plan
+}
+
+// SupportPlanIDs returns the "support_plan" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SupportPlanID instead. It exists only for internal usage by the builders.
+func (m *SupportFeeCycleMutation) SupportPlanIDs() (ids []uuid.UUID) {
+	if id := m.support_plan; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSupportPlan resets all changes to the "support_plan" edge.
+func (m *SupportFeeCycleMutation) ResetSupportPlan() {
+	m.support_plan = nil
+	m.clearedsupport_plan = false
+}
+
+// Where appends a list predicates to the SupportFeeCycleMutation builder.
+func (m *SupportFeeCycleMutation) Where(ps ...predicate.SupportFeeCycle) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the SupportFeeCycleMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *SupportFeeCycleMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.SupportFeeCycle, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *SupportFeeCycleMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *SupportFeeCycleMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (SupportFeeCycle).
+func (m *SupportFeeCycleMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *SupportFeeCycleMutation) Fields() []string {
+	fields := make([]string, 0, 18)
+	if m.tenant_id != nil {
+		fields = append(fields, supportfeecycle.FieldTenantID)
+	}
+	if m.tenant_subscription != nil {
+		fields = append(fields, supportfeecycle.FieldTenantSubscriptionID)
+	}
+	if m.support_plan != nil {
+		fields = append(fields, supportfeecycle.FieldSupportPlanID)
+	}
+	if m.anchor_date != nil {
+		fields = append(fields, supportfeecycle.FieldAnchorDate)
+	}
+	if m.cycle_number != nil {
+		fields = append(fields, supportfeecycle.FieldCycleNumber)
+	}
+	if m.period_start != nil {
+		fields = append(fields, supportfeecycle.FieldPeriodStart)
+	}
+	if m.due_date != nil {
+		fields = append(fields, supportfeecycle.FieldDueDate)
+	}
+	if m.status != nil {
+		fields = append(fields, supportfeecycle.FieldStatus)
+	}
+	if m.paid_at != nil {
+		fields = append(fields, supportfeecycle.FieldPaidAt)
+	}
+	if m.grace_until != nil {
+		fields = append(fields, supportfeecycle.FieldGraceUntil)
+	}
+	if m.base_price != nil {
+		fields = append(fields, supportfeecycle.FieldBasePrice)
+	}
+	if m.custom_price != nil {
+		fields = append(fields, supportfeecycle.FieldCustomPrice)
+	}
+	if m.custom_price_reason != nil {
+		fields = append(fields, supportfeecycle.FieldCustomPriceReason)
+	}
+	if m.custom_price_set_by != nil {
+		fields = append(fields, supportfeecycle.FieldCustomPriceSetBy)
+	}
+	if m.custom_price_set_at != nil {
+		fields = append(fields, supportfeecycle.FieldCustomPriceSetAt)
+	}
+	if m.metadata != nil {
+		fields = append(fields, supportfeecycle.FieldMetadata)
+	}
+	if m.created_at != nil {
+		fields = append(fields, supportfeecycle.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, supportfeecycle.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *SupportFeeCycleMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case supportfeecycle.FieldTenantID:
+		return m.TenantID()
+	case supportfeecycle.FieldTenantSubscriptionID:
+		return m.TenantSubscriptionID()
+	case supportfeecycle.FieldSupportPlanID:
+		return m.SupportPlanID()
+	case supportfeecycle.FieldAnchorDate:
+		return m.AnchorDate()
+	case supportfeecycle.FieldCycleNumber:
+		return m.CycleNumber()
+	case supportfeecycle.FieldPeriodStart:
+		return m.PeriodStart()
+	case supportfeecycle.FieldDueDate:
+		return m.DueDate()
+	case supportfeecycle.FieldStatus:
+		return m.Status()
+	case supportfeecycle.FieldPaidAt:
+		return m.PaidAt()
+	case supportfeecycle.FieldGraceUntil:
+		return m.GraceUntil()
+	case supportfeecycle.FieldBasePrice:
+		return m.BasePrice()
+	case supportfeecycle.FieldCustomPrice:
+		return m.CustomPrice()
+	case supportfeecycle.FieldCustomPriceReason:
+		return m.CustomPriceReason()
+	case supportfeecycle.FieldCustomPriceSetBy:
+		return m.CustomPriceSetBy()
+	case supportfeecycle.FieldCustomPriceSetAt:
+		return m.CustomPriceSetAt()
+	case supportfeecycle.FieldMetadata:
+		return m.Metadata()
+	case supportfeecycle.FieldCreatedAt:
+		return m.CreatedAt()
+	case supportfeecycle.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *SupportFeeCycleMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case supportfeecycle.FieldTenantID:
+		return m.OldTenantID(ctx)
+	case supportfeecycle.FieldTenantSubscriptionID:
+		return m.OldTenantSubscriptionID(ctx)
+	case supportfeecycle.FieldSupportPlanID:
+		return m.OldSupportPlanID(ctx)
+	case supportfeecycle.FieldAnchorDate:
+		return m.OldAnchorDate(ctx)
+	case supportfeecycle.FieldCycleNumber:
+		return m.OldCycleNumber(ctx)
+	case supportfeecycle.FieldPeriodStart:
+		return m.OldPeriodStart(ctx)
+	case supportfeecycle.FieldDueDate:
+		return m.OldDueDate(ctx)
+	case supportfeecycle.FieldStatus:
+		return m.OldStatus(ctx)
+	case supportfeecycle.FieldPaidAt:
+		return m.OldPaidAt(ctx)
+	case supportfeecycle.FieldGraceUntil:
+		return m.OldGraceUntil(ctx)
+	case supportfeecycle.FieldBasePrice:
+		return m.OldBasePrice(ctx)
+	case supportfeecycle.FieldCustomPrice:
+		return m.OldCustomPrice(ctx)
+	case supportfeecycle.FieldCustomPriceReason:
+		return m.OldCustomPriceReason(ctx)
+	case supportfeecycle.FieldCustomPriceSetBy:
+		return m.OldCustomPriceSetBy(ctx)
+	case supportfeecycle.FieldCustomPriceSetAt:
+		return m.OldCustomPriceSetAt(ctx)
+	case supportfeecycle.FieldMetadata:
+		return m.OldMetadata(ctx)
+	case supportfeecycle.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case supportfeecycle.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown SupportFeeCycle field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SupportFeeCycleMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case supportfeecycle.FieldTenantID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTenantID(v)
+		return nil
+	case supportfeecycle.FieldTenantSubscriptionID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTenantSubscriptionID(v)
+		return nil
+	case supportfeecycle.FieldSupportPlanID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSupportPlanID(v)
+		return nil
+	case supportfeecycle.FieldAnchorDate:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAnchorDate(v)
+		return nil
+	case supportfeecycle.FieldCycleNumber:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCycleNumber(v)
+		return nil
+	case supportfeecycle.FieldPeriodStart:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPeriodStart(v)
+		return nil
+	case supportfeecycle.FieldDueDate:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDueDate(v)
+		return nil
+	case supportfeecycle.FieldStatus:
+		v, ok := value.(supportfeecycle.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case supportfeecycle.FieldPaidAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPaidAt(v)
+		return nil
+	case supportfeecycle.FieldGraceUntil:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGraceUntil(v)
+		return nil
+	case supportfeecycle.FieldBasePrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBasePrice(v)
+		return nil
+	case supportfeecycle.FieldCustomPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCustomPrice(v)
+		return nil
+	case supportfeecycle.FieldCustomPriceReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCustomPriceReason(v)
+		return nil
+	case supportfeecycle.FieldCustomPriceSetBy:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCustomPriceSetBy(v)
+		return nil
+	case supportfeecycle.FieldCustomPriceSetAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCustomPriceSetAt(v)
+		return nil
+	case supportfeecycle.FieldMetadata:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
+		return nil
+	case supportfeecycle.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case supportfeecycle.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown SupportFeeCycle field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *SupportFeeCycleMutation) AddedFields() []string {
+	var fields []string
+	if m.addcycle_number != nil {
+		fields = append(fields, supportfeecycle.FieldCycleNumber)
+	}
+	if m.addbase_price != nil {
+		fields = append(fields, supportfeecycle.FieldBasePrice)
+	}
+	if m.addcustom_price != nil {
+		fields = append(fields, supportfeecycle.FieldCustomPrice)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *SupportFeeCycleMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case supportfeecycle.FieldCycleNumber:
+		return m.AddedCycleNumber()
+	case supportfeecycle.FieldBasePrice:
+		return m.AddedBasePrice()
+	case supportfeecycle.FieldCustomPrice:
+		return m.AddedCustomPrice()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SupportFeeCycleMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case supportfeecycle.FieldCycleNumber:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCycleNumber(v)
+		return nil
+	case supportfeecycle.FieldBasePrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddBasePrice(v)
+		return nil
+	case supportfeecycle.FieldCustomPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCustomPrice(v)
+		return nil
+	}
+	return fmt.Errorf("unknown SupportFeeCycle numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *SupportFeeCycleMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(supportfeecycle.FieldPaidAt) {
+		fields = append(fields, supportfeecycle.FieldPaidAt)
+	}
+	if m.FieldCleared(supportfeecycle.FieldGraceUntil) {
+		fields = append(fields, supportfeecycle.FieldGraceUntil)
+	}
+	if m.FieldCleared(supportfeecycle.FieldCustomPrice) {
+		fields = append(fields, supportfeecycle.FieldCustomPrice)
+	}
+	if m.FieldCleared(supportfeecycle.FieldCustomPriceReason) {
+		fields = append(fields, supportfeecycle.FieldCustomPriceReason)
+	}
+	if m.FieldCleared(supportfeecycle.FieldCustomPriceSetBy) {
+		fields = append(fields, supportfeecycle.FieldCustomPriceSetBy)
+	}
+	if m.FieldCleared(supportfeecycle.FieldCustomPriceSetAt) {
+		fields = append(fields, supportfeecycle.FieldCustomPriceSetAt)
+	}
+	if m.FieldCleared(supportfeecycle.FieldMetadata) {
+		fields = append(fields, supportfeecycle.FieldMetadata)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *SupportFeeCycleMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *SupportFeeCycleMutation) ClearField(name string) error {
+	switch name {
+	case supportfeecycle.FieldPaidAt:
+		m.ClearPaidAt()
+		return nil
+	case supportfeecycle.FieldGraceUntil:
+		m.ClearGraceUntil()
+		return nil
+	case supportfeecycle.FieldCustomPrice:
+		m.ClearCustomPrice()
+		return nil
+	case supportfeecycle.FieldCustomPriceReason:
+		m.ClearCustomPriceReason()
+		return nil
+	case supportfeecycle.FieldCustomPriceSetBy:
+		m.ClearCustomPriceSetBy()
+		return nil
+	case supportfeecycle.FieldCustomPriceSetAt:
+		m.ClearCustomPriceSetAt()
+		return nil
+	case supportfeecycle.FieldMetadata:
+		m.ClearMetadata()
+		return nil
+	}
+	return fmt.Errorf("unknown SupportFeeCycle nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *SupportFeeCycleMutation) ResetField(name string) error {
+	switch name {
+	case supportfeecycle.FieldTenantID:
+		m.ResetTenantID()
+		return nil
+	case supportfeecycle.FieldTenantSubscriptionID:
+		m.ResetTenantSubscriptionID()
+		return nil
+	case supportfeecycle.FieldSupportPlanID:
+		m.ResetSupportPlanID()
+		return nil
+	case supportfeecycle.FieldAnchorDate:
+		m.ResetAnchorDate()
+		return nil
+	case supportfeecycle.FieldCycleNumber:
+		m.ResetCycleNumber()
+		return nil
+	case supportfeecycle.FieldPeriodStart:
+		m.ResetPeriodStart()
+		return nil
+	case supportfeecycle.FieldDueDate:
+		m.ResetDueDate()
+		return nil
+	case supportfeecycle.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case supportfeecycle.FieldPaidAt:
+		m.ResetPaidAt()
+		return nil
+	case supportfeecycle.FieldGraceUntil:
+		m.ResetGraceUntil()
+		return nil
+	case supportfeecycle.FieldBasePrice:
+		m.ResetBasePrice()
+		return nil
+	case supportfeecycle.FieldCustomPrice:
+		m.ResetCustomPrice()
+		return nil
+	case supportfeecycle.FieldCustomPriceReason:
+		m.ResetCustomPriceReason()
+		return nil
+	case supportfeecycle.FieldCustomPriceSetBy:
+		m.ResetCustomPriceSetBy()
+		return nil
+	case supportfeecycle.FieldCustomPriceSetAt:
+		m.ResetCustomPriceSetAt()
+		return nil
+	case supportfeecycle.FieldMetadata:
+		m.ResetMetadata()
+		return nil
+	case supportfeecycle.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case supportfeecycle.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown SupportFeeCycle field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *SupportFeeCycleMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.tenant_subscription != nil {
+		edges = append(edges, supportfeecycle.EdgeTenantSubscription)
+	}
+	if m.support_plan != nil {
+		edges = append(edges, supportfeecycle.EdgeSupportPlan)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *SupportFeeCycleMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case supportfeecycle.EdgeTenantSubscription:
+		if id := m.tenant_subscription; id != nil {
+			return []ent.Value{*id}
+		}
+	case supportfeecycle.EdgeSupportPlan:
+		if id := m.support_plan; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *SupportFeeCycleMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *SupportFeeCycleMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *SupportFeeCycleMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedtenant_subscription {
+		edges = append(edges, supportfeecycle.EdgeTenantSubscription)
+	}
+	if m.clearedsupport_plan {
+		edges = append(edges, supportfeecycle.EdgeSupportPlan)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *SupportFeeCycleMutation) EdgeCleared(name string) bool {
+	switch name {
+	case supportfeecycle.EdgeTenantSubscription:
+		return m.clearedtenant_subscription
+	case supportfeecycle.EdgeSupportPlan:
+		return m.clearedsupport_plan
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *SupportFeeCycleMutation) ClearEdge(name string) error {
+	switch name {
+	case supportfeecycle.EdgeTenantSubscription:
+		m.ClearTenantSubscription()
+		return nil
+	case supportfeecycle.EdgeSupportPlan:
+		m.ClearSupportPlan()
+		return nil
+	}
+	return fmt.Errorf("unknown SupportFeeCycle unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *SupportFeeCycleMutation) ResetEdge(name string) error {
+	switch name {
+	case supportfeecycle.EdgeTenantSubscription:
+		m.ResetTenantSubscription()
+		return nil
+	case supportfeecycle.EdgeSupportPlan:
+		m.ResetSupportPlan()
+		return nil
+	}
+	return fmt.Errorf("unknown SupportFeeCycle edge %s", name)
 }
 
 // TenantMutation represents an operation that mutates the Tenant nodes in the graph.
@@ -30381,6 +32055,9 @@ type TenantSubscriptionMutation struct {
 	email_domains                map[uuid.UUID]struct{}
 	removedemail_domains         map[uuid.UUID]struct{}
 	clearedemail_domains         bool
+	support_fee_cycles           map[uuid.UUID]struct{}
+	removedsupport_fee_cycles    map[uuid.UUID]struct{}
+	clearedsupport_fee_cycles    bool
 	done                         bool
 	oldValue                     func(context.Context) (*TenantSubscription, error)
 	predicates                   []predicate.TenantSubscription
@@ -32269,6 +33946,60 @@ func (m *TenantSubscriptionMutation) ResetEmailDomains() {
 	m.removedemail_domains = nil
 }
 
+// AddSupportFeeCycleIDs adds the "support_fee_cycles" edge to the SupportFeeCycle entity by ids.
+func (m *TenantSubscriptionMutation) AddSupportFeeCycleIDs(ids ...uuid.UUID) {
+	if m.support_fee_cycles == nil {
+		m.support_fee_cycles = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.support_fee_cycles[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSupportFeeCycles clears the "support_fee_cycles" edge to the SupportFeeCycle entity.
+func (m *TenantSubscriptionMutation) ClearSupportFeeCycles() {
+	m.clearedsupport_fee_cycles = true
+}
+
+// SupportFeeCyclesCleared reports if the "support_fee_cycles" edge to the SupportFeeCycle entity was cleared.
+func (m *TenantSubscriptionMutation) SupportFeeCyclesCleared() bool {
+	return m.clearedsupport_fee_cycles
+}
+
+// RemoveSupportFeeCycleIDs removes the "support_fee_cycles" edge to the SupportFeeCycle entity by IDs.
+func (m *TenantSubscriptionMutation) RemoveSupportFeeCycleIDs(ids ...uuid.UUID) {
+	if m.removedsupport_fee_cycles == nil {
+		m.removedsupport_fee_cycles = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.support_fee_cycles, ids[i])
+		m.removedsupport_fee_cycles[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSupportFeeCycles returns the removed IDs of the "support_fee_cycles" edge to the SupportFeeCycle entity.
+func (m *TenantSubscriptionMutation) RemovedSupportFeeCyclesIDs() (ids []uuid.UUID) {
+	for id := range m.removedsupport_fee_cycles {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SupportFeeCyclesIDs returns the "support_fee_cycles" edge IDs in the mutation.
+func (m *TenantSubscriptionMutation) SupportFeeCyclesIDs() (ids []uuid.UUID) {
+	for id := range m.support_fee_cycles {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSupportFeeCycles resets all changes to the "support_fee_cycles" edge.
+func (m *TenantSubscriptionMutation) ResetSupportFeeCycles() {
+	m.support_fee_cycles = nil
+	m.clearedsupport_fee_cycles = false
+	m.removedsupport_fee_cycles = nil
+}
+
 // Where appends a list predicates to the TenantSubscriptionMutation builder.
 func (m *TenantSubscriptionMutation) Where(ps ...predicate.TenantSubscription) {
 	m.predicates = append(m.predicates, ps...)
@@ -33108,7 +34839,7 @@ func (m *TenantSubscriptionMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TenantSubscriptionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.tenant != nil {
 		edges = append(edges, tenantsubscription.EdgeTenant)
 	}
@@ -33126,6 +34857,9 @@ func (m *TenantSubscriptionMutation) AddedEdges() []string {
 	}
 	if m.email_domains != nil {
 		edges = append(edges, tenantsubscription.EdgeEmailDomains)
+	}
+	if m.support_fee_cycles != nil {
+		edges = append(edges, tenantsubscription.EdgeSupportFeeCycles)
 	}
 	return edges
 }
@@ -33166,13 +34900,19 @@ func (m *TenantSubscriptionMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case tenantsubscription.EdgeSupportFeeCycles:
+		ids := make([]ent.Value, 0, len(m.support_fee_cycles))
+		for id := range m.support_fee_cycles {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TenantSubscriptionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.removedproduct_subscriptions != nil {
 		edges = append(edges, tenantsubscription.EdgeProductSubscriptions)
 	}
@@ -33184,6 +34924,9 @@ func (m *TenantSubscriptionMutation) RemovedEdges() []string {
 	}
 	if m.removedemail_domains != nil {
 		edges = append(edges, tenantsubscription.EdgeEmailDomains)
+	}
+	if m.removedsupport_fee_cycles != nil {
+		edges = append(edges, tenantsubscription.EdgeSupportFeeCycles)
 	}
 	return edges
 }
@@ -33216,13 +34959,19 @@ func (m *TenantSubscriptionMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case tenantsubscription.EdgeSupportFeeCycles:
+		ids := make([]ent.Value, 0, len(m.removedsupport_fee_cycles))
+		for id := range m.removedsupport_fee_cycles {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TenantSubscriptionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.clearedtenant {
 		edges = append(edges, tenantsubscription.EdgeTenant)
 	}
@@ -33240,6 +34989,9 @@ func (m *TenantSubscriptionMutation) ClearedEdges() []string {
 	}
 	if m.clearedemail_domains {
 		edges = append(edges, tenantsubscription.EdgeEmailDomains)
+	}
+	if m.clearedsupport_fee_cycles {
+		edges = append(edges, tenantsubscription.EdgeSupportFeeCycles)
 	}
 	return edges
 }
@@ -33260,6 +35012,8 @@ func (m *TenantSubscriptionMutation) EdgeCleared(name string) bool {
 		return m.clearedemail_licenses
 	case tenantsubscription.EdgeEmailDomains:
 		return m.clearedemail_domains
+	case tenantsubscription.EdgeSupportFeeCycles:
+		return m.clearedsupport_fee_cycles
 	}
 	return false
 }
@@ -33299,6 +35053,9 @@ func (m *TenantSubscriptionMutation) ResetEdge(name string) error {
 		return nil
 	case tenantsubscription.EdgeEmailDomains:
 		m.ResetEmailDomains()
+		return nil
+	case tenantsubscription.EdgeSupportFeeCycles:
+		m.ResetSupportFeeCycles()
 		return nil
 	}
 	return fmt.Errorf("unknown TenantSubscription edge %s", name)

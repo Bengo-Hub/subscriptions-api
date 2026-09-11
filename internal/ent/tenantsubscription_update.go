@@ -16,6 +16,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
@@ -678,6 +679,21 @@ func (_u *TenantSubscriptionUpdate) AddEmailDomains(v ...*TenantEmailDomain) *Te
 	return _u.AddEmailDomainIDs(ids...)
 }
 
+// AddSupportFeeCycleIDs adds the "support_fee_cycles" edge to the SupportFeeCycle entity by IDs.
+func (_u *TenantSubscriptionUpdate) AddSupportFeeCycleIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.AddSupportFeeCycleIDs(ids...)
+	return _u
+}
+
+// AddSupportFeeCycles adds the "support_fee_cycles" edges to the SupportFeeCycle entity.
+func (_u *TenantSubscriptionUpdate) AddSupportFeeCycles(v ...*SupportFeeCycle) *TenantSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSupportFeeCycleIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_u *TenantSubscriptionUpdate) Mutation() *TenantSubscriptionMutation {
 	return _u.mutation
@@ -777,6 +793,27 @@ func (_u *TenantSubscriptionUpdate) RemoveEmailDomains(v ...*TenantEmailDomain) 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEmailDomainIDs(ids...)
+}
+
+// ClearSupportFeeCycles clears all "support_fee_cycles" edges to the SupportFeeCycle entity.
+func (_u *TenantSubscriptionUpdate) ClearSupportFeeCycles() *TenantSubscriptionUpdate {
+	_u.mutation.ClearSupportFeeCycles()
+	return _u
+}
+
+// RemoveSupportFeeCycleIDs removes the "support_fee_cycles" edge to SupportFeeCycle entities by IDs.
+func (_u *TenantSubscriptionUpdate) RemoveSupportFeeCycleIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.RemoveSupportFeeCycleIDs(ids...)
+	return _u
+}
+
+// RemoveSupportFeeCycles removes "support_fee_cycles" edges to SupportFeeCycle entities.
+func (_u *TenantSubscriptionUpdate) RemoveSupportFeeCycles(v ...*SupportFeeCycle) *TenantSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSupportFeeCycleIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1238,6 +1275,51 @@ func (_u *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tenantemaildomain.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SupportFeeCyclesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportFeeCyclesTable,
+			Columns: []string{tenantsubscription.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSupportFeeCyclesIDs(); len(nodes) > 0 && !_u.mutation.SupportFeeCyclesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportFeeCyclesTable,
+			Columns: []string{tenantsubscription.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SupportFeeCyclesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportFeeCyclesTable,
+			Columns: []string{tenantsubscription.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1908,6 +1990,21 @@ func (_u *TenantSubscriptionUpdateOne) AddEmailDomains(v ...*TenantEmailDomain) 
 	return _u.AddEmailDomainIDs(ids...)
 }
 
+// AddSupportFeeCycleIDs adds the "support_fee_cycles" edge to the SupportFeeCycle entity by IDs.
+func (_u *TenantSubscriptionUpdateOne) AddSupportFeeCycleIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.AddSupportFeeCycleIDs(ids...)
+	return _u
+}
+
+// AddSupportFeeCycles adds the "support_fee_cycles" edges to the SupportFeeCycle entity.
+func (_u *TenantSubscriptionUpdateOne) AddSupportFeeCycles(v ...*SupportFeeCycle) *TenantSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSupportFeeCycleIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_u *TenantSubscriptionUpdateOne) Mutation() *TenantSubscriptionMutation {
 	return _u.mutation
@@ -2007,6 +2104,27 @@ func (_u *TenantSubscriptionUpdateOne) RemoveEmailDomains(v ...*TenantEmailDomai
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEmailDomainIDs(ids...)
+}
+
+// ClearSupportFeeCycles clears all "support_fee_cycles" edges to the SupportFeeCycle entity.
+func (_u *TenantSubscriptionUpdateOne) ClearSupportFeeCycles() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearSupportFeeCycles()
+	return _u
+}
+
+// RemoveSupportFeeCycleIDs removes the "support_fee_cycles" edge to SupportFeeCycle entities by IDs.
+func (_u *TenantSubscriptionUpdateOne) RemoveSupportFeeCycleIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.RemoveSupportFeeCycleIDs(ids...)
+	return _u
+}
+
+// RemoveSupportFeeCycles removes "support_fee_cycles" edges to SupportFeeCycle entities.
+func (_u *TenantSubscriptionUpdateOne) RemoveSupportFeeCycles(v ...*SupportFeeCycle) *TenantSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSupportFeeCycleIDs(ids...)
 }
 
 // Where appends a list predicates to the TenantSubscriptionUpdate builder.
@@ -2498,6 +2616,51 @@ func (_u *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Tena
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tenantemaildomain.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SupportFeeCyclesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportFeeCyclesTable,
+			Columns: []string{tenantsubscription.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSupportFeeCyclesIDs(); len(nodes) > 0 && !_u.mutation.SupportFeeCyclesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportFeeCyclesTable,
+			Columns: []string{tenantsubscription.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SupportFeeCyclesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportFeeCyclesTable,
+			Columns: []string{tenantsubscription.SupportFeeCyclesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
