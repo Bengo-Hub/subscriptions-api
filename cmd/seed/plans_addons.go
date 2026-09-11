@@ -4,12 +4,87 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 )
+
+// seedAICreditsAddonPlans seeds the MarketFlow AI-credit one-time top-up packs as standalone
+// SubscriptionPlan rows. Relocated here 2026-09-11 from plans_marketflow.go (now retired — its
+// STARTER/GROWTH/PROFESSIONAL tiers were folded into every PowerSuite tier's psCRMBlock, since
+// ai_chat_agent and the rest of MarketFlow's catalog are now baked into PowerSuite itself). These
+// two packs are consumable purchases, not tier features — every PowerSuite tenant now has
+// ai_chat_agent already, but still needs a way to buy extra credits, so the top-up capability
+// survives the family's retirement under its original plan codes/deterministic IDs (nothing else
+// in the codebase references them, confirmed via repo-wide grep, so the codes didn't need renaming).
+func seedAICreditsAddonPlans(ctx context.Context, tx *ent.Tx) error {
+	now := time.Now()
+	serviceTag := "marketflow"
+
+	type planDef struct {
+		id          uuid.UUID
+		planCode    string
+		name        string
+		description string
+		price       float64
+		tierOrder   int
+		tierLimits  map[string]any
+	}
+
+	plans := []planDef{
+		{
+			id:          uuid.NewSHA1(uuid.NameSpaceOID, []byte("marketflow:AI_CREDITS_100")),
+			planCode:    "MARKETFLOW_AI_CREDITS_100",
+			name:        "MarketFlow AI Credits — 100 pack",
+			description: "Top-up pack of 100 AI chat credits for MarketFlow. Each credit = 1 user question + AI response.",
+			price:       1000.0,
+			tierOrder:   10,
+			tierLimits:  map[string]any{"ai_credits_monthly": 100},
+		},
+		{
+			id:          uuid.NewSHA1(uuid.NameSpaceOID, []byte("marketflow:AI_CREDITS_500")),
+			planCode:    "MARKETFLOW_AI_CREDITS_500",
+			name:        "MarketFlow AI Credits — 500 pack",
+			description: "Top-up pack of 500 AI chat credits for MarketFlow. Best value for high-volume teams.",
+			price:       4000.0,
+			tierOrder:   11,
+			tierLimits:  map[string]any{"ai_credits_monthly": 500},
+		},
+	}
+
+	for _, p := range plans {
+		existing, err := tx.SubscriptionPlan.Get(ctx, p.id)
+		if err != nil && !ent.IsNotFound(err) {
+			return fmt.Errorf("lookup ai-credits addon plan %s: %w", p.planCode, err)
+		}
+		if existing != nil {
+			_, err = tx.SubscriptionPlan.UpdateOneID(p.id).
+				SetPlanCode(p.planCode).SetName(p.name).SetDescription(p.description).
+				SetBillingCycle("ONE_TIME").SetPlanType(subscriptionplan.PlanTypeSTANDALONE_SERVICE).
+				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(true).
+				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).SetServiceTag(serviceTag).SetUpdatedAt(now).Save(ctx)
+		} else {
+			_, err = tx.SubscriptionPlan.Create().
+				SetID(p.id).SetPlanCode(p.planCode).SetName(p.name).SetDescription(p.description).
+				SetBillingCycle("ONE_TIME").SetPlanType(subscriptionplan.PlanTypeSTANDALONE_SERVICE).
+				SetBasePrice(p.price).SetCurrency("KES").SetIsActive(true).SetIsPublic(true).
+				SetTierOrder(p.tierOrder).SetTierLimitsJSON(p.tierLimits).SetServiceTag(serviceTag).
+				SetCreatedAt(now).SetUpdatedAt(now).Save(ctx)
+		}
+		if err != nil {
+			return fmt.Errorf("upsert ai-credits addon plan %s: %w", p.planCode, err)
+		}
+		if err := seedPlanFeatures(ctx, tx, p.id, []string{"ai_chat_agent"}); err != nil {
+			return fmt.Errorf("seed features for ai-credits addon plan %s: %w", p.planCode, err)
+		}
+		log.Printf("  ai-credits addon plan: %s (ONE_TIME, KES %.0f)", p.name, p.price)
+	}
+	return nil
+}
 
 // seedPlanAddonFeatures seeds purchasable addon PlanFeature records (is_included=false)
 // for each plan. These are shown in the Addons section of the billing page and can be

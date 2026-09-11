@@ -65,13 +65,21 @@ func psLogisticsBlock(tier int) []string {
 }
 
 // psCRMBlock — MarketFlow CRM coverage per tier (contacts + basic access at tier 1).
+// profile_pages/webhooks/deal_pipeline/whatsapp_integration added 2026-09-11 when the
+// standalone MARKETFLOW_* plans (plans_marketflow.go, now retired) were folded in — these were
+// the only 4 feature codes the standalone family granted that PowerSuite didn't already cover.
+// webhooks is also granted by psLogisticsBlock at tier>=3; granting it here from tier 2 is
+// strictly more generous (a feature appearing a tier earlier via a second path never breaks the
+// "every tier is a strict superset" invariant — only a feature disappearing at a higher tier
+// would).
 func psCRMBlock(tier int) []string {
-	base := []string{"contact_management", "lead_management", "basic_campaigns", "shortlinks"}
+	base := []string{"contact_management", "lead_management", "basic_campaigns", "shortlinks", "profile_pages"}
 	if tier >= 2 {
 		base = append(base,
 			"unlimited_campaigns", "landing_pages", "email_sequences", "ai_chat_agent",
 			"lead_scoring", "funnel_builder", "automation_workflows",
 			"ticketing", "helpdesk", "sla_policies", "knowledge_base", "testimonials",
+			"webhooks", "deal_pipeline", "whatsapp_integration",
 		)
 	}
 	if tier >= 3 {
@@ -94,6 +102,30 @@ func psERPBlock(tier int) []string {
 			"basic_procurement", "asset_management", "budgeting", "advanced_reports",
 			"multi_department", "approval_workflows", "custom_workflows", "staff_fund_from_salary",
 		)
+	}
+	return base
+}
+
+// psProjectsBlock — Projects & Invoicing coverage, folded in from the retired standalone
+// PROJECTS_* family 2026-09-11 (zero overlap existed with anything in PowerSuite/ERP before
+// this). Folded into ERP's remit rather than given its own top-level block: project/task
+// tracking is an ERP-adjacent back-office capability, and gating it identically to psERPBlock
+// (nil below tier 2) keeps a Basic-tier PowerSuite tenant's "no ERP access" invariant intact —
+// Projects unlocks alongside ERP at tier 2, never before it.
+// Feature codes match the catalog's existing service_tag=projects entries (feature_catalog.go)
+// — NOT the generic "invoicing" code, which is already claimed by TruLoad's Weighbridge
+// Invoicing feature; basic_invoicing/advanced_invoicing are the Projects-specific codes.
+func psProjectsBlock(tier int) []string {
+	if tier < 2 {
+		return nil
+	}
+	base := []string{
+		"project_management", "task_tracking", "time_tracking", "basic_invoicing",
+		"expense_tracking", "advanced_invoicing", "client_portal", "recurring_invoices",
+		"team_collaboration",
+	}
+	if tier >= 3 {
+		base = append(base, "milestone_billing", "gantt_chart", "budget_tracking", "white_label_portal")
 	}
 	return base
 }
@@ -144,7 +176,7 @@ func psInventoryCore() []string {
 // hospSuiteFeatures — Hospitality family (hotels, restaurants, bars, cafes).
 // Never grants lots & batches / expiry tracking / expiry alerts (excluded at every tier).
 func hospSuiteFeatures(tier int) []string {
-	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psERPBlock(tier), psTreasuryBlock(tier, false))
+	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psERPBlock(tier), psProjectsBlock(tier), psTreasuryBlock(tier, false))
 	f = append(f, "table_management") // Floor & Service from tier 1
 	if tier >= 2 {
 		f = append(f,
@@ -169,7 +201,7 @@ func hospSuiteFeatures(tier int) []string {
 // Never grants lots & batches / expiry tracking / expiry alerts or the hotel stack.
 // Warranties is a RETAIL-ONLY module, tier 2+.
 func dukaSuiteFeatures(tier int) []string {
-	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psERPBlock(tier), psTreasuryBlock(tier, true))
+	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psERPBlock(tier), psProjectsBlock(tier), psTreasuryBlock(tier, true))
 	f = append(f, "barcode_scanning")
 	if tier >= 2 {
 		f = append(f,
@@ -191,7 +223,7 @@ func dukaSuiteFeatures(tier int) []string {
 // Pharmacy clinical modules (prescriptions, patients, claims) unlock at tier 2 per the spec
 // (tier 1 "Pharmacy → no access"); stock take + stock alerts unlock at tier 3.
 func dawaSuiteFeatures(tier int) []string {
-	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psERPBlock(tier), psTreasuryBlock(tier, true))
+	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psERPBlock(tier), psProjectsBlock(tier), psTreasuryBlock(tier, true))
 	f = append(f, "lots_batches", "batch_expiry_tracking", "expiry_alerts")
 	if tier >= 2 {
 		f = append(f,

@@ -29,15 +29,24 @@ import (
 
 // erpFeatures is the single source of truth for the ERP MODULE feature set at tier N
 // (1=Starter … 4=Enterprise). Tier 4 == tier 3 (all ERP modules); the difference is
-// unlimited limits, not extra modules.
+// unlimited limits, not extra modules. Projects/task-tracking (folded in from the retired
+// standalone PROJECTS_* family, 2026-09-11) unlocks at tier 2+ — same T2 gate PowerSuite uses
+// for its own ERP block (psERPBlock/psProjectsBlock), so a Starter buyer gets HR/payroll but
+// not Projects, consistent across both product lines.
 func erpFeatures(tier int) []string {
 	switch tier {
 	case 1:
 		return []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance"}
 	case 2:
-		return []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance", "appraisals", "recruitment", "training", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows"}
+		return unionFeatures(
+			[]string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance", "appraisals", "recruitment", "training", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows"},
+			psProjectsBlock(2),
+		)
 	default: // tier 3 + 4
-		return []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance", "appraisals", "recruitment", "training", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support", "staff_fund_from_salary"}
+		return unionFeatures(
+			[]string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance", "appraisals", "recruitment", "training", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support", "staff_fund_from_salary"},
+			psProjectsBlock(3),
+		)
 	}
 }
 

@@ -140,19 +140,22 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 		return fmt.Errorf("seed transporter plans: %w", err)
 	}
 
-	// 2.7 Seed logistics standalone plans
-	if err := seedLogisticsPlans(ctx, tx); err != nil {
-		return fmt.Errorf("seed logistics plans: %w", err)
-	}
+	// 2.7 Logistics standalone plans retired 2026-09-11 — psLogisticsBlock already granted
+	// every one of their features/limits inside PowerSuite (a pure pre-existing duplicate,
+	// confirmed via direct comparison); hard-deleted by migrateUseCasePowerSuite below.
 
 	// 2.9 Seed ERP standalone plans
 	if err := seedERPPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed erp plans: %w", err)
 	}
 
-	// 2.11 Seed MarketFlow CRM plans
-	if err := seedMarketFlowPlans(ctx, tx); err != nil {
-		return fmt.Errorf("seed marketflow plans: %w", err)
+	// 2.11 MarketFlow CRM standalone plans retired 2026-09-11 — folded into every PowerSuite
+	// tier's psCRMBlock (4 feature-code gaps closed: profile_pages, webhooks, deal_pipeline,
+	// whatsapp_integration); hard-deleted by migrateUseCasePowerSuite below. Its 2 AI-credit
+	// one-time top-up packs survive, relocated to seedAICreditsAddonPlans (plans_addons.go)
+	// since they're consumable purchases, not tier features.
+	if err := seedAICreditsAddonPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed ai-credits addon plans: %w", err)
 	}
 
 	// 2.13 Seed ISP Billing standalone plans (hotspot + PPPoE product lines)
@@ -160,10 +163,12 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 		return fmt.Errorf("seed isp_billing plans: %w", err)
 	}
 
-	// 2.14 Seed Projects & Invoicing standalone plans
-	if err := seedProjectsPlans(ctx, tx); err != nil {
-		return fmt.Errorf("seed projects plans: %w", err)
-	}
+	// 2.14 Projects & Invoicing standalone plans retired 2026-09-11 — folded into ERP's remit
+	// (psProjectsBlock, gated T2+ alongside the rest of ERP: project_management, task_tracking,
+	// time_tracking, invoicing, client_portal, recurring_invoices, team_collaboration at T2,
+	// +milestone_billing/gantt_chart/budget_tracking/white_label_portal at T3); also folded into
+	// standalone ERP's own erpFeatures at the same T2+ gate. Hard-deleted by
+	// migrateUseCasePowerSuite below.
 
 	// 2.15 Seed Library Management standalone plans (monthly/annual/one-time, 3 tiers)
 	if err := seedLibraryPlans(ctx, tx); err != nil {

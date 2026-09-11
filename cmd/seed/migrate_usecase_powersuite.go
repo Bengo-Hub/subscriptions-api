@@ -17,6 +17,19 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 )
 
+// stripAnyPrefix removes the first matching prefix from s (checked in order), or returns s
+// unchanged if none match. Used by successorCode to peel a doomed plan's family prefix off
+// before looking up its tier segment — kept as a helper rather than a chain of nested
+// strings.TrimPrefix calls once that chain grew past 3 prefixes.
+func stripAnyPrefix(s string, prefixes ...string) string {
+	for _, p := range prefixes {
+		if strings.HasPrefix(s, p) {
+			return strings.TrimPrefix(s, p)
+		}
+	}
+	return s
+}
+
 // migrateUseCasePowerSuite migrates every tenant subscription off the SUPERSEDED plan rows
 // onto their successors, then HARD-DELETES those rows (user-mandated 2026-07-16; supersedes
 // the old retire-only convention for these sets). Runs LAST in runSeed, after every plan
@@ -105,11 +118,17 @@ func migrateUseCasePowerSuite(ctx context.Context, tx *ent.Tx) error {
 				return ""
 			}
 			return fmt.Sprintf("POWERSUITE_%s_%s", familyForTenant(tenantID), seg)
-		case strings.HasPrefix(base, "ORDERING_") || strings.HasPrefix(base, "INVENTORY_") || strings.HasPrefix(base, "TREASURY_"):
-			// Standalone single-module plans (2026-09-11): no real tenant runs ordering/
-			// inventory/treasury without the others, and PowerSuite already covers 100% of
-			// their catalog — same-tier family row by tenant use_case.
-			seg := tierSeg[strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(base, "ORDERING_"), "INVENTORY_"), "TREASURY_")]
+		case strings.HasPrefix(base, "ORDERING_") || strings.HasPrefix(base, "INVENTORY_") || strings.HasPrefix(base, "TREASURY_") ||
+			strings.HasPrefix(base, "LOGISTICS_") || strings.HasPrefix(base, "PROJECTS_") ||
+			(strings.HasPrefix(base, "MARKETFLOW_") && !strings.HasPrefix(base, "MARKETFLOW_AI_CREDITS_")):
+			// Standalone single-module plans: no real tenant runs ordering/inventory/treasury
+			// (2026-09-11) or logistics/marketflow/projects (2026-09-11) without the rest of the
+			// suite, and PowerSuite/ERP already cover 100% of their catalog — same-tier family
+			// row by tenant use_case. MARKETFLOW_AI_CREDITS_* is explicitly excluded: those are
+			// consumable one-time top-up packs (no STARTER/GROWTH/PROFESSIONAL tier suffix), not
+			// a tier plan — they're relocated to plans_addons.go and must survive this migration,
+			// not be swept up by the MARKETFLOW_ prefix match.
+			seg := tierSeg[stripAnyPrefix(base, "ORDERING_", "INVENTORY_", "TREASURY_", "LOGISTICS_", "PROJECTS_", "MARKETFLOW_")]
 			if seg == "" {
 				return ""
 			}
@@ -154,7 +173,14 @@ func migrateUseCasePowerSuite(ctx context.Context, tx *ent.Tx) error {
 			// covers their full catalog. POS has no equivalent — already fully retired above.
 			strings.HasPrefix(code, "ORDERING_"),
 			strings.HasPrefix(code, "INVENTORY_"),
-			strings.HasPrefix(code, "TREASURY_"):
+			strings.HasPrefix(code, "TREASURY_"),
+			// Logistics/MarketFlow/Projects standalone families (2026-09-11): folded into
+			// PowerSuite's psLogisticsBlock/psCRMBlock and ERP's psProjectsBlock respectively.
+			// MARKETFLOW_AI_CREDITS_* is deliberately excluded — those are consumable one-time
+			// top-up packs (relocated to plans_addons.go), not a retired tier plan.
+			strings.HasPrefix(code, "LOGISTICS_"),
+			strings.HasPrefix(code, "PROJECTS_"),
+			strings.HasPrefix(code, "MARKETFLOW_") && !strings.HasPrefix(code, "MARKETFLOW_AI_CREDITS_"):
 			return true
 		}
 		return false

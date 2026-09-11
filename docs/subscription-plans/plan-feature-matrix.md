@@ -23,13 +23,22 @@ the builders when tiers change._
 ## Families, prices & products
 
 Two per-use-case PowerSuite families bundling **POS + Inventory + Treasury + Ordering +
-Logistics + CRM (MarketFlow) + ERP**. Plan rows evolved IN PLACE from the POS product lines
+Logistics + CRM (MarketFlow) + ERP + Projects** (Projects folded in 2026-09-11, gated
+alongside ERP). Plan rows evolved IN PLACE from the POS product lines
 (`pos:{family}:{STARTER|PRO|ENTERPRISE}` deterministic ids → stable UUIDs/FKs).
 
 | Family | Code prefix | T1 Basic /mo (setup) | T2 Professional /mo (setup) | T3 Gold /mo (setup) | Buy-outright T1/T2/T3 (+tier setup fee) | Annual support T1/T2/T3 |
 |---|---|---|---|---|---|---|
-| Hospitality | `POWERSUITE_HOSP_` | 2,500 (5k) | 4,000 (10k) | 6,500 (20k) | 45k / 90k / 150k | 9k / 19k / 30k |
-| Retail (Duka) | `POWERSUITE_DUKA_` | 2,500 (5k) | 4,500 (10k) | 8,500 (20k) | 45k / 90k / 150k | 9k / 18k / 30k |
+| Hospitality | `POWERSUITE_HOSP_` | 2,500 (5k) | 4,000 (10k) | 6,500 (20k) | 45k / 90k / 150k | 12k / 18k / 25k |
+| Retail (Duka) | `POWERSUITE_DUKA_` | 2,500 (5k) | 4,500 (10k) | 8,500 (20k) | 45k / 90k / 150k | 12k / 18k / 25k |
+
+**Support-fee schedule revised 2026-09-11** (was 9k/19k/30k hosp, 9k/18k/30k duka+dawa) — capped
+at 25k/yr platform-wide across every PowerSuite family, per the same schedule now also seeded
+for Library (`SUPPORT_LIBRARY_{STARTER,GROWTH,PROFESSIONAL}`, `plans_library_support.go`,
+new — Library had no annual support plan before). `SUPPORT_ERP_*` (`plans_erp.go`) is a
+separate, structurally different pricing formula (20% of the 4-tier ERP license price) and is
+intentionally NOT part of this schedule — a PowerSuite one-time tenant only ever holds a
+`SUPPORT_{HOSP,DUKA,DAWA}_*` row, never `SUPPORT_ERP_*`, so there's no collision.
 
 - **Billing periods:** every recurring tier is ONE monthly-priced row; the tenant chooses
   MONTHLY / SEMI_ANNUAL / ANNUAL at subscribe/renew (price = months × base; ≥6 months waives
@@ -45,8 +54,9 @@ Logistics + CRM (MarketFlow) + ERP**. Plan rows evolved IN PLACE from the POS pr
 |---|---|---|---|
 | Ordering | online_ordering, rider_app, admin_dashboard, paystack_integration, sms/push_notifications, basic_analytics, custom_domain, loyalty_program, wallet, delivery_zones | mpesa_integration, advanced_analytics, multi_outlet, promo_codes, group_ordering, scheduled_delivery, pos_integration | route_optimization, api_webhooks, white_labeling, priority_support, premium_support |
 | Logistics | rider_management, delivery_assignment, live_tracking, basic_dispatch, basic_logistics_access | route_optimisation, driver_analytics, performance_reports | api_access, webhooks, custom_integrations |
-| CRM | contact_management, lead_management, basic_campaigns, shortlinks | unlimited_campaigns, landing_pages, email_sequences, ai_chat_agent, lead_scoring, funnel_builder, automation_workflows, ticketing, helpdesk, sla_policies, knowledge_base, testimonials | white_label, dedicated_account_manager |
+| CRM | contact_management, lead_management, basic_campaigns, shortlinks, **profile_pages** | unlimited_campaigns, landing_pages, email_sequences, ai_chat_agent, lead_scoring, funnel_builder, automation_workflows, ticketing, helpdesk, sla_policies, knowledge_base, testimonials, **webhooks, deal_pipeline, whatsapp_integration** | white_label, dedicated_account_manager |
 | ERP | — (no access; ERP links show locked) | hr_management, leave_management, attendance, basic_reports (**no payroll/appraisals/recruitment/training**) | full ERP: payroll, appraisals, recruitment, training, basic_procurement, asset_management, budgeting, advanced_reports, multi_department, approval_workflows, custom_workflows, staff_fund_from_salary |
+| Projects | — (no access, same gate as ERP) | project_management, task_tracking, time_tracking, basic_invoicing, expense_tracking, advanced_invoicing, client_portal, recurring_invoices, team_collaboration | milestone_billing, gantt_chart, budget_tracking, white_label_portal |
 | Treasury | wallet_management, payment_collection, payment_links, transaction_reports, customer_management, **quotations**, ar_tracking, ap_tracking, tax_codes, etims_integration (never tier-gated — KRA legal) | invoice_generation, credit_notes, vendor_management, ledger_posting, treasury_approvals, smart_tax_compliance | vouchers, reconciliation, basic_reconciliation, audit_trail |
 | POS core | pos_terminal, order_management, receipt_printing, daily_reports, shift_reports, mpesa_pos, offline_sync | multi_cashier | — |
 | Inventory core | stock_tracking, purchase_orders, supplier_portal, basic_reports, stock_transfers (**no bulk_import / stock_take / stock alerts at T1**) | bulk_import, stock_take*, requisitions, multi_warehouse, inventory_multiple_images, low_stock_alerts*, stock_alerts* | rfqs, procurement_contracts, report_menu_engineering |
@@ -80,6 +90,7 @@ unlimited, no tables/rooms keys.
 | legacy flat `ERP_ONE_TIME` (150k) | `ERP_GROWTH_ONE_TIME` (same price) |
 | every remaining `*_YEARLY` row platform-wide | same code minus `_YEARLY` (sub keeps ANNUAL cycle); `ISP_*_YEARLY` → `ISP_BILLING_STARTER` |
 | `ORDERING_{STARTER,GROWTH,PROFESSIONAL}`, `INVENTORY_{STARTER,GROWTH,PROFESSIONAL}` (+`INVENTORY_ONE_TIME`), `TREASURY_{STARTER,GROWTH,PROFESSIONAL}` (2026-09-11) | same-tier family row by tenant `use_case`; `INVENTORY_ONE_TIME` → family `GOLD_ONE_TIME` (no ORDERING/TREASURY one-time equivalent existed). Confirmed no real tenant runs ordering/inventory/treasury standalone without the others in practice, and every feature/limit these plans granted already exists in the PowerSuite cross-service blocks above — removed from `cmd/seed` entirely (`plans_ordering.go`/`plans_inventory.go`/`plans_treasury.go` deleted). POS has no standalone equivalent — already fully retired in the original 2026-07-16 pass. |
+| `LOGISTICS_{STARTER,GROWTH,PROFESSIONAL}`, `MARKETFLOW_{STARTER,GROWTH,PROFESSIONAL}`, `PROJECTS_{STARTER,GROWTH,PROFESSIONAL}` (2026-09-11) | same-tier family row by tenant `use_case`. Logistics was a pure pre-existing duplicate of `psLogisticsBlock` (zero feature/limit gap). MarketFlow's 4 uncovered codes (`profile_pages`, `webhooks`, `deal_pipeline`, `whatsapp_integration`) were added to `psCRMBlock` first so nothing was lost. Projects had zero prior overlap — folded into ERP's remit via the new `psProjectsBlock` (T2+ gate, same as ERP itself) in both PowerSuite and standalone ERP's `erpFeatures`. `plans_logistics.go`/`plans_marketflow.go`/`plans_projects.go` deleted; MarketFlow's 2 AI-credit one-time top-up packs (`MARKETFLOW_AI_CREDITS_100/500`, consumable purchases not tier features, referenced nowhere else in the codebase) survive, relocated to `plans_addons.go`'s `seedAICreditsAddonPlans` — `isDoomed`/`successorCode` explicitly exclude the `MARKETFLOW_AI_CREDITS_` prefix so they're never swept into this migration. |
 
 ¹ The `DAWA` family itself was retired 2026-08-29 (see the callout at the top of this doc) —
 `migrate_usecase_powersuite.go`'s pharmacy/chemist/agrovet→DAWA mapping is left in the code
@@ -94,17 +105,23 @@ price changed; PAID invoices are never touched).
 
 ## Kept as-is (per spec notes)
 
-ERP standalone plans (`ERP_{STARTER,GROWTH,PROFESSIONAL}` + `_ONE_TIME` tiers — now with
-attendance from T1 and appraisals/recruitment/training from T2), all TruLoad plans, and the
-remaining standalone service lines (LOGISTICS_/MARKETFLOW/ISP/PROJECTS/LIBRARY, service-charge
-plans) — these ARE genuinely sold to tenants who want one module without the full PowerSuite
-bundle. ERP-suite `_ONE_TIME` licenses still union `powerSuiteFeatures(tier)` (generic builders
-kept in `plans_powersuite_builders.go`).
+ERP standalone plans (`ERP_{STARTER,GROWTH,PROFESSIONAL,ENTERPRISE}` + `_ONE_TIME` tiers — now
+with attendance from T1, appraisals/recruitment/training from T2, and Projects from T2 via
+`psProjectsBlock`), all TruLoad plans, and the remaining standalone service lines (ISP/LIBRARY,
+service-charge plans) — these ARE genuinely sold to tenants who want one module without the full
+PowerSuite bundle. ERP-suite `_ONE_TIME` licenses still union `powerSuiteFeatures(tier)` (generic
+builders kept in `plans_powersuite_builders.go`).
 
 **ORDERING_/INVENTORY_/TREASURY_ removed 2026-09-11** (see "Superseded rows" above) — unlike the
 lines still kept, no real tenant runs ordering, inventory, or treasury as a true standalone
 module without the others, so these three were reclassified from "legitimate standalone
 product" to "redundant duplicate of PowerSuite" and hard-deleted rather than kept.
+
+**LOGISTICS_/MARKETFLOW_/PROJECTS_ removed 2026-09-11** (see "Superseded rows" above) — same
+reasoning: no real tenant runs rider-management, CRM, or project-tracking as a true standalone
+module independent of the rest of PowerSuite/ERP, and every feature/limit they granted (once
+MarketFlow's 4-code gap was closed and Projects was folded into ERP's remit) already exists in
+the blocks above.
 
 ## Enforcement rollout (2026-07-16, same session — backends + UIs)
 
