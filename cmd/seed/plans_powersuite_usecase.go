@@ -153,7 +153,8 @@ func psTreasuryBlock(tier int, vendorAtT1 bool) []string {
 		)
 	}
 	if tier >= 3 {
-		base = append(base, "vouchers", "reconciliation", "basic_reconciliation", "audit_trail")
+		base = append(base, "vouchers", "reconciliation", "basic_reconciliation", "audit_trail",
+			"financial_planning", "bi_reports")
 	}
 	return base
 }

@@ -39,12 +39,12 @@ func erpFeatures(tier int) []string {
 		return []string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance"}
 	case 2:
 		return unionFeatures(
-			[]string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance", "appraisals", "recruitment", "training", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows"},
+			[]string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance", "appraisals", "recruitment", "training", "asset_management", "budgeting", "advanced_reports", "financial_planning", "bi_reports", "multi_department", "approval_workflows"},
 			psProjectsBlock(2),
 		)
 	default: // tier 3 + 4
 		return unionFeatures(
-			[]string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance", "appraisals", "recruitment", "training", "asset_management", "budgeting", "advanced_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support", "staff_fund_from_salary"},
+			[]string{"hr_management", "payroll", "basic_procurement", "leave_management", "basic_reports", "attendance", "appraisals", "recruitment", "training", "asset_management", "budgeting", "advanced_reports", "financial_planning", "bi_reports", "multi_department", "approval_workflows", "api_access", "custom_workflows", "audit_trail", "priority_support", "staff_fund_from_salary"},
 			psProjectsBlock(3),
 		)
 	}

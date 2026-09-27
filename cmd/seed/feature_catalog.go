@@ -82,6 +82,11 @@ var featureCatalog = func() []catalogEntry {
 		feat("ledger_posting", treasury, "Accounting", "Double-Entry Ledger Posting"),
 		feat("tax_codes", treasury, "Accounting", "Tax Code Management (VAT/EAC)"),
 		feat("etims_integration", treasury, "Accounting", "KRA eTIMS Integration"),
+		// Planning (13-week cash forecast, rolling forecast, scenarios) and the BI decision
+		// reports (budget vs actual, cost-center/project P&L, runway, trends, working capital,
+		// tax calendar). Treasury budgets themselves gate on the ERP "budgeting" code.
+		feat("financial_planning", treasury, "Accounting", "Financial Planning & Cash Forecasting"),
+		feat("bi_reports", treasury, "Accounting", "Business Intelligence Reports"),
 		// Standalone external eTIMS API product (ETIMS_API_BASIC/GROWTH/SCALE plans, service_tag
 		// "etims_api") -- distinct from etims_integration above (bundled feature onboarded tenants
 		// already get on their regular treasury/POS plan) and kept under its own catalog service
