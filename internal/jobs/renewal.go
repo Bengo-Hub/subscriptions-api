@@ -2,16 +2,15 @@ package jobs
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.uber.org/zap"
 
-	serviceclient "github.com/Bengo-Hub/shared-service-client"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 )
 
@@ -24,8 +23,9 @@ func notPerpetual() predicate.TenantSubscription {
 
 // StartRenewalJob runs two background goroutines:
 //   - Expiry: marks ACTIVE subscriptions past current_period_end as EXPIRED (runs every hour)
-//   - Renewal: initiates payment for subscriptions expiring within 24h (runs every hour, offset 30m)
-func StartRenewalJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, treasuryClient *serviceclient.Client, treasuryAPIKey string) {
+//   - Renewal: extends free plans and charges a saved card for paid ones expiring within 24h
+//     (runs every hour, offset 30m)
+func StartRenewalJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, invSvc *billing.InvoiceService) {
 	log = log.Named("renewal.job")
 
 	go runExpiryJob(ctx, log, orm, svc)
@@ -36,7 +36,7 @@ func StartRenewalJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc 
 			return
 		case <-time.After(30 * time.Minute):
 		}
-		runRenewalJob(ctx, log, orm, svc, treasuryClient, treasuryAPIKey)
+		runRenewalJob(ctx, log, orm, svc, invSvc)
 	}()
 
 	log.Info("renewal and expiry jobs started")
@@ -59,19 +59,19 @@ func runExpiryJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *su
 	}
 }
 
-func runRenewalJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, treasuryClient *serviceclient.Client, treasuryAPIKey string) {
+func runRenewalJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, invSvc *billing.InvoiceService) {
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
 
 	// Run immediately on startup
-	initiateRenewals(ctx, log, orm, svc, treasuryClient, treasuryAPIKey)
+	initiateRenewals(ctx, log, orm, svc, invSvc)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			initiateRenewals(ctx, log, orm, svc, treasuryClient, treasuryAPIKey)
+			initiateRenewals(ctx, log, orm, svc, invSvc)
 		}
 	}
 }
@@ -168,8 +168,8 @@ func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, 
 
 // initiateRenewals handles subscriptions expiring within 24h.
 // For free plans (base_price == 0): directly extends the period.
-// For paid plans: POST a new payment intent to Treasury and publish renewal_initiated event.
-func initiateRenewals(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, treasuryClient *serviceclient.Client, treasuryAPIKey string) {
+// For paid plans with a saved card: charges the period's invoice to it (see chargeSavedCard).
+func initiateRenewals(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, invSvc *billing.InvoiceService) {
 	now := time.Now().UTC()
 	horizon := now.Add(24 * time.Hour)
 
@@ -203,8 +203,8 @@ func initiateRenewals(ctx context.Context, log *zap.Logger, orm *ent.Client, svc
 			// Free plan (or a custom price waived to 0): extend period directly
 			extendFreePlan(ctx, log, orm, svc, sub)
 		} else {
-			// Paid plan: initiate Treasury payment intent
-			initiatePaymentRenewal(ctx, log, orm, svc, sub, plan, treasuryClient, treasuryAPIKey)
+			// Paid plan: collect the period's invoice from a saved card when there is one.
+			chargeSavedCard(ctx, log, orm, svc, invSvc, sub, plan)
 		}
 	}
 
@@ -247,64 +247,36 @@ func extendFreePlan(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *
 	log.Info("renewal job: free plan extended", zap.String("tenant_id", updated.TenantID.String()))
 }
 
-func initiatePaymentRenewal(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, sub *ent.TenantSubscription, plan *ent.SubscriptionPlan, treasuryClient *serviceclient.Client, treasuryAPIKey string) {
-	if treasuryClient == nil {
-		log.Warn("renewal job: treasury client not configured, skipping paid renewal", zap.String("tenant_id", sub.TenantID.String()))
+// chargeSavedCard collects a paid renewal from the tenant's saved card through the period's
+// treasury invoice, so card, M-Pesa and manual payments all settle the same invoice. It replaces a
+// direct payment-intent call to a treasury route that never existed (every paid renewal failed
+// silently); tenants without a saved card pay from the emailed invoice link as before.
+func chargeSavedCard(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, invSvc *billing.InvoiceService, sub *ent.TenantSubscription, plan *ent.SubscriptionPlan) {
+	if invSvc == nil {
+		log.Warn("renewal job: invoice service not configured, skipping paid renewal", zap.String("tenant_id", sub.TenantID.String()))
 		return
 	}
-
-	headers := map[string]string{}
-	if treasuryAPIKey != "" {
-		headers["X-API-Key"] = treasuryAPIKey
-	}
-
-	// base_price is per MONTH — charge the tenant's chosen billing period
-	// (MONTHLY=1, SEMI_ANNUAL=6, ANNUAL=12 months). No automatic discount.
-	months := subscriptions.BillingCycleMonths(string(sub.BillingCycle))
-	if months <= 0 {
-		months = 1
-	}
-	amount := subscriptions.EffectivePrice(sub, plan) * float64(months)
-
-	req := map[string]any{
-		"amount":         amount,
-		"currency":       plan.Currency,
-		"payment_method": "auto",
-		"reference_id":   sub.ID.String(),
-		"reference_type": "subscription_renewal",
-		"source_service": "subscriptions",
-		"description":    fmt.Sprintf("Auto-renewal: %s (%d month(s))", plan.Name, months),
-		"metadata": map[string]any{
-			"tenant_id":     sub.TenantID.String(),
-			"plan_code":     plan.PlanCode,
-			"billing_cycle": string(sub.BillingCycle),
-			"renewal":       true,
-		},
-	}
-
-	resp, err := treasuryClient.Post(ctx, "/api/v1/payments/intents", req, headers)
-	if err != nil || !resp.IsSuccess() {
-		log.Error("renewal job: treasury payment intent failed", zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
+	res, err := invSvc.ChargeSavedCard(ctx, sub)
+	if err != nil {
+		log.Error("renewal job: saved-card charge failed", zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
 		return
 	}
-
-	// Publish renewal_initiated event via outbox
+	if !res.Attempted {
+		return
+	}
 	tx, err := orm.Tx(ctx)
 	if err != nil {
 		log.Error("renewal job: tx start failed", zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
 		return
 	}
-
 	svc.WriteOutboxEventPublic(ctx, tx, sub.TenantID, "subscription", sub.ID, "renewal_initiated", map[string]any{
-		"tenant_id": sub.TenantID.String(),
-		"plan_code": plan.PlanCode,
-		"amount":    subscriptions.EffectivePrice(sub, plan),
-		"currency":  plan.Currency,
+		"tenant_id":      sub.TenantID.String(),
+		"plan_code":      plan.PlanCode,
+		"invoice_number": res.InvoiceNumber,
+		"collection":     "saved_card",
+		"status":         res.Status,
 	})
-
 	if err := tx.Commit(); err != nil {
 		log.Error("renewal job: outbox commit failed", zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
 	}
-
-	log.Info("renewal job: payment initiated", zap.String("tenant_id", sub.TenantID.String()), zap.String("plan_code", plan.PlanCode))
 }

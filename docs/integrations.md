@@ -419,7 +419,7 @@ req.Header.Set("X-API-Key", os.Getenv("INTERNAL_SERVICE_KEY"))
 | `subscription.subscription.suspended` | Manual suspension or payment failure |
 | `subscription.subscription.reactivated` | Suspension lifted |
 | `subscription.subscription.payment_required` | Treasury payment failed |
-| `subscription.subscription.renewal_initiated` | Renewal payment intent created (paid plans) |
+| `subscription.subscription.renewal_initiated` | Saved-card charge of the renewal invoice attempted (paid plans) |
 | `subscription.addon.purchased` | Add-on feature purchased |
 | `tenant.subscription.updated` | Any plan change (consistent event on tenant aggregate) |
 

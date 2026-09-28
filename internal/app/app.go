@@ -373,7 +373,7 @@ func (a *App) Run(ctx context.Context) error {
 
 	// Start renewal and expiry background jobs
 	if a.orm != nil && a.subscriptionSvc != nil {
-		go jobs.StartRenewalJob(ctx, a.log, a.orm, a.subscriptionSvc, a.treasuryClient, a.cfg.Services.TreasuryAPIKey)
+		go jobs.StartRenewalJob(ctx, a.log, a.orm, a.subscriptionSvc, a.invoiceSvc)
 		a.log.Info("subscription renewal and expiry jobs started")
 	}
 

@@ -328,28 +328,8 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 	//    subscription via the existing payment.succeeded consumer, and mints a fresh
 	//    Paystack session on each visit (durable link).
 	payURL := ""
-	// Service-identifiable Paystack reference (SUB-{slug}-{hex}); the subscription UUID travels in
-	// metadata.entity_id. Safe: the renewal consumer reconciles by tenant_id + plan_code, and the
-	// invoice is settled via metadata.invoice_id — neither depends on this reference_id value.
-	payRef := payref.Build("SUB", "", sub.TenantID, sub.ID)
-	intentReq := map[string]any{
-		"reference_id":   payRef,
-		"reference_type": "subscription",
-		"payment_method": "pending",
-		"currency":       currency,
-		"amount":         total,
-		"source_service": "subscriptions",
-		"description":    fmt.Sprintf("Subscription invoice %s", inv.InvoiceNumber),
-		"customer_email": customerEmail,
-		"metadata": map[string]any{
-			"service":        "subscriptions",
-			"entity_id":      sub.ID.String(),
-			"tenant_id":      sub.TenantID.String(),
-			"plan_code":      planCode,
-			"invoice_id":     inv.ID,
-			"invoice_number": inv.InvoiceNumber,
-		},
-	}
+	payRef := invoicePayRef(sub, inv.ID)
+	intentReq := subscriptionIntentRequest(sub, inv.ID, inv.InvoiceNumber, planCode, currency, customerEmail, total, payRef)
 	intentResp, err := s.treasury.Post(ctx, fmt.Sprintf("/api/v1/s2s/%s/payments/intents", sub.TenantID), intentReq, s.headers())
 	if err == nil && intentResp.IsSuccess() {
 		var ir struct {
@@ -586,6 +566,42 @@ func (s *InvoiceService) LastInvoiceFor(ctx context.Context, tenantID uuid.UUID)
 		PayURL:        stringMeta(sub.Metadata, "last_invoice_pay_url"),
 		PDFURL:        stringMeta(sub.Metadata, "last_invoice_pdf_url"),
 	}, nil
+}
+
+// invoicePayRef is the Paystack-visible reference of an invoice's pay link (SUB-{slug}-{hex}). It
+// is per INVOICE: treasury intents are idempotent per reference, so a per-subscription reference
+// handed every later cycle the first cycle's (already paid) intent. The subscription id travels in
+// metadata.entity_id and the invoice in metadata.invoice_id (what settles the treasury invoice).
+func invoicePayRef(sub *ent.TenantSubscription, invoiceID string) string {
+	id, err := uuid.Parse(invoiceID)
+	if err != nil {
+		id = sub.ID
+	}
+	return payref.Build("SUB", "", sub.TenantID, id)
+}
+
+// subscriptionIntentRequest is the treasury intent that pays a subscription invoice, shared by the
+// pay link and the saved-card renewal so both renew the subscription (reference_type subscription)
+// and settle the invoice (metadata.invoice_id) the same way.
+func subscriptionIntentRequest(sub *ent.TenantSubscription, invoiceID, invoiceNumber, planCode, currency, email string, amount float64, ref string) map[string]any {
+	return map[string]any{
+		"reference_id":   ref,
+		"reference_type": "subscription",
+		"payment_method": "pending",
+		"currency":       currency,
+		"amount":         amount,
+		"source_service": "subscriptions",
+		"description":    fmt.Sprintf("Subscription invoice %s", invoiceNumber),
+		"customer_email": email,
+		"metadata": map[string]any{
+			"service":        "subscriptions",
+			"entity_id":      sub.ID.String(),
+			"tenant_id":      sub.TenantID.String(),
+			"plan_code":      planCode,
+			"invoice_id":     invoiceID,
+			"invoice_number": invoiceNumber,
+		},
+	}
 }
 
 func stringMeta(m map[string]any, key string) string {

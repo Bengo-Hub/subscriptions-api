@@ -180,7 +180,7 @@ NATS stream: `subscription` (listens on `subscription.*`). Subject format: `{agg
 | `subscription.subscription.suspended` | subscription | subscription.suspended | Manual suspension or payment failure |
 | `subscription.subscription.reactivated` | subscription | subscription.reactivated | Suspension lifted |
 | `subscription.subscription.payment_required` | subscription | subscription.payment_required | Treasury payment failed |
-| `subscription.subscription.renewal_initiated` | subscription | subscription.renewal_initiated | Renewal payment intent created |
+| `subscription.subscription.renewal_initiated` | subscription | subscription.renewal_initiated | Saved-card charge of the renewal invoice attempted |
 | `subscription.addon.purchased` | subscription | addon.purchased | Tenant purchased an add-on feature |
 | `tenant.subscription.updated` | tenant | subscription.updated | Any plan change (consistent event for all downstream) |
 
@@ -193,7 +193,7 @@ The `tenant.subscription.updated` event is emitted on **every** plan change (upg
 | Job | Interval | Logic |
 |-----|----------|-------|
 | **Expiry Job** | Every 1h | Queries `ACTIVE` subscriptions where `current_period_end < NOW()`. Sets each to `EXPIRED`, publishes `subscription.expired`, invalidates cache. |
-| **Renewal Job** | Every 1h (offset 30m) | Queries `ACTIVE` subscriptions expiring within 24h. Free plans (`base_price == 0`): extends period directly, publishes `subscription.renewed`. Paid plans: POSTs to Treasury `/api/v1/payments/intents` with `reference_type: subscription_renewal`, publishes `subscription.renewal_initiated`. |
+| **Renewal Job** | Every 1h (offset 30m) | Queries `ACTIVE` subscriptions expiring within 24h. Free plans (`base_price == 0`): extends period directly, publishes `subscription.renewed`. Paid plans with a saved card (`metadata.paystack_auth_code`): ensures the period's invoice exists (`InvoiceService.GenerateAndSend`, idempotent) and charges its outstanding amount to the card through the same subscription intent the pay link uses (`POST /api/v1/s2s/{billed tenant}/payments/intents/charge-saved-card`, reference `SUB-...-C{yymmdd}`, one attempt per invoice per day), then publishes `subscription.renewal_initiated`. The payment.succeeded event renews the subscription here, and treasury settles the invoice named in `metadata.invoice_id`. Pay-link references are per invoice (they were per subscription, so later cycles reused the first cycle's paid intent). Without a saved card the emailed invoice link is the way to pay. (Until 2026-09-28 this job posted to a treasury route that did not exist, so paid renewals never charged.) |
 
 ### Inbound (Consumed from NATS)
 
