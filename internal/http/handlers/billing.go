@@ -30,6 +30,14 @@ type BillingHandler struct {
 	treasuryAPIKey   string
 	marketflowURL    string
 	platformTenantID string // issuer tenant for subscription invoices (owns the invoice doc in treasury)
+	treasuryUIBase   string // public treasury-ui base, for invoice pay links
+	treasuryAPIBase  string // public treasury-api base, for invoice PDFs
+}
+
+// WithPublicTreasuryURLs sets the public treasury bases used for invoice PDF and pay links.
+func (h *BillingHandler) WithPublicTreasuryURLs(uiBase, apiBase string) *BillingHandler {
+	h.treasuryUIBase, h.treasuryAPIBase = strings.TrimRight(uiBase, "/"), strings.TrimRight(apiBase, "/")
+	return h
 }
 
 // NewBillingHandler creates a new billing handler.
@@ -136,7 +144,18 @@ func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 	// tenant), so they won't appear in the tenant's own treasury list — surface the latest
 	// one from the subscription's stored markers, then any direct treasury invoices.
 	invoices := h.fetchInvoices(ctx, tenantID)
-	if row, ok := subscriptionInvoiceRow(sub); ok {
+	if len(invoices) > 0 {
+		// Treasury's list is authoritative; the latest invoice keeps its subscription pay link
+		// (the one that renews the subscription on payment).
+		if num, _ := sub.Metadata["last_invoice_number"].(string); num != "" {
+			pay, _ := sub.Metadata["last_invoice_pay_url"].(string)
+			for i := range invoices {
+				if invoices[i].ID == num && pay != "" && invoices[i].Status != "paid" {
+					invoices[i].PayURL = pay
+				}
+			}
+		}
+	} else if row, ok := subscriptionInvoiceRow(sub); ok {
 		// Prefer treasury's authoritative invoice (status + amount + currency) over the local
 		// sub-status heuristic / stored markers, so a manually-recorded payment is reflected
 		// immediately, the row can't show a stale "pending"/false "paid", and the amount always
@@ -207,17 +226,16 @@ func subscriptionInvoiceRow(sub *ent.TenantSubscription) (invoiceRow, bool) {
 	}, true
 }
 
+// fetchInvoices returns the subscription invoices billed to the tenant, newest first, from
+// treasury's S2S billed-invoice list (the invoices belong to the platform tenant, so the tenant's
+// own treasury list never had them; the route this used to call did not exist).
 func (h *BillingHandler) fetchInvoices(ctx context.Context, tenantID uuid.UUID) []invoiceRow {
-	if h.treasuryClient == nil {
+	if h.treasuryClient == nil || h.platformTenantID == "" {
 		return []invoiceRow{}
 	}
-
-	headers := map[string]string{}
-	if h.treasuryAPIKey != "" {
-		headers["X-API-Key"] = h.treasuryAPIKey
-	}
-
-	resp, err := h.treasuryClient.Get(ctx, fmt.Sprintf("/api/v1/tenants/%s/invoices", tenantID), headers)
+	resp, err := h.treasuryClient.Get(ctx,
+		fmt.Sprintf("/api/v1/s2s/%s/invoices/billed?billed_tenant_id=%s&limit=50", h.platformTenantID, tenantID),
+		h.s2sHeaders())
 	if err != nil {
 		h.log.Warn("failed to fetch invoices from treasury", zap.String("tenant_id", tenantID.String()), zap.Error(err))
 		return []invoiceRow{}
@@ -226,36 +244,40 @@ func (h *BillingHandler) fetchInvoices(ctx context.Context, tenantID uuid.UUID) 
 		h.log.Warn("treasury invoices returned non-2xx", zap.Int("status", resp.StatusCode), zap.String("tenant_id", tenantID.String()))
 		return []invoiceRow{}
 	}
-
 	var raw []struct {
-		ID          string  `json:"id"`
-		CreatedAt   string  `json:"created_at"`
-		Amount      float64 `json:"amount"`
-		Currency    string  `json:"currency"`
-		Status      string  `json:"status"`
-		Description string  `json:"description"`
-		PdfURL      string  `json:"pdf_url"`
+		ID            string  `json:"id"`
+		InvoiceNumber string  `json:"invoice_number"`
+		CreatedAt     string  `json:"created_at"`
+		Amount        float64 `json:"amount"`
+		AmountDue     float64 `json:"amount_due"`
+		Currency      string  `json:"currency"`
+		Status        string  `json:"status"`
+		Description   string  `json:"description"`
+		PdfPath       string  `json:"pdf_path"`
+		PublicToken   string  `json:"public_token"`
 	}
 	if err := resp.DecodeJSON(&raw); err != nil {
 		h.log.Warn("failed to decode treasury invoices", zap.Error(err))
 		return []invoiceRow{}
 	}
-
 	rows := make([]invoiceRow, 0, len(raw))
 	for _, inv := range raw {
 		date := inv.CreatedAt
 		if t, err := time.Parse(time.RFC3339, inv.CreatedAt); err == nil {
 			date = t.Format("2006-01-02T15:04:05Z")
 		}
-		rows = append(rows, invoiceRow{
-			ID:          inv.ID,
-			Date:        date,
-			Amount:      inv.Amount,
-			Currency:    inv.Currency,
-			Status:      inv.Status,
-			Description: inv.Description,
-			PdfURL:      inv.PdfURL,
-		})
+		paid := inv.Amount - inv.AmountDue
+		row := invoiceRow{
+			ID: inv.InvoiceNumber, Date: date, Amount: inv.Amount, AmountPaid: &paid,
+			Currency: inv.Currency, Status: inv.Status, Description: inv.Description,
+		}
+		if inv.PdfPath != "" && h.treasuryAPIBase != "" {
+			row.PdfURL = h.treasuryAPIBase + inv.PdfPath
+		}
+		if inv.AmountDue > 0 && inv.PublicToken != "" && h.treasuryUIBase != "" {
+			row.PayURL = h.treasuryUIBase + "/i/" + inv.PublicToken
+		}
+		rows = append(rows, row)
 	}
 	return rows
 }

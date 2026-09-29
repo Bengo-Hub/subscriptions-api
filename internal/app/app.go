@@ -248,7 +248,8 @@ func New(ctx context.Context) (*App, error) {
 	serviceChargeHandler := handlers.NewServiceChargeHandler(log, ormClient)
 
 	// Billing and platform admin handlers
-	billingHandler := handlers.NewBillingHandler(log, ormClient, treasuryClient, cfg.Services.TreasuryAPIKey, cfg.Services.MarketflowAPI, cfg.Services.PlatformTenantID)
+	billingHandler := handlers.NewBillingHandler(log, ormClient, treasuryClient, cfg.Services.TreasuryAPIKey, cfg.Services.MarketflowAPI, cfg.Services.PlatformTenantID).
+		WithPublicTreasuryURLs(cfg.Services.TreasuryUI, cfg.Services.TreasuryPublicAPI)
 	platformHandler := handlers.NewPlatformHandler(log, ormClient, featureHandler)
 	platformHandler.WithSubscriptionService(subscriptionSvc)
 

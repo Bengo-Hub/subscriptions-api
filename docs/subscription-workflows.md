@@ -701,6 +701,8 @@ Request from tenant with slug = "codevertex"
 | `/billing` | `useCreditWallet()` | `getCreditWallet()` | `GET /billing/credits` |
 | `/billing` | `useRedeemCoupon()` | `redeemCoupon()` | `POST /subscription/coupon/redeem` |
 | `/billing` | `useSetupPaymentMethod()` | `setupPaymentMethod()` | `POST /subscription/payment-method/setup` |
+| `/billing` | `useStandingOrder()` | `getStandingOrder()` | `GET /subscription/standing-order` (treasury S2S `GET /s2s/{tenant}/payments/standing-order`) |
+| `/billing` | `useRegisterStandingOrder()` | `registerStandingOrder(phone)` | `POST /subscription/standing-order` (amount and frequency from the plan and billing cycle; treasury registers the M-Pesa Ratiba order on the platform paybill) |
 | `/settings` | inline query | `apiClient.get('/subscription/settings')` | `GET /subscription/settings` |
 | `/settings` | inline mutation | `apiClient.put('/subscription/settings')` | `PUT /subscription/settings` |
 | `/usage` | `useUsage()` | `lib/api/usage.ts: getUsage()` | `GET /usage` |
@@ -794,3 +796,15 @@ The `metadata` JSON column on `tenant_subscriptions` stores dynamic subscription
 | `seeded` | bool | Internal flag indicating row was created by seed script |
 | `tier` | string | Plan code snapshot at seed time |
 | `tenant_name` | string | Tenant display name snapshot |
+
+## 18. Automatic collection (2026-09-28)
+
+Three ways a paid renewal is collected, all settling the same treasury subscription invoice:
+
+| Way | How | Where it lands |
+|---|---|---|
+| Pay link | The emailed invoice link opens the treasury pay page for the subscription intent (reference per invoice, `SUB-...`) | `treasury.payment.succeeded` renews here; treasury settles the invoice from `metadata.invoice_id` |
+| Saved card | The renewal job charges the card saved on an earlier Paystack payment through `POST /s2s/{tenant}/payments/intents/charge-saved-card` (reference `SUB-...-C{yymmdd}`, once per invoice per day) | same as the pay link |
+| M-Pesa standing order | The tenant sets up a Ratiba standing order on the billing page; each debit arrives as a C2B payment with account reference `RTB...`, which treasury records as a succeeded subscription intent | same as the pay link |
+
+The billing page invoice history comes from treasury `GET /s2s/{platform}/invoices/billed?billed_tenant_id=` (the route it called before did not exist, so the history only ever showed the latest invoice).
