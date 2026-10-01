@@ -17,8 +17,14 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/migrate"
 )
 
+// migrationLockKey serializes migrations across pods: every replica runs this binary on start
+// and concurrent ent schema diffs can race on the same DDL (the pos-api 2026-07-26 outage).
+// Arbitrary, stable and unique per service ("SUBM", subscriptions migrate).
+const migrationLockKey int64 = 0x5355_424D
+
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// Waiting for another pod's migration can take longer than the migration itself.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	cfg, err := config.Load()
@@ -30,6 +36,8 @@ func main() {
 	dbURL := cfg.Postgres.URL
 	if cfg.Postgres.MigrateURL != "" {
 		dbURL = cfg.Postgres.MigrateURL
+	} else {
+		log.Printf("WARNING: POSTGRES_MIGRATE_URL is not set; migrating through POSTGRES_URL")
 	}
 
 	db, err := sql.Open("pgx", dbURL)
@@ -38,14 +46,24 @@ func main() {
 	}
 	defer db.Close()
 
-	db.SetMaxIdleConns(2)
-	db.SetMaxOpenConns(5)
+	// One connection: the advisory lock and every migration statement share one session.
+	db.SetMaxIdleConns(1)
+	db.SetMaxOpenConns(1)
 	db.SetConnMaxLifetime(5 * time.Minute)
 	db.SetConnMaxIdleTime(1 * time.Minute)
 
 	drv := entsql.OpenDB(dialect.Postgres, db)
 	client := ent.NewClient(ent.Driver(drv))
 	defer client.Close()
+
+	if _, err := db.ExecContext(ctx, "SELECT pg_advisory_lock($1)", migrationLockKey); err != nil {
+		log.Fatalf("acquire migration lock: %v", err)
+	}
+	unlock := func() {
+		if _, err := db.ExecContext(context.Background(), "SELECT pg_advisory_unlock($1)", migrationLockKey); err != nil {
+			log.Printf("release migration lock: %v", err)
+		}
+	}
 
 	if reset := os.Getenv("SUBSCRIPTION_RESET_DB"); reset == "true" {
 		if _, err := db.ExecContext(ctx, "DROP SCHEMA IF EXISTS public CASCADE"); err != nil {
@@ -56,10 +74,11 @@ func main() {
 		}
 	}
 
-	if err := client.Schema.Create(ctx, schema.WithDir(migrate.Dir)); err != nil {
-		log.Fatalf("run migrations: %v", err)
+	migrateErr := client.Schema.Create(ctx, schema.WithDir(migrate.Dir))
+	unlock()
+	if migrateErr != nil {
+		log.Fatalf("run migrations: %v", migrateErr)
 	}
 
 	log.Println("database migrations applied successfully")
 }
-

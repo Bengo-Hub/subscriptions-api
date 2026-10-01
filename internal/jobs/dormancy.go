@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	sharedcache "github.com/Bengo-Hub/cache"
 	"time"
 
 	"go.uber.org/zap"
@@ -47,6 +48,10 @@ func StartDormancyJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc
 }
 
 func runDormancySweep(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service) {
+	// Runs on every replica's ticker; only the first replica in each period does the work.
+	if !sharedcache.ClaimPeriod(ctx, "subscriptions:dormancy", 24*time.Hour) {
+		return
+	}
 	now := time.Now().UTC()
 	threshold := now.Add(-time.Duration(DormancyDays) * 24 * time.Hour)
 	flagDormant(ctx, log, orm, svc, now, threshold)

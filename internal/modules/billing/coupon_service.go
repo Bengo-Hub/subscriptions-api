@@ -2,7 +2,9 @@ package billing
 
 import (
 	"context"
+	entsql "entgo.io/ent/dialect/sql"
 	"fmt"
+	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"strings"
 	"time"
 
@@ -34,12 +36,12 @@ func NewCouponService(log *zap.Logger, orm *ent.Client, credit *CreditService) *
 
 // ValidateCouponResult holds the computed discount without applying it.
 type ValidateCouponResult struct {
-	CouponID      uuid.UUID
-	Code          string
-	Type          coupon.Type
-	DiscountKes   int    // computed KES discount for fixed_kes/percentage; 0 for free_months
-	FreeMonths    int    // for free_months type
-	Description   string
+	CouponID    uuid.UUID
+	Code        string
+	Type        coupon.Type
+	DiscountKes int // computed KES discount for fixed_kes/percentage; 0 for free_months
+	FreeMonths  int // for free_months type
+	Description string
 }
 
 // ValidateCoupon checks whether a coupon code is valid for the given plan and price,
@@ -143,18 +145,29 @@ func (s *CouponService) RedeemCoupon(ctx context.Context, tenantID uuid.UUID, co
 		return 0, fmt.Errorf("coupon yields zero value for this plan")
 	}
 
-	// Increment used_count atomically
-	updated, err := s.orm.Coupon.UpdateOneID(c.ID).
-		SetUsedCount(c.UsedCount + 1).
+	// Consume one use in a single conditional UPDATE (used_count = used_count + 1 WHERE
+	// max_uses < 0 OR used_count < max_uses). The old write-back of the value read earlier
+	// lost updates, so concurrent redemptions could pass a coupon's usage limit.
+	n, err := s.orm.Coupon.Update().
+		Where(coupon.IDEQ(c.ID), predicate.Coupon(func(sel *entsql.Selector) {
+			sel.Where(entsql.Or(
+				entsql.LT(sel.C(coupon.FieldMaxUses), 0),
+				entsql.ColumnsLT(sel.C(coupon.FieldUsedCount), sel.C(coupon.FieldMaxUses)),
+			))
+		})).
+		AddUsedCount(1).
 		Save(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("consume coupon: %w", err)
 	}
+	if n == 0 {
+		return 0, fmt.Errorf("coupon has reached its usage limit")
+	}
 
 	// Add credit to wallet
 	if err := s.credit.AddCredits(ctx, tenantID, creditKes, "coupon_redeemed", c.ID, "coupon"); err != nil {
-		// Roll back used_count increment on credit failure
-		_, _ = s.orm.Coupon.UpdateOneID(c.ID).SetUsedCount(updated.UsedCount - 1).Save(ctx)
+		// Give the use back on credit failure (relative, so concurrent redemptions are kept).
+		_, _ = s.orm.Coupon.UpdateOneID(c.ID).AddUsedCount(-1).Save(ctx)
 		return 0, fmt.Errorf("add credits: %w", err)
 	}
 

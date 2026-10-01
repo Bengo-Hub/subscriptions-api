@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"fmt"
+	sharedcache "github.com/Bengo-Hub/cache"
 	"math"
 	"time"
 
@@ -102,6 +103,10 @@ func StartGraceReminderJob(ctx context.Context, log *zap.Logger, orm *ent.Client
 }
 
 func sendGraceReminders(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service) {
+	// Runs on every replica's ticker; only the first replica in each period does the work.
+	if !sharedcache.ClaimPeriod(ctx, "subscriptions:grace-reminders", 6*time.Hour) {
+		return
+	}
 	now := time.Now().UTC()
 	today := now.Format("2006-01-02")
 

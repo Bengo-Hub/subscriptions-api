@@ -3,6 +3,7 @@ package billing
 import (
 	"context"
 	"fmt"
+	sharedcache "github.com/Bengo-Hub/cache"
 	"time"
 
 	"go.uber.org/zap"
@@ -37,6 +38,10 @@ func StartDunningJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc 
 }
 
 func runDunning(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, treasuryClient *serviceclient.Client, treasuryAPIKey string) {
+	// Runs on every replica's ticker; only the first replica in each period does the work.
+	if !sharedcache.ClaimPeriod(ctx, "subscriptions:dunning", 24*time.Hour) {
+		return
+	}
 	// Find subscriptions that have been SUSPENDED for at least 1 day
 	cutoff := time.Now().UTC().Add(-24 * time.Hour)
 

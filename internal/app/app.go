@@ -38,7 +38,6 @@ import (
 	"github.com/bengobox/subscription-service/internal/modules/rbac"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/bengobox/subscription-service/internal/modules/tenant"
-	"github.com/bengobox/subscription-service/internal/platform/cache"
 	"github.com/bengobox/subscription-service/internal/platform/database"
 	"github.com/bengobox/subscription-service/internal/platform/events"
 	"github.com/bengobox/subscription-service/internal/shared/logger"
@@ -80,9 +79,24 @@ func New(ctx context.Context) (*App, error) {
 		return nil, fmt.Errorf("postgres init: %w", err)
 	}
 
-	redisClient := cache.NewClient(cfg.Redis)
+	// Shared constructor: pool and 500ms timeouts. A failed ping is logged, not fatal; the
+	// client reconnects on its own.
+	redisClient, redisErr := sharedcache.NewRedis(ctx, sharedcache.RedisConfig{
+		Addr: cfg.Redis.Addr, Username: cfg.Redis.Username, Password: cfg.Redis.Password, DB: cfg.Redis.DB,
+	})
+	if redisErr != nil {
+		log.Warn("redis not reachable at startup", zap.Error(redisErr))
+	}
+	// Scheduled jobs (renewals, invoices, dunning, reminders) run once per period fleet-wide.
+	sharedcache.SetLeaseClient(redisClient)
 
 	natsConn, err := events.Connect(cfg.Events)
+	if natsConn != nil {
+		// Drop revoked/rotated API keys from every validator on this pod at once.
+		_ = eventslib.NewBroadcaster(log, natsConn, "auth").Subscribe("apikey.changed", func(m eventslib.BroadcastMessage) {
+			authclient.InvalidateAPIKeyHash(string(m.Data))
+		})
+	}
 	if err != nil {
 		log.Warn("event bus connection failed", zap.Error(err))
 	}
@@ -310,7 +324,7 @@ func New(ctx context.Context) (*App, error) {
 		Enabled:       cfg.Backup.ScheduleEnabled,
 		Hour:          cfg.Backup.ScheduleHour,
 		RetentionDays: cfg.Backup.RetentionDays,
-	}, log).Start(ctx)
+	}, log).WithRedis(redisClient).Start(ctx)
 
 	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, productActivationHandler, backupHandler, backupDestHandler, emailLicenseHandler, rateLimitHandler, tokenWalletHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
 

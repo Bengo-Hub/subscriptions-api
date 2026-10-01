@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	sharedcache "github.com/Bengo-Hub/cache"
 	"time"
 
 	"go.uber.org/zap"
@@ -86,6 +87,10 @@ const GraceDays = 7
 // notify). Second pass: once grace_until elapses, mark EXPIRED (total block). Paying clears
 // grace via RenewSubscription.
 func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service) {
+	// Runs on every replica's ticker; only the first replica in each period does the work.
+	if !sharedcache.ClaimPeriod(ctx, "subscriptions:expiry", time.Hour) {
+		return
+	}
 	now := time.Now().UTC()
 
 	pastDue, err := orm.TenantSubscription.Query().
@@ -170,6 +175,10 @@ func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, 
 // For free plans (base_price == 0): directly extends the period.
 // For paid plans with a saved card: charges the period's invoice to it (see chargeSavedCard).
 func initiateRenewals(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, invSvc *billing.InvoiceService) {
+	// Runs on every replica's ticker; only the first replica in each period does the work.
+	if !sharedcache.ClaimPeriod(ctx, "subscriptions:renewals", time.Hour) {
+		return
+	}
 	now := time.Now().UTC()
 	horizon := now.Add(24 * time.Hour)
 

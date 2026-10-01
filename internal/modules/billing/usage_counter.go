@@ -2,6 +2,7 @@ package billing
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"time"
 
@@ -93,6 +94,16 @@ type UsageIncrementResult struct {
 // the platform previously ended up with two counters keyed by different, disagreeing
 // windows (see UsageCounterKey's doc comment). Fails open (Configured: false) on any
 // subscription/plan/Redis lookup failure — callers MUST allow the request in that case.
+// usageIncrScript: INCRBYFLOAT KEYS[1] by ARGV[1]; when ARGV[2] > 0 and the key has no TTL,
+// EXPIREAT ARGV[2]. Returns the new total as a string (Redis float reply).
+var usageIncrScript = redis.NewScript(`
+local v = redis.call("INCRBYFLOAT", KEYS[1], ARGV[1])
+local at = tonumber(ARGV[2])
+if at > 0 and redis.call("TTL", KEYS[1]) < 0 then
+  redis.call("EXPIREAT", KEYS[1], at)
+end
+return v`)
+
 func IncrementUsage(ctx context.Context, orm *ent.Client, cache *redis.Client, log *zap.Logger, tenantID uuid.UUID, metricType string, value float64) UsageIncrementResult {
 	sub, err := orm.TenantSubscription.Query().
 		Where(tenantsubscription.TenantIDEQ(tenantID)).
@@ -122,22 +133,25 @@ func IncrementUsage(ctx context.Context, orm *ent.Client, cache *redis.Client, l
 	}
 
 	cacheKey := UsageCounterKey(tenantID, metricType, sub.CurrentPeriodStart)
-	newTotal, err := cache.IncrByFloat(ctx, cacheKey, value).Result()
+	// Metered (period-keyed) metrics get a TTL a day past current_period_end as a safety net
+	// (the key is already unique per period, so this is a cleanup backstop, not the primary
+	// reset). Structural (flat-keyed) metrics never expire. Increment and TTL are one atomic
+	// script: one round trip instead of three, and a crash can never leave a metered key
+	// without its TTL.
+	expireAt := int64(0)
+	if IsOverageEligibleMetric(metricType) {
+		expireAt = sub.CurrentPeriodEnd.Add(24 * time.Hour).Unix()
+	}
+	raw, err := usageIncrScript.Run(ctx, cache, []string{cacheKey}, value, expireAt).Text()
 	if err != nil {
 		if log != nil {
 			log.Warn("redis usage counter failed, allowing request", zap.String("key", cacheKey), zap.Error(err))
 		}
 		return UsageIncrementResult{}
 	}
-
-	// Metered (period-keyed) metrics get a TTL a day past current_period_end as a safety
-	// net (the key is already unique per period, so this is a cleanup backstop, not the
-	// primary reset mechanism). Structural (flat-keyed) metrics get no TTL at all — they
-	// must never reset on a timer.
-	if IsOverageEligibleMetric(metricType) {
-		if ttl, _ := cache.TTL(ctx, cacheKey).Result(); ttl < 0 {
-			_ = cache.ExpireAt(ctx, cacheKey, sub.CurrentPeriodEnd.Add(24*time.Hour)).Err()
-		}
+	newTotal, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return UsageIncrementResult{}
 	}
 
 	return UsageIncrementResult{

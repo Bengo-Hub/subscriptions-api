@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	sharedcache "github.com/Bengo-Hub/cache"
 	"time"
 
 	"go.uber.org/zap"
@@ -31,6 +32,10 @@ func StartOverageJob(ctx context.Context, log *zap.Logger, svc *billing.OverageS
 }
 
 func runOverage(ctx context.Context, log *zap.Logger, svc *billing.OverageService) {
+	// Runs on every replica's ticker; only the first replica in each period does the work.
+	if !sharedcache.ClaimPeriod(ctx, "subscriptions:overage", 24*time.Hour) {
+		return
+	}
 	if err := svc.CalculateDailyOverages(ctx, time.Now().UTC()); err != nil {
 		log.Error("daily overage calculation failed", zap.Error(err))
 	}

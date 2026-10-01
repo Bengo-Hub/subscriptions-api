@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	sharedcache "github.com/Bengo-Hub/cache"
 	"time"
 
 	"go.uber.org/zap"
@@ -34,6 +35,10 @@ func StartEmailLicenseExpiryJob(ctx context.Context, log *zap.Logger, svc *subsc
 }
 
 func runEmailLicenseExpirySweep(ctx context.Context, log *zap.Logger, svc *subscriptions.Service) {
+	// Runs on every replica's ticker; only the first replica in each period does the work.
+	if !sharedcache.ClaimPeriod(ctx, "subscriptions:email-license-expiry", 24*time.Hour) {
+		return
+	}
 	n, err := svc.ExpireDueLicenses(ctx, log)
 	if err != nil {
 		log.Warn("email license expiry sweep failed", zap.Error(err))

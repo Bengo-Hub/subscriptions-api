@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	sharedcache "github.com/Bengo-Hub/cache"
 	"time"
 
 	"go.uber.org/zap"
@@ -47,6 +48,10 @@ func StartInvoiceJob(ctx context.Context, log *zap.Logger, orm *ent.Client, invS
 }
 
 func generateUpcomingInvoices(ctx context.Context, log *zap.Logger, orm *ent.Client, invSvc *billing.InvoiceService) {
+	// Runs on every replica's ticker; only the first replica in each period does the work.
+	if !sharedcache.ClaimPeriod(ctx, "subscriptions:upcoming-invoices", time.Hour) {
+		return
+	}
 	now := time.Now().UTC()
 	// No lower bound (was `now+(InvoiceLeadDays-1)`, a ~24h eligibility slot): a subscription
 	// whose lead-time window was missed — pod downtime, a late plan/period change that landed

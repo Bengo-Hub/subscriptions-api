@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	sharedcache "github.com/Bengo-Hub/cache"
 	"strings"
 	"time"
 
@@ -123,6 +124,10 @@ func runSupportFeeEnrollmentJob(ctx context.Context, log *zap.Logger, orm *ent.C
 // license tenant that doesn't already have one. Idempotent via the
 // (tenant_subscription_id, cycle_number) unique index — a concurrent/duplicate run is a no-op.
 func ensureSupportFeeCycles(ctx context.Context, log *zap.Logger, orm *ent.Client) {
+	// Runs on every replica's ticker; only the first replica in each period does the work.
+	if !sharedcache.ClaimPeriod(ctx, "subscriptions:support-fee-cycles", time.Hour) {
+		return
+	}
 	subs, err := orm.TenantSubscription.Query().
 		Where(
 			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
@@ -238,6 +243,10 @@ func runSupportFeeInvoiceJob(ctx context.Context, log *zap.Logger, orm *ent.Clie
 }
 
 func generateUpcomingSupportFeeInvoices(ctx context.Context, log *zap.Logger, orm *ent.Client, invSvc *billing.InvoiceService) {
+	// Runs on every replica's ticker; only the first replica in each period does the work.
+	if !sharedcache.ClaimPeriod(ctx, "subscriptions:support-fee-invoices", time.Hour) {
+		return
+	}
 	now := time.Now().UTC()
 	windowEnd := now.AddDate(0, 0, SupportFeeInvoiceLeadDays)
 
@@ -292,6 +301,10 @@ func runSupportFeeOverdueJob(ctx context.Context, log *zap.Logger, orm *ent.Clie
 // RequireSupportFeeCurrentForMutations) indefinitely until paid or a platform admin waives it.
 // The StatusIn(PENDING, INVOICED) filter means this only ever fires once per cycle.
 func transitionOverdueSupportFees(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service) {
+	// Runs on every replica's ticker; only the first replica in each period does the work.
+	if !sharedcache.ClaimPeriod(ctx, "subscriptions:support-fee-overdue", time.Hour) {
+		return
+	}
 	now := time.Now().UTC()
 
 	pastDue, err := orm.SupportFeeCycle.Query().
@@ -366,6 +379,10 @@ func runSupportFeeGraceReminderJob(ctx context.Context, log *zap.Logger, orm *en
 // window. Once grace_until elapses, no further reminders are sent — the cycle just stays
 // OVERDUE/blocked, matching the confirmed no-further-escalation product decision.
 func sendSupportFeeGraceReminders(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service) {
+	// Runs on every replica's ticker; only the first replica in each period does the work.
+	if !sharedcache.ClaimPeriod(ctx, "subscriptions:support-fee-grace", 6*time.Hour) {
+		return
+	}
 	now := time.Now().UTC()
 	today := now.Format("2006-01-02")
 
