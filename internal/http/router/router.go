@@ -252,6 +252,7 @@ func New(
 			if usageHandler != nil {
 				r.Route("/usage", func(r chi.Router) {
 					r.Post("/report", usageHandler.ReportUsage)
+					r.Post("/check", usageHandler.CheckUsage)
 					r.Get("/", usageHandler.GetUsageSummary)
 					r.Get("/summary", usageHandler.GetUsageDashboard)
 					r.Get("/alerts", usageHandler.GetAlerts)

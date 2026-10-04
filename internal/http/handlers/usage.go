@@ -91,7 +91,7 @@ func (h *UsageHandler) ReportUsage(w http.ResponseWriter, r *http.Request) {
 	// metric is overage-eligible with a seeded price, or hard-block with a structured body
 	// the UI limit-reached modal consumes.
 	if h.cache != nil && h.orm != nil {
-		dec := h.evaluateUsage(ctx, tenantID, req.MetricType, req.Value)
+		dec := h.evaluateUsage(ctx, tenantID, req.MetricType, req.Value, false)
 		if dec.limit > 0 {
 			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", dec.limit))
 			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", dec.remaining))
@@ -107,18 +107,7 @@ func (h *UsageHandler) ReportUsage(w http.ResponseWriter, r *http.Request) {
 				if dec.periodEnd != nil {
 					w.Header().Set("X-RateLimit-Reset", dec.periodEnd.Format(time.RFC3339))
 				}
-				writeJSON(w, http.StatusPaymentRequired, map[string]any{
-					"code":                "usage_limit_exceeded",
-					"error":               "usage limit exceeded",
-					"metric":              req.MetricType,
-					"limit":               dec.limit,
-					"used":                dec.used,
-					"overage_eligible":    dec.overageEligible,
-					"overage_unit_price":  dec.overageUnitPrice,
-					"overage_unit":        dec.overageUnit,
-					"accrued_overage_kes": dec.accruedOverageKes,
-					"upgrade_url":         overageUpgradeURL,
-				})
+				writeJSON(w, http.StatusPaymentRequired, limitExceededBody(req.MetricType, dec))
 				return
 			}
 		}
@@ -152,6 +141,78 @@ func (h *UsageHandler) ReportUsage(w http.ResponseWriter, r *http.Request) {
 		"service":     req.ServiceName,
 		"value":       req.Value,
 		"created_at":  now.Format(time.RFC3339),
+	})
+}
+
+// limitExceededBody is the structured 402 body the UI limit-reached modal consumes.
+func limitExceededBody(metric string, dec usageDecision) map[string]any {
+	return map[string]any{
+		"code":                "usage_limit_exceeded",
+		"error":               "usage limit exceeded",
+		"metric":              metric,
+		"limit":               dec.limit,
+		"used":                dec.used,
+		"overage_eligible":    dec.overageEligible,
+		"overage_unit_price":  dec.overageUnitPrice,
+		"overage_unit":        dec.overageUnit,
+		"accrued_overage_kes": dec.accruedOverageKes,
+		"upgrade_url":         overageUpgradeURL,
+	}
+}
+
+type checkUsageRequest struct {
+	MetricType string  `json:"metric_type"`
+	Value      float64 `json:"value"`
+}
+
+// CheckUsage godoc
+// @Summary Check a metered limit without counting
+// @Description Answers whether value more units of a metric are allowed, without recording
+// @Description anything. Services call it before starting an action that is counted later from
+// @Description its completion event (pos-api checks before a sale; the sale counts as an order
+// @Description when pos.sale.finalized arrives). 200 when allowed (also when over the limit with
+// @Description extra usage enabled), 402 with the limit-reached body otherwise. used in the 402
+// @Description body is the current total, not including the attempted unit.
+// @Tags Usage
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param body body checkUsageRequest true "Metric and units (value defaults to 1)"
+// @Success 200 {object} map[string]interface{}
+// @Failure 402 {object} map[string]interface{}
+// @Router /usage/check [post]
+func (h *UsageHandler) CheckUsage(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(resolveTenantID(r))
+	if err != nil {
+		http.Error(w, `{"error":"tenant_id required"}`, http.StatusBadRequest)
+		return
+	}
+	var req checkUsageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.MetricType == "" {
+		http.Error(w, `{"error":"metric_type is required"}`, http.StatusBadRequest)
+		return
+	}
+	if req.Value <= 0 {
+		req.Value = 1
+	}
+	if h.cache == nil || h.orm == nil {
+		writeJSON(w, http.StatusOK, map[string]any{"allowed": true})
+		return
+	}
+	dec := h.evaluateUsage(r.Context(), tenantID, req.MetricType, req.Value, true)
+	if dec.exceeded && !dec.allowOverage {
+		dec.used -= int(req.Value) // report the real current total, not the hypothetical one
+		if dec.periodEnd != nil {
+			w.Header().Set("X-RateLimit-Reset", dec.periodEnd.Format(time.RFC3339))
+		}
+		writeJSON(w, http.StatusPaymentRequired, limitExceededBody(req.MetricType, dec))
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"allowed":   true,
+		"limit":     dec.limit,
+		"remaining": dec.remaining,
+		"overage":   dec.exceeded,
 	})
 }
 
@@ -522,8 +583,15 @@ type usageDecision struct {
 // evaluateUsage atomically increments the tenant's usage counter (via the canonical
 // billing.IncrementUsage, shared with the NATS usage consumer) and decides whether the
 // event is within limit, soft-capped (overage), or hard-blocked. Fails open on any error.
-func (h *UsageHandler) evaluateUsage(ctx context.Context, tenantID uuid.UUID, metricType string, value float64) usageDecision {
-	res := billing.IncrementUsage(ctx, h.orm, h.cache, h.log, tenantID, metricType, value)
+// evaluateUsage resolves a usage decision. peek=true only reads the counter (/usage/check);
+// peek=false increments it (/usage/report).
+func (h *UsageHandler) evaluateUsage(ctx context.Context, tenantID uuid.UUID, metricType string, value float64, peek bool) usageDecision {
+	var res billing.UsageIncrementResult
+	if peek {
+		res = billing.PeekUsage(ctx, h.orm, h.cache, h.log, tenantID, metricType, value)
+	} else {
+		res = billing.IncrementUsage(ctx, h.orm, h.cache, h.log, tenantID, metricType, value)
+	}
 	if !res.Configured {
 		return usageDecision{}
 	}

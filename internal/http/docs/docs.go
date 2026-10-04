@@ -3189,6 +3189,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/usage/check": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Answers whether value more units of a metric are allowed, without recording\nanything. Services call it before starting an action that is counted later from\nits completion event (pos-api checks before a sale; the sale counts as an order\nwhen pos.sale.finalized arrives). 200 when allowed (also when over the limit with\nextra usage enabled), 402 with the limit-reached body otherwise. used in the 402\nbody is the current total, not including the attempted unit.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Usage"
+                ],
+                "summary": "Check a metered limit without counting",
+                "parameters": [
+                    {
+                        "description": "Metric and units (value defaults to 1)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.checkUsageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "402": {
+                        "description": "Payment Required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/usage/report": {
             "post": {
                 "security": [
@@ -3539,6 +3586,17 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.checkUsageRequest": {
+            "type": "object",
+            "properties": {
+                "metric_type": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
                 }
             }
         },

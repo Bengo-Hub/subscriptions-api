@@ -105,6 +105,18 @@ end
 return v`)
 
 func IncrementUsage(ctx context.Context, orm *ent.Client, cache *redis.Client, log *zap.Logger, tenantID uuid.UUID, metricType string, value float64) UsageIncrementResult {
+	return resolveUsage(ctx, orm, cache, log, tenantID, metricType, value, true)
+}
+
+// PeekUsage reports what IncrementUsage WOULD decide for value more units without counting
+// anything: Used is the current total plus value. Used by /usage/check, where a service asks
+// "may I start one more?" and the real count happens later from the completion event (pos-api
+// checks before a sale and the sale is counted on pos.sale.finalized). Same fail-open contract.
+func PeekUsage(ctx context.Context, orm *ent.Client, cache *redis.Client, log *zap.Logger, tenantID uuid.UUID, metricType string, value float64) UsageIncrementResult {
+	return resolveUsage(ctx, orm, cache, log, tenantID, metricType, value, false)
+}
+
+func resolveUsage(ctx context.Context, orm *ent.Client, cache *redis.Client, log *zap.Logger, tenantID uuid.UUID, metricType string, value float64, increment bool) UsageIncrementResult {
 	sub, err := orm.TenantSubscription.Query().
 		Where(tenantsubscription.TenantIDEQ(tenantID)).
 		WithPlan().
@@ -142,16 +154,27 @@ func IncrementUsage(ctx context.Context, orm *ent.Client, cache *redis.Client, l
 	if IsOverageEligibleMetric(metricType) {
 		expireAt = sub.CurrentPeriodEnd.Add(24 * time.Hour).Unix()
 	}
-	raw, err := usageIncrScript.Run(ctx, cache, []string{cacheKey}, value, expireAt).Text()
-	if err != nil {
-		if log != nil {
-			log.Warn("redis usage counter failed, allowing request", zap.String("key", cacheKey), zap.Error(err))
+	var newTotal float64
+	if increment {
+		raw, err := usageIncrScript.Run(ctx, cache, []string{cacheKey}, value, expireAt).Text()
+		if err != nil {
+			if log != nil {
+				log.Warn("redis usage counter failed, allowing request", zap.String("key", cacheKey), zap.Error(err))
+			}
+			return UsageIncrementResult{}
 		}
-		return UsageIncrementResult{}
-	}
-	newTotal, err := strconv.ParseFloat(raw, 64)
-	if err != nil {
-		return UsageIncrementResult{}
+		if newTotal, err = strconv.ParseFloat(raw, 64); err != nil {
+			return UsageIncrementResult{}
+		}
+	} else {
+		current, err := cache.Get(ctx, cacheKey).Float64()
+		if err != nil && err != redis.Nil {
+			if log != nil {
+				log.Warn("redis usage counter read failed, allowing request", zap.String("key", cacheKey), zap.Error(err))
+			}
+			return UsageIncrementResult{}
+		}
+		newTotal = current + value
 	}
 
 	return UsageIncrementResult{

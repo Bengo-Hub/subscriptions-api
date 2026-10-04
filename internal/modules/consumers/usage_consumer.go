@@ -28,6 +28,15 @@ type usageEventMapping struct {
 	delta float64
 	// roleMetrics maps role strings to metric overrides for auth.user.created events
 	roleMetrics map[string]string
+	// extraMetrics are additional metrics the same event counts once each (deduplicated per
+	// order like the main metric). pos.sale.finalized is both a transaction and an order:
+	// orders are counted on completion so drafts, open tabs and failed attempts never use
+	// up the order allowance.
+	extraMetrics []string
+	// skipExtraForSources lists payload "source" values whose extra metrics are skipped
+	// because another subject already counts them (an online order's POS record completes
+	// as a POS sale, but ordering.order.created already counted the order).
+	skipExtraForSources []string
 	// amountField, when set, makes the recorded usage value the numeric amount carried
 	// in that payload field (instead of the unit delta). Used for revenue-style metering
 	// such as ISP hotspot sales (metric value = KES amount, summed over the period).
@@ -44,8 +53,11 @@ var usageSubjectMappings = map[string]usageEventMapping{
 	"ordering.webhook.dispatched": {metric: "webhooks", service: "ordering"},
 
 	// ── POS ───────────────────────────────────────────────────────────────────
-	"pos.transaction.created":     {metric: "transactions", service: "pos"},
-	"pos.sale.finalized":          {metric: "transactions", service: "pos"},
+	"pos.transaction.created": {metric: "transactions", service: "pos"},
+	"pos.sale.finalized": {
+		metric: "transactions", service: "pos",
+		extraMetrics: []string{"orders"}, skipExtraForSources: []string{"online_ordering"},
+	},
 	"pos.device.registered":       {metric: "devices", service: "pos"},
 	"pos.table.created":           {metric: "tables", service: "pos"},
 	"pos.table.deleted":           {metric: "tables", service: "pos", delta: -1},
@@ -115,7 +127,9 @@ type usageEventPayload struct {
 	// subjects a source-side republish bug can resend with a brand-new NATS/outbox event id
 	// for the SAME underlying order (see the dedup-by-business-key note on idempotencyKeys
 	// below). Absent on every other subject, where it is simply never consulted.
-	OrderID string             `json:"order_id"`
+	OrderID string `json:"order_id"`
+	// Source is the POS order's source on pos.sale.finalized ("online_ordering", "pos", ...).
+	Source  string             `json:"source"`
 	Payload *usageEventPayload `json:"payload"`
 }
 
@@ -217,6 +231,9 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 	if payload.OrderID == "" && payload.Payload != nil {
 		payload.OrderID = payload.Payload.OrderID
 	}
+	if payload.Source == "" && payload.Payload != nil {
+		payload.Source = payload.Payload.Source
+	}
 
 	tenantID, err := uuid.Parse(payload.TenantID)
 	if err != nil {
@@ -227,28 +244,16 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 		return nil
 	}
 
-	// Idempotency: skip events already metered by this consumer. Two independent keys are
-	// checked — the raw NATS/outbox event id (protects against a true JetStream redelivery,
-	// which resends the identical message) AND, when the payload carries an order_id, a
-	// deterministic key derived from (tenant, metric, order_id) (protects against a
-	// SOURCE-SIDE republish that mints a brand-new event id for the same underlying business
-	// event — confirmed to actually happen: pos-api's sale-finalized reconciler can resend
-	// pos.sale.finalized for an order it already successfully published, once its prior
-	// outbox row is pruned, with a fresh id every time; event-id-only dedup is blind to
-	// that). Fail-open throughout: an unset store or an unresolvable id never blocks
-	// metering — better a rare double than silently dropped billable usage.
-	idempotencyKeys := make([]uuid.UUID, 0, 2)
+	// Idempotency: the raw event id catches a true JetStream redelivery of the identical
+	// message; order-carrying events are additionally deduplicated per metric by a key derived
+	// from (tenant, metric, order_id) in the recording loop below, which catches a source-side
+	// republish that mints a fresh event id for the same order. Fail-open throughout: an unset
+	// store or unresolvable id never blocks metering.
+	var eventKey uuid.UUID
 	if c.idem != nil {
 		if id, err := eventslib.EventIDFromMsg(msg); err == nil {
-			idempotencyKeys = append(idempotencyKeys, id)
-		}
-		if payload.OrderID != "" {
-			// order_id-carrying subjects (ordering.order.created, pos.sale.finalized) never
-			// use role-aware metric bucketing, so m.metric is always the single real metric.
-			idempotencyKeys = append(idempotencyKeys, businessIdempotencyKey(payload.TenantID, m.metric, payload.OrderID))
-		}
-		for _, key := range idempotencyKeys {
-			if done, perr := c.idem.AlreadyProcessed(ctx, key, consumerName); perr == nil && done {
+			eventKey = id
+			if done, perr := c.idem.AlreadyProcessed(ctx, id, consumerName); perr == nil && done {
 				return nil
 			}
 		}
@@ -289,22 +294,49 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 		delta = amt
 	}
 
+	if payload.OrderID != "" && !containsFold(m.skipExtraForSources, payload.Source) {
+		metrics = append(metrics, m.extraMetrics...)
+	}
+
+	// Each metric of an order-carrying event is deduplicated by its own (tenant, metric,
+	// order_id) business key, checked and marked per metric: a source-side republish mints a
+	// fresh event id for the same order, and a partial failure (one metric recorded, the next
+	// failing and redelivered) must not count the recorded one twice.
 	for _, metric := range metrics {
+		var bizKey uuid.UUID
+		if c.idem != nil && payload.OrderID != "" {
+			bizKey = businessIdempotencyKey(payload.TenantID, metric, payload.OrderID)
+			if done, perr := c.idem.AlreadyProcessed(ctx, bizKey, consumerName); perr == nil && done {
+				continue
+			}
+		}
 		if err := c.recordUsage(ctx, tenantID, metric, m.service, delta); err != nil {
 			return err
 		}
+		if bizKey != uuid.Nil {
+			if err := c.idem.MarkProcessed(ctx, bizKey, consumerName); err != nil {
+				c.log.Warn("mark usage event processed failed", zap.Error(err))
+			}
+		}
 	}
 
-	// Mark processed only after the usage was recorded — so a recordUsage failure (Nak →
-	// redelivery) re-runs rather than being skipped. At-least-once with a crash-window double
-	// instead of double-on-every-redelivery. Marks every key checked above (event id AND the
-	// business key, when present) so either one alone is enough to catch a future duplicate.
-	for _, key := range idempotencyKeys {
-		if err := c.idem.MarkProcessed(ctx, key, consumerName); err != nil {
+	// The event id is marked only after every metric was recorded, so a failure (Nak) is
+	// redelivered and retried rather than skipped.
+	if eventKey != uuid.Nil {
+		if err := c.idem.MarkProcessed(ctx, eventKey, consumerName); err != nil {
 			c.log.Warn("mark usage event processed failed", zap.Error(err))
 		}
 	}
 	return nil
+}
+
+func containsFold(list []string, v string) bool {
+	for _, s := range list {
+		if strings.EqualFold(s, v) {
+			return true
+		}
+	}
+	return false
 }
 
 // businessIdempotencyNamespace is an arbitrary, fixed namespace for deriving deterministic

@@ -391,6 +391,7 @@ req.Header.Set("X-API-Key", os.Getenv("INTERNAL_SERVICE_KEY"))
 | GET | `/api/v1/features` | JWT | Tenant (self) |
 | GET | `/api/v1/features/{code}/check` | JWT | Any service |
 | POST | `/api/v1/usage/report` | JWT or API key | Domain services (returns 429 when plan limit exceeded) |
+| POST | `/api/v1/usage/check` | API key | Decision only, nothing counted: 200 when one more unit is allowed, 402 with the limit-reached body otherwise. pos-api calls it before creating a sale |
 | GET | `/api/v1/usage` | JWT | Tenant (self) |
 | GET | `/api/v1/addons` | JWT | Tenant (self) — list available add-ons |
 | POST | `/api/v1/addons/{code}/purchase` | JWT | Tenant (self) — purchase an add-on |

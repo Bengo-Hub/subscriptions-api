@@ -151,6 +151,13 @@ definitions:
       status:
         type: string
     type: object
+  internal_http_handlers.checkUsageRequest:
+    properties:
+      metric_type:
+        type: string
+      value:
+        type: number
+    type: object
   internal_http_handlers.deductRequest:
     properties:
       description:
@@ -2448,6 +2455,42 @@ paths:
       security:
       - BearerAuth: []
       summary: Get usage summary
+      tags:
+      - Usage
+  /usage/check:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Answers whether value more units of a metric are allowed, without recording
+        anything. Services call it before starting an action that is counted later from
+        its completion event (pos-api checks before a sale; the sale counts as an order
+        when pos.sale.finalized arrives). 200 when allowed (also when over the limit with
+        extra usage enabled), 402 with the limit-reached body otherwise. used in the 402
+        body is the current total, not including the attempted unit.
+      parameters:
+      - description: Metric and units (value defaults to 1)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http_handlers.checkUsageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "402":
+          description: Payment Required
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Check a metered limit without counting
       tags:
       - Usage
   /usage/report:

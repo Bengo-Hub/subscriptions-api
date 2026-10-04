@@ -155,6 +155,7 @@ PostgreSQL 16+ via `pgxpool` (connection pooling) and `database/sql` (for Ent dr
 ### Caching
 
 Redis 7+ — used for:
+- **POS orders metric**: counted only for completed sales. pos-api checks the limit with `POST /usage/check` before creating a sale (no count), and the usage consumer counts the order when `pos.sale.finalized` arrives, deduplicated per order id. Drafts, open tabs, failed requests and offline re-syncs never use up the allowance. Online orders are skipped there (`source=online_ordering`) because `ordering.order.created` already counts them. The counter resets when the billing period renews (it is keyed on `current_period_start`), not on the calendar month.
 - **Usage rate limiting counters**: `usage:limit:{tenant_id}:{metric_type}:{YYYY-MM}` — incremented atomically on each `POST /usage/report`. If counter exceeds the plan's `rate_limit_config` for the metric, returns `429 Too Many Requests` with `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers.
 - **Feature-gate entitlement cache**: `subscription:entitlements:{tenant_id}` and `subscription:feature:{tenant_id}:*` — written by `FeatureHandler`, invalidated via `FeatureHandler.InvalidateCache` after every subscription mutation (create, change plan, cancel, renew, webhook activation/suspension).
 
@@ -263,6 +264,7 @@ All routes under `/api/v1` (plus health at root `/healthz` and `/readyz`):
 | GET | `/api/v1/features/{code}/check` | Yes | Check specific feature availability |
 | **Usage Reporting** | | | |
 | POST | `/api/v1/usage/report` | Yes | Report usage metric |
+| POST | `/api/v1/usage/check` | Yes | Check a metered limit without counting |
 | GET | `/api/v1/usage` | Yes | Get usage summary |
 | GET | `/api/v1/usage/summary` | Yes | Usage summary (alias) |
 | **Service Charges** | | | |
