@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	entsql "entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -21,6 +23,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/supportagreement"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
@@ -189,19 +192,37 @@ func (h *PlatformHandler) GetPlatformStats(w http.ResponseWriter, r *http.Reques
 		fail("support agreements", err)
 		return
 	}
-	supportMRR, specialMRR, specialCount := 0.0, 0.0, 0
+	// Personal agreements (the owner's own engagements, off the company's books) never count in
+	// the company's MRR, ARR or receivables; they are reported apart.
+	supportMRR, specialMRR, specialCount, personalMRR := 0.0, 0.0, 0, 0.0
 	for _, a := range agreements {
 		m := subscriptions.MonthlyEquivalent(subscriptions.AgreementPeriodAmount(a, a.Edges.SupportPlan), subscriptions.AgreementInterval(a))
+		if subscriptions.IsPersonalAgreement(a.Metadata) {
+			personalMRR += m
+			continue
+		}
 		supportMRR += m
 		if a.Kind == supportagreement.KindSPECIAL {
 			specialMRR += m
 			specialCount++
 		}
 	}
-	receivables, err := h.supportOutstanding(r)
+	personalIDs, err := h.personalAgreementIDs(ctx)
+	if err != nil {
+		fail("personal agreements", err)
+		return
+	}
+	receivables, err := h.supportOutstanding(r, notPersonalCycle(personalIDs))
 	if err != nil {
 		fail("support receivables", err)
 		return
+	}
+	personalReceivables := supportTotals{}
+	if len(personalIDs) > 0 {
+		if personalReceivables, err = h.supportOutstanding(r, supportfeecycle.AgreementIDIn(personalIDs...)); err != nil {
+			fail("personal support receivables", err)
+			return
+		}
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -220,7 +241,10 @@ func (h *PlatformHandler) GetPlatformStats(w http.ResponseWriter, r *http.Reques
 		"totalMrr":            roundCents(mrr + supportMRR),
 		"arr":                 roundCents((mrr + supportMRR) * 12),
 		"supportReceivables":  receivables,
-		"currency":            "KES",
+		// The owner's personal engagements, outside every company figure above.
+		"personalSupportMrr":         roundCents(personalMRR),
+		"personalSupportReceivables": personalReceivables,
+		"currency":                   "KES",
 	})
 }
 
@@ -1497,4 +1521,22 @@ func (h *PlatformHandler) DownloadSubscriptionInvoicePDF(w http.ResponseWriter, 
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)
+}
+
+// personalAgreementIDs lists every personal agreement (any status: an ended one can still have
+// open charges). The table holds a few rows per one-time tenant.
+func (h *PlatformHandler) personalAgreementIDs(ctx context.Context) ([]uuid.UUID, error) {
+	return h.client.SupportAgreement.Query().
+		Where(func(s *entsql.Selector) {
+			s.Where(sqljson.ValueEQ(supportagreement.FieldMetadata, subscriptions.CollectionPersonal, sqljson.Path(subscriptions.MetaCollection)))
+		}).
+		IDs(ctx)
+}
+
+// notPersonalCycle keeps the company's support charges (legacy cycles have no agreement).
+func notPersonalCycle(personalIDs []uuid.UUID) predicate.SupportFeeCycle {
+	if len(personalIDs) == 0 {
+		return func(*entsql.Selector) {} // nothing personal to leave out
+	}
+	return supportfeecycle.Or(supportfeecycle.AgreementIDIsNil(), supportfeecycle.AgreementIDNotIn(personalIDs...))
 }

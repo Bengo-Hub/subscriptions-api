@@ -94,28 +94,30 @@ func toSupportCycleDTO(c *ent.SupportFeeCycle, now time.Time) supportCycleDTO {
 }
 
 type supportAgreementDTO struct {
-	ID                uuid.UUID         `json:"id"`
-	TenantID          uuid.UUID         `json:"tenant_id"`
-	Kind              string            `json:"kind"`
-	Name              string            `json:"name"`
-	SupportPlanCode   string            `json:"support_plan_code,omitempty"`
-	BillingCycle      string            `json:"billing_cycle"`
-	IntervalCount     int               `json:"interval_count"`
-	IntervalUnit      string            `json:"interval_unit"`
-	Amount            *float64          `json:"amount,omitempty"`
-	PeriodAmount      float64           `json:"period_amount"`
-	MonthlyEquivalent float64           `json:"monthly_equivalent"`
-	AnnualListPrice   float64           `json:"annual_list_price,omitempty"`
-	Currency          string            `json:"currency"`
-	BillingTiming     string            `json:"billing_timing"`
-	StartsAt          time.Time         `json:"starts_at"`
-	EndsAt            *time.Time        `json:"ends_at,omitempty"`
-	Status            string            `json:"status"`
-	NextPeriodStart   time.Time         `json:"next_period_start"`
-	CycleCount        int               `json:"cycle_count"`
-	Notes             *string           `json:"notes,omitempty"`
-	BillingEmail      string            `json:"billing_email,omitempty"`
-	Cycles            []supportCycleDTO `json:"cycles"`
+	ID                uuid.UUID  `json:"id"`
+	TenantID          uuid.UUID  `json:"tenant_id"`
+	Kind              string     `json:"kind"`
+	Name              string     `json:"name"`
+	SupportPlanCode   string     `json:"support_plan_code,omitempty"`
+	BillingCycle      string     `json:"billing_cycle"`
+	IntervalCount     int        `json:"interval_count"`
+	IntervalUnit      string     `json:"interval_unit"`
+	Amount            *float64   `json:"amount,omitempty"`
+	PeriodAmount      float64    `json:"period_amount"`
+	MonthlyEquivalent float64    `json:"monthly_equivalent"`
+	AnnualListPrice   float64    `json:"annual_list_price,omitempty"`
+	Currency          string     `json:"currency"`
+	BillingTiming     string     `json:"billing_timing"`
+	StartsAt          time.Time  `json:"starts_at"`
+	EndsAt            *time.Time `json:"ends_at,omitempty"`
+	Status            string     `json:"status"`
+	NextPeriodStart   time.Time  `json:"next_period_start"`
+	CycleCount        int        `json:"cycle_count"`
+	Notes             *string    `json:"notes,omitempty"`
+	BillingEmail      string     `json:"billing_email,omitempty"`
+	// Collection is "business" or "personal" (off the company's books).
+	Collection string            `json:"collection"`
+	Cycles     []supportCycleDTO `json:"cycles"`
 }
 
 func toSupportAgreementDTO(a *ent.SupportAgreement, now time.Time) supportAgreementDTO {
@@ -141,7 +143,11 @@ func toSupportAgreementDTO(a *ent.SupportAgreement, now time.Time) supportAgreem
 		CycleCount:        a.CycleCount,
 		Notes:             a.Notes,
 		BillingEmail:      stringMetaValue(a.Metadata, "billing_email"),
+		Collection:        "business",
 		Cycles:            []supportCycleDTO{},
+	}
+	if subscriptions.IsPersonalAgreement(a.Metadata) {
+		dto.Collection = subscriptions.CollectionPersonal
 	}
 	if p := a.Edges.SupportPlan; p != nil {
 		dto.SupportPlanCode = p.PlanCode

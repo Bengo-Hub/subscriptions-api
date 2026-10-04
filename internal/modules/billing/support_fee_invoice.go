@@ -121,6 +121,11 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 	}
 	total := amount * (1 + s.vatRate/100)
 
+	// A personal agreement (the platform owner's own engagement) is invoiced off the company's
+	// books: treasury posts nothing for it, keeps it out of every business report and collects
+	// it only into the owner's personal PayHero channel (M-Pesa).
+	personal := agreement != nil && subscriptions.IsPersonalAgreement(agreement.Metadata)
+
 	// 1. Create the invoice under the PLATFORM tenant (issuer); customer = the license tenant.
 	invReq := map[string]any{
 		"customer_name":  customerName,
@@ -138,6 +143,9 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 			"agreement_id":      uuidString(cycle.AgreementID),
 			"cycle_number":      cycle.CycleNumber,
 		},
+	}
+	if personal {
+		invReq["metadata"].(map[string]any)["off_books"] = true
 	}
 	resp, err := s.treasury.Post(ctx, fmt.Sprintf("/api/v1/s2s/%s/invoices", s.platformTenantID), invReq, s.headers())
 	if err != nil || !resp.IsSuccess() {
@@ -180,6 +188,9 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 			"invoice_number": inv.InvoiceNumber,
 		},
 	}
+	if personal {
+		intentReq["metadata"].(map[string]any)["off_books"] = true
+	}
 	intentResp, err := s.treasury.Post(ctx, fmt.Sprintf("/api/v1/s2s/%s/payments/intents", cycle.TenantID), intentReq, s.headers())
 	if err == nil && intentResp.IsSuccess() {
 		var ir struct {
@@ -202,6 +213,9 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 			}
 			if ir.IntentID != "" {
 				q.Set("intent_id", ir.IntentID)
+			}
+			if personal {
+				q.Set("gateways", "mpesa,payhero_offline") // the personal channel takes M-Pesa only
 			}
 			payURL = fmt.Sprintf("%s/pay?%s", s.treasuryUIBase, q.Encode())
 		}

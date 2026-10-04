@@ -31,6 +31,28 @@ const maxCycleCatchUp = 24
 // ErrSupportValidation marks a caller error (bad input or a disallowed transition).
 var ErrSupportValidation = errors.New("invalid support agreement request")
 
+// MetaCollection is the agreement metadata key marking a personal collection (CollectionPersonal).
+const (
+	MetaCollection     = "collection"
+	CollectionPersonal = "personal"
+)
+
+// IsPersonalAgreement reports an agreement collected personally (off the company's books).
+func IsPersonalAgreement(meta map[string]any) bool {
+	v, _ := meta[MetaCollection].(string)
+	return v == CollectionPersonal
+}
+
+func parseCollection(v string) (personal bool, err error) {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "", "business":
+		return false, nil
+	case CollectionPersonal:
+		return true, nil
+	}
+	return false, supportErr("collection must be business or personal")
+}
+
 func supportErr(format string, a ...any) error {
 	return fmt.Errorf("%w: %s", ErrSupportValidation, fmt.Sprintf(format, a...))
 }
@@ -352,6 +374,10 @@ type SupportAgreementInput struct {
 	Status        *string    `json:"status"`
 	Notes         *string    `json:"notes"`
 	BillingEmail  *string    `json:"billing_email"`
+	// Collection is "business" (default) or "personal": a personal agreement is the platform
+	// owner's own engagement, collected into the owner's personal PayHero channel and kept off
+	// the company's books (its invoices carry off_books in treasury).
+	Collection *string `json:"collection"`
 	// RescheduleFrom applies a cycle or timing change: "next_period" (default) keeps the current
 	// period as billed and switches from the next one; "now" cancels the not-yet-invoiced current
 	// period and starts the new schedule today.
@@ -463,6 +489,15 @@ func (s *Service) CreateSupportAgreement(ctx context.Context, tenantID uuid.UUID
 	if in.BillingEmail != nil && strings.TrimSpace(*in.BillingEmail) != "" {
 		meta["billing_email"] = strings.TrimSpace(*in.BillingEmail)
 	}
+	if in.Collection != nil {
+		personal, err := parseCollection(*in.Collection)
+		if err != nil {
+			return nil, err
+		}
+		if personal {
+			meta[MetaCollection] = CollectionPersonal
+		}
+	}
 
 	create := s.client.SupportAgreement.Create().
 		SetTenantID(tenantID).
@@ -539,6 +574,22 @@ func (s *Service) UpdateSupportAgreement(ctx context.Context, id uuid.UUID, in S
 			meta["billing_email"] = v
 		} else {
 			delete(meta, "billing_email")
+		}
+	}
+	if in.Collection != nil {
+		personal, err := parseCollection(*in.Collection)
+		if err != nil {
+			return nil, err
+		}
+		// Applies to charges invoiced from now on; an invoice already raised keeps how it was
+		// booked.
+		if personal != IsPersonalAgreement(meta) {
+			changes = append(changes, "collection")
+		}
+		if personal {
+			meta[MetaCollection] = CollectionPersonal
+		} else {
+			delete(meta, MetaCollection)
 		}
 	}
 

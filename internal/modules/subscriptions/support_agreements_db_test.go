@@ -335,3 +335,34 @@ func TestRescheduleStandardToMonthlyNow(t *testing.T) {
 		t.Fatalf("paused agreement generated %d cycles", n)
 	}
 }
+
+// A personal agreement is marked in its metadata (its charges are invoiced off the company's
+// books); switching it back to business clears the mark; anything else is refused.
+func TestPersonalCollectionAgreement(t *testing.T) {
+	svc, client := newSupportTestService(t)
+	ctx := context.Background()
+	fx := oneTimeTenant(t, client, time.Now().UTC().Truncate(time.Microsecond).AddDate(0, -1, 0))
+
+	name, cycle, amount, personal := "Dedicated Support Engineer", "MONTHLY", 3000.0, "personal"
+	a, err := svc.CreateSupportAgreement(ctx, fx.tenantID, SupportAgreementInput{
+		Name: &name, BillingCycle: &cycle, Amount: &amount, Collection: &personal,
+	}, uuid.Nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !IsPersonalAgreement(a.Metadata) {
+		t.Fatalf("created agreement metadata %v, want collection=personal", a.Metadata)
+	}
+	business := "business"
+	a, err = svc.UpdateSupportAgreement(ctx, a.ID, SupportAgreementInput{Collection: &business}, uuid.Nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if IsPersonalAgreement(a.Metadata) || a.Metadata["last_change"] != "collection" {
+		t.Fatalf("after switching to business: %v", a.Metadata)
+	}
+	bad := "family"
+	if _, err := svc.UpdateSupportAgreement(ctx, a.ID, SupportAgreementInput{Collection: &bad}, uuid.Nil); err == nil {
+		t.Fatal("an unknown collection was accepted")
+	}
+}

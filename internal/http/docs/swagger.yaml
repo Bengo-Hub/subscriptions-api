@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  github_com_bengobox_subscription-service_internal_modules_billing.DeductResult:
+  billing.DeductResult:
     properties:
       allowed:
         type: boolean
@@ -9,7 +9,7 @@ definitions:
       tokens_charged:
         type: integer
     type: object
-  github_com_bengobox_subscription-service_internal_modules_billing.WalletSnapshot:
+  billing.WalletSnapshot:
     properties:
       balance:
         type: integer
@@ -20,145 +20,14 @@ definitions:
       low_balance_threshold:
         type: integer
     type: object
-  github_com_bengobox_subscription-service_internal_modules_plans.PlanFeature:
-    properties:
-      createdAt:
-        type: string
-      featureCode:
-        type: string
-      id:
-        type: string
-      isIncluded:
-        type: boolean
-      limitValue:
-        type: integer
-      metadata:
-        additionalProperties: {}
-        type: object
-      overageUnitPrice:
-        type: number
-      planId:
-        type: string
-    type: object
-  github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan:
-    properties:
-      basePrice:
-        type: number
-      billingCycle:
-        type: string
-      createdAt:
-        type: string
-      currency:
-        type: string
-      description:
-        type: string
-      discountRules:
-        items:
-          additionalProperties: {}
-          type: object
-        type: array
-      features:
-        items:
-          $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.PlanFeature'
-        type: array
-      freeTrialDays:
-        type: integer
-      id:
-        type: string
-      isActive:
-        type: boolean
-      isPublic:
-        type: boolean
-      metadata:
-        additionalProperties: {}
-        type: object
-      name:
-        type: string
-      onetimeAllProductsPrice:
-        type: number
-      planCode:
-        type: string
-      planType:
-        type: string
-      serviceTag:
-        type: string
-      setupFee:
-        type: number
-      tierLimits:
-        additionalProperties: {}
-        type: object
-      tierOrder:
-        type: integer
-      updatedAt:
-        type: string
-      useCase:
-        type: string
-      useSumBasedPricing:
-        type: boolean
-    type: object
-  github_com_bengobox_subscription-service_internal_modules_subscriptions.EntitlementCheck:
-    properties:
-      entitled:
-        type: boolean
-      min_plan_code:
-        description: |-
-          MinPlanCode/MinPlanName/MinPlanTier name the cheapest plan that would unlock this
-          product, when NOT entitled — lets the UI prompt a specific upgrade rather than a
-          generic "upgrade your plan" message. Nil when Entitled is true or no catalogued plan
-          grants the product (nothing to recommend).
-        type: string
-      min_plan_name:
-        type: string
-      min_plan_tier:
-        type: integer
-    type: object
-  github_com_bengobox_subscription-service_internal_modules_subscriptions.SupportAgreementInput:
-    properties:
-      amount:
-        type: number
-      billing_cycle:
-        type: string
-      billing_email:
-        type: string
-      billing_timing:
-        type: string
-      clear_amount:
-        type: boolean
-      clear_ends_at:
-        type: boolean
-      currency:
-        type: string
-      ends_at:
-        type: string
-      interval_count:
-        type: integer
-      interval_unit:
-        type: string
-      kind:
-        type: string
-      name:
-        type: string
-      notes:
-        type: string
-      reschedule_from:
-        description: |-
-          RescheduleFrom applies a cycle or timing change: "next_period" (default) keeps the current
-          period as billed and switches from the next one; "now" cancels the not-yet-invoiced current
-          period and starts the new schedule today.
-        type: string
-      starts_at:
-        type: string
-      status:
-        type: string
-    type: object
-  internal_http_handlers.checkUsageRequest:
+  handlers.checkUsageRequest:
     properties:
       metric_type:
         type: string
       value:
         type: number
     type: object
-  internal_http_handlers.deductRequest:
+  handlers.deductRequest:
     properties:
       description:
         type: string
@@ -171,12 +40,12 @@ definitions:
       service_tag:
         type: string
     type: object
-  internal_http_handlers.errorResponse:
+  handlers.errorResponse:
     properties:
       error:
         type: string
     type: object
-  internal_http_handlers.estimateRequest:
+  handlers.estimateRequest:
     properties:
       avg_sales_per_day:
         description: 'Shortcut: assumes every call is a sales-transmission-weight
@@ -192,27 +61,27 @@ definitions:
       service_tag:
         type: string
     type: object
-  internal_http_handlers.estimateResponse:
+  handlers.estimateResponse:
     properties:
       plans_compared:
         items:
-          $ref: '#/definitions/internal_http_handlers.planComparison'
+          $ref: '#/definitions/handlers.planComparison'
         type: array
       recommended_plan:
         type: string
       tokens_per_month:
         type: integer
     type: object
-  internal_http_handlers.listPlansResponse:
+  handlers.listPlansResponse:
     properties:
       count:
         type: integer
       plans:
         items:
-          $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan'
+          $ref: '#/definitions/plans.SubscriptionPlan'
         type: array
     type: object
-  internal_http_handlers.planComparison:
+  handlers.planComparison:
     properties:
       covers_estimate:
         type: boolean
@@ -229,12 +98,12 @@ definitions:
       token_price_kes:
         type: number
     type: object
-  internal_http_handlers.planResponse:
+  handlers.planResponse:
     properties:
       plan:
-        $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan'
+        $ref: '#/definitions/plans.SubscriptionPlan'
     type: object
-  internal_http_handlers.rateLimitResponse:
+  handlers.rateLimitResponse:
     properties:
       burst_multiplier:
         type: number
@@ -249,7 +118,7 @@ definitions:
       window_seconds:
         type: integer
     type: object
-  internal_http_handlers.refundRequest:
+  handlers.refundRequest:
     properties:
       description:
         type: string
@@ -260,7 +129,7 @@ definitions:
       tokens:
         type: integer
     type: object
-  internal_http_handlers.supportAgreementDTO:
+  handlers.supportAgreementDTO:
     properties:
       amount:
         type: number
@@ -272,13 +141,16 @@ definitions:
         type: string
       billing_timing:
         type: string
+      collection:
+        description: Collection is "business" or "personal" (off the company's books).
+        type: string
       currency:
         type: string
       cycle_count:
         type: integer
       cycles:
         items:
-          $ref: '#/definitions/internal_http_handlers.supportCycleDTO'
+          $ref: '#/definitions/handlers.supportCycleDTO'
         type: array
       ends_at:
         type: string
@@ -309,7 +181,7 @@ definitions:
       tenant_id:
         type: string
     type: object
-  internal_http_handlers.supportCycleDTO:
+  handlers.supportCycleDTO:
     properties:
       agreement_id:
         type: string
@@ -355,13 +227,150 @@ definitions:
       tenant_name:
         type: string
     type: object
-  internal_http_handlers.topUpRequest:
+  handlers.topUpRequest:
     properties:
       amount_kes:
         type: number
       return_url:
         type: string
       service_tag:
+        type: string
+    type: object
+  plans.PlanFeature:
+    properties:
+      createdAt:
+        type: string
+      featureCode:
+        type: string
+      id:
+        type: string
+      isIncluded:
+        type: boolean
+      limitValue:
+        type: integer
+      metadata:
+        additionalProperties: {}
+        type: object
+      overageUnitPrice:
+        type: number
+      planId:
+        type: string
+    type: object
+  plans.SubscriptionPlan:
+    properties:
+      basePrice:
+        type: number
+      billingCycle:
+        type: string
+      createdAt:
+        type: string
+      currency:
+        type: string
+      description:
+        type: string
+      discountRules:
+        items:
+          additionalProperties: {}
+          type: object
+        type: array
+      features:
+        items:
+          $ref: '#/definitions/plans.PlanFeature'
+        type: array
+      freeTrialDays:
+        type: integer
+      id:
+        type: string
+      isActive:
+        type: boolean
+      isPublic:
+        type: boolean
+      metadata:
+        additionalProperties: {}
+        type: object
+      name:
+        type: string
+      onetimeAllProductsPrice:
+        type: number
+      planCode:
+        type: string
+      planType:
+        type: string
+      serviceTag:
+        type: string
+      setupFee:
+        type: number
+      tierLimits:
+        additionalProperties: {}
+        type: object
+      tierOrder:
+        type: integer
+      updatedAt:
+        type: string
+      useCase:
+        type: string
+      useSumBasedPricing:
+        type: boolean
+    type: object
+  subscriptions.EntitlementCheck:
+    properties:
+      entitled:
+        type: boolean
+      min_plan_code:
+        description: |-
+          MinPlanCode/MinPlanName/MinPlanTier name the cheapest plan that would unlock this
+          product, when NOT entitled — lets the UI prompt a specific upgrade rather than a
+          generic "upgrade your plan" message. Nil when Entitled is true or no catalogued plan
+          grants the product (nothing to recommend).
+        type: string
+      min_plan_name:
+        type: string
+      min_plan_tier:
+        type: integer
+    type: object
+  subscriptions.SupportAgreementInput:
+    properties:
+      amount:
+        type: number
+      billing_cycle:
+        type: string
+      billing_email:
+        type: string
+      billing_timing:
+        type: string
+      clear_amount:
+        type: boolean
+      clear_ends_at:
+        type: boolean
+      collection:
+        description: |-
+          Collection is "business" (default) or "personal": a personal agreement is the platform
+          owner's own engagement, collected into the owner's personal PayHero channel and kept off
+          the company's books (its invoices carry off_books in treasury).
+        type: string
+      currency:
+        type: string
+      ends_at:
+        type: string
+      interval_count:
+        type: integer
+      interval_unit:
+        type: string
+      kind:
+        type: string
+      name:
+        type: string
+      notes:
+        type: string
+      reschedule_from:
+        description: |-
+          RescheduleFrom applies a cycle or timing change: "next_period" (default) keeps the current
+          period as billed and switches from the next one; "now" cancels the not-yet-invoiced current
+          period and starts the new schedule today.
+        type: string
+      starts_at:
+        type: string
+      status:
         type: string
     type: object
 host: pricingapi.codevertexafrica.com
@@ -538,19 +547,19 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_http_handlers.planResponse'
+            $ref: '#/definitions/handlers.planResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Create subscription plan (admin)
@@ -571,15 +580,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Delete subscription plan (admin)
@@ -602,19 +611,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_http_handlers.planResponse'
+            $ref: '#/definitions/handlers.planResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Update subscription plan (admin)
@@ -864,14 +873,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.SupportAgreementInput'
+          $ref: '#/definitions/subscriptions.SupportAgreementInput'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_http_handlers.supportAgreementDTO'
+            $ref: '#/definitions/handlers.supportAgreementDTO'
         "400":
           description: Bad Request
           schema:
@@ -922,7 +931,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_http_handlers.supportCycleDTO'
+            $ref: '#/definitions/handlers.supportCycleDTO'
         "400":
           description: Bad Request
           schema:
@@ -953,7 +962,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_http_handlers.supportCycleDTO'
+            $ref: '#/definitions/handlers.supportCycleDTO'
       security:
       - BearerAuth: []
       summary: Issue (or with force=true re-issue) the invoice for one support charge
@@ -1395,14 +1404,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.SupportAgreementInput'
+          $ref: '#/definitions/subscriptions.SupportAgreementInput'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_http_handlers.supportAgreementDTO'
+            $ref: '#/definitions/handlers.supportAgreementDTO'
         "400":
           description: Bad Request
           schema:
@@ -1545,11 +1554,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_http_handlers.listPlansResponse'
+            $ref: '#/definitions/handlers.listPlansResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
       summary: List subscription plans
       tags:
       - Plans
@@ -1568,15 +1577,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_http_handlers.planResponse'
+            $ref: '#/definitions/handlers.planResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
       summary: Get plan by ID
       tags:
       - Plans
@@ -1596,15 +1605,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_http_handlers.planResponse'
+            $ref: '#/definitions/handlers.planResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_http_handlers.errorResponse'
+            $ref: '#/definitions/handlers.errorResponse'
       summary: Get plan by code
       tags:
       - Plans
@@ -1671,7 +1680,7 @@ paths:
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.EntitlementCheck'
+            $ref: '#/definitions/subscriptions.EntitlementCheck'
       security:
       - BearerAuth: []
       summary: Self-activate a product for the caller's own tenant
@@ -1712,7 +1721,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.EntitlementCheck'
+            $ref: '#/definitions/subscriptions.EntitlementCheck'
       security:
       - BearerAuth: []
       summary: Check whether the caller's tenant may self-activate a product
@@ -2203,7 +2212,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_http_handlers.rateLimitResponse'
+            $ref: '#/definitions/handlers.rateLimitResponse'
         "400":
           description: Bad Request
           schema:
@@ -2272,7 +2281,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_billing.WalletSnapshot'
+            $ref: '#/definitions/billing.WalletSnapshot'
       security:
       - BearerAuth: []
       - ApiKeyAuth: []
@@ -2298,14 +2307,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_http_handlers.deductRequest'
+          $ref: '#/definitions/handlers.deductRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_billing.DeductResult'
+            $ref: '#/definitions/billing.DeductResult'
         "402":
           description: insufficient_tokens
           schema:
@@ -2329,14 +2338,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_http_handlers.estimateRequest'
+          $ref: '#/definitions/handlers.estimateRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_http_handlers.estimateResponse'
+            $ref: '#/definitions/handlers.estimateResponse'
       summary: Estimate monthly API token consumption and recommend a plan
       tags:
       - Subscriptions
@@ -2360,7 +2369,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_http_handlers.refundRequest'
+          $ref: '#/definitions/handlers.refundRequest'
       produces:
       - application/json
       responses:
@@ -2392,7 +2401,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_http_handlers.topUpRequest'
+          $ref: '#/definitions/handlers.topUpRequest'
       produces:
       - application/json
       responses:
@@ -2474,7 +2483,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_http_handlers.checkUsageRequest'
+          $ref: '#/definitions/handlers.checkUsageRequest'
       produces:
       - application/json
       responses:

@@ -277,25 +277,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.planResponse"
+                            "$ref": "#/definitions/handlers.planResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     }
                 }
@@ -332,25 +332,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.planResponse"
+                            "$ref": "#/definitions/handlers.planResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     }
                 }
@@ -382,19 +382,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     }
                 }
@@ -776,7 +776,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.SupportAgreementInput"
+                            "$ref": "#/definitions/subscriptions.SupportAgreementInput"
                         }
                     }
                 ],
@@ -784,7 +784,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.supportAgreementDTO"
+                            "$ref": "#/definitions/handlers.supportAgreementDTO"
                         }
                     },
                     "400": {
@@ -856,7 +856,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.supportCycleDTO"
+                            "$ref": "#/definitions/handlers.supportCycleDTO"
                         }
                     },
                     "400": {
@@ -904,7 +904,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.supportCycleDTO"
+                            "$ref": "#/definitions/handlers.supportCycleDTO"
                         }
                     }
                 }
@@ -1567,7 +1567,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.SupportAgreementInput"
+                            "$ref": "#/definitions/subscriptions.SupportAgreementInput"
                         }
                     }
                 ],
@@ -1575,7 +1575,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.supportAgreementDTO"
+                            "$ref": "#/definitions/handlers.supportAgreementDTO"
                         }
                     },
                     "400": {
@@ -1784,13 +1784,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.listPlansResponse"
+                            "$ref": "#/definitions/handlers.listPlansResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     }
                 }
@@ -1819,19 +1819,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.planResponse"
+                            "$ref": "#/definitions/handlers.planResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     }
                 }
@@ -1860,19 +1860,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.planResponse"
+                            "$ref": "#/definitions/handlers.planResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
+                            "$ref": "#/definitions/handlers.errorResponse"
                         }
                     }
                 }
@@ -1973,7 +1973,7 @@ const docTemplate = `{
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.EntitlementCheck"
+                            "$ref": "#/definitions/subscriptions.EntitlementCheck"
                         }
                     }
                 }
@@ -2040,7 +2040,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.EntitlementCheck"
+                            "$ref": "#/definitions/subscriptions.EntitlementCheck"
                         }
                     }
                 }
@@ -2813,7 +2813,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.rateLimitResponse"
+                            "$ref": "#/definitions/handlers.rateLimitResponse"
                         }
                     },
                     "400": {
@@ -2921,7 +2921,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_billing.WalletSnapshot"
+                            "$ref": "#/definitions/billing.WalletSnapshot"
                         }
                     }
                 }
@@ -2959,7 +2959,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.deductRequest"
+                            "$ref": "#/definitions/handlers.deductRequest"
                         }
                     }
                 ],
@@ -2967,7 +2967,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_billing.DeductResult"
+                            "$ref": "#/definitions/billing.DeductResult"
                         }
                     },
                     "402": {
@@ -3000,7 +3000,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.estimateRequest"
+                            "$ref": "#/definitions/handlers.estimateRequest"
                         }
                     }
                 ],
@@ -3008,7 +3008,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.estimateResponse"
+                            "$ref": "#/definitions/handlers.estimateResponse"
                         }
                     }
                 }
@@ -3046,7 +3046,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.refundRequest"
+                            "$ref": "#/definitions/handlers.refundRequest"
                         }
                     }
                 ],
@@ -3093,7 +3093,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.topUpRequest"
+                            "$ref": "#/definitions/handlers.topUpRequest"
                         }
                     }
                 ],
@@ -3214,7 +3214,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_http_handlers.checkUsageRequest"
+                            "$ref": "#/definitions/handlers.checkUsageRequest"
                         }
                     }
                 ],
@@ -3373,7 +3373,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_bengobox_subscription-service_internal_modules_billing.DeductResult": {
+        "billing.DeductResult": {
             "type": "object",
             "properties": {
                 "allowed": {
@@ -3387,7 +3387,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_bengobox_subscription-service_internal_modules_billing.WalletSnapshot": {
+        "billing.WalletSnapshot": {
             "type": "object",
             "properties": {
                 "balance": {
@@ -3404,192 +3404,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_bengobox_subscription-service_internal_modules_plans.PlanFeature": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "featureCode": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "isIncluded": {
-                    "type": "boolean"
-                },
-                "limitValue": {
-                    "type": "integer"
-                },
-                "metadata": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "overageUnitPrice": {
-                    "type": "number"
-                },
-                "planId": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan": {
-            "type": "object",
-            "properties": {
-                "basePrice": {
-                    "type": "number"
-                },
-                "billingCycle": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "currency": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "discountRules": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": {}
-                    }
-                },
-                "features": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.PlanFeature"
-                    }
-                },
-                "freeTrialDays": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "isActive": {
-                    "type": "boolean"
-                },
-                "isPublic": {
-                    "type": "boolean"
-                },
-                "metadata": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "name": {
-                    "type": "string"
-                },
-                "onetimeAllProductsPrice": {
-                    "type": "number"
-                },
-                "planCode": {
-                    "type": "string"
-                },
-                "planType": {
-                    "type": "string"
-                },
-                "serviceTag": {
-                    "type": "string"
-                },
-                "setupFee": {
-                    "type": "number"
-                },
-                "tierLimits": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "tierOrder": {
-                    "type": "integer"
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "useCase": {
-                    "type": "string"
-                },
-                "useSumBasedPricing": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "github_com_bengobox_subscription-service_internal_modules_subscriptions.EntitlementCheck": {
-            "type": "object",
-            "properties": {
-                "entitled": {
-                    "type": "boolean"
-                },
-                "min_plan_code": {
-                    "description": "MinPlanCode/MinPlanName/MinPlanTier name the cheapest plan that would unlock this\nproduct, when NOT entitled — lets the UI prompt a specific upgrade rather than a\ngeneric \"upgrade your plan\" message. Nil when Entitled is true or no catalogued plan\ngrants the product (nothing to recommend).",
-                    "type": "string"
-                },
-                "min_plan_name": {
-                    "type": "string"
-                },
-                "min_plan_tier": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_bengobox_subscription-service_internal_modules_subscriptions.SupportAgreementInput": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "billing_cycle": {
-                    "type": "string"
-                },
-                "billing_email": {
-                    "type": "string"
-                },
-                "billing_timing": {
-                    "type": "string"
-                },
-                "clear_amount": {
-                    "type": "boolean"
-                },
-                "clear_ends_at": {
-                    "type": "boolean"
-                },
-                "currency": {
-                    "type": "string"
-                },
-                "ends_at": {
-                    "type": "string"
-                },
-                "interval_count": {
-                    "type": "integer"
-                },
-                "interval_unit": {
-                    "type": "string"
-                },
-                "kind": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "notes": {
-                    "type": "string"
-                },
-                "reschedule_from": {
-                    "description": "RescheduleFrom applies a cycle or timing change: \"next_period\" (default) keeps the current\nperiod as billed and switches from the next one; \"now\" cancels the not-yet-invoiced current\nperiod and starts the new schedule today.",
-                    "type": "string"
-                },
-                "starts_at": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_http_handlers.checkUsageRequest": {
+        "handlers.checkUsageRequest": {
             "type": "object",
             "properties": {
                 "metric_type": {
@@ -3600,7 +3415,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_http_handlers.deductRequest": {
+        "handlers.deductRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -3620,7 +3435,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_http_handlers.errorResponse": {
+        "handlers.errorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -3628,7 +3443,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_http_handlers.estimateRequest": {
+        "handlers.estimateRequest": {
             "type": "object",
             "properties": {
                 "avg_sales_per_day": {
@@ -3650,13 +3465,13 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_http_handlers.estimateResponse": {
+        "handlers.estimateResponse": {
             "type": "object",
             "properties": {
                 "plans_compared": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_http_handlers.planComparison"
+                        "$ref": "#/definitions/handlers.planComparison"
                     }
                 },
                 "recommended_plan": {
@@ -3667,7 +3482,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_http_handlers.listPlansResponse": {
+        "handlers.listPlansResponse": {
             "type": "object",
             "properties": {
                 "count": {
@@ -3676,12 +3491,12 @@ const docTemplate = `{
                 "plans": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan"
+                        "$ref": "#/definitions/plans.SubscriptionPlan"
                     }
                 }
             }
         },
-        "internal_http_handlers.planComparison": {
+        "handlers.planComparison": {
             "type": "object",
             "properties": {
                 "covers_estimate": {
@@ -3707,15 +3522,15 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_http_handlers.planResponse": {
+        "handlers.planResponse": {
             "type": "object",
             "properties": {
                 "plan": {
-                    "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan"
+                    "$ref": "#/definitions/plans.SubscriptionPlan"
                 }
             }
         },
-        "internal_http_handlers.rateLimitResponse": {
+        "handlers.rateLimitResponse": {
             "type": "object",
             "properties": {
                 "burst_multiplier": {
@@ -3733,7 +3548,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_http_handlers.refundRequest": {
+        "handlers.refundRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -3750,7 +3565,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_http_handlers.supportAgreementDTO": {
+        "handlers.supportAgreementDTO": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -3768,6 +3583,10 @@ const docTemplate = `{
                 "billing_timing": {
                     "type": "string"
                 },
+                "collection": {
+                    "description": "Collection is \"business\" or \"personal\" (off the company's books).",
+                    "type": "string"
+                },
                 "currency": {
                     "type": "string"
                 },
@@ -3777,7 +3596,7 @@ const docTemplate = `{
                 "cycles": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_http_handlers.supportCycleDTO"
+                        "$ref": "#/definitions/handlers.supportCycleDTO"
                     }
                 },
                 "ends_at": {
@@ -3824,7 +3643,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_http_handlers.supportCycleDTO": {
+        "handlers.supportCycleDTO": {
             "type": "object",
             "properties": {
                 "agreement_id": {
@@ -3893,7 +3712,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_http_handlers.topUpRequest": {
+        "handlers.topUpRequest": {
             "type": "object",
             "properties": {
                 "amount_kes": {
@@ -3903,6 +3722,195 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "service_tag": {
+                    "type": "string"
+                }
+            }
+        },
+        "plans.PlanFeature": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "featureCode": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isIncluded": {
+                    "type": "boolean"
+                },
+                "limitValue": {
+                    "type": "integer"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "overageUnitPrice": {
+                    "type": "number"
+                },
+                "planId": {
+                    "type": "string"
+                }
+            }
+        },
+        "plans.SubscriptionPlan": {
+            "type": "object",
+            "properties": {
+                "basePrice": {
+                    "type": "number"
+                },
+                "billingCycle": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "discountRules": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
+                },
+                "features": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/plans.PlanFeature"
+                    }
+                },
+                "freeTrialDays": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "isPublic": {
+                    "type": "boolean"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "name": {
+                    "type": "string"
+                },
+                "onetimeAllProductsPrice": {
+                    "type": "number"
+                },
+                "planCode": {
+                    "type": "string"
+                },
+                "planType": {
+                    "type": "string"
+                },
+                "serviceTag": {
+                    "type": "string"
+                },
+                "setupFee": {
+                    "type": "number"
+                },
+                "tierLimits": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "tierOrder": {
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "useCase": {
+                    "type": "string"
+                },
+                "useSumBasedPricing": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "subscriptions.EntitlementCheck": {
+            "type": "object",
+            "properties": {
+                "entitled": {
+                    "type": "boolean"
+                },
+                "min_plan_code": {
+                    "description": "MinPlanCode/MinPlanName/MinPlanTier name the cheapest plan that would unlock this\nproduct, when NOT entitled — lets the UI prompt a specific upgrade rather than a\ngeneric \"upgrade your plan\" message. Nil when Entitled is true or no catalogued plan\ngrants the product (nothing to recommend).",
+                    "type": "string"
+                },
+                "min_plan_name": {
+                    "type": "string"
+                },
+                "min_plan_tier": {
+                    "type": "integer"
+                }
+            }
+        },
+        "subscriptions.SupportAgreementInput": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "billing_cycle": {
+                    "type": "string"
+                },
+                "billing_email": {
+                    "type": "string"
+                },
+                "billing_timing": {
+                    "type": "string"
+                },
+                "clear_amount": {
+                    "type": "boolean"
+                },
+                "clear_ends_at": {
+                    "type": "boolean"
+                },
+                "collection": {
+                    "description": "Collection is \"business\" (default) or \"personal\": a personal agreement is the platform\nowner's own engagement, collected into the owner's personal PayHero channel and kept off\nthe company's books (its invoices carry off_books in treasury).",
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "ends_at": {
+                    "type": "string"
+                },
+                "interval_count": {
+                    "type": "integer"
+                },
+                "interval_unit": {
+                    "type": "string"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "reschedule_from": {
+                    "description": "RescheduleFrom applies a cycle or timing change: \"next_period\" (default) keeps the current\nperiod as billed and switches from the next one; \"now\" cancels the not-yet-invoiced current\nperiod and starts the new schedule today.",
+                    "type": "string"
+                },
+                "starts_at": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }
