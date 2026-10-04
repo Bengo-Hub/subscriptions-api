@@ -31,6 +31,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionspermission"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsrole"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionsuser"
+	"github.com/bengobox/subscription-service/internal/ent/supportagreement"
 	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
@@ -887,18 +888,58 @@ func init() {
 	subscriptionsuserDescID := subscriptionsuserFields[0].Descriptor()
 	// subscriptionsuser.DefaultID holds the default value on creation for the id field.
 	subscriptionsuser.DefaultID = subscriptionsuserDescID.Default.(func() uuid.UUID)
+	supportagreementFields := schema.SupportAgreement{}.Fields()
+	_ = supportagreementFields
+	// supportagreementDescName is the schema descriptor for name field.
+	supportagreementDescName := supportagreementFields[5].Descriptor()
+	// supportagreement.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	supportagreement.NameValidator = supportagreementDescName.Validators[0].(func(string) error)
+	// supportagreementDescIntervalCount is the schema descriptor for interval_count field.
+	supportagreementDescIntervalCount := supportagreementFields[7].Descriptor()
+	// supportagreement.DefaultIntervalCount holds the default value on creation for the interval_count field.
+	supportagreement.DefaultIntervalCount = supportagreementDescIntervalCount.Default.(int)
+	// supportagreement.IntervalCountValidator is a validator for the "interval_count" field. It is called by the builders before save.
+	supportagreement.IntervalCountValidator = supportagreementDescIntervalCount.Validators[0].(func(int) error)
+	// supportagreementDescCurrency is the schema descriptor for currency field.
+	supportagreementDescCurrency := supportagreementFields[10].Descriptor()
+	// supportagreement.DefaultCurrency holds the default value on creation for the currency field.
+	supportagreement.DefaultCurrency = supportagreementDescCurrency.Default.(string)
+	// supportagreementDescCycleCount is the schema descriptor for cycle_count field.
+	supportagreementDescCycleCount := supportagreementFields[16].Descriptor()
+	// supportagreement.DefaultCycleCount holds the default value on creation for the cycle_count field.
+	supportagreement.DefaultCycleCount = supportagreementDescCycleCount.Default.(int)
+	// supportagreement.CycleCountValidator is a validator for the "cycle_count" field. It is called by the builders before save.
+	supportagreement.CycleCountValidator = supportagreementDescCycleCount.Validators[0].(func(int) error)
+	// supportagreementDescMetadata is the schema descriptor for metadata field.
+	supportagreementDescMetadata := supportagreementFields[19].Descriptor()
+	// supportagreement.DefaultMetadata holds the default value on creation for the metadata field.
+	supportagreement.DefaultMetadata = supportagreementDescMetadata.Default.(map[string]interface{})
+	// supportagreementDescCreatedAt is the schema descriptor for created_at field.
+	supportagreementDescCreatedAt := supportagreementFields[20].Descriptor()
+	// supportagreement.DefaultCreatedAt holds the default value on creation for the created_at field.
+	supportagreement.DefaultCreatedAt = supportagreementDescCreatedAt.Default.(func() time.Time)
+	// supportagreementDescUpdatedAt is the schema descriptor for updated_at field.
+	supportagreementDescUpdatedAt := supportagreementFields[21].Descriptor()
+	// supportagreement.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	supportagreement.DefaultUpdatedAt = supportagreementDescUpdatedAt.Default.(func() time.Time)
+	// supportagreement.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	supportagreement.UpdateDefaultUpdatedAt = supportagreementDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// supportagreementDescID is the schema descriptor for id field.
+	supportagreementDescID := supportagreementFields[0].Descriptor()
+	// supportagreement.DefaultID holds the default value on creation for the id field.
+	supportagreement.DefaultID = supportagreementDescID.Default.(func() uuid.UUID)
 	supportfeecycleFields := schema.SupportFeeCycle{}.Fields()
 	_ = supportfeecycleFields
 	// supportfeecycleDescMetadata is the schema descriptor for metadata field.
-	supportfeecycleDescMetadata := supportfeecycleFields[16].Descriptor()
+	supportfeecycleDescMetadata := supportfeecycleFields[18].Descriptor()
 	// supportfeecycle.DefaultMetadata holds the default value on creation for the metadata field.
 	supportfeecycle.DefaultMetadata = supportfeecycleDescMetadata.Default.(map[string]interface{})
 	// supportfeecycleDescCreatedAt is the schema descriptor for created_at field.
-	supportfeecycleDescCreatedAt := supportfeecycleFields[17].Descriptor()
+	supportfeecycleDescCreatedAt := supportfeecycleFields[19].Descriptor()
 	// supportfeecycle.DefaultCreatedAt holds the default value on creation for the created_at field.
 	supportfeecycle.DefaultCreatedAt = supportfeecycleDescCreatedAt.Default.(func() time.Time)
 	// supportfeecycleDescUpdatedAt is the schema descriptor for updated_at field.
-	supportfeecycleDescUpdatedAt := supportfeecycleFields[18].Descriptor()
+	supportfeecycleDescUpdatedAt := supportfeecycleFields[20].Descriptor()
 	// supportfeecycle.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	supportfeecycle.DefaultUpdatedAt = supportfeecycleDescUpdatedAt.Default.(func() time.Time)
 	// supportfeecycle.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

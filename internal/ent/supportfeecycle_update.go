@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportagreement"
 	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
@@ -73,6 +74,32 @@ func (_u *SupportFeeCycleUpdate) SetNillableSupportPlanID(v *uuid.UUID) *Support
 	return _u
 }
 
+// ClearSupportPlanID clears the value of the "support_plan_id" field.
+func (_u *SupportFeeCycleUpdate) ClearSupportPlanID() *SupportFeeCycleUpdate {
+	_u.mutation.ClearSupportPlanID()
+	return _u
+}
+
+// SetAgreementID sets the "agreement_id" field.
+func (_u *SupportFeeCycleUpdate) SetAgreementID(v uuid.UUID) *SupportFeeCycleUpdate {
+	_u.mutation.SetAgreementID(v)
+	return _u
+}
+
+// SetNillableAgreementID sets the "agreement_id" field if the given value is not nil.
+func (_u *SupportFeeCycleUpdate) SetNillableAgreementID(v *uuid.UUID) *SupportFeeCycleUpdate {
+	if v != nil {
+		_u.SetAgreementID(*v)
+	}
+	return _u
+}
+
+// ClearAgreementID clears the value of the "agreement_id" field.
+func (_u *SupportFeeCycleUpdate) ClearAgreementID() *SupportFeeCycleUpdate {
+	_u.mutation.ClearAgreementID()
+	return _u
+}
+
 // SetCycleNumber sets the "cycle_number" field.
 func (_u *SupportFeeCycleUpdate) SetCycleNumber(v int) *SupportFeeCycleUpdate {
 	_u.mutation.ResetCycleNumber()
@@ -105,6 +132,26 @@ func (_u *SupportFeeCycleUpdate) SetNillablePeriodStart(v *time.Time) *SupportFe
 	if v != nil {
 		_u.SetPeriodStart(*v)
 	}
+	return _u
+}
+
+// SetPeriodEnd sets the "period_end" field.
+func (_u *SupportFeeCycleUpdate) SetPeriodEnd(v time.Time) *SupportFeeCycleUpdate {
+	_u.mutation.SetPeriodEnd(v)
+	return _u
+}
+
+// SetNillablePeriodEnd sets the "period_end" field if the given value is not nil.
+func (_u *SupportFeeCycleUpdate) SetNillablePeriodEnd(v *time.Time) *SupportFeeCycleUpdate {
+	if v != nil {
+		_u.SetPeriodEnd(*v)
+	}
+	return _u
+}
+
+// ClearPeriodEnd clears the value of the "period_end" field.
+func (_u *SupportFeeCycleUpdate) ClearPeriodEnd() *SupportFeeCycleUpdate {
+	_u.mutation.ClearPeriodEnd()
 	return _u
 }
 
@@ -312,6 +359,11 @@ func (_u *SupportFeeCycleUpdate) SetSupportPlan(v *SubscriptionPlan) *SupportFee
 	return _u.SetSupportPlanID(v.ID)
 }
 
+// SetAgreement sets the "agreement" edge to the SupportAgreement entity.
+func (_u *SupportFeeCycleUpdate) SetAgreement(v *SupportAgreement) *SupportFeeCycleUpdate {
+	return _u.SetAgreementID(v.ID)
+}
+
 // Mutation returns the SupportFeeCycleMutation object of the builder.
 func (_u *SupportFeeCycleUpdate) Mutation() *SupportFeeCycleMutation {
 	return _u.mutation
@@ -326,6 +378,12 @@ func (_u *SupportFeeCycleUpdate) ClearTenantSubscription() *SupportFeeCycleUpdat
 // ClearSupportPlan clears the "support_plan" edge to the SubscriptionPlan entity.
 func (_u *SupportFeeCycleUpdate) ClearSupportPlan() *SupportFeeCycleUpdate {
 	_u.mutation.ClearSupportPlan()
+	return _u
+}
+
+// ClearAgreement clears the "agreement" edge to the SupportAgreement entity.
+func (_u *SupportFeeCycleUpdate) ClearAgreement() *SupportFeeCycleUpdate {
+	_u.mutation.ClearAgreement()
 	return _u
 }
 
@@ -375,9 +433,6 @@ func (_u *SupportFeeCycleUpdate) check() error {
 	if _u.mutation.TenantSubscriptionCleared() && len(_u.mutation.TenantSubscriptionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "SupportFeeCycle.tenant_subscription"`)
 	}
-	if _u.mutation.SupportPlanCleared() && len(_u.mutation.SupportPlanIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "SupportFeeCycle.support_plan"`)
-	}
 	return nil
 }
 
@@ -404,6 +459,12 @@ func (_u *SupportFeeCycleUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if value, ok := _u.mutation.PeriodStart(); ok {
 		_spec.SetField(supportfeecycle.FieldPeriodStart, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.PeriodEnd(); ok {
+		_spec.SetField(supportfeecycle.FieldPeriodEnd, field.TypeTime, value)
+	}
+	if _u.mutation.PeriodEndCleared() {
+		_spec.ClearField(supportfeecycle.FieldPeriodEnd, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DueDate(); ok {
 		_spec.SetField(supportfeecycle.FieldDueDate, field.TypeTime, value)
@@ -523,6 +584,35 @@ func (_u *SupportFeeCycleUpdate) sqlSave(ctx context.Context) (_node int, err er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.AgreementCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   supportfeecycle.AgreementTable,
+			Columns: []string{supportfeecycle.AgreementColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportagreement.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AgreementIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   supportfeecycle.AgreementTable,
+			Columns: []string{supportfeecycle.AgreementColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportagreement.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{supportfeecycle.Label}
@@ -585,6 +675,32 @@ func (_u *SupportFeeCycleUpdateOne) SetNillableSupportPlanID(v *uuid.UUID) *Supp
 	return _u
 }
 
+// ClearSupportPlanID clears the value of the "support_plan_id" field.
+func (_u *SupportFeeCycleUpdateOne) ClearSupportPlanID() *SupportFeeCycleUpdateOne {
+	_u.mutation.ClearSupportPlanID()
+	return _u
+}
+
+// SetAgreementID sets the "agreement_id" field.
+func (_u *SupportFeeCycleUpdateOne) SetAgreementID(v uuid.UUID) *SupportFeeCycleUpdateOne {
+	_u.mutation.SetAgreementID(v)
+	return _u
+}
+
+// SetNillableAgreementID sets the "agreement_id" field if the given value is not nil.
+func (_u *SupportFeeCycleUpdateOne) SetNillableAgreementID(v *uuid.UUID) *SupportFeeCycleUpdateOne {
+	if v != nil {
+		_u.SetAgreementID(*v)
+	}
+	return _u
+}
+
+// ClearAgreementID clears the value of the "agreement_id" field.
+func (_u *SupportFeeCycleUpdateOne) ClearAgreementID() *SupportFeeCycleUpdateOne {
+	_u.mutation.ClearAgreementID()
+	return _u
+}
+
 // SetCycleNumber sets the "cycle_number" field.
 func (_u *SupportFeeCycleUpdateOne) SetCycleNumber(v int) *SupportFeeCycleUpdateOne {
 	_u.mutation.ResetCycleNumber()
@@ -617,6 +733,26 @@ func (_u *SupportFeeCycleUpdateOne) SetNillablePeriodStart(v *time.Time) *Suppor
 	if v != nil {
 		_u.SetPeriodStart(*v)
 	}
+	return _u
+}
+
+// SetPeriodEnd sets the "period_end" field.
+func (_u *SupportFeeCycleUpdateOne) SetPeriodEnd(v time.Time) *SupportFeeCycleUpdateOne {
+	_u.mutation.SetPeriodEnd(v)
+	return _u
+}
+
+// SetNillablePeriodEnd sets the "period_end" field if the given value is not nil.
+func (_u *SupportFeeCycleUpdateOne) SetNillablePeriodEnd(v *time.Time) *SupportFeeCycleUpdateOne {
+	if v != nil {
+		_u.SetPeriodEnd(*v)
+	}
+	return _u
+}
+
+// ClearPeriodEnd clears the value of the "period_end" field.
+func (_u *SupportFeeCycleUpdateOne) ClearPeriodEnd() *SupportFeeCycleUpdateOne {
+	_u.mutation.ClearPeriodEnd()
 	return _u
 }
 
@@ -824,6 +960,11 @@ func (_u *SupportFeeCycleUpdateOne) SetSupportPlan(v *SubscriptionPlan) *Support
 	return _u.SetSupportPlanID(v.ID)
 }
 
+// SetAgreement sets the "agreement" edge to the SupportAgreement entity.
+func (_u *SupportFeeCycleUpdateOne) SetAgreement(v *SupportAgreement) *SupportFeeCycleUpdateOne {
+	return _u.SetAgreementID(v.ID)
+}
+
 // Mutation returns the SupportFeeCycleMutation object of the builder.
 func (_u *SupportFeeCycleUpdateOne) Mutation() *SupportFeeCycleMutation {
 	return _u.mutation
@@ -838,6 +979,12 @@ func (_u *SupportFeeCycleUpdateOne) ClearTenantSubscription() *SupportFeeCycleUp
 // ClearSupportPlan clears the "support_plan" edge to the SubscriptionPlan entity.
 func (_u *SupportFeeCycleUpdateOne) ClearSupportPlan() *SupportFeeCycleUpdateOne {
 	_u.mutation.ClearSupportPlan()
+	return _u
+}
+
+// ClearAgreement clears the "agreement" edge to the SupportAgreement entity.
+func (_u *SupportFeeCycleUpdateOne) ClearAgreement() *SupportFeeCycleUpdateOne {
+	_u.mutation.ClearAgreement()
 	return _u
 }
 
@@ -900,9 +1047,6 @@ func (_u *SupportFeeCycleUpdateOne) check() error {
 	if _u.mutation.TenantSubscriptionCleared() && len(_u.mutation.TenantSubscriptionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "SupportFeeCycle.tenant_subscription"`)
 	}
-	if _u.mutation.SupportPlanCleared() && len(_u.mutation.SupportPlanIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "SupportFeeCycle.support_plan"`)
-	}
 	return nil
 }
 
@@ -946,6 +1090,12 @@ func (_u *SupportFeeCycleUpdateOne) sqlSave(ctx context.Context) (_node *Support
 	}
 	if value, ok := _u.mutation.PeriodStart(); ok {
 		_spec.SetField(supportfeecycle.FieldPeriodStart, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.PeriodEnd(); ok {
+		_spec.SetField(supportfeecycle.FieldPeriodEnd, field.TypeTime, value)
+	}
+	if _u.mutation.PeriodEndCleared() {
+		_spec.ClearField(supportfeecycle.FieldPeriodEnd, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DueDate(); ok {
 		_spec.SetField(supportfeecycle.FieldDueDate, field.TypeTime, value)
@@ -1058,6 +1208,35 @@ func (_u *SupportFeeCycleUpdateOne) sqlSave(ctx context.Context) (_node *Support
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscriptionplan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AgreementCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   supportfeecycle.AgreementTable,
+			Columns: []string{supportfeecycle.AgreementColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportagreement.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AgreementIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   supportfeecycle.AgreementTable,
+			Columns: []string{supportfeecycle.AgreementColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportagreement.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

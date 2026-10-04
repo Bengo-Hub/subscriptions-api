@@ -84,6 +84,9 @@ type SubscriptionsRole func(*sql.Selector)
 // SubscriptionsUser is the predicate function for subscriptionsuser builders.
 type SubscriptionsUser func(*sql.Selector)
 
+// SupportAgreement is the predicate function for supportagreement builders.
+type SupportAgreement func(*sql.Selector)
+
 // SupportFeeCycle is the predicate function for supportfeecycle builders.
 type SupportFeeCycle func(*sql.Selector)
 

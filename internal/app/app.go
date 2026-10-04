@@ -121,6 +121,9 @@ func New(ctx context.Context) (*App, error) {
 		); err != nil {
 			return nil, fmt.Errorf("ent schema create: %w", err)
 		}
+		if err := migrate.DropLegacyIndexes(ctx, sqlDB); err != nil {
+			return nil, fmt.Errorf("drop legacy indexes: %w", err)
+		}
 		log.Info("versioned migrations completed - run 'go run cmd/seed/main.go' to seed initial data (idempotent)")
 	}
 

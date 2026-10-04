@@ -275,25 +275,25 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.planResponse"
+                            "$ref": "#/definitions/internal_http_handlers.planResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     }
                 }
@@ -330,25 +330,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.planResponse"
+                            "$ref": "#/definitions/internal_http_handlers.planResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     }
                 }
@@ -380,19 +380,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     }
                 }
@@ -742,6 +742,172 @@
                 }
             }
         },
+        "/admin/support-agreements/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Partial update. A cycle or timing change applies from the next period\n(reschedule_from=next_period) or restarts today (reschedule_from=now, cancelling\nthe current not-yet-invoiced period). status PAUSED stops new periods; ENDED also\ncancels future not-yet-invoiced periods. Invoiced charges stay payable.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Update a support agreement (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Agreement UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Changes",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.SupportAgreementInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.supportAgreementDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/support-fee-cycles": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Paginated, newest due first. Filters: status (comma list of PENDING, INVOICED,\nOVERDUE, PAID, WAIVED), tenant_id, agreement_id, kind (STANDARD or SPECIAL),\nblocking=true (overdue past grace). Includes the outstanding totals for the filter.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "List support charges across tenants (admin receivables)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/support-fee-cycles/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "custom_price / clear_custom_price override this period's amount (a sales-agreed\nprice). status PAID records an offline payment; WAIVED excuses the charge. Either\nlifts the mutation block on the tenant's next token refresh.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Reprice, waive or record an offline payment for one support charge (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SupportFeeCycle UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.supportCycleDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/support-fee-cycles/{id}/invoice": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Issue (or with force=true re-issue) the invoice for one support charge (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SupportFeeCycle UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Re-issue even if already invoiced",
+                        "name": "force",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.supportCycleDTO"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/tenants": {
             "get": {
                 "security": [
@@ -868,6 +1034,117 @@
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenants/{tenant_id}/feature-grants": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "List a tenant's platform-admin add-on feature grants",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Unlocks one feature_definitions code for a tenant independent of its\nsubscription plan (e.g. multi_branch_pricing, batch_period_pricing, flash_sale).\nThe tenant's own settings page still gates the actual on/off switch.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Grant a single named add-on feature to a tenant (platform admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenants/{tenant_id}/feature-grants/{feature_code}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Revoke a tenant's add-on feature grant (platform admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Feature code",
+                        "name": "feature_code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -1223,6 +1500,94 @@
                 }
             }
         },
+        "/admin/tenants/{tenant_id}/support-agreements": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Standard hosting and support plus any special support agreements, each with its\nlatest cycles, and the tenant's outstanding support balance.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "List a tenant's support agreements (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "kind SPECIAL (default) needs name and amount; billing_cycle MONTHLY, QUARTERLY,\nSEMI_ANNUAL, ANNUAL or CUSTOM (with interval_count and interval_unit MONTH or DAY);\nbilling_timing ADVANCE (default for SPECIAL) or ARREARS. Unpaid cycles block data\nmutations fleet-wide once due date plus grace has passed.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Create a support agreement for a tenant (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Agreement",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.SupportAgreementInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.supportAgreementDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/billing": {
             "get": {
                 "security": [
@@ -1296,6 +1661,12 @@
                         "type": "string",
                         "description": "Filter by kind (FEATURE | LIMIT)",
                         "name": "kind",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Caller's current plan_code — biases serviceUnlockPlans toward an in-family upgrade (e.g. POWERSUITE_DUKA_BASIC -\u003e POWERSUITE_DUKA_PRO) instead of the globally cheapest cross-product plan",
+                        "name": "plan",
                         "in": "query"
                     }
                 ],
@@ -1399,19 +1770,25 @@
                         "description": "Filter by service tag (ordering, truload, logistics, inventory, erp, pos, marketflow)",
                         "name": "service",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by business vertical (retail, hospitality, pharmacy, ...) — a plan with no use_case set always matches",
+                        "name": "use_case",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.listPlansResponse"
+                            "$ref": "#/definitions/internal_http_handlers.listPlansResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     }
                 }
@@ -1440,19 +1817,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.planResponse"
+                            "$ref": "#/definitions/internal_http_handlers.planResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     }
                 }
@@ -1481,19 +1858,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.planResponse"
+                            "$ref": "#/definitions/internal_http_handlers.planResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.errorResponse"
+                            "$ref": "#/definitions/internal_http_handlers.errorResponse"
                         }
                     }
                 }
@@ -1506,7 +1883,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns aggregated platform stats: total plans, subscriptions, MRR. Requires platform owner.",
+                "description": "Subscription counts by status, recurring MRR (one-time licenses excluded, custom\nprices honoured), one-time license count, support-agreement MRR and the\noutstanding / overdue / blocking support receivables. Computed with SQL aggregates\nso the cost does not grow with the number of tenants. Requires platform owner.",
                 "produces": [
                     "application/json"
                 ],
@@ -1594,7 +1971,7 @@
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/subscriptions.EntitlementCheck"
+                            "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.EntitlementCheck"
                         }
                     }
                 }
@@ -1661,7 +2038,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/subscriptions.EntitlementCheck"
+                            "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.EntitlementCheck"
                         }
                     }
                 }
@@ -2302,6 +2679,57 @@
                 }
             }
         },
+        "/subscription/standing-order": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Get the M-Pesa standing order for the subscription",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Billing"
+                ],
+                "summary": "Pay the subscription automatically by M-Pesa standing order",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/subscriptions/expiring": {
             "get": {
                 "security": [
@@ -2383,7 +2811,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.rateLimitResponse"
+                            "$ref": "#/definitions/internal_http_handlers.rateLimitResponse"
                         }
                     },
                     "400": {
@@ -2449,6 +2877,285 @@
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/tenants/{tenant_id}/tokens/balance": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns the current token balance for a tenant+service. S2S (treasury-api's external eTIMS middleware) or tenant-facing.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Get API token wallet balance",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Defaults to etims_api",
+                        "name": "service_tag",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_billing.WalletSnapshot"
+                        }
+                    }
+                }
+            }
+        },
+        "/tenants/{tenant_id}/tokens/deduct": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Atomically deducts the resolved token cost for endpoint_pattern from the tenant's wallet, refusing (402) if the balance is insufficient. Called BEFORE the metered operation runs, not after — see treasury-api's ExternalAPIKeyAuth middleware.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Spend API tokens for one call (S2S)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Deduct request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.deductRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_billing.DeductResult"
+                        }
+                    },
+                    "402": {
+                        "description": "insufficient_tokens",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/tenants/{tenant_id}/tokens/estimate": {
+            "post": {
+                "description": "Given expected call volume, computes tokens/month from the token-cost registry and compares against every published plan for service_tag, so a tenant can buy from a point of information instead of blindly.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Estimate monthly API token consumption and recommend a plan",
+                "parameters": [
+                    {
+                        "description": "Estimate request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.estimateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.estimateResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/tenants/{tenant_id}/tokens/refund": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Reverses a Deduct when the downstream operation turned out not to have done real work (e.g. the caller's request failed validation before reaching KRA) — called by treasury-api's ExternalAPIKeyAuth middleware after the handler runs, only for status codes that indicate no real KRA attempt happened.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Refund previously-deducted API tokens (S2S)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Refund request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.refundRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/tenants/{tenant_id}/tokens/topup": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a Treasury payment intent for a token top-up; tokens are credited once payment is confirmed (see the api_token_topup NATS consumer branch).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Buy API tokens (self-serve)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Top-up request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handlers.topUpRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/tenants/{tenant_id}/tokens/transactions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "List API token wallet transactions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Defaults to etims_api",
+                        "name": "service_tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Default 50, max 200",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Rows to skip",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -2617,55 +3324,38 @@
         }
     },
     "definitions": {
-        "handlers.errorResponse": {
+        "github_com_bengobox_subscription-service_internal_modules_billing.DeductResult": {
             "type": "object",
             "properties": {
-                "error": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.listPlansResponse": {
-            "type": "object",
-            "properties": {
-                "count": {
+                "allowed": {
+                    "type": "boolean"
+                },
+                "new_balance": {
                     "type": "integer"
                 },
-                "plans": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/plans.SubscriptionPlan"
-                    }
-                }
-            }
-        },
-        "handlers.planResponse": {
-            "type": "object",
-            "properties": {
-                "plan": {
-                    "$ref": "#/definitions/plans.SubscriptionPlan"
-                }
-            }
-        },
-        "handlers.rateLimitResponse": {
-            "type": "object",
-            "properties": {
-                "burst_multiplier": {
-                    "type": "number"
-                },
-                "requests_per_window": {
-                    "type": "integer"
-                },
-                "source": {
-                    "description": "Source reports which tier of the resolution order produced this result: \"plan\" (the\ntenant's own plan tier_limits_json), \"config\" (a RateLimitConfig fallback row), or\n\"default\" (hardcoded safe floor) — callers can log/monitor this to catch misconfiguration.",
-                    "type": "string"
-                },
-                "window_seconds": {
+                "tokens_charged": {
                     "type": "integer"
                 }
             }
         },
-        "plans.PlanFeature": {
+        "github_com_bengobox_subscription-service_internal_modules_billing.WalletSnapshot": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "integer"
+                },
+                "lifetime_granted": {
+                    "type": "integer"
+                },
+                "low_balance": {
+                    "type": "boolean"
+                },
+                "low_balance_threshold": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_bengobox_subscription-service_internal_modules_plans.PlanFeature": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -2695,7 +3385,7 @@
                 }
             }
         },
-        "plans.SubscriptionPlan": {
+        "github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan": {
             "type": "object",
             "properties": {
                 "basePrice": {
@@ -2723,7 +3413,7 @@
                 "features": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/plans.PlanFeature"
+                        "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.PlanFeature"
                     }
                 },
                 "freeTrialDays": {
@@ -2770,12 +3460,15 @@
                 "updatedAt": {
                     "type": "string"
                 },
+                "useCase": {
+                    "type": "string"
+                },
                 "useSumBasedPricing": {
                     "type": "boolean"
                 }
             }
         },
-        "subscriptions.EntitlementCheck": {
+        "github_com_bengobox_subscription-service_internal_modules_subscriptions.EntitlementCheck": {
             "type": "object",
             "properties": {
                 "entitled": {
@@ -2790,6 +3483,367 @@
                 },
                 "min_plan_tier": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_bengobox_subscription-service_internal_modules_subscriptions.SupportAgreementInput": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "billing_cycle": {
+                    "type": "string"
+                },
+                "billing_email": {
+                    "type": "string"
+                },
+                "billing_timing": {
+                    "type": "string"
+                },
+                "clear_amount": {
+                    "type": "boolean"
+                },
+                "clear_ends_at": {
+                    "type": "boolean"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "ends_at": {
+                    "type": "string"
+                },
+                "interval_count": {
+                    "type": "integer"
+                },
+                "interval_unit": {
+                    "type": "string"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "reschedule_from": {
+                    "description": "RescheduleFrom applies a cycle or timing change: \"next_period\" (default) keeps the current\nperiod as billed and switches from the next one; \"now\" cancels the not-yet-invoiced current\nperiod and starts the new schedule today.",
+                    "type": "string"
+                },
+                "starts_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.deductRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "endpoint_pattern": {
+                    "type": "string"
+                },
+                "ref_id": {
+                    "type": "string"
+                },
+                "ref_type": {
+                    "type": "string"
+                },
+                "service_tag": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.errorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.estimateRequest": {
+            "type": "object",
+            "properties": {
+                "avg_sales_per_day": {
+                    "description": "Shortcut: assumes every call is a sales-transmission-weight call (the common \"N sales/day\" case).",
+                    "type": "integer"
+                },
+                "calls_per_day": {
+                    "description": "endpoint_pattern -\u003e calls/day",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "days_per_month": {
+                    "type": "integer"
+                },
+                "service_tag": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.estimateResponse": {
+            "type": "object",
+            "properties": {
+                "plans_compared": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_http_handlers.planComparison"
+                    }
+                },
+                "recommended_plan": {
+                    "type": "string"
+                },
+                "tokens_per_month": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_http_handlers.listPlansResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "plans": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan"
+                    }
+                }
+            }
+        },
+        "internal_http_handlers.planComparison": {
+            "type": "object",
+            "properties": {
+                "covers_estimate": {
+                    "type": "boolean"
+                },
+                "included_tokens": {
+                    "type": "integer"
+                },
+                "monthly_price_kes": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "plan_code": {
+                    "type": "string"
+                },
+                "projected_topup_kes": {
+                    "type": "number"
+                },
+                "token_price_kes": {
+                    "type": "number"
+                }
+            }
+        },
+        "internal_http_handlers.planResponse": {
+            "type": "object",
+            "properties": {
+                "plan": {
+                    "$ref": "#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan"
+                }
+            }
+        },
+        "internal_http_handlers.rateLimitResponse": {
+            "type": "object",
+            "properties": {
+                "burst_multiplier": {
+                    "type": "number"
+                },
+                "requests_per_window": {
+                    "type": "integer"
+                },
+                "source": {
+                    "description": "Source reports which tier of the resolution order produced this result: \"plan\" (the\ntenant's own plan tier_limits_json), \"config\" (a RateLimitConfig fallback row), or\n\"default\" (hardcoded safe floor) — callers can log/monitor this to catch misconfiguration.",
+                    "type": "string"
+                },
+                "window_seconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_http_handlers.refundRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "ref_id": {
+                    "type": "string"
+                },
+                "service_tag": {
+                    "type": "string"
+                },
+                "tokens": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_http_handlers.supportAgreementDTO": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "annual_list_price": {
+                    "type": "number"
+                },
+                "billing_cycle": {
+                    "type": "string"
+                },
+                "billing_email": {
+                    "type": "string"
+                },
+                "billing_timing": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "cycle_count": {
+                    "type": "integer"
+                },
+                "cycles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_http_handlers.supportCycleDTO"
+                    }
+                },
+                "ends_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "interval_count": {
+                    "type": "integer"
+                },
+                "interval_unit": {
+                    "type": "string"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "monthly_equivalent": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "next_period_start": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "period_amount": {
+                    "type": "number"
+                },
+                "starts_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "support_plan_code": {
+                    "type": "string"
+                },
+                "tenant_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.supportCycleDTO": {
+            "type": "object",
+            "properties": {
+                "agreement_id": {
+                    "type": "string"
+                },
+                "agreement_kind": {
+                    "type": "string"
+                },
+                "agreement_name": {
+                    "type": "string"
+                },
+                "base_price": {
+                    "type": "number"
+                },
+                "blocking": {
+                    "type": "boolean"
+                },
+                "custom_price": {
+                    "type": "number"
+                },
+                "custom_price_reason": {
+                    "type": "string"
+                },
+                "cycle_number": {
+                    "type": "integer"
+                },
+                "due_date": {
+                    "type": "string"
+                },
+                "effective_price": {
+                    "type": "number"
+                },
+                "grace_until": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "invoice_number": {
+                    "type": "string"
+                },
+                "invoice_total": {},
+                "paid_at": {
+                    "type": "string"
+                },
+                "pay_url": {
+                    "type": "string"
+                },
+                "pdf_url": {
+                    "type": "string"
+                },
+                "period_end": {
+                    "type": "string"
+                },
+                "period_start": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "tenant_id": {
+                    "type": "string"
+                },
+                "tenant_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handlers.topUpRequest": {
+            "type": "object",
+            "properties": {
+                "amount_kes": {
+                    "type": "number"
+                },
+                "return_url": {
+                    "type": "string"
+                },
+                "service_tag": {
+                    "type": "string"
                 }
             }
         }

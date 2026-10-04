@@ -75,6 +75,9 @@ func main() {
 	}
 
 	migrateErr := client.Schema.Create(ctx, schema.WithDir(migrate.Dir))
+	if migrateErr == nil {
+		migrateErr = migrate.DropLegacyIndexes(ctx, db)
+	}
 	unlock()
 	if migrateErr != nil {
 		log.Fatalf("run migrations: %v", migrateErr)

@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/bengobox/subscription-service/internal/ent"
@@ -16,8 +17,9 @@ import (
 )
 
 // GenerateAndSendSupportFeeInvoice creates a treasury invoice + Paystack pay link for one
-// annual SupportFeeCycle. A sibling to GenerateAndSend rather than a shared code path: a
-// support fee is a flat annual amount with no proration/setup-fee/wallet-credit logic, so
+// SupportFeeCycle (one billing period of a standard or special support agreement). A sibling to
+// GenerateAndSend rather than a shared code path: a support charge is a flat per-period amount
+// with no proration/setup-fee/wallet-credit logic, so
 // routing it through GenerateAndSend's buildLines (tightly coupled to *ent.TenantSubscription's
 // recurring-billing shape) would risk regressing the live subscription-invoicing path for no
 // benefit. This method reuses the same already-wired treasury/Paystack client fields on
@@ -30,6 +32,9 @@ import (
 func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, cycle *ent.SupportFeeCycle, force bool) (*InvoiceResult, error) {
 	if s.treasury == nil {
 		return nil, fmt.Errorf("treasury client not configured")
+	}
+	if cycle.Status == supportfeecycle.StatusPAID || cycle.Status == supportfeecycle.StatusWAIVED {
+		return nil, fmt.Errorf("support fee cycle is already %s", cycle.Status)
 	}
 	dueKey := cycle.DueDate.UTC().Format(time.RFC3339)
 
@@ -54,20 +59,44 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 		}
 		cycle.Edges.TenantSubscription = sub
 	}
-	plan := cycle.Edges.SupportPlan
-	if plan == nil {
-		var err error
-		plan, err = s.orm.SupportFeeCycle.QuerySupportPlan(cycle).Only(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("load support plan: %w", err)
+	agreement := cycle.Edges.Agreement
+	if agreement == nil && cycle.AgreementID != nil {
+		if a, err := s.orm.SupportAgreement.Get(ctx, *cycle.AgreementID); err == nil {
+			agreement = a
+			cycle.Edges.Agreement = a
 		}
-		cycle.Edges.SupportPlan = plan
+	}
+	plan := cycle.Edges.SupportPlan
+	if plan == nil && cycle.SupportPlanID != nil {
+		if p, err := s.orm.SubscriptionPlan.Get(ctx, *cycle.SupportPlanID); err == nil {
+			plan = p
+			cycle.Edges.SupportPlan = p
+		}
 	}
 
 	amount := subscriptions.EffectiveSupportPrice(cycle)
-	currency := plan.Currency
+	currency := ""
+	label := "Support"
+	planCode := ""
+	if agreement != nil {
+		currency = agreement.Currency
+		label = agreement.Name
+	}
+	if plan != nil {
+		planCode = plan.PlanCode
+		if currency == "" {
+			currency = plan.Currency
+		}
+		if agreement == nil {
+			label = plan.Name
+		}
+	}
 	if currency == "" {
 		currency = "KES"
+	}
+	period := cycle.PeriodStart.UTC().Format("02 Jan 2006")
+	if cycle.PeriodEnd != nil {
+		period += " to " + cycle.PeriodEnd.UTC().AddDate(0, 0, -1).Format("02 Jan 2006")
 	}
 
 	customerName := ""
@@ -75,11 +104,16 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 		customerName = sub.Edges.Tenant.Name
 	}
 	customerEmail := billingEmail(sub)
+	if agreement != nil {
+		if be := stringMeta(agreement.Metadata, "billing_email"); be != "" {
+			customerEmail = be
+		}
+	}
 	now := time.Now().UTC()
 
 	lines := []map[string]any{
 		{
-			"description": fmt.Sprintf("Annual support — %s (cycle %d)", plan.Name, cycle.CycleNumber),
+			"description": fmt.Sprintf("%s, %s", label, period),
 			"quantity":    1,
 			"unit_price":  amount,
 			"tax_rate":    s.vatRate,
@@ -100,7 +134,8 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 		"lines":          lines,
 		"metadata": map[string]any{
 			"billed_tenant_id":  cycle.TenantID.String(),
-			"support_plan_code": plan.PlanCode,
+			"support_plan_code": planCode,
+			"agreement_id":      uuidString(cycle.AgreementID),
 			"cycle_number":      cycle.CycleNumber,
 		},
 	}
@@ -134,13 +169,13 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 		"currency":       currency,
 		"amount":         total,
 		"source_service": "subscriptions",
-		"description":    fmt.Sprintf("Annual support fee %s", inv.InvoiceNumber),
+		"description":    fmt.Sprintf("%s %s", label, inv.InvoiceNumber),
 		"customer_email": customerEmail,
 		"metadata": map[string]any{
 			"service":        "subscriptions",
 			"entity_id":      cycle.ID.String(),
 			"tenant_id":      cycle.TenantID.String(),
-			"plan_code":      plan.PlanCode,
+			"plan_code":      planCode,
 			"invoice_id":     inv.ID,
 			"invoice_number": inv.InvoiceNumber,
 		},
@@ -195,16 +230,21 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 	if err != nil {
 		return nil, fmt.Errorf("tx: %w", err)
 	}
-	if _, err := tx.SupportFeeCycle.UpdateOneID(cycle.ID).
-		SetStatus(supportfeecycle.StatusINVOICED).
-		SetMetadata(meta).
-		Save(ctx); err != nil {
+	upd := tx.SupportFeeCycle.UpdateOneID(cycle.ID).SetMetadata(meta)
+	if cycle.Status == supportfeecycle.StatusPENDING {
+		upd = upd.SetStatus(supportfeecycle.StatusINVOICED) // an OVERDUE re-issue stays OVERDUE
+	}
+	if _, err := upd.Save(ctx); err != nil {
 		_ = tx.Rollback()
 		return nil, fmt.Errorf("persist invoice markers: %w", err)
 	}
-	s.svc.WriteOutboxEventPublic(ctx, tx, cycle.TenantID, "support_fee_cycle", cycle.ID, "support_fee_invoice_generated", map[string]any{
+	// Aggregate "subscription" so the subject (subscription.support_fee_invoice_generated) lands
+	// in the subscription stream notifications-api consumes.
+	s.svc.WriteOutboxEventPublic(ctx, tx, cycle.TenantID, "subscription", cycle.ID, "support_fee_invoice_generated", map[string]any{
 		"tenant_id":      cycle.TenantID.String(),
-		"support_plan":   plan.PlanCode,
+		"support_plan":   planCode,
+		"agreement_name": label,
+		"period":         period,
 		"amount":         total,
 		"currency":       currency,
 		"invoice_number": inv.InvoiceNumber,
@@ -233,4 +273,11 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 		PayURL:        payURL,
 		PDFURL:        pdfURL,
 	}, nil
+}
+
+func uuidString(id *uuid.UUID) string {
+	if id == nil {
+		return ""
+	}
+	return id.String()
 }

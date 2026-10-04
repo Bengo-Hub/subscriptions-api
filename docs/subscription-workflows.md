@@ -26,6 +26,7 @@
 16. [codevertex Platform Owner — No Subscription](#16-codevertex-platform-owner--no-subscription)
 17. [Frontend ↔ Backend API Map](#17-frontend--backend-api-map)
 18. [Seeded Data Reference](#18-seeded-data-reference)
+19. [Support agreements for one-time licenses](#19-support-agreements-for-one-time-licenses-2026-10-04)
 
 ---
 
@@ -808,3 +809,79 @@ Three ways a paid renewal is collected, all settling the same treasury subscript
 | M-Pesa standing order | The tenant sets up a Ratiba standing order on the billing page; each debit arrives as a C2B payment with account reference `RTB...`, which treasury records as a succeeded subscription intent | same as the pay link |
 
 The billing page invoice history comes from treasury `GET /s2s/{platform}/invoices/billed?billed_tenant_id=` (the route it called before did not exist, so the history only ever showed the latest invoice).
+
+## 19. Support agreements for one-time licenses (2026-10-04)
+
+A tenant that bought a license outright (`*_ONE_TIME` plan) still pays for hosting and support. That
+charge, and any extra support agreed with a specific tenant, is a **support agreement**
+(`support_agreements`). Each billing period of an agreement is a **support charge**
+(`support_fee_cycles`).
+
+| Kind | Created by | Default schedule | Price |
+|---|---|---|---|
+| STANDARD (hosting and support) | The hourly support job, one per license, anchored on the onboarding date | Yearly, charged at the end of each year | The `SUPPORT_*` catalog price for the license tier, prorated to the period length, unless the platform owner sets an agreed amount |
+| SPECIAL (extra support) | The platform owner, per tenant | Monthly, charged at the start of each period | The agreed amount per period (required) |
+
+Billing periods: MONTHLY, QUARTERLY, SEMI_ANNUAL, ANNUAL or CUSTOM (every 1 to 36 months, or every
+7 to 366 days). Timing: ADVANCE (due when the period starts) or ARREARS (due when it ends). Both
+kinds can be changed at any time from Platform > Subscriptions (edit), Platform > Tenants > tenant,
+or Platform > Support Billing for single charges.
+
+### Lifecycle
+
+1. **Generate** (hourly). The job creates missing STANDARD agreements, then creates the charge for
+   every agreement whose next period is within 7 days of being due. It only scans agreements whose
+   `next_period_start` falls in that window (indexed), so its cost follows the amount of due work.
+   Periods are computed from a fixed anchor (anchor plus k periods), so a monthly agreement that
+   starts on the 31st bills on the last day of short months without drifting. A charge whose due
+   date already passed when it is generated (a back-dated agreement) is moved to 7 days from now.
+2. **Invoice** (hourly, 7 days before the due date). A treasury invoice is issued by the platform
+   tenant (`reference_type=support_fee_cycle`, `invoice_type=support_fee`) with a pay link, and the
+   tenant is emailed (`subscription.support_fee_invoice_generated`).
+3. **Overdue** (hourly). An unpaid charge past its due date becomes OVERDUE with a 7-day grace
+   window and the tenant is emailed (`support_fee_overdue`, then one `support_fee_grace_reminder`
+   a day).
+4. **Blocked**. Once grace ends, every service refuses create, edit and delete for the tenant with
+   `403 support_fee_overdue`; reads keep working. This is the same gate the annual fee always used:
+   auth-api mints `support_fee_status` and `support_fee_due_at` from the tenant's **oldest unpaid
+   charge** across all agreements, and `authclient.RequireSupportFeeCurrentForMutations(7)` (pos,
+   inventory, treasury, ordering, logistics, library, marketflow, erp) compares it with the clock.
+5. **Paid**. Paying the pay link, recording a manual payment in treasury, or the platform owner
+   marking it paid settles exactly that charge (resolved from `reference_id`) and emits
+   `tenant.subscription.updated`, so the block lifts on the tenant's next token refresh.
+
+### Changing an agreement
+
+| Change | Effect |
+|---|---|
+| Billing period or timing, "from the next period" | The current period stays as billed; the new schedule starts at the next period |
+| Billing period or timing, "from today" | The current period is cancelled (WAIVED) if it was not invoiced, and the new schedule starts today |
+| Amount | Applies to future periods and to charges that are not invoiced yet |
+| Pause | No new periods are billed; issued charges stay payable. Resuming restarts the schedule today, so paused time is never billed |
+| End | Future charges that are not invoiced are cancelled; issued charges stay payable |
+| One charge: reprice, record payment, waive, issue or re-send invoice | Platform > Support Billing, or the tenant's agreements panel |
+
+### Endpoints (platform owner)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/admin/tenants/{tenant_id}/support-agreements` | Agreements with their latest charges and the tenant's outstanding balance |
+| POST | `/api/v1/admin/tenants/{tenant_id}/support-agreements` | Create (SPECIAL by default) |
+| PUT | `/api/v1/admin/support-agreements/{id}` | Partial update (see the table above) |
+| GET | `/api/v1/admin/support-fee-cycles` | Receivables across tenants, paginated, with totals. Filters: `status`, `tenant_id`, `agreement_id`, `kind`, `blocking=true`, `search` |
+| PUT | `/api/v1/admin/support-fee-cycles/{id}` | `custom_price` or `clear_custom_price`; `status` PAID or WAIVED with `reason` |
+| POST | `/api/v1/admin/support-fee-cycles/{id}/invoice[?force=true]` | Issue now, or re-issue |
+
+The tenant's `GET /api/v1/billing` returns `supportAgreements`, `supportCharges` (unpaid, with pay
+links) and `supportBlocked`. `GET /api/v1/platform/stats` reports recurring `mrr` (one-time licenses
+excluded), `supportMrr`, `totalMrr`, `arr`, `oneTimeLicenses` and `supportReceivables`, all from SQL
+aggregates. The admin subscription list now searches in SQL, so pages and totals match the filter.
+
+### Migration notes
+
+`20261004085958_add_support_agreements.sql` adds `support_agreements`, `support_fee_cycles.agreement_id`
+and `period_end`, and makes `support_plan_id` optional. The online migrator runs without
+`WithDropIndex`, so `migrate.DropLegacyIndexes` drops the superseded indexes after every migration
+(the old unique `(tenant_subscription_id, cycle_number)` would reject the first charge of a second
+agreement). Charges created before agreements existed are linked to their tenant's STANDARD
+agreement by the first job run.

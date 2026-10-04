@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportagreement"
 	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
@@ -44,6 +45,28 @@ func (_c *SupportFeeCycleCreate) SetSupportPlanID(v uuid.UUID) *SupportFeeCycleC
 	return _c
 }
 
+// SetNillableSupportPlanID sets the "support_plan_id" field if the given value is not nil.
+func (_c *SupportFeeCycleCreate) SetNillableSupportPlanID(v *uuid.UUID) *SupportFeeCycleCreate {
+	if v != nil {
+		_c.SetSupportPlanID(*v)
+	}
+	return _c
+}
+
+// SetAgreementID sets the "agreement_id" field.
+func (_c *SupportFeeCycleCreate) SetAgreementID(v uuid.UUID) *SupportFeeCycleCreate {
+	_c.mutation.SetAgreementID(v)
+	return _c
+}
+
+// SetNillableAgreementID sets the "agreement_id" field if the given value is not nil.
+func (_c *SupportFeeCycleCreate) SetNillableAgreementID(v *uuid.UUID) *SupportFeeCycleCreate {
+	if v != nil {
+		_c.SetAgreementID(*v)
+	}
+	return _c
+}
+
 // SetAnchorDate sets the "anchor_date" field.
 func (_c *SupportFeeCycleCreate) SetAnchorDate(v time.Time) *SupportFeeCycleCreate {
 	_c.mutation.SetAnchorDate(v)
@@ -59,6 +82,20 @@ func (_c *SupportFeeCycleCreate) SetCycleNumber(v int) *SupportFeeCycleCreate {
 // SetPeriodStart sets the "period_start" field.
 func (_c *SupportFeeCycleCreate) SetPeriodStart(v time.Time) *SupportFeeCycleCreate {
 	_c.mutation.SetPeriodStart(v)
+	return _c
+}
+
+// SetPeriodEnd sets the "period_end" field.
+func (_c *SupportFeeCycleCreate) SetPeriodEnd(v time.Time) *SupportFeeCycleCreate {
+	_c.mutation.SetPeriodEnd(v)
+	return _c
+}
+
+// SetNillablePeriodEnd sets the "period_end" field if the given value is not nil.
+func (_c *SupportFeeCycleCreate) SetNillablePeriodEnd(v *time.Time) *SupportFeeCycleCreate {
+	if v != nil {
+		_c.SetPeriodEnd(*v)
+	}
 	return _c
 }
 
@@ -230,6 +267,11 @@ func (_c *SupportFeeCycleCreate) SetSupportPlan(v *SubscriptionPlan) *SupportFee
 	return _c.SetSupportPlanID(v.ID)
 }
 
+// SetAgreement sets the "agreement" edge to the SupportAgreement entity.
+func (_c *SupportFeeCycleCreate) SetAgreement(v *SupportAgreement) *SupportFeeCycleCreate {
+	return _c.SetAgreementID(v.ID)
+}
+
 // Mutation returns the SupportFeeCycleMutation object of the builder.
 func (_c *SupportFeeCycleCreate) Mutation() *SupportFeeCycleMutation {
 	return _c.mutation
@@ -295,9 +337,6 @@ func (_c *SupportFeeCycleCreate) check() error {
 	if _, ok := _c.mutation.TenantSubscriptionID(); !ok {
 		return &ValidationError{Name: "tenant_subscription_id", err: errors.New(`ent: missing required field "SupportFeeCycle.tenant_subscription_id"`)}
 	}
-	if _, ok := _c.mutation.SupportPlanID(); !ok {
-		return &ValidationError{Name: "support_plan_id", err: errors.New(`ent: missing required field "SupportFeeCycle.support_plan_id"`)}
-	}
 	if _, ok := _c.mutation.AnchorDate(); !ok {
 		return &ValidationError{Name: "anchor_date", err: errors.New(`ent: missing required field "SupportFeeCycle.anchor_date"`)}
 	}
@@ -329,9 +368,6 @@ func (_c *SupportFeeCycleCreate) check() error {
 	}
 	if len(_c.mutation.TenantSubscriptionIDs()) == 0 {
 		return &ValidationError{Name: "tenant_subscription", err: errors.New(`ent: missing required edge "SupportFeeCycle.tenant_subscription"`)}
-	}
-	if len(_c.mutation.SupportPlanIDs()) == 0 {
-		return &ValidationError{Name: "support_plan", err: errors.New(`ent: missing required edge "SupportFeeCycle.support_plan"`)}
 	}
 	return nil
 }
@@ -384,6 +420,10 @@ func (_c *SupportFeeCycleCreate) createSpec() (*SupportFeeCycle, *sqlgraph.Creat
 	if value, ok := _c.mutation.PeriodStart(); ok {
 		_spec.SetField(supportfeecycle.FieldPeriodStart, field.TypeTime, value)
 		_node.PeriodStart = value
+	}
+	if value, ok := _c.mutation.PeriodEnd(); ok {
+		_spec.SetField(supportfeecycle.FieldPeriodEnd, field.TypeTime, value)
+		_node.PeriodEnd = &value
 	}
 	if value, ok := _c.mutation.DueDate(); ok {
 		_spec.SetField(supportfeecycle.FieldDueDate, field.TypeTime, value)
@@ -464,7 +504,24 @@ func (_c *SupportFeeCycleCreate) createSpec() (*SupportFeeCycle, *sqlgraph.Creat
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.SupportPlanID = nodes[0]
+		_node.SupportPlanID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgreementIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   supportfeecycle.AgreementTable,
+			Columns: []string{supportfeecycle.AgreementColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportagreement.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.AgreementID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -555,6 +612,30 @@ func (u *SupportFeeCycleUpsert) UpdateSupportPlanID() *SupportFeeCycleUpsert {
 	return u
 }
 
+// ClearSupportPlanID clears the value of the "support_plan_id" field.
+func (u *SupportFeeCycleUpsert) ClearSupportPlanID() *SupportFeeCycleUpsert {
+	u.SetNull(supportfeecycle.FieldSupportPlanID)
+	return u
+}
+
+// SetAgreementID sets the "agreement_id" field.
+func (u *SupportFeeCycleUpsert) SetAgreementID(v uuid.UUID) *SupportFeeCycleUpsert {
+	u.Set(supportfeecycle.FieldAgreementID, v)
+	return u
+}
+
+// UpdateAgreementID sets the "agreement_id" field to the value that was provided on create.
+func (u *SupportFeeCycleUpsert) UpdateAgreementID() *SupportFeeCycleUpsert {
+	u.SetExcluded(supportfeecycle.FieldAgreementID)
+	return u
+}
+
+// ClearAgreementID clears the value of the "agreement_id" field.
+func (u *SupportFeeCycleUpsert) ClearAgreementID() *SupportFeeCycleUpsert {
+	u.SetNull(supportfeecycle.FieldAgreementID)
+	return u
+}
+
 // SetCycleNumber sets the "cycle_number" field.
 func (u *SupportFeeCycleUpsert) SetCycleNumber(v int) *SupportFeeCycleUpsert {
 	u.Set(supportfeecycle.FieldCycleNumber, v)
@@ -582,6 +663,24 @@ func (u *SupportFeeCycleUpsert) SetPeriodStart(v time.Time) *SupportFeeCycleUpse
 // UpdatePeriodStart sets the "period_start" field to the value that was provided on create.
 func (u *SupportFeeCycleUpsert) UpdatePeriodStart() *SupportFeeCycleUpsert {
 	u.SetExcluded(supportfeecycle.FieldPeriodStart)
+	return u
+}
+
+// SetPeriodEnd sets the "period_end" field.
+func (u *SupportFeeCycleUpsert) SetPeriodEnd(v time.Time) *SupportFeeCycleUpsert {
+	u.Set(supportfeecycle.FieldPeriodEnd, v)
+	return u
+}
+
+// UpdatePeriodEnd sets the "period_end" field to the value that was provided on create.
+func (u *SupportFeeCycleUpsert) UpdatePeriodEnd() *SupportFeeCycleUpsert {
+	u.SetExcluded(supportfeecycle.FieldPeriodEnd)
+	return u
+}
+
+// ClearPeriodEnd clears the value of the "period_end" field.
+func (u *SupportFeeCycleUpsert) ClearPeriodEnd() *SupportFeeCycleUpsert {
+	u.SetNull(supportfeecycle.FieldPeriodEnd)
 	return u
 }
 
@@ -867,6 +966,34 @@ func (u *SupportFeeCycleUpsertOne) UpdateSupportPlanID() *SupportFeeCycleUpsertO
 	})
 }
 
+// ClearSupportPlanID clears the value of the "support_plan_id" field.
+func (u *SupportFeeCycleUpsertOne) ClearSupportPlanID() *SupportFeeCycleUpsertOne {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.ClearSupportPlanID()
+	})
+}
+
+// SetAgreementID sets the "agreement_id" field.
+func (u *SupportFeeCycleUpsertOne) SetAgreementID(v uuid.UUID) *SupportFeeCycleUpsertOne {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.SetAgreementID(v)
+	})
+}
+
+// UpdateAgreementID sets the "agreement_id" field to the value that was provided on create.
+func (u *SupportFeeCycleUpsertOne) UpdateAgreementID() *SupportFeeCycleUpsertOne {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.UpdateAgreementID()
+	})
+}
+
+// ClearAgreementID clears the value of the "agreement_id" field.
+func (u *SupportFeeCycleUpsertOne) ClearAgreementID() *SupportFeeCycleUpsertOne {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.ClearAgreementID()
+	})
+}
+
 // SetCycleNumber sets the "cycle_number" field.
 func (u *SupportFeeCycleUpsertOne) SetCycleNumber(v int) *SupportFeeCycleUpsertOne {
 	return u.Update(func(s *SupportFeeCycleUpsert) {
@@ -899,6 +1026,27 @@ func (u *SupportFeeCycleUpsertOne) SetPeriodStart(v time.Time) *SupportFeeCycleU
 func (u *SupportFeeCycleUpsertOne) UpdatePeriodStart() *SupportFeeCycleUpsertOne {
 	return u.Update(func(s *SupportFeeCycleUpsert) {
 		s.UpdatePeriodStart()
+	})
+}
+
+// SetPeriodEnd sets the "period_end" field.
+func (u *SupportFeeCycleUpsertOne) SetPeriodEnd(v time.Time) *SupportFeeCycleUpsertOne {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.SetPeriodEnd(v)
+	})
+}
+
+// UpdatePeriodEnd sets the "period_end" field to the value that was provided on create.
+func (u *SupportFeeCycleUpsertOne) UpdatePeriodEnd() *SupportFeeCycleUpsertOne {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.UpdatePeriodEnd()
+	})
+}
+
+// ClearPeriodEnd clears the value of the "period_end" field.
+func (u *SupportFeeCycleUpsertOne) ClearPeriodEnd() *SupportFeeCycleUpsertOne {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.ClearPeriodEnd()
 	})
 }
 
@@ -1382,6 +1530,34 @@ func (u *SupportFeeCycleUpsertBulk) UpdateSupportPlanID() *SupportFeeCycleUpsert
 	})
 }
 
+// ClearSupportPlanID clears the value of the "support_plan_id" field.
+func (u *SupportFeeCycleUpsertBulk) ClearSupportPlanID() *SupportFeeCycleUpsertBulk {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.ClearSupportPlanID()
+	})
+}
+
+// SetAgreementID sets the "agreement_id" field.
+func (u *SupportFeeCycleUpsertBulk) SetAgreementID(v uuid.UUID) *SupportFeeCycleUpsertBulk {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.SetAgreementID(v)
+	})
+}
+
+// UpdateAgreementID sets the "agreement_id" field to the value that was provided on create.
+func (u *SupportFeeCycleUpsertBulk) UpdateAgreementID() *SupportFeeCycleUpsertBulk {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.UpdateAgreementID()
+	})
+}
+
+// ClearAgreementID clears the value of the "agreement_id" field.
+func (u *SupportFeeCycleUpsertBulk) ClearAgreementID() *SupportFeeCycleUpsertBulk {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.ClearAgreementID()
+	})
+}
+
 // SetCycleNumber sets the "cycle_number" field.
 func (u *SupportFeeCycleUpsertBulk) SetCycleNumber(v int) *SupportFeeCycleUpsertBulk {
 	return u.Update(func(s *SupportFeeCycleUpsert) {
@@ -1414,6 +1590,27 @@ func (u *SupportFeeCycleUpsertBulk) SetPeriodStart(v time.Time) *SupportFeeCycle
 func (u *SupportFeeCycleUpsertBulk) UpdatePeriodStart() *SupportFeeCycleUpsertBulk {
 	return u.Update(func(s *SupportFeeCycleUpsert) {
 		s.UpdatePeriodStart()
+	})
+}
+
+// SetPeriodEnd sets the "period_end" field.
+func (u *SupportFeeCycleUpsertBulk) SetPeriodEnd(v time.Time) *SupportFeeCycleUpsertBulk {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.SetPeriodEnd(v)
+	})
+}
+
+// UpdatePeriodEnd sets the "period_end" field to the value that was provided on create.
+func (u *SupportFeeCycleUpsertBulk) UpdatePeriodEnd() *SupportFeeCycleUpsertBulk {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.UpdatePeriodEnd()
+	})
+}
+
+// ClearPeriodEnd clears the value of the "period_end" field.
+func (u *SupportFeeCycleUpsertBulk) ClearPeriodEnd() *SupportFeeCycleUpsertBulk {
+	return u.Update(func(s *SupportFeeCycleUpsert) {
+		s.ClearPeriodEnd()
 	})
 }
 

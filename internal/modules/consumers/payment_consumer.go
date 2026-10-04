@@ -3,13 +3,13 @@ package consumers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	eventslib "github.com/Bengo-Hub/shared-events"
 	"github.com/bengobox/subscription-service/internal/ent"
-	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
@@ -34,6 +34,7 @@ type treasuryPaymentEvent struct {
 	Payload   struct {
 		IntentID         string      `json:"intent_id"`
 		TenantID         string      `json:"tenant_id"`
+		ReferenceID      string      `json:"reference_id"`
 		ReferenceType    string      `json:"reference_type"`
 		Status           string      `json:"status"`
 		PlanCode         string      `json:"plan_code"`
@@ -46,6 +47,7 @@ type treasuryPaymentEvent struct {
 	} `json:"payload"`
 	// Also accept flat structure (some publishers embed payload at top-level)
 	TenantID         string      `json:"tenant_id"`
+	ReferenceID      string      `json:"reference_id"`
 	ReferenceType    string      `json:"reference_type"`
 	PlanCode         string      `json:"plan_code"`
 	Amount           json.Number `json:"amount"`
@@ -254,13 +256,19 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 		return nil
 	}
 
-	// support_fee_cycle: annual support-fee payment for a perpetual/one-time-license tenant
-	// (internal/modules/billing/support_fee_invoice.go's GenerateAndSendSupportFeeInvoice) —
-	// mark the SupportFeeCycle PAID and clear its grace block, rather than falling through to
-	// subscription renewal below (a support-fee payment never changes the tenant's actual
-	// license/plan, so RenewSubscription must never be called for it).
+	// support_fee_cycle: payment for one support-agreement period (standard hosting and support
+	// or a special support agreement). Settles exactly that cycle, resolved from reference_id
+	// (the cycle UUID on treasury invoice payments, the SUPFEE payref on intents), and never
+	// falls through to RenewSubscription: a support payment does not change the license.
 	if refType == "support_fee_cycle" {
-		if err := c.markSupportFeeCyclePaid(ctx, tenantID); err != nil {
+		refID := ev.Payload.ReferenceID
+		if refID == "" {
+			refID = ev.ReferenceID
+		}
+		if c.svc == nil {
+			return fmt.Errorf("subscription service not wired")
+		}
+		if _, err := c.svc.MarkSupportCyclePaid(ctx, tenantID, refID, ev.Payload.IntentID); err != nil {
 			c.log.Error("failed to mark support fee cycle paid", zap.String("tenant_id", tenantIDStr), zap.Error(err))
 			return err
 		}
@@ -392,35 +400,6 @@ func jsonNumberToInt(n json.Number) int {
 		return int(f)
 	}
 	return 0
-}
-
-// markSupportFeeCyclePaid marks the tenant's most recent payable (INVOICED or OVERDUE)
-// SupportFeeCycle as PAID and clears its grace block. A tenant only ever has at most one cycle
-// in a payable state at a time (the enrollment job only creates the NEXT cycle once the current
-// one's due_date has passed), so resolving by tenant_id + latest cycle_number is unambiguous —
-// mirrors the existing "one subscription per tenant" lookup pattern used elsewhere in this file
-// (saveCardAuthorization) rather than requiring the event to carry the cycle id explicitly.
-func (c *TreasuryPaymentConsumer) markSupportFeeCyclePaid(ctx context.Context, tenantID uuid.UUID) error {
-	cycle, err := c.orm.SupportFeeCycle.Query().
-		Where(
-			supportfeecycle.TenantIDEQ(tenantID),
-			supportfeecycle.StatusIn(supportfeecycle.StatusINVOICED, supportfeecycle.StatusOVERDUE),
-		).
-		Order(ent.Desc(supportfeecycle.FieldCycleNumber)).
-		First(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			c.log.Warn("support fee payment received but no payable cycle found", zap.String("tenant_id", tenantID.String()))
-			return nil
-		}
-		return err
-	}
-	_, err = c.orm.SupportFeeCycle.UpdateOneID(cycle.ID).
-		SetStatus(supportfeecycle.StatusPAID).
-		SetPaidAt(time.Now().UTC()).
-		ClearGraceUntil().
-		Save(ctx)
-	return err
 }
 
 func (c *TreasuryPaymentConsumer) saveCardAuthorization(ctx context.Context, tenantID uuid.UUID, authCode, cardType, last4, expMonth, expYear string) error {

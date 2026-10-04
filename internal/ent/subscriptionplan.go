@@ -79,9 +79,11 @@ type SubscriptionPlanEdges struct {
 	OverrideProductSubscriptions []*ProductSubscription `json:"override_product_subscriptions,omitempty"`
 	// SupportFeeCycles holds the value of the support_fee_cycles edge.
 	SupportFeeCycles []*SupportFeeCycle `json:"support_fee_cycles,omitempty"`
+	// SupportAgreements holds the value of the support_agreements edge.
+	SupportAgreements []*SupportAgreement `json:"support_agreements,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // FeaturesOrErr returns the Features value or an error if the edge
@@ -127,6 +129,15 @@ func (e SubscriptionPlanEdges) SupportFeeCyclesOrErr() ([]*SupportFeeCycle, erro
 		return e.SupportFeeCycles, nil
 	}
 	return nil, &NotLoadedError{edge: "support_fee_cycles"}
+}
+
+// SupportAgreementsOrErr returns the SupportAgreements value or an error if the edge
+// was not loaded in eager-loading.
+func (e SubscriptionPlanEdges) SupportAgreementsOrErr() ([]*SupportAgreement, error) {
+	if e.loadedTypes[5] {
+		return e.SupportAgreements, nil
+	}
+	return nil, &NotLoadedError{edge: "support_agreements"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -340,6 +351,11 @@ func (_m *SubscriptionPlan) QueryOverrideProductSubscriptions() *ProductSubscrip
 // QuerySupportFeeCycles queries the "support_fee_cycles" edge of the SubscriptionPlan entity.
 func (_m *SubscriptionPlan) QuerySupportFeeCycles() *SupportFeeCycleQuery {
 	return NewSubscriptionPlanClient(_m.config).QuerySupportFeeCycles(_m)
+}
+
+// QuerySupportAgreements queries the "support_agreements" edge of the SubscriptionPlan entity.
+func (_m *SubscriptionPlan) QuerySupportAgreements() *SupportAgreementQuery {
+	return NewSubscriptionPlanClient(_m.config).QuerySupportAgreements(_m)
 }
 
 // Update returns a builder for updating this SubscriptionPlan.

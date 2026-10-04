@@ -10,12 +10,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// SupportFeeCycle tracks one annual support-fee billing cycle for a perpetual/one-time-license
-// tenant (e.g. POWERSUITE_DUKA_GOLD_ONE_TIME, LIBRARY_PROFESSIONAL_ONE_TIME). TenantSubscription
-// has a UNIQUE index on tenant_id — a tenant has exactly one subscription row, already pointed
-// at their real license plan — so the annual support charge can never be a second
-// TenantSubscription row against a SUPPORT_* plan for the same tenant. This satellite entity is
-// required, same pattern as OverageCharge/ProductSubscription.
+// SupportFeeCycle is one billing period of a SupportAgreement (the standard hosting and support
+// fee, or a tenant-specific special support agreement) for a one-time-license tenant.
+// TenantSubscription is unique per tenant and already points at the license plan, so support
+// charges can never be a second TenantSubscription row; this satellite entity carries them, the
+// same pattern as OverageCharge/ProductSubscription.
 type SupportFeeCycle struct {
 	ent.Schema
 }
@@ -30,20 +29,30 @@ func (SupportFeeCycle) Fields() []ent.Field {
 		field.UUID("tenant_subscription_id", uuid.UUID{}).
 			Comment("FK to the tenant's ONE TenantSubscription row — the perpetual license this support fee accompanies"),
 		field.UUID("support_plan_id", uuid.UUID{}).
-			Comment("FK to the SUPPORT_* subscription_plans catalog row (e.g. SUPPORT_DUKA_GOLD)"),
+			Optional().
+			Nillable().
+			Comment("SUPPORT_* catalog row for STANDARD agreement cycles; nil for SPECIAL agreements"),
+		field.UUID("agreement_id", uuid.UUID{}).
+			Optional().
+			Nillable().
+			Comment("The SupportAgreement this cycle bills. Rows created before agreements existed are linked by the enrollment job"),
 		field.Time("anchor_date").
 			Immutable().
-			Comment("Tenant's real onboarding date (tenant_subscriptions.created_at at enrollment time). NEVER 'today' — every cycle's due_date is computed as anchor_date + cycle_number years, backdated for tenants already onboarded when support billing was introduced."),
+			Comment("The agreement's starts_at when this cycle was generated (for STANDARD agreements, the license onboarding date)"),
 		field.Int("cycle_number").
-			Comment("1 = first annual cycle since onboarding, 2 = second, etc."),
+			Comment("1-based sequence within the agreement"),
 		field.Time("period_start").
-			Comment("anchor_date + (cycle_number-1) years"),
+			Comment("Start of the billed period"),
+		field.Time("period_end").
+			Optional().
+			Nillable().
+			Comment("End (exclusive) of the billed period"),
 		field.Time("due_date").
-			Comment("anchor_date + cycle_number years — payment due date"),
+			Comment("Payment due date: period_start for ADVANCE agreements, period_end for ARREARS"),
 		field.Enum("status").
 			Values("PENDING", "INVOICED", "PAID", "OVERDUE", "WAIVED").
 			Default("PENDING").
-			Comment("PENDING: not yet in the T-7 invoice window. INVOICED: invoice generated+emailed, not yet due. PAID: settled. OVERDUE: due_date passed unpaid — mutations blocked fleet-wide via RequireSupportFeeCurrentForMutations once grace_until also elapses; stays OVERDUE indefinitely after that (no further escalation) until paid or waived. WAIVED: platform admin manually excused this cycle."),
+			Comment("PENDING: not yet invoiced. INVOICED: invoice issued, not yet due. PAID: settled. OVERDUE: due_date passed unpaid; mutations are blocked fleet-wide by RequireSupportFeeCurrentForMutations once grace_until also passes, until paid or waived. WAIVED: excused by the platform owner (or cancelled with its agreement)."),
 		field.Time("paid_at").
 			Optional().
 			Nillable(),
@@ -52,7 +61,7 @@ func (SupportFeeCycle) Fields() []ent.Field {
 			Nillable().
 			Comment("due_date + 7 days, set the moment the cycle flips OVERDUE. Mutations stay allowed until this passes; reads are never blocked."),
 		field.Float("base_price").
-			Comment("Snapshot of support_plan.base_price at cycle-creation time — survives a later re-price of the catalog row, matches setup_fee_amount's snapshot rationale on TenantSubscription"),
+			Comment("Charge for this period, snapshotted from the agreement when the cycle is generated so a later re-price never changes an issued cycle"),
 		// ── Per-tenant custom pricing override (mirrors TenantSubscription's existing mechanism exactly) ──
 		field.Float("custom_price").
 			Optional().
@@ -70,7 +79,7 @@ func (SupportFeeCycle) Fields() []ent.Field {
 		field.JSON("metadata", map[string]any{}).
 			Optional().
 			Default(map[string]any{}).
-			Comment("last_invoice_id/number/pay_url/total, last_reminder_date, billing_email override — mirrors TenantSubscription.metadata's invoicing bookkeeping"),
+			Comment("last_invoice_id/number/pay_url/total, last_grace_reminder_date, waive/manual-payment audit"),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),
@@ -90,18 +99,22 @@ func (SupportFeeCycle) Edges() []ent.Edge {
 		edge.From("support_plan", SubscriptionPlan.Type).
 			Ref("support_fee_cycles").
 			Unique().
-			Required().
 			Field("support_plan_id"),
+		edge.From("agreement", SupportAgreement.Type).
+			Ref("cycles").
+			Unique().
+			Field("agreement_id"),
 	}
 }
 
 func (SupportFeeCycle) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("tenant_id"),
 		index.Fields("tenant_subscription_id"),
-		index.Fields("status"),
-		index.Fields("due_date"),
-		// One cycle row per year per tenant subscription — the enrollment job's idempotency key.
-		index.Fields("tenant_subscription_id", "cycle_number").Unique(),
+		// The JWT claim lookup: a tenant's oldest unpaid cycle.
+		index.Fields("tenant_id", "status", "due_date"),
+		// Invoice / overdue / receivables scans.
+		index.Fields("status", "due_date"),
+		// One cycle per period per agreement: the enrollment job's idempotency key.
+		index.Fields("agreement_id", "cycle_number").Unique(),
 	}
 }

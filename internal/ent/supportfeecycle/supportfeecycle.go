@@ -22,12 +22,16 @@ const (
 	FieldTenantSubscriptionID = "tenant_subscription_id"
 	// FieldSupportPlanID holds the string denoting the support_plan_id field in the database.
 	FieldSupportPlanID = "support_plan_id"
+	// FieldAgreementID holds the string denoting the agreement_id field in the database.
+	FieldAgreementID = "agreement_id"
 	// FieldAnchorDate holds the string denoting the anchor_date field in the database.
 	FieldAnchorDate = "anchor_date"
 	// FieldCycleNumber holds the string denoting the cycle_number field in the database.
 	FieldCycleNumber = "cycle_number"
 	// FieldPeriodStart holds the string denoting the period_start field in the database.
 	FieldPeriodStart = "period_start"
+	// FieldPeriodEnd holds the string denoting the period_end field in the database.
+	FieldPeriodEnd = "period_end"
 	// FieldDueDate holds the string denoting the due_date field in the database.
 	FieldDueDate = "due_date"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -56,6 +60,8 @@ const (
 	EdgeTenantSubscription = "tenant_subscription"
 	// EdgeSupportPlan holds the string denoting the support_plan edge name in mutations.
 	EdgeSupportPlan = "support_plan"
+	// EdgeAgreement holds the string denoting the agreement edge name in mutations.
+	EdgeAgreement = "agreement"
 	// Table holds the table name of the supportfeecycle in the database.
 	Table = "support_fee_cycles"
 	// TenantSubscriptionTable is the table that holds the tenant_subscription relation/edge.
@@ -72,6 +78,13 @@ const (
 	SupportPlanInverseTable = "subscription_plans"
 	// SupportPlanColumn is the table column denoting the support_plan relation/edge.
 	SupportPlanColumn = "support_plan_id"
+	// AgreementTable is the table that holds the agreement relation/edge.
+	AgreementTable = "support_fee_cycles"
+	// AgreementInverseTable is the table name for the SupportAgreement entity.
+	// It exists in this package in order to avoid circular dependency with the "supportagreement" package.
+	AgreementInverseTable = "support_agreements"
+	// AgreementColumn is the table column denoting the agreement relation/edge.
+	AgreementColumn = "agreement_id"
 )
 
 // Columns holds all SQL columns for supportfeecycle fields.
@@ -80,9 +93,11 @@ var Columns = []string{
 	FieldTenantID,
 	FieldTenantSubscriptionID,
 	FieldSupportPlanID,
+	FieldAgreementID,
 	FieldAnchorDate,
 	FieldCycleNumber,
 	FieldPeriodStart,
+	FieldPeriodEnd,
 	FieldDueDate,
 	FieldStatus,
 	FieldPaidAt,
@@ -172,6 +187,11 @@ func BySupportPlanID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSupportPlanID, opts...).ToFunc()
 }
 
+// ByAgreementID orders the results by the agreement_id field.
+func ByAgreementID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAgreementID, opts...).ToFunc()
+}
+
 // ByAnchorDate orders the results by the anchor_date field.
 func ByAnchorDate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAnchorDate, opts...).ToFunc()
@@ -185,6 +205,11 @@ func ByCycleNumber(opts ...sql.OrderTermOption) OrderOption {
 // ByPeriodStart orders the results by the period_start field.
 func ByPeriodStart(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPeriodStart, opts...).ToFunc()
+}
+
+// ByPeriodEnd orders the results by the period_end field.
+func ByPeriodEnd(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPeriodEnd, opts...).ToFunc()
 }
 
 // ByDueDate orders the results by the due_date field.
@@ -255,6 +280,13 @@ func BySupportPlanField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newSupportPlanStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByAgreementField orders the results by agreement field.
+func ByAgreementField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAgreementStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newTenantSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -267,5 +299,12 @@ func newSupportPlanStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SupportPlanInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, SupportPlanTable, SupportPlanColumn),
+	)
+}
+func newAgreementStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AgreementInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, AgreementTable, AgreementColumn),
 	)
 }

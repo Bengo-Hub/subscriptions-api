@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	entsql "entgo.io/ent/dialect/sql"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -14,9 +17,10 @@ import (
 	authclient "github.com/Bengo-Hub/shared-auth-client"
 
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/serviceconfig"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
-	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
+	"github.com/bengobox/subscription-service/internal/ent/supportagreement"
 	enttenant "github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
@@ -54,7 +58,10 @@ func (h *PlatformHandler) WithSubscriptionService(svc *subscriptions.Service) {
 
 // GetPlatformStats godoc
 // @Summary Get platform statistics (admin)
-// @Description Returns aggregated platform stats: total plans, subscriptions, MRR. Requires platform owner.
+// @Description Subscription counts by status, recurring MRR (one-time licenses excluded, custom
+// @Description prices honoured), one-time license count, support-agreement MRR and the
+// @Description outstanding / overdue / blocking support receivables. Computed with SQL aggregates
+// @Description so the cost does not grow with the number of tenants. Requires platform owner.
 // @Tags Platform
 // @Produce json
 // @Security BearerAuth
@@ -63,49 +70,166 @@ func (h *PlatformHandler) WithSubscriptionService(svc *subscriptions.Service) {
 // @Router /platform/stats [get]
 func (h *PlatformHandler) GetPlatformStats(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	fail := func(op string, err error) {
+		h.log.Error("platform stats: "+op, zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+	}
 
-	totalPlans, _ := h.client.SubscriptionPlan.Query().Count(ctx)
-	activePlans, _ := h.client.SubscriptionPlan.Query().
-		Where(subscriptionplan.IsActive(true)).
-		Count(ctx)
-	totalSubscriptions, _ := h.client.TenantSubscription.Query().Count(ctx)
-	activeSubscriptions, _ := h.client.TenantSubscription.Query().
-		Where(tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE)).
-		Count(ctx)
-	trialingCount, _ := h.client.TenantSubscription.Query().
-		Where(tenantsubscription.StatusEQ(tenantsubscription.StatusTRIAL)).
-		Count(ctx)
-	churnedCount, _ := h.client.TenantSubscription.Query().
-		Where(tenantsubscription.StatusIn(
-			tenantsubscription.StatusCANCELLED,
-			tenantsubscription.StatusEXPIRED,
-		)).
-		Count(ctx)
-
-	// MRR: sum base prices for ACTIVE subscriptions only
-	activeSubs, err := h.client.TenantSubscription.Query().
-		Where(tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE)).
-		WithPlan().
-		All(ctx)
-	mrr := 0.0
-	if err == nil {
-		for _, s := range activeSubs {
-			if s.Edges.Plan != nil {
-				mrr += subscriptions.EffectivePrice(s, s.Edges.Plan)
-			}
+	var planCounts []struct {
+		Active bool `json:"is_active"`
+		N      int  `json:"n"`
+	}
+	if err := h.client.SubscriptionPlan.Query().
+		GroupBy(subscriptionplan.FieldIsActive).
+		Aggregate(countAs("n")).
+		Scan(ctx, &planCounts); err != nil {
+		fail("plan counts", err)
+		return
+	}
+	totalPlans, activePlans := 0, 0
+	for _, c := range planCounts {
+		totalPlans += c.N
+		if c.Active {
+			activePlans = c.N
 		}
+	}
+
+	var statusCounts []struct {
+		Status string `json:"status"`
+		N      int    `json:"n"`
+	}
+	if err := h.client.TenantSubscription.Query().
+		GroupBy(tenantsubscription.FieldStatus).
+		Aggregate(countAs("n")).
+		Scan(ctx, &statusCounts); err != nil {
+		fail("subscription counts", err)
+		return
+	}
+	byStatus := map[string]int{}
+	total := 0
+	for _, c := range statusCounts {
+		byStatus[c.Status] = c.N
+		total += c.N
+	}
+
+	// Recurring MRR. Plans are priced per month, so MRR is the per-month effective price of every
+	// ACTIVE recurring subscription. Custom-priced rows are summed directly; the rest are counted
+	// per plan and multiplied by that plan's price, so only the distinct plans are loaded.
+	active := []predicate.TenantSubscription{
+		tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
+		tenantsubscription.HasPlanWith(subscriptionplan.BillingCycleNEQ("ONE_TIME")),
+	}
+	var custom []struct {
+		Sum float64 `json:"custom_sum"`
+	}
+	if err := h.client.TenantSubscription.Query().
+		Where(append(active, tenantsubscription.CustomBasePriceNotNil())...).
+		Aggregate(sumAs(tenantsubscription.FieldCustomBasePrice, "custom_sum")).
+		Scan(ctx, &custom); err != nil {
+		fail("custom mrr", err)
+		return
+	}
+	var perPlan []struct {
+		PlanID uuid.UUID `json:"plan_id"`
+		N      int       `json:"n"`
+	}
+	if err := h.client.TenantSubscription.Query().
+		Where(append(active, tenantsubscription.CustomBasePriceIsNil())...).
+		GroupBy(tenantsubscription.FieldPlanID).
+		Aggregate(countAs("n")).
+		Scan(ctx, &perPlan); err != nil {
+		fail("plan mrr", err)
+		return
+	}
+	mrr := 0.0
+	if len(custom) > 0 {
+		mrr = custom[0].Sum
+	}
+	if len(perPlan) > 0 {
+		ids := make([]uuid.UUID, 0, len(perPlan))
+		for _, p := range perPlan {
+			ids = append(ids, p.PlanID)
+		}
+		plans, err := h.client.SubscriptionPlan.Query().
+			Where(subscriptionplan.IDIn(ids...)).
+			Select(subscriptionplan.FieldID, subscriptionplan.FieldBasePrice).
+			All(ctx)
+		if err != nil {
+			fail("plan prices", err)
+			return
+		}
+		price := make(map[uuid.UUID]float64, len(plans))
+		for _, p := range plans {
+			price[p.ID] = p.BasePrice
+		}
+		for _, p := range perPlan {
+			mrr += price[p.PlanID] * float64(p.N)
+		}
+	}
+
+	oneTime, err := h.client.TenantSubscription.Query().
+		Where(
+			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
+			tenantsubscription.HasPlanWith(subscriptionplan.BillingCycleEQ("ONE_TIME")),
+		).Count(ctx)
+	if err != nil {
+		fail("one-time count", err)
+		return
+	}
+
+	// Support MRR: active agreements normalized to a monthly figure. One row per agreement (a
+	// handful per one-time tenant) plus the plan price used to prorate standard agreements.
+	agreements, err := h.client.SupportAgreement.Query().
+		Where(supportagreement.StatusEQ(supportagreement.StatusACTIVE)).
+		WithSupportPlan(func(q *ent.SubscriptionPlanQuery) {
+			q.Select(subscriptionplan.FieldID, subscriptionplan.FieldBasePrice)
+		}).
+		All(ctx)
+	if err != nil {
+		fail("support agreements", err)
+		return
+	}
+	supportMRR, specialMRR, specialCount := 0.0, 0.0, 0
+	for _, a := range agreements {
+		m := subscriptions.MonthlyEquivalent(subscriptions.AgreementPeriodAmount(a, a.Edges.SupportPlan), subscriptions.AgreementInterval(a))
+		supportMRR += m
+		if a.Kind == supportagreement.KindSPECIAL {
+			specialMRR += m
+			specialCount++
+		}
+	}
+	receivables, err := h.supportOutstanding(r)
+	if err != nil {
+		fail("support receivables", err)
+		return
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"totalPlans":          totalPlans,
 		"activePlans":         activePlans,
-		"totalSubscriptions":  totalSubscriptions,
-		"activeSubscriptions": activeSubscriptions,
-		"trialingCount":       trialingCount,
-		"churnedCount":        churnedCount,
-		"mrr":                 mrr,
+		"totalSubscriptions":  total,
+		"activeSubscriptions": byStatus[string(tenantsubscription.StatusACTIVE)],
+		"trialingCount":       byStatus[string(tenantsubscription.StatusTRIAL)],
+		"churnedCount":        byStatus[string(tenantsubscription.StatusCANCELLED)] + byStatus[string(tenantsubscription.StatusEXPIRED)],
+		"statusCounts":        byStatus,
+		"mrr":                 roundCents(mrr),
+		"oneTimeLicenses":     oneTime,
+		"supportMrr":          roundCents(supportMRR),
+		"specialSupportMrr":   roundCents(specialMRR),
+		"specialAgreements":   specialCount,
+		"totalMrr":            roundCents(mrr + supportMRR),
+		"arr":                 roundCents((mrr + supportMRR) * 12),
+		"supportReceivables":  receivables,
 		"currency":            "KES",
 	})
+}
+
+func roundCents(v float64) float64 { return math.Round(v*100) / 100 }
+
+func sumAs(field, alias string) ent.AggregateFunc {
+	return func(s *entsql.Selector) string {
+		return entsql.As(fmt.Sprintf("COALESCE(SUM(%s), 0)", s.C(field)), alias)
+	}
 }
 
 // ListAllSubscriptions godoc
@@ -141,6 +265,13 @@ func (h *PlatformHandler) ListAllSubscriptions(w http.ResponseWriter, r *http.Re
 		// Accept both uppercase (ACTIVE) and lowercase (active) from the frontend
 		query = query.Where(tenantsubscription.StatusEQ(tenantsubscription.Status(strings.ToUpper(status))))
 	}
+	// Search runs in SQL so pagination and totals reflect the filtered set.
+	if term := strings.TrimSpace(r.URL.Query().Get("search")); term != "" {
+		query = query.Where(tenantsubscription.HasTenantWith(tenantSearch(term)))
+	}
+	if r.URL.Query().Get("billing") == "one_time" {
+		query = query.Where(tenantsubscription.HasPlanWith(subscriptionplan.BillingCycleEQ("ONE_TIME")))
+	}
 
 	total, err := query.Clone().Count(ctx)
 	if err != nil {
@@ -174,9 +305,9 @@ func (h *PlatformHandler) ListAllSubscriptions(w http.ResponseWriter, r *http.Re
 		MonthlyRevenue   float64 `json:"monthlyRevenue"`
 		Currency         string  `json:"currency"`
 		HasCustomPrice   bool    `json:"hasCustomPrice"`
+		BillingCycle     string  `json:"billingCycle"`
+		IsPerpetual      bool    `json:"isPerpetual"`
 	}
-
-	searchTerm := strings.ToLower(r.URL.Query().Get("search"))
 
 	data := make([]subRow, 0, len(subs))
 	for _, s := range subs {
@@ -187,24 +318,22 @@ func (h *PlatformHandler) ListAllSubscriptions(w http.ResponseWriter, r *http.Re
 			tenantSlug = s.Edges.Tenant.Slug
 		}
 
-		// Apply search filter (tenant name or slug contains search term)
-		if searchTerm != "" {
-			if !strings.Contains(strings.ToLower(tenantName), searchTerm) &&
-				!strings.Contains(strings.ToLower(tenantSlug), searchTerm) {
-				continue
-			}
-		}
-
 		planCode := ""
 		planName := ""
 		planTier := ""
 		monthlyRevenue := 0.0
 		currency := "KES"
+		isPerpetual := false
 		if s.Edges.Plan != nil {
 			planCode = s.Edges.Plan.PlanCode
 			planName = s.Edges.Plan.Name
-			monthlyRevenue = subscriptions.EffectivePrice(s, s.Edges.Plan)
 			currency = s.Edges.Plan.Currency
+			isPerpetual = s.Edges.Plan.BillingCycle == "ONE_TIME"
+			if !isPerpetual {
+				// A one-time license price is not monthly revenue; its recurring income is
+				// the support agreements, reported by /platform/stats.
+				monthlyRevenue = subscriptions.EffectivePrice(s, s.Edges.Plan)
+			}
 			planTier = derivePlanTier(s.Edges.Plan.PlanCode, s.Edges.Plan.TierOrder)
 		}
 
@@ -222,6 +351,8 @@ func (h *PlatformHandler) ListAllSubscriptions(w http.ResponseWriter, r *http.Re
 			MonthlyRevenue:   monthlyRevenue,
 			Currency:         currency,
 			HasCustomPrice:   s.CustomBasePrice != nil,
+			BillingCycle:     string(s.BillingCycle),
+			IsPerpetual:      isPerpetual,
 		})
 	}
 
@@ -1196,185 +1327,6 @@ func (h *PlatformHandler) UpdateSubscription(w http.ResponseWriter, r *http.Requ
 		zap.String("tenant_id", sub.TenantID.String()),
 	)
 	writeJSON(w, http.StatusOK, updated)
-}
-
-// supportFeeCycleDTO is the admin-facing shape for a SupportFeeCycle row — mirrors the
-// tenant-subscription list's HasCustomPrice/effective-price presentation.
-type supportFeeCycleDTO struct {
-	ID              uuid.UUID  `json:"id"`
-	TenantID        uuid.UUID  `json:"tenant_id"`
-	SupportPlanCode string     `json:"support_plan_code"`
-	CycleNumber     int        `json:"cycle_number"`
-	AnchorDate      time.Time  `json:"anchor_date"`
-	DueDate         time.Time  `json:"due_date"`
-	Status          string     `json:"status"`
-	PaidAt          *time.Time `json:"paid_at,omitempty"`
-	GraceUntil      *time.Time `json:"grace_until,omitempty"`
-	BasePrice       float64    `json:"base_price"`
-	CustomPrice     *float64   `json:"custom_price,omitempty"`
-	EffectivePrice  float64    `json:"effective_price"`
-	HasCustomPrice  bool       `json:"has_custom_price"`
-	CustomReason    *string    `json:"custom_price_reason,omitempty"`
-}
-
-func toSupportFeeCycleDTO(c *ent.SupportFeeCycle, planCode string) supportFeeCycleDTO {
-	dto := supportFeeCycleDTO{
-		ID:              c.ID,
-		TenantID:        c.TenantID,
-		SupportPlanCode: planCode,
-		CycleNumber:     c.CycleNumber,
-		AnchorDate:      c.AnchorDate,
-		DueDate:         c.DueDate,
-		Status:          string(c.Status),
-		PaidAt:          c.PaidAt,
-		GraceUntil:      c.GraceUntil,
-		BasePrice:       c.BasePrice,
-		CustomPrice:     c.CustomPrice,
-		EffectivePrice:  subscriptions.EffectiveSupportPrice(c),
-		HasCustomPrice:  c.CustomPrice != nil,
-		CustomReason:    c.CustomPriceReason,
-	}
-	return dto
-}
-
-// GetTenantSupportFeeCycle godoc
-// @Summary Get a tenant's current annual support-fee cycle (admin)
-// @Description Returns the tenant's latest SupportFeeCycle (by cycle_number), or 404 if the
-// @Description tenant has no support-fee obligation at all (not a one-time-license tenant, or
-// @Description its family has no SUPPORT_* plan, or the enrollment job hasn't run yet).
-// @Tags Platform
-// @Produce json
-// @Security BearerAuth
-// @Param tenant_id path string true "Tenant UUID"
-// @Success 200 {object} supportFeeCycleDTO
-// @Failure 404 {object} map[string]string
-// @Router /admin/tenants/{tenant_id}/support-fee-cycle [get]
-func (h *PlatformHandler) GetTenantSupportFeeCycle(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	tenantIDStr := chi.URLParam(r, "tenant_id")
-	tenantID, err := uuid.Parse(tenantIDStr)
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid tenant id"})
-		return
-	}
-
-	cycle, err := h.client.SupportFeeCycle.Query().
-		Where(supportfeecycle.TenantIDEQ(tenantID)).
-		Order(ent.Desc(supportfeecycle.FieldCycleNumber)).
-		WithSupportPlan().
-		First(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			writeJSON(w, http.StatusNotFound, map[string]string{"error": "tenant has no support-fee cycle"})
-			return
-		}
-		h.log.Error("failed to get support fee cycle", zap.Error(err))
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
-		return
-	}
-	planCode := ""
-	if cycle.Edges.SupportPlan != nil {
-		planCode = cycle.Edges.SupportPlan.PlanCode
-	}
-	writeJSON(w, http.StatusOK, toSupportFeeCycleDTO(cycle, planCode))
-}
-
-// UpdateSupportFeeCycle godoc
-// @Summary Set or clear a tenant's custom annual support-fee price (admin)
-// @Description Mirrors UpdateSubscription's custom_base_price mechanism exactly, applied to a
-// @Description SupportFeeCycle instead of a TenantSubscription — a per-tenant sales-agreement
-// @Description override on top of the SUPPORT_* catalog's base price. Other tenants on the same
-// @Description support plan are unaffected; clearing reverts this tenant to the base price.
-// @Tags Platform
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path string true "SupportFeeCycle UUID"
-// @Success 200 {object} supportFeeCycleDTO
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Router /admin/support-fee-cycles/{id} [put]
-func (h *PlatformHandler) UpdateSupportFeeCycle(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid support fee cycle id"})
-		return
-	}
-
-	var body struct {
-		CustomPrice       *float64 `json:"custom_price"`
-		CustomPriceReason *string  `json:"custom_price_reason"`
-		// ClearCustomPrice reverts this cycle to the support plan's base price. Distinct from
-		// omitting custom_price (which leaves any existing override untouched) — mirrors
-		// UpdateSubscription's clear_custom_price flag exactly.
-		ClearCustomPrice bool `json:"clear_custom_price"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-	if body.CustomPrice == nil && !body.ClearCustomPrice {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "one of custom_price or clear_custom_price is required"})
-		return
-	}
-	if body.CustomPrice != nil && *body.CustomPrice < 0 {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "custom_price must not be negative"})
-		return
-	}
-	if body.CustomPrice != nil && body.ClearCustomPrice {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "custom_price and clear_custom_price are mutually exclusive"})
-		return
-	}
-
-	cycle, err := h.client.SupportFeeCycle.Query().Where(supportfeecycle.IDEQ(id)).WithSupportPlan().Only(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			writeJSON(w, http.StatusNotFound, map[string]string{"error": "support fee cycle not found"})
-			return
-		}
-		h.log.Error("failed to get support fee cycle", zap.Error(err))
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
-		return
-	}
-
-	upd := h.client.SupportFeeCycle.UpdateOneID(id)
-	var setBy uuid.UUID
-	if claims, ok := authclient.ClaimsFromContext(ctx); ok && claims != nil {
-		setBy, _ = claims.UserID()
-	}
-	if body.ClearCustomPrice {
-		upd = upd.ClearCustomPrice().ClearCustomPriceReason().SetCustomPriceSetAt(time.Now())
-		if setBy != uuid.Nil {
-			upd = upd.SetCustomPriceSetBy(setBy)
-		}
-	} else {
-		upd = upd.SetCustomPrice(*body.CustomPrice).SetCustomPriceSetAt(time.Now())
-		if body.CustomPriceReason != nil {
-			upd = upd.SetCustomPriceReason(*body.CustomPriceReason)
-		}
-		if setBy != uuid.Nil {
-			upd = upd.SetCustomPriceSetBy(setBy)
-		}
-	}
-
-	updated, err := upd.Save(ctx)
-	if err != nil {
-		h.log.Error("failed to update support fee cycle", zap.Error(err))
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update support fee cycle"})
-		return
-	}
-
-	planCode := ""
-	if cycle.Edges.SupportPlan != nil {
-		planCode = cycle.Edges.SupportPlan.PlanCode
-	}
-	h.log.Info("support fee cycle custom price updated by admin",
-		zap.String("cycle_id", id.String()),
-		zap.String("tenant_id", updated.TenantID.String()),
-	)
-	writeJSON(w, http.StatusOK, toSupportFeeCycleDTO(updated, planCode))
 }
 
 // derivePlanTier returns a human-readable tier label from the plan code or tier order.

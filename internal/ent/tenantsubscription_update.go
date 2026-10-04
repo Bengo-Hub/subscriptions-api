@@ -16,6 +16,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportagreement"
 	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
@@ -694,6 +695,21 @@ func (_u *TenantSubscriptionUpdate) AddSupportFeeCycles(v ...*SupportFeeCycle) *
 	return _u.AddSupportFeeCycleIDs(ids...)
 }
 
+// AddSupportAgreementIDs adds the "support_agreements" edge to the SupportAgreement entity by IDs.
+func (_u *TenantSubscriptionUpdate) AddSupportAgreementIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.AddSupportAgreementIDs(ids...)
+	return _u
+}
+
+// AddSupportAgreements adds the "support_agreements" edges to the SupportAgreement entity.
+func (_u *TenantSubscriptionUpdate) AddSupportAgreements(v ...*SupportAgreement) *TenantSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSupportAgreementIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_u *TenantSubscriptionUpdate) Mutation() *TenantSubscriptionMutation {
 	return _u.mutation
@@ -814,6 +830,27 @@ func (_u *TenantSubscriptionUpdate) RemoveSupportFeeCycles(v ...*SupportFeeCycle
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSupportFeeCycleIDs(ids...)
+}
+
+// ClearSupportAgreements clears all "support_agreements" edges to the SupportAgreement entity.
+func (_u *TenantSubscriptionUpdate) ClearSupportAgreements() *TenantSubscriptionUpdate {
+	_u.mutation.ClearSupportAgreements()
+	return _u
+}
+
+// RemoveSupportAgreementIDs removes the "support_agreements" edge to SupportAgreement entities by IDs.
+func (_u *TenantSubscriptionUpdate) RemoveSupportAgreementIDs(ids ...uuid.UUID) *TenantSubscriptionUpdate {
+	_u.mutation.RemoveSupportAgreementIDs(ids...)
+	return _u
+}
+
+// RemoveSupportAgreements removes "support_agreements" edges to SupportAgreement entities.
+func (_u *TenantSubscriptionUpdate) RemoveSupportAgreements(v ...*SupportAgreement) *TenantSubscriptionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSupportAgreementIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1320,6 +1357,51 @@ func (_u *TenantSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SupportAgreementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportAgreementsTable,
+			Columns: []string{tenantsubscription.SupportAgreementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportagreement.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSupportAgreementsIDs(); len(nodes) > 0 && !_u.mutation.SupportAgreementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportAgreementsTable,
+			Columns: []string{tenantsubscription.SupportAgreementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportagreement.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SupportAgreementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportAgreementsTable,
+			Columns: []string{tenantsubscription.SupportAgreementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportagreement.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -2005,6 +2087,21 @@ func (_u *TenantSubscriptionUpdateOne) AddSupportFeeCycles(v ...*SupportFeeCycle
 	return _u.AddSupportFeeCycleIDs(ids...)
 }
 
+// AddSupportAgreementIDs adds the "support_agreements" edge to the SupportAgreement entity by IDs.
+func (_u *TenantSubscriptionUpdateOne) AddSupportAgreementIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.AddSupportAgreementIDs(ids...)
+	return _u
+}
+
+// AddSupportAgreements adds the "support_agreements" edges to the SupportAgreement entity.
+func (_u *TenantSubscriptionUpdateOne) AddSupportAgreements(v ...*SupportAgreement) *TenantSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSupportAgreementIDs(ids...)
+}
+
 // Mutation returns the TenantSubscriptionMutation object of the builder.
 func (_u *TenantSubscriptionUpdateOne) Mutation() *TenantSubscriptionMutation {
 	return _u.mutation
@@ -2125,6 +2222,27 @@ func (_u *TenantSubscriptionUpdateOne) RemoveSupportFeeCycles(v ...*SupportFeeCy
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSupportFeeCycleIDs(ids...)
+}
+
+// ClearSupportAgreements clears all "support_agreements" edges to the SupportAgreement entity.
+func (_u *TenantSubscriptionUpdateOne) ClearSupportAgreements() *TenantSubscriptionUpdateOne {
+	_u.mutation.ClearSupportAgreements()
+	return _u
+}
+
+// RemoveSupportAgreementIDs removes the "support_agreements" edge to SupportAgreement entities by IDs.
+func (_u *TenantSubscriptionUpdateOne) RemoveSupportAgreementIDs(ids ...uuid.UUID) *TenantSubscriptionUpdateOne {
+	_u.mutation.RemoveSupportAgreementIDs(ids...)
+	return _u
+}
+
+// RemoveSupportAgreements removes "support_agreements" edges to SupportAgreement entities.
+func (_u *TenantSubscriptionUpdateOne) RemoveSupportAgreements(v ...*SupportAgreement) *TenantSubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSupportAgreementIDs(ids...)
 }
 
 // Where appends a list predicates to the TenantSubscriptionUpdate builder.
@@ -2661,6 +2779,51 @@ func (_u *TenantSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Tena
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SupportAgreementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportAgreementsTable,
+			Columns: []string{tenantsubscription.SupportAgreementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportagreement.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSupportAgreementsIDs(); len(nodes) > 0 && !_u.mutation.SupportAgreementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportAgreementsTable,
+			Columns: []string{tenantsubscription.SupportAgreementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportagreement.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SupportAgreementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   tenantsubscription.SupportAgreementsTable,
+			Columns: []string{tenantsubscription.SupportAgreementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(supportagreement.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

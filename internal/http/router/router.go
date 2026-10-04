@@ -306,30 +306,14 @@ func New(
 			// — platform owner only. Mounted at /api/v1/platform/backups/destination.
 			if backupDestHandler != nil {
 				r.Route("/platform", func(r chi.Router) {
-					r.Use(func(next http.Handler) http.Handler {
-						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-							if !httpware.IsPlatformOwner(r.Context()) {
-								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
-								return
-							}
-							next.ServeHTTP(w, r)
-						})
-					})
+					r.Use(requirePlatformOwner)
 					backupDestHandler.RegisterPlatformRoutes(r)
 				})
 			}
 
 			// Admin routes for plans (platform admin only)
 			r.Route("/admin/plans", func(r chi.Router) {
-				r.Use(func(next http.Handler) http.Handler {
-					return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-						if !httpware.IsPlatformOwner(r.Context()) {
-							http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
-							return
-						}
-						next.ServeHTTP(w, r)
-					})
-				})
+				r.Use(requirePlatformOwner)
 				r.Post("/", planHandler.CreatePlan)
 				r.Put("/{id}", planHandler.UpdatePlan)
 				r.Delete("/{id}", planHandler.DeletePlan)
@@ -338,15 +322,7 @@ func New(
 			// Admin: feature catalog CRUD (platform owner only)
 			if featureCatalogHandler != nil {
 				r.Route("/admin/feature-catalog", func(r chi.Router) {
-					r.Use(func(next http.Handler) http.Handler {
-						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-							if !httpware.IsPlatformOwner(r.Context()) {
-								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
-								return
-							}
-							next.ServeHTTP(w, r)
-						})
-					})
+					r.Use(requirePlatformOwner)
 					r.Post("/", featureCatalogHandler.UpsertCatalogEntry)
 					r.Delete("/{id}", featureCatalogHandler.DeleteCatalogEntry)
 				})
@@ -355,15 +331,7 @@ func New(
 			// Admin: service charge plan CRUD
 			if serviceChargeHandler != nil {
 				r.Route("/admin/service-charges", func(r chi.Router) {
-					r.Use(func(next http.Handler) http.Handler {
-						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-							if !httpware.IsPlatformOwner(r.Context()) {
-								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
-								return
-							}
-							next.ServeHTTP(w, r)
-						})
-					})
+					r.Use(requirePlatformOwner)
 					r.Post("/", serviceChargeHandler.CreateServiceChargePlan)
 					r.Put("/{id}", serviceChargeHandler.UpdateServiceChargePlan)
 					r.Delete("/{id}", serviceChargeHandler.DeleteServiceChargePlan)
@@ -373,15 +341,7 @@ func New(
 			// Admin: tenant and subscription management
 			if platformHandler != nil {
 				r.Route("/admin/tenants", func(r chi.Router) {
-					r.Use(func(next http.Handler) http.Handler {
-						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-							if !httpware.IsPlatformOwner(r.Context()) {
-								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
-								return
-							}
-							next.ServeHTTP(w, r)
-						})
-					})
+					r.Use(requirePlatformOwner)
 					r.Get("/", platformHandler.ListTenants)
 					r.Post("/{tenant_id}/subscription", platformHandler.AssignPlanToTenant)
 					// Platform-admin: grant/revoke a tenant's blanket subscription exemption.
@@ -403,20 +363,13 @@ func New(
 					r.Post("/{tenant_id}/subscription/invoice/resend", platformHandler.ResendSubscriptionInvoice)
 					r.Get("/{tenant_id}/subscription/invoice", platformHandler.GetSubscriptionInvoice)
 					r.Get("/{tenant_id}/subscription/invoice/pdf", platformHandler.DownloadSubscriptionInvoicePDF)
-					// Annual support-fee cycle (perpetual/one-time-license tenants only)
-					r.Get("/{tenant_id}/support-fee-cycle", platformHandler.GetTenantSupportFeeCycle)
+					// Support agreements: standard hosting and support plus special support
+					r.Get("/{tenant_id}/support-agreements", platformHandler.ListTenantSupportAgreements)
+					r.Post("/{tenant_id}/support-agreements", platformHandler.CreateTenantSupportAgreement)
 				})
 
 				r.Route("/admin/subscriptions", func(r chi.Router) {
-					r.Use(func(next http.Handler) http.Handler {
-						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-							if !httpware.IsPlatformOwner(r.Context()) {
-								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
-								return
-							}
-							next.ServeHTTP(w, r)
-						})
-					})
+					r.Use(requirePlatformOwner)
 					r.Get("/", platformHandler.ListAllSubscriptions)
 					// Edit trial_ends_at, current_period_end, status, plan_code — any combination
 					r.Put("/{id}", platformHandler.UpdateSubscription)
@@ -424,33 +377,23 @@ func New(
 					r.Put("/{id}/status", platformHandler.UpdateSubscriptionStatus)
 				})
 
-				// Per-tenant custom annual support-fee price (sales-agreement basis) — mirrors
-				// admin/subscriptions' custom_base_price mechanism, applied to a SupportFeeCycle.
+				// Support charges: platform receivables, per-charge reprice / waive / offline
+				// payment / invoice, and agreement updates.
+				r.Route("/admin/support-agreements", func(r chi.Router) {
+					r.Use(requirePlatformOwner)
+					r.Put("/{id}", platformHandler.UpdateSupportAgreement)
+				})
 				r.Route("/admin/support-fee-cycles", func(r chi.Router) {
-					r.Use(func(next http.Handler) http.Handler {
-						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-							if !httpware.IsPlatformOwner(r.Context()) {
-								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
-								return
-							}
-							next.ServeHTTP(w, r)
-						})
-					})
+					r.Use(requirePlatformOwner)
+					r.Get("/", platformHandler.ListSupportFeeCycles)
 					r.Put("/{id}", platformHandler.UpdateSupportFeeCycle)
+					r.Post("/{id}/invoice", platformHandler.GenerateSupportFeeCycleInvoice)
 				})
 
 				// Platform admin: custom addon CRUD per tenant
 				if customAddonHandler != nil {
 					r.Route("/admin/tenants/{tenant_id}/custom-addons", func(r chi.Router) {
-						r.Use(func(next http.Handler) http.Handler {
-							return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-								if !httpware.IsPlatformOwner(r.Context()) {
-									http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
-									return
-								}
-								next.ServeHTTP(w, r)
-							})
-						})
+						r.Use(requirePlatformOwner)
 						r.Post("/", customAddonHandler.CreateCustomAddon)
 						r.Get("/", customAddonHandler.ListCustomAddonsByTenant)
 						r.Patch("/{id}", customAddonHandler.UpdateCustomAddon)
@@ -466,24 +409,10 @@ func New(
 					r.Post("/admin/tenants/{tenant_id}/credits/gift", couponHandler.GiftCredits)
 				}
 
-				r.Get("/platform/stats", func(w http.ResponseWriter, r *http.Request) {
-					if !httpware.IsPlatformOwner(r.Context()) {
-						http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
-						return
-					}
-					platformHandler.GetPlatformStats(w, r)
-				})
+				r.With(requirePlatformOwner).Get("/platform/stats", platformHandler.GetPlatformStats)
 
 				r.Route("/admin/configs", func(r chi.Router) {
-					r.Use(func(next http.Handler) http.Handler {
-						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-							if !httpware.IsPlatformOwner(r.Context()) {
-								http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
-								return
-							}
-							next.ServeHTTP(w, r)
-						})
-					})
+					r.Use(requirePlatformOwner)
 					r.Get("/", platformHandler.ListServiceConfigs)
 					r.Post("/", platformHandler.CreateServiceConfig)
 					r.Put("/{id}", platformHandler.UpdateServiceConfig)
@@ -511,4 +440,15 @@ func New(
 	})
 
 	return r
+}
+
+// requirePlatformOwner rejects any caller that is not the platform owner.
+func requirePlatformOwner(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !httpware.IsPlatformOwner(r.Context()) {
+			http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

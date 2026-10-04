@@ -17,6 +17,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportagreement"
 	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenant"
 	"github.com/bengobox/subscription-service/internal/ent/tenantemaildomain"
@@ -38,6 +39,7 @@ type TenantSubscriptionQuery struct {
 	withEmailLicenses        *EmailLicenseQuery
 	withEmailDomains         *TenantEmailDomainQuery
 	withSupportFeeCycles     *SupportFeeCycleQuery
+	withSupportAgreements    *SupportAgreementQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -221,6 +223,28 @@ func (_q *TenantSubscriptionQuery) QuerySupportFeeCycles() *SupportFeeCycleQuery
 			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, selector),
 			sqlgraph.To(supportfeecycle.Table, supportfeecycle.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.SupportFeeCyclesTable, tenantsubscription.SupportFeeCyclesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySupportAgreements chains the current query on the "support_agreements" edge.
+func (_q *TenantSubscriptionQuery) QuerySupportAgreements() *SupportAgreementQuery {
+	query := (&SupportAgreementClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tenantsubscription.Table, tenantsubscription.FieldID, selector),
+			sqlgraph.To(supportagreement.Table, supportagreement.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, tenantsubscription.SupportAgreementsTable, tenantsubscription.SupportAgreementsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -427,6 +451,7 @@ func (_q *TenantSubscriptionQuery) Clone() *TenantSubscriptionQuery {
 		withEmailLicenses:        _q.withEmailLicenses.Clone(),
 		withEmailDomains:         _q.withEmailDomains.Clone(),
 		withSupportFeeCycles:     _q.withSupportFeeCycles.Clone(),
+		withSupportAgreements:    _q.withSupportAgreements.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -510,6 +535,17 @@ func (_q *TenantSubscriptionQuery) WithSupportFeeCycles(opts ...func(*SupportFee
 	return _q
 }
 
+// WithSupportAgreements tells the query-builder to eager-load the nodes that are connected to
+// the "support_agreements" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TenantSubscriptionQuery) WithSupportAgreements(opts ...func(*SupportAgreementQuery)) *TenantSubscriptionQuery {
+	query := (&SupportAgreementClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSupportAgreements = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -588,7 +624,7 @@ func (_q *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 	var (
 		nodes       = []*TenantSubscription{}
 		_spec       = _q.querySpec()
-		loadedTypes = [7]bool{
+		loadedTypes = [8]bool{
 			_q.withTenant != nil,
 			_q.withPlan != nil,
 			_q.withProductSubscriptions != nil,
@@ -596,6 +632,7 @@ func (_q *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 			_q.withEmailLicenses != nil,
 			_q.withEmailDomains != nil,
 			_q.withSupportFeeCycles != nil,
+			_q.withSupportAgreements != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -667,6 +704,15 @@ func (_q *TenantSubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 			func(n *TenantSubscription) { n.Edges.SupportFeeCycles = []*SupportFeeCycle{} },
 			func(n *TenantSubscription, e *SupportFeeCycle) {
 				n.Edges.SupportFeeCycles = append(n.Edges.SupportFeeCycles, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withSupportAgreements; query != nil {
+		if err := _q.loadSupportAgreements(ctx, query, nodes,
+			func(n *TenantSubscription) { n.Edges.SupportAgreements = []*SupportAgreement{} },
+			func(n *TenantSubscription, e *SupportAgreement) {
+				n.Edges.SupportAgreements = append(n.Edges.SupportAgreements, e)
 			}); err != nil {
 			return nil, err
 		}
@@ -867,6 +913,36 @@ func (_q *TenantSubscriptionQuery) loadSupportFeeCycles(ctx context.Context, que
 	}
 	query.Where(predicate.SupportFeeCycle(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(tenantsubscription.SupportFeeCyclesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.TenantSubscriptionID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "tenant_subscription_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *TenantSubscriptionQuery) loadSupportAgreements(ctx context.Context, query *SupportAgreementQuery, nodes []*TenantSubscription, init func(*TenantSubscription), assign func(*TenantSubscription, *SupportAgreement)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*TenantSubscription)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(supportagreement.FieldTenantSubscriptionID)
+	}
+	query.Where(predicate.SupportAgreement(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(tenantsubscription.SupportAgreementsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

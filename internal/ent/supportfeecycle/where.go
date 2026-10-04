@@ -71,6 +71,11 @@ func SupportPlanID(v uuid.UUID) predicate.SupportFeeCycle {
 	return predicate.SupportFeeCycle(sql.FieldEQ(FieldSupportPlanID, v))
 }
 
+// AgreementID applies equality check predicate on the "agreement_id" field. It's identical to AgreementIDEQ.
+func AgreementID(v uuid.UUID) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldEQ(FieldAgreementID, v))
+}
+
 // AnchorDate applies equality check predicate on the "anchor_date" field. It's identical to AnchorDateEQ.
 func AnchorDate(v time.Time) predicate.SupportFeeCycle {
 	return predicate.SupportFeeCycle(sql.FieldEQ(FieldAnchorDate, v))
@@ -84,6 +89,11 @@ func CycleNumber(v int) predicate.SupportFeeCycle {
 // PeriodStart applies equality check predicate on the "period_start" field. It's identical to PeriodStartEQ.
 func PeriodStart(v time.Time) predicate.SupportFeeCycle {
 	return predicate.SupportFeeCycle(sql.FieldEQ(FieldPeriodStart, v))
+}
+
+// PeriodEnd applies equality check predicate on the "period_end" field. It's identical to PeriodEndEQ.
+func PeriodEnd(v time.Time) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldEQ(FieldPeriodEnd, v))
 }
 
 // DueDate applies equality check predicate on the "due_date" field. It's identical to DueDateEQ.
@@ -216,6 +226,46 @@ func SupportPlanIDNotIn(vs ...uuid.UUID) predicate.SupportFeeCycle {
 	return predicate.SupportFeeCycle(sql.FieldNotIn(FieldSupportPlanID, vs...))
 }
 
+// SupportPlanIDIsNil applies the IsNil predicate on the "support_plan_id" field.
+func SupportPlanIDIsNil() predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldIsNull(FieldSupportPlanID))
+}
+
+// SupportPlanIDNotNil applies the NotNil predicate on the "support_plan_id" field.
+func SupportPlanIDNotNil() predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldNotNull(FieldSupportPlanID))
+}
+
+// AgreementIDEQ applies the EQ predicate on the "agreement_id" field.
+func AgreementIDEQ(v uuid.UUID) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldEQ(FieldAgreementID, v))
+}
+
+// AgreementIDNEQ applies the NEQ predicate on the "agreement_id" field.
+func AgreementIDNEQ(v uuid.UUID) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldNEQ(FieldAgreementID, v))
+}
+
+// AgreementIDIn applies the In predicate on the "agreement_id" field.
+func AgreementIDIn(vs ...uuid.UUID) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldIn(FieldAgreementID, vs...))
+}
+
+// AgreementIDNotIn applies the NotIn predicate on the "agreement_id" field.
+func AgreementIDNotIn(vs ...uuid.UUID) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldNotIn(FieldAgreementID, vs...))
+}
+
+// AgreementIDIsNil applies the IsNil predicate on the "agreement_id" field.
+func AgreementIDIsNil() predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldIsNull(FieldAgreementID))
+}
+
+// AgreementIDNotNil applies the NotNil predicate on the "agreement_id" field.
+func AgreementIDNotNil() predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldNotNull(FieldAgreementID))
+}
+
 // AnchorDateEQ applies the EQ predicate on the "anchor_date" field.
 func AnchorDateEQ(v time.Time) predicate.SupportFeeCycle {
 	return predicate.SupportFeeCycle(sql.FieldEQ(FieldAnchorDate, v))
@@ -334,6 +384,56 @@ func PeriodStartLT(v time.Time) predicate.SupportFeeCycle {
 // PeriodStartLTE applies the LTE predicate on the "period_start" field.
 func PeriodStartLTE(v time.Time) predicate.SupportFeeCycle {
 	return predicate.SupportFeeCycle(sql.FieldLTE(FieldPeriodStart, v))
+}
+
+// PeriodEndEQ applies the EQ predicate on the "period_end" field.
+func PeriodEndEQ(v time.Time) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldEQ(FieldPeriodEnd, v))
+}
+
+// PeriodEndNEQ applies the NEQ predicate on the "period_end" field.
+func PeriodEndNEQ(v time.Time) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldNEQ(FieldPeriodEnd, v))
+}
+
+// PeriodEndIn applies the In predicate on the "period_end" field.
+func PeriodEndIn(vs ...time.Time) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldIn(FieldPeriodEnd, vs...))
+}
+
+// PeriodEndNotIn applies the NotIn predicate on the "period_end" field.
+func PeriodEndNotIn(vs ...time.Time) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldNotIn(FieldPeriodEnd, vs...))
+}
+
+// PeriodEndGT applies the GT predicate on the "period_end" field.
+func PeriodEndGT(v time.Time) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldGT(FieldPeriodEnd, v))
+}
+
+// PeriodEndGTE applies the GTE predicate on the "period_end" field.
+func PeriodEndGTE(v time.Time) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldGTE(FieldPeriodEnd, v))
+}
+
+// PeriodEndLT applies the LT predicate on the "period_end" field.
+func PeriodEndLT(v time.Time) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldLT(FieldPeriodEnd, v))
+}
+
+// PeriodEndLTE applies the LTE predicate on the "period_end" field.
+func PeriodEndLTE(v time.Time) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldLTE(FieldPeriodEnd, v))
+}
+
+// PeriodEndIsNil applies the IsNil predicate on the "period_end" field.
+func PeriodEndIsNil() predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldIsNull(FieldPeriodEnd))
+}
+
+// PeriodEndNotNil applies the NotNil predicate on the "period_end" field.
+func PeriodEndNotNil() predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(sql.FieldNotNull(FieldPeriodEnd))
 }
 
 // DueDateEQ applies the EQ predicate on the "due_date" field.
@@ -889,6 +989,29 @@ func HasSupportPlan() predicate.SupportFeeCycle {
 func HasSupportPlanWith(preds ...predicate.SubscriptionPlan) predicate.SupportFeeCycle {
 	return predicate.SupportFeeCycle(func(s *sql.Selector) {
 		step := newSupportPlanStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAgreement applies the HasEdge predicate on the "agreement" edge.
+func HasAgreement() predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, AgreementTable, AgreementColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAgreementWith applies the HasEdge predicate on the "agreement" edge with a given conditions (other predicates).
+func HasAgreementWith(preds ...predicate.SupportAgreement) predicate.SupportFeeCycle {
+	return predicate.SupportFeeCycle(func(s *sql.Selector) {
+		step := newAgreementStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -1,40 +1,26 @@
 basePath: /api/v1
 definitions:
-  handlers.errorResponse:
+  github_com_bengobox_subscription-service_internal_modules_billing.DeductResult:
     properties:
-      error:
-        type: string
-    type: object
-  handlers.listPlansResponse:
-    properties:
-      count:
+      allowed:
+        type: boolean
+      new_balance:
         type: integer
-      plans:
-        items:
-          $ref: '#/definitions/plans.SubscriptionPlan'
-        type: array
-    type: object
-  handlers.planResponse:
-    properties:
-      plan:
-        $ref: '#/definitions/plans.SubscriptionPlan'
-    type: object
-  handlers.rateLimitResponse:
-    properties:
-      burst_multiplier:
-        type: number
-      requests_per_window:
-        type: integer
-      source:
-        description: |-
-          Source reports which tier of the resolution order produced this result: "plan" (the
-          tenant's own plan tier_limits_json), "config" (a RateLimitConfig fallback row), or
-          "default" (hardcoded safe floor) — callers can log/monitor this to catch misconfiguration.
-        type: string
-      window_seconds:
+      tokens_charged:
         type: integer
     type: object
-  plans.PlanFeature:
+  github_com_bengobox_subscription-service_internal_modules_billing.WalletSnapshot:
+    properties:
+      balance:
+        type: integer
+      lifetime_granted:
+        type: integer
+      low_balance:
+        type: boolean
+      low_balance_threshold:
+        type: integer
+    type: object
+  github_com_bengobox_subscription-service_internal_modules_plans.PlanFeature:
     properties:
       createdAt:
         type: string
@@ -54,7 +40,7 @@ definitions:
       planId:
         type: string
     type: object
-  plans.SubscriptionPlan:
+  github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan:
     properties:
       basePrice:
         type: number
@@ -73,7 +59,7 @@ definitions:
         type: array
       features:
         items:
-          $ref: '#/definitions/plans.PlanFeature'
+          $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.PlanFeature'
         type: array
       freeTrialDays:
         type: integer
@@ -105,10 +91,12 @@ definitions:
         type: integer
       updatedAt:
         type: string
+      useCase:
+        type: string
       useSumBasedPricing:
         type: boolean
     type: object
-  subscriptions.EntitlementCheck:
+  github_com_bengobox_subscription-service_internal_modules_subscriptions.EntitlementCheck:
     properties:
       entitled:
         type: boolean
@@ -123,6 +111,251 @@ definitions:
         type: string
       min_plan_tier:
         type: integer
+    type: object
+  github_com_bengobox_subscription-service_internal_modules_subscriptions.SupportAgreementInput:
+    properties:
+      amount:
+        type: number
+      billing_cycle:
+        type: string
+      billing_email:
+        type: string
+      billing_timing:
+        type: string
+      clear_amount:
+        type: boolean
+      clear_ends_at:
+        type: boolean
+      currency:
+        type: string
+      ends_at:
+        type: string
+      interval_count:
+        type: integer
+      interval_unit:
+        type: string
+      kind:
+        type: string
+      name:
+        type: string
+      notes:
+        type: string
+      reschedule_from:
+        description: |-
+          RescheduleFrom applies a cycle or timing change: "next_period" (default) keeps the current
+          period as billed and switches from the next one; "now" cancels the not-yet-invoiced current
+          period and starts the new schedule today.
+        type: string
+      starts_at:
+        type: string
+      status:
+        type: string
+    type: object
+  internal_http_handlers.deductRequest:
+    properties:
+      description:
+        type: string
+      endpoint_pattern:
+        type: string
+      ref_id:
+        type: string
+      ref_type:
+        type: string
+      service_tag:
+        type: string
+    type: object
+  internal_http_handlers.errorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  internal_http_handlers.estimateRequest:
+    properties:
+      avg_sales_per_day:
+        description: 'Shortcut: assumes every call is a sales-transmission-weight
+          call (the common "N sales/day" case).'
+        type: integer
+      calls_per_day:
+        additionalProperties:
+          type: integer
+        description: endpoint_pattern -> calls/day
+        type: object
+      days_per_month:
+        type: integer
+      service_tag:
+        type: string
+    type: object
+  internal_http_handlers.estimateResponse:
+    properties:
+      plans_compared:
+        items:
+          $ref: '#/definitions/internal_http_handlers.planComparison'
+        type: array
+      recommended_plan:
+        type: string
+      tokens_per_month:
+        type: integer
+    type: object
+  internal_http_handlers.listPlansResponse:
+    properties:
+      count:
+        type: integer
+      plans:
+        items:
+          $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan'
+        type: array
+    type: object
+  internal_http_handlers.planComparison:
+    properties:
+      covers_estimate:
+        type: boolean
+      included_tokens:
+        type: integer
+      monthly_price_kes:
+        type: number
+      name:
+        type: string
+      plan_code:
+        type: string
+      projected_topup_kes:
+        type: number
+      token_price_kes:
+        type: number
+    type: object
+  internal_http_handlers.planResponse:
+    properties:
+      plan:
+        $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_plans.SubscriptionPlan'
+    type: object
+  internal_http_handlers.rateLimitResponse:
+    properties:
+      burst_multiplier:
+        type: number
+      requests_per_window:
+        type: integer
+      source:
+        description: |-
+          Source reports which tier of the resolution order produced this result: "plan" (the
+          tenant's own plan tier_limits_json), "config" (a RateLimitConfig fallback row), or
+          "default" (hardcoded safe floor) — callers can log/monitor this to catch misconfiguration.
+        type: string
+      window_seconds:
+        type: integer
+    type: object
+  internal_http_handlers.refundRequest:
+    properties:
+      description:
+        type: string
+      ref_id:
+        type: string
+      service_tag:
+        type: string
+      tokens:
+        type: integer
+    type: object
+  internal_http_handlers.supportAgreementDTO:
+    properties:
+      amount:
+        type: number
+      annual_list_price:
+        type: number
+      billing_cycle:
+        type: string
+      billing_email:
+        type: string
+      billing_timing:
+        type: string
+      currency:
+        type: string
+      cycle_count:
+        type: integer
+      cycles:
+        items:
+          $ref: '#/definitions/internal_http_handlers.supportCycleDTO'
+        type: array
+      ends_at:
+        type: string
+      id:
+        type: string
+      interval_count:
+        type: integer
+      interval_unit:
+        type: string
+      kind:
+        type: string
+      monthly_equivalent:
+        type: number
+      name:
+        type: string
+      next_period_start:
+        type: string
+      notes:
+        type: string
+      period_amount:
+        type: number
+      starts_at:
+        type: string
+      status:
+        type: string
+      support_plan_code:
+        type: string
+      tenant_id:
+        type: string
+    type: object
+  internal_http_handlers.supportCycleDTO:
+    properties:
+      agreement_id:
+        type: string
+      agreement_kind:
+        type: string
+      agreement_name:
+        type: string
+      base_price:
+        type: number
+      blocking:
+        type: boolean
+      custom_price:
+        type: number
+      custom_price_reason:
+        type: string
+      cycle_number:
+        type: integer
+      due_date:
+        type: string
+      effective_price:
+        type: number
+      grace_until:
+        type: string
+      id:
+        type: string
+      invoice_number:
+        type: string
+      invoice_total: {}
+      paid_at:
+        type: string
+      pay_url:
+        type: string
+      pdf_url:
+        type: string
+      period_end:
+        type: string
+      period_start:
+        type: string
+      status:
+        type: string
+      tenant_id:
+        type: string
+      tenant_name:
+        type: string
+    type: object
+  internal_http_handlers.topUpRequest:
+    properties:
+      amount_kes:
+        type: number
+      return_url:
+        type: string
+      service_tag:
+        type: string
     type: object
 host: pricingapi.codevertexafrica.com
 info:
@@ -298,19 +531,19 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handlers.planResponse'
+            $ref: '#/definitions/internal_http_handlers.planResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Create subscription plan (admin)
@@ -331,15 +564,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Delete subscription plan (admin)
@@ -362,19 +595,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.planResponse'
+            $ref: '#/definitions/internal_http_handlers.planResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
       security:
       - BearerAuth: []
       summary: Update subscription plan (admin)
@@ -604,6 +837,122 @@ paths:
       summary: Update subscription status (admin)
       tags:
       - Platform
+  /admin/support-agreements/{id}:
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Partial update. A cycle or timing change applies from the next period
+        (reschedule_from=next_period) or restarts today (reschedule_from=now, cancelling
+        the current not-yet-invoiced period). status PAUSED stops new periods; ENDED also
+        cancels future not-yet-invoiced periods. Invoiced charges stay payable.
+      parameters:
+      - description: Agreement UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Changes
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.SupportAgreementInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.supportAgreementDTO'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a support agreement (admin)
+      tags:
+      - Platform
+  /admin/support-fee-cycles:
+    get:
+      description: |-
+        Paginated, newest due first. Filters: status (comma list of PENDING, INVOICED,
+        OVERDUE, PAID, WAIVED), tenant_id, agreement_id, kind (STANDARD or SPECIAL),
+        blocking=true (overdue past grace). Includes the outstanding totals for the filter.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List support charges across tenants (admin receivables)
+      tags:
+      - Platform
+  /admin/support-fee-cycles/{id}:
+    put:
+      consumes:
+      - application/json
+      description: |-
+        custom_price / clear_custom_price override this period's amount (a sales-agreed
+        price). status PAID records an offline payment; WAIVED excuses the charge. Either
+        lifts the mutation block on the tenant's next token refresh.
+      parameters:
+      - description: SupportFeeCycle UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.supportCycleDTO'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Reprice, waive or record an offline payment for one support charge
+        (admin)
+      tags:
+      - Platform
+  /admin/support-fee-cycles/{id}/invoice:
+    post:
+      parameters:
+      - description: SupportFeeCycle UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Re-issue even if already invoiced
+        in: query
+        name: force
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.supportCycleDTO'
+      security:
+      - BearerAuth: []
+      summary: Issue (or with force=true re-issue) the invoice for one support charge
+        (admin)
+      tags:
+      - Platform
   /admin/tenants:
     get:
       description: Returns paginated tenants with their current subscription status.
@@ -691,6 +1040,79 @@ paths:
       security:
       - BearerAuth: []
       summary: Grant or revoke a tenant's subscription exemption (platform admin)
+      tags:
+      - Platform
+  /admin/tenants/{tenant_id}/feature-grants:
+    get:
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List a tenant's platform-admin add-on feature grants
+      tags:
+      - Platform
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Unlocks one feature_definitions code for a tenant independent of its
+        subscription plan (e.g. multi_branch_pricing, batch_period_pricing, flash_sale).
+        The tenant's own settings page still gates the actual on/off switch.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Grant a single named add-on feature to a tenant (platform admin)
+      tags:
+      - Platform
+  /admin/tenants/{tenant_id}/feature-grants/{feature_code}:
+    delete:
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      - description: Feature code
+        in: path
+        name: feature_code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Revoke a tenant's add-on feature grant (platform admin)
       tags:
       - Platform
   /admin/tenants/{tenant_id}/products:
@@ -923,6 +1345,68 @@ paths:
       summary: Resend the latest subscription invoice email (platform owner)
       tags:
       - Platform
+  /admin/tenants/{tenant_id}/support-agreements:
+    get:
+      description: |-
+        Standard hosting and support plus any special support agreements, each with its
+        latest cycles, and the tenant's outstanding support balance.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List a tenant's support agreements (admin)
+      tags:
+      - Platform
+    post:
+      consumes:
+      - application/json
+      description: |-
+        kind SPECIAL (default) needs name and amount; billing_cycle MONTHLY, QUARTERLY,
+        SEMI_ANNUAL, ANNUAL or CUSTOM (with interval_count and interval_unit MONTH or DAY);
+        billing_timing ADVANCE (default for SPECIAL) or ARREARS. Unpaid cycles block data
+        mutations fleet-wide once due date plus grace has passed.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      - description: Agreement
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.SupportAgreementInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_http_handlers.supportAgreementDTO'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a support agreement for a tenant (admin)
+      tags:
+      - Platform
   /billing:
     get:
       description: Returns billing details and payment history for the tenant's subscription
@@ -998,6 +1482,12 @@ paths:
         in: query
         name: kind
         type: string
+      - description: Caller's current plan_code — biases serviceUnlockPlans toward
+          an in-family upgrade (e.g. POWERSUITE_DUKA_BASIC -> POWERSUITE_DUKA_PRO)
+          instead of the globally cheapest cross-product plan
+        in: query
+        name: plan
+        type: string
       produces:
       - application/json
       responses:
@@ -1037,17 +1527,22 @@ paths:
         in: query
         name: service
         type: string
+      - description: Filter by business vertical (retail, hospitality, pharmacy, ...)
+          — a plan with no use_case set always matches
+        in: query
+        name: use_case
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.listPlansResponse'
+            $ref: '#/definitions/internal_http_handlers.listPlansResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
       summary: List subscription plans
       tags:
       - Plans
@@ -1066,15 +1561,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.planResponse'
+            $ref: '#/definitions/internal_http_handlers.planResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
       summary: Get plan by ID
       tags:
       - Plans
@@ -1094,22 +1589,25 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.planResponse'
+            $ref: '#/definitions/internal_http_handlers.planResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.errorResponse'
+            $ref: '#/definitions/internal_http_handlers.errorResponse'
       summary: Get plan by code
       tags:
       - Plans
   /platform/stats:
     get:
-      description: 'Returns aggregated platform stats: total plans, subscriptions,
-        MRR. Requires platform owner.'
+      description: |-
+        Subscription counts by status, recurring MRR (one-time licenses excluded, custom
+        prices honoured), one-time license count, support-agreement MRR and the
+        outstanding / overdue / blocking support receivables. Computed with SQL aggregates
+        so the cost does not grow with the number of tenants. Requires platform owner.
       produces:
       - application/json
       responses:
@@ -1166,7 +1664,7 @@ paths:
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/subscriptions.EntitlementCheck'
+            $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.EntitlementCheck'
       security:
       - BearerAuth: []
       summary: Self-activate a product for the caller's own tenant
@@ -1207,7 +1705,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/subscriptions.EntitlementCheck'
+            $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_subscriptions.EntitlementCheck'
       security:
       - BearerAuth: []
       summary: Check whether the caller's tenant may self-activate a product
@@ -1618,6 +2116,37 @@ paths:
       summary: Update subscription settings
       tags:
       - Subscriptions
+  /subscription/standing-order:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get the M-Pesa standing order for the subscription
+      tags:
+      - Billing
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Pay the subscription automatically by M-Pesa standing order
+      tags:
+      - Billing
   /subscriptions/expiring:
     get:
       description: Returns subscriptions expiring within the specified number of days.
@@ -1667,7 +2196,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.rateLimitResponse'
+            $ref: '#/definitions/internal_http_handlers.rateLimitResponse'
         "400":
           description: Bad Request
           schema:
@@ -1714,6 +2243,194 @@ paths:
       - BearerAuth: []
       - ApiKeyAuth: []
       summary: Get subscription by tenant ID (S2S)
+      tags:
+      - Subscriptions
+  /tenants/{tenant_id}/tokens/balance:
+    get:
+      description: Returns the current token balance for a tenant+service. S2S (treasury-api's
+        external eTIMS middleware) or tenant-facing.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      - description: Defaults to etims_api
+        in: query
+        name: service_tag
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_billing.WalletSnapshot'
+      security:
+      - BearerAuth: []
+      - ApiKeyAuth: []
+      summary: Get API token wallet balance
+      tags:
+      - Subscriptions
+  /tenants/{tenant_id}/tokens/deduct:
+    post:
+      consumes:
+      - application/json
+      description: Atomically deducts the resolved token cost for endpoint_pattern
+        from the tenant's wallet, refusing (402) if the balance is insufficient. Called
+        BEFORE the metered operation runs, not after — see treasury-api's ExternalAPIKeyAuth
+        middleware.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      - description: Deduct request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http_handlers.deductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_bengobox_subscription-service_internal_modules_billing.DeductResult'
+        "402":
+          description: insufficient_tokens
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Spend API tokens for one call (S2S)
+      tags:
+      - Subscriptions
+  /tenants/{tenant_id}/tokens/estimate:
+    post:
+      consumes:
+      - application/json
+      description: Given expected call volume, computes tokens/month from the token-cost
+        registry and compares against every published plan for service_tag, so a tenant
+        can buy from a point of information instead of blindly.
+      parameters:
+      - description: Estimate request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http_handlers.estimateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_http_handlers.estimateResponse'
+      summary: Estimate monthly API token consumption and recommend a plan
+      tags:
+      - Subscriptions
+  /tenants/{tenant_id}/tokens/refund:
+    post:
+      consumes:
+      - application/json
+      description: Reverses a Deduct when the downstream operation turned out not
+        to have done real work (e.g. the caller's request failed validation before
+        reaching KRA) — called by treasury-api's ExternalAPIKeyAuth middleware after
+        the handler runs, only for status codes that indicate no real KRA attempt
+        happened.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      - description: Refund request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http_handlers.refundRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Refund previously-deducted API tokens (S2S)
+      tags:
+      - Subscriptions
+  /tenants/{tenant_id}/tokens/topup:
+    post:
+      consumes:
+      - application/json
+      description: Creates a Treasury payment intent for a token top-up; tokens are
+        credited once payment is confirmed (see the api_token_topup NATS consumer
+        branch).
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      - description: Top-up request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http_handlers.topUpRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Buy API tokens (self-serve)
+      tags:
+      - Subscriptions
+  /tenants/{tenant_id}/tokens/transactions:
+    get:
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      - description: Defaults to etims_api
+        in: query
+        name: service_tag
+        type: string
+      - description: Default 50, max 200
+        in: query
+        name: limit
+        type: integer
+      - description: Rows to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      - ApiKeyAuth: []
+      summary: List API token wallet transactions
       tags:
       - Subscriptions
   /usage:

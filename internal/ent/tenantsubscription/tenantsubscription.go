@@ -96,6 +96,8 @@ const (
 	EdgeEmailDomains = "email_domains"
 	// EdgeSupportFeeCycles holds the string denoting the support_fee_cycles edge name in mutations.
 	EdgeSupportFeeCycles = "support_fee_cycles"
+	// EdgeSupportAgreements holds the string denoting the support_agreements edge name in mutations.
+	EdgeSupportAgreements = "support_agreements"
 	// Table holds the table name of the tenantsubscription in the database.
 	Table = "tenant_subscriptions"
 	// TenantTable is the table that holds the tenant relation/edge.
@@ -147,6 +149,13 @@ const (
 	SupportFeeCyclesInverseTable = "support_fee_cycles"
 	// SupportFeeCyclesColumn is the table column denoting the support_fee_cycles relation/edge.
 	SupportFeeCyclesColumn = "tenant_subscription_id"
+	// SupportAgreementsTable is the table that holds the support_agreements relation/edge.
+	SupportAgreementsTable = "support_agreements"
+	// SupportAgreementsInverseTable is the table name for the SupportAgreement entity.
+	// It exists in this package in order to avoid circular dependency with the "supportagreement" package.
+	SupportAgreementsInverseTable = "support_agreements"
+	// SupportAgreementsColumn is the table column denoting the support_agreements relation/edge.
+	SupportAgreementsColumn = "tenant_subscription_id"
 )
 
 // Columns holds all SQL columns for tenantsubscription fields.
@@ -530,6 +539,20 @@ func BySupportFeeCycles(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 		sqlgraph.OrderByNeighborTerms(s, newSupportFeeCyclesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// BySupportAgreementsCount orders the results by support_agreements count.
+func BySupportAgreementsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSupportAgreementsStep(), opts...)
+	}
+}
+
+// BySupportAgreements orders the results by support_agreements terms.
+func BySupportAgreements(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSupportAgreementsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newTenantStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -577,5 +600,12 @@ func newSupportFeeCyclesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SupportFeeCyclesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SupportFeeCyclesTable, SupportFeeCyclesColumn),
+	)
+}
+func newSupportAgreementsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SupportAgreementsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SupportAgreementsTable, SupportAgreementsColumn),
 	)
 }

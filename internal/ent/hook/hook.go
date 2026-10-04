@@ -321,6 +321,18 @@ func (f SubscriptionsUserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SubscriptionsUserMutation", m)
 }
 
+// The SupportAgreementFunc type is an adapter to allow the use of ordinary
+// function as SupportAgreement mutator.
+type SupportAgreementFunc func(context.Context, *ent.SupportAgreementMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SupportAgreementFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.SupportAgreementMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SupportAgreementMutation", m)
+}
+
 // The SupportFeeCycleFunc type is an adapter to allow the use of ordinary
 // function as SupportFeeCycle mutator.
 type SupportFeeCycleFunc func(context.Context, *ent.SupportFeeCycleMutation) (ent.Value, error)

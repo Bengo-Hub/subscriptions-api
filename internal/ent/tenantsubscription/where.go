@@ -1802,6 +1802,29 @@ func HasSupportFeeCyclesWith(preds ...predicate.SupportFeeCycle) predicate.Tenan
 	})
 }
 
+// HasSupportAgreements applies the HasEdge predicate on the "support_agreements" edge.
+func HasSupportAgreements() predicate.TenantSubscription {
+	return predicate.TenantSubscription(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SupportAgreementsTable, SupportAgreementsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSupportAgreementsWith applies the HasEdge predicate on the "support_agreements" edge with a given conditions (other predicates).
+func HasSupportAgreementsWith(preds ...predicate.SupportAgreement) predicate.TenantSubscription {
+	return predicate.TenantSubscription(func(s *sql.Selector) {
+		step := newSupportAgreementsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.TenantSubscription) predicate.TenantSubscription {
 	return predicate.TenantSubscription(sql.AndPredicates(predicates...))

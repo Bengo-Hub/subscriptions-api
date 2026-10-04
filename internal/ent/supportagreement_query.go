@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -19,54 +20,54 @@ import (
 	"github.com/google/uuid"
 )
 
-// SupportFeeCycleQuery is the builder for querying SupportFeeCycle entities.
-type SupportFeeCycleQuery struct {
+// SupportAgreementQuery is the builder for querying SupportAgreement entities.
+type SupportAgreementQuery struct {
 	config
 	ctx                    *QueryContext
-	order                  []supportfeecycle.OrderOption
+	order                  []supportagreement.OrderOption
 	inters                 []Interceptor
-	predicates             []predicate.SupportFeeCycle
+	predicates             []predicate.SupportAgreement
 	withTenantSubscription *TenantSubscriptionQuery
 	withSupportPlan        *SubscriptionPlanQuery
-	withAgreement          *SupportAgreementQuery
+	withCycles             *SupportFeeCycleQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the SupportFeeCycleQuery builder.
-func (_q *SupportFeeCycleQuery) Where(ps ...predicate.SupportFeeCycle) *SupportFeeCycleQuery {
+// Where adds a new predicate for the SupportAgreementQuery builder.
+func (_q *SupportAgreementQuery) Where(ps ...predicate.SupportAgreement) *SupportAgreementQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *SupportFeeCycleQuery) Limit(limit int) *SupportFeeCycleQuery {
+func (_q *SupportAgreementQuery) Limit(limit int) *SupportAgreementQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *SupportFeeCycleQuery) Offset(offset int) *SupportFeeCycleQuery {
+func (_q *SupportAgreementQuery) Offset(offset int) *SupportAgreementQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *SupportFeeCycleQuery) Unique(unique bool) *SupportFeeCycleQuery {
+func (_q *SupportAgreementQuery) Unique(unique bool) *SupportAgreementQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *SupportFeeCycleQuery) Order(o ...supportfeecycle.OrderOption) *SupportFeeCycleQuery {
+func (_q *SupportAgreementQuery) Order(o ...supportagreement.OrderOption) *SupportAgreementQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
 // QueryTenantSubscription chains the current query on the "tenant_subscription" edge.
-func (_q *SupportFeeCycleQuery) QueryTenantSubscription() *TenantSubscriptionQuery {
+func (_q *SupportAgreementQuery) QueryTenantSubscription() *TenantSubscriptionQuery {
 	query := (&TenantSubscriptionClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -77,9 +78,9 @@ func (_q *SupportFeeCycleQuery) QueryTenantSubscription() *TenantSubscriptionQue
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(supportfeecycle.Table, supportfeecycle.FieldID, selector),
+			sqlgraph.From(supportagreement.Table, supportagreement.FieldID, selector),
 			sqlgraph.To(tenantsubscription.Table, tenantsubscription.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, supportfeecycle.TenantSubscriptionTable, supportfeecycle.TenantSubscriptionColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, supportagreement.TenantSubscriptionTable, supportagreement.TenantSubscriptionColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -88,7 +89,7 @@ func (_q *SupportFeeCycleQuery) QueryTenantSubscription() *TenantSubscriptionQue
 }
 
 // QuerySupportPlan chains the current query on the "support_plan" edge.
-func (_q *SupportFeeCycleQuery) QuerySupportPlan() *SubscriptionPlanQuery {
+func (_q *SupportAgreementQuery) QuerySupportPlan() *SubscriptionPlanQuery {
 	query := (&SubscriptionPlanClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -99,9 +100,9 @@ func (_q *SupportFeeCycleQuery) QuerySupportPlan() *SubscriptionPlanQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(supportfeecycle.Table, supportfeecycle.FieldID, selector),
+			sqlgraph.From(supportagreement.Table, supportagreement.FieldID, selector),
 			sqlgraph.To(subscriptionplan.Table, subscriptionplan.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, supportfeecycle.SupportPlanTable, supportfeecycle.SupportPlanColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, supportagreement.SupportPlanTable, supportagreement.SupportPlanColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -109,9 +110,9 @@ func (_q *SupportFeeCycleQuery) QuerySupportPlan() *SubscriptionPlanQuery {
 	return query
 }
 
-// QueryAgreement chains the current query on the "agreement" edge.
-func (_q *SupportFeeCycleQuery) QueryAgreement() *SupportAgreementQuery {
-	query := (&SupportAgreementClient{config: _q.config}).Query()
+// QueryCycles chains the current query on the "cycles" edge.
+func (_q *SupportAgreementQuery) QueryCycles() *SupportFeeCycleQuery {
+	query := (&SupportFeeCycleClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -121,9 +122,9 @@ func (_q *SupportFeeCycleQuery) QueryAgreement() *SupportAgreementQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(supportfeecycle.Table, supportfeecycle.FieldID, selector),
-			sqlgraph.To(supportagreement.Table, supportagreement.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, supportfeecycle.AgreementTable, supportfeecycle.AgreementColumn),
+			sqlgraph.From(supportagreement.Table, supportagreement.FieldID, selector),
+			sqlgraph.To(supportfeecycle.Table, supportfeecycle.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, supportagreement.CyclesTable, supportagreement.CyclesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -131,21 +132,21 @@ func (_q *SupportFeeCycleQuery) QueryAgreement() *SupportAgreementQuery {
 	return query
 }
 
-// First returns the first SupportFeeCycle entity from the query.
-// Returns a *NotFoundError when no SupportFeeCycle was found.
-func (_q *SupportFeeCycleQuery) First(ctx context.Context) (*SupportFeeCycle, error) {
+// First returns the first SupportAgreement entity from the query.
+// Returns a *NotFoundError when no SupportAgreement was found.
+func (_q *SupportAgreementQuery) First(ctx context.Context) (*SupportAgreement, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{supportfeecycle.Label}
+		return nil, &NotFoundError{supportagreement.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *SupportFeeCycleQuery) FirstX(ctx context.Context) *SupportFeeCycle {
+func (_q *SupportAgreementQuery) FirstX(ctx context.Context) *SupportAgreement {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -153,22 +154,22 @@ func (_q *SupportFeeCycleQuery) FirstX(ctx context.Context) *SupportFeeCycle {
 	return node
 }
 
-// FirstID returns the first SupportFeeCycle ID from the query.
-// Returns a *NotFoundError when no SupportFeeCycle ID was found.
-func (_q *SupportFeeCycleQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+// FirstID returns the first SupportAgreement ID from the query.
+// Returns a *NotFoundError when no SupportAgreement ID was found.
+func (_q *SupportAgreementQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{supportfeecycle.Label}
+		err = &NotFoundError{supportagreement.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *SupportFeeCycleQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (_q *SupportAgreementQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -176,10 +177,10 @@ func (_q *SupportFeeCycleQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// Only returns a single SupportFeeCycle entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one SupportFeeCycle entity is found.
-// Returns a *NotFoundError when no SupportFeeCycle entities are found.
-func (_q *SupportFeeCycleQuery) Only(ctx context.Context) (*SupportFeeCycle, error) {
+// Only returns a single SupportAgreement entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one SupportAgreement entity is found.
+// Returns a *NotFoundError when no SupportAgreement entities are found.
+func (_q *SupportAgreementQuery) Only(ctx context.Context) (*SupportAgreement, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -188,14 +189,14 @@ func (_q *SupportFeeCycleQuery) Only(ctx context.Context) (*SupportFeeCycle, err
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{supportfeecycle.Label}
+		return nil, &NotFoundError{supportagreement.Label}
 	default:
-		return nil, &NotSingularError{supportfeecycle.Label}
+		return nil, &NotSingularError{supportagreement.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *SupportFeeCycleQuery) OnlyX(ctx context.Context) *SupportFeeCycle {
+func (_q *SupportAgreementQuery) OnlyX(ctx context.Context) *SupportAgreement {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -203,10 +204,10 @@ func (_q *SupportFeeCycleQuery) OnlyX(ctx context.Context) *SupportFeeCycle {
 	return node
 }
 
-// OnlyID is like Only, but returns the only SupportFeeCycle ID in the query.
-// Returns a *NotSingularError when more than one SupportFeeCycle ID is found.
+// OnlyID is like Only, but returns the only SupportAgreement ID in the query.
+// Returns a *NotSingularError when more than one SupportAgreement ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *SupportFeeCycleQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *SupportAgreementQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -215,15 +216,15 @@ func (_q *SupportFeeCycleQuery) OnlyID(ctx context.Context) (id uuid.UUID, err e
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{supportfeecycle.Label}
+		err = &NotFoundError{supportagreement.Label}
 	default:
-		err = &NotSingularError{supportfeecycle.Label}
+		err = &NotSingularError{supportagreement.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *SupportFeeCycleQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (_q *SupportAgreementQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -231,18 +232,18 @@ func (_q *SupportFeeCycleQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// All executes the query and returns a list of SupportFeeCycles.
-func (_q *SupportFeeCycleQuery) All(ctx context.Context) ([]*SupportFeeCycle, error) {
+// All executes the query and returns a list of SupportAgreements.
+func (_q *SupportAgreementQuery) All(ctx context.Context) ([]*SupportAgreement, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*SupportFeeCycle, *SupportFeeCycleQuery]()
-	return withInterceptors[[]*SupportFeeCycle](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*SupportAgreement, *SupportAgreementQuery]()
+	return withInterceptors[[]*SupportAgreement](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *SupportFeeCycleQuery) AllX(ctx context.Context) []*SupportFeeCycle {
+func (_q *SupportAgreementQuery) AllX(ctx context.Context) []*SupportAgreement {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -250,20 +251,20 @@ func (_q *SupportFeeCycleQuery) AllX(ctx context.Context) []*SupportFeeCycle {
 	return nodes
 }
 
-// IDs executes the query and returns a list of SupportFeeCycle IDs.
-func (_q *SupportFeeCycleQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+// IDs executes the query and returns a list of SupportAgreement IDs.
+func (_q *SupportAgreementQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(supportfeecycle.FieldID).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(supportagreement.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *SupportFeeCycleQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (_q *SupportAgreementQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -272,16 +273,16 @@ func (_q *SupportFeeCycleQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (_q *SupportFeeCycleQuery) Count(ctx context.Context) (int, error) {
+func (_q *SupportAgreementQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*SupportFeeCycleQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*SupportAgreementQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *SupportFeeCycleQuery) CountX(ctx context.Context) int {
+func (_q *SupportAgreementQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -290,7 +291,7 @@ func (_q *SupportFeeCycleQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *SupportFeeCycleQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *SupportAgreementQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -303,7 +304,7 @@ func (_q *SupportFeeCycleQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *SupportFeeCycleQuery) ExistX(ctx context.Context) bool {
+func (_q *SupportAgreementQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -311,21 +312,21 @@ func (_q *SupportFeeCycleQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the SupportFeeCycleQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the SupportAgreementQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *SupportFeeCycleQuery) Clone() *SupportFeeCycleQuery {
+func (_q *SupportAgreementQuery) Clone() *SupportAgreementQuery {
 	if _q == nil {
 		return nil
 	}
-	return &SupportFeeCycleQuery{
+	return &SupportAgreementQuery{
 		config:                 _q.config,
 		ctx:                    _q.ctx.Clone(),
-		order:                  append([]supportfeecycle.OrderOption{}, _q.order...),
+		order:                  append([]supportagreement.OrderOption{}, _q.order...),
 		inters:                 append([]Interceptor{}, _q.inters...),
-		predicates:             append([]predicate.SupportFeeCycle{}, _q.predicates...),
+		predicates:             append([]predicate.SupportAgreement{}, _q.predicates...),
 		withTenantSubscription: _q.withTenantSubscription.Clone(),
 		withSupportPlan:        _q.withSupportPlan.Clone(),
-		withAgreement:          _q.withAgreement.Clone(),
+		withCycles:             _q.withCycles.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -334,7 +335,7 @@ func (_q *SupportFeeCycleQuery) Clone() *SupportFeeCycleQuery {
 
 // WithTenantSubscription tells the query-builder to eager-load the nodes that are connected to
 // the "tenant_subscription" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *SupportFeeCycleQuery) WithTenantSubscription(opts ...func(*TenantSubscriptionQuery)) *SupportFeeCycleQuery {
+func (_q *SupportAgreementQuery) WithTenantSubscription(opts ...func(*TenantSubscriptionQuery)) *SupportAgreementQuery {
 	query := (&TenantSubscriptionClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -345,7 +346,7 @@ func (_q *SupportFeeCycleQuery) WithTenantSubscription(opts ...func(*TenantSubsc
 
 // WithSupportPlan tells the query-builder to eager-load the nodes that are connected to
 // the "support_plan" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *SupportFeeCycleQuery) WithSupportPlan(opts ...func(*SubscriptionPlanQuery)) *SupportFeeCycleQuery {
+func (_q *SupportAgreementQuery) WithSupportPlan(opts ...func(*SubscriptionPlanQuery)) *SupportAgreementQuery {
 	query := (&SubscriptionPlanClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -354,14 +355,14 @@ func (_q *SupportFeeCycleQuery) WithSupportPlan(opts ...func(*SubscriptionPlanQu
 	return _q
 }
 
-// WithAgreement tells the query-builder to eager-load the nodes that are connected to
-// the "agreement" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *SupportFeeCycleQuery) WithAgreement(opts ...func(*SupportAgreementQuery)) *SupportFeeCycleQuery {
-	query := (&SupportAgreementClient{config: _q.config}).Query()
+// WithCycles tells the query-builder to eager-load the nodes that are connected to
+// the "cycles" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *SupportAgreementQuery) WithCycles(opts ...func(*SupportFeeCycleQuery)) *SupportAgreementQuery {
+	query := (&SupportFeeCycleClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withAgreement = query
+	_q.withCycles = query
 	return _q
 }
 
@@ -375,15 +376,15 @@ func (_q *SupportFeeCycleQuery) WithAgreement(opts ...func(*SupportAgreementQuer
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.SupportFeeCycle.Query().
-//		GroupBy(supportfeecycle.FieldTenantID).
+//	client.SupportAgreement.Query().
+//		GroupBy(supportagreement.FieldTenantID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *SupportFeeCycleQuery) GroupBy(field string, fields ...string) *SupportFeeCycleGroupBy {
+func (_q *SupportAgreementQuery) GroupBy(field string, fields ...string) *SupportAgreementGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &SupportFeeCycleGroupBy{build: _q}
+	grbuild := &SupportAgreementGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = supportfeecycle.Label
+	grbuild.label = supportagreement.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -397,23 +398,23 @@ func (_q *SupportFeeCycleQuery) GroupBy(field string, fields ...string) *Support
 //		TenantID uuid.UUID `json:"tenant_id,omitempty"`
 //	}
 //
-//	client.SupportFeeCycle.Query().
-//		Select(supportfeecycle.FieldTenantID).
+//	client.SupportAgreement.Query().
+//		Select(supportagreement.FieldTenantID).
 //		Scan(ctx, &v)
-func (_q *SupportFeeCycleQuery) Select(fields ...string) *SupportFeeCycleSelect {
+func (_q *SupportAgreementQuery) Select(fields ...string) *SupportAgreementSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &SupportFeeCycleSelect{SupportFeeCycleQuery: _q}
-	sbuild.label = supportfeecycle.Label
+	sbuild := &SupportAgreementSelect{SupportAgreementQuery: _q}
+	sbuild.label = supportagreement.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a SupportFeeCycleSelect configured with the given aggregations.
-func (_q *SupportFeeCycleQuery) Aggregate(fns ...AggregateFunc) *SupportFeeCycleSelect {
+// Aggregate returns a SupportAgreementSelect configured with the given aggregations.
+func (_q *SupportAgreementQuery) Aggregate(fns ...AggregateFunc) *SupportAgreementSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *SupportFeeCycleQuery) prepareQuery(ctx context.Context) error {
+func (_q *SupportAgreementQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -425,7 +426,7 @@ func (_q *SupportFeeCycleQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !supportfeecycle.ValidColumn(f) {
+		if !supportagreement.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -439,21 +440,21 @@ func (_q *SupportFeeCycleQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *SupportFeeCycleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*SupportFeeCycle, error) {
+func (_q *SupportAgreementQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*SupportAgreement, error) {
 	var (
-		nodes       = []*SupportFeeCycle{}
+		nodes       = []*SupportAgreement{}
 		_spec       = _q.querySpec()
 		loadedTypes = [3]bool{
 			_q.withTenantSubscription != nil,
 			_q.withSupportPlan != nil,
-			_q.withAgreement != nil,
+			_q.withCycles != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*SupportFeeCycle).scanValues(nil, columns)
+		return (*SupportAgreement).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &SupportFeeCycle{config: _q.config}
+		node := &SupportAgreement{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -469,28 +470,29 @@ func (_q *SupportFeeCycleQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 	}
 	if query := _q.withTenantSubscription; query != nil {
 		if err := _q.loadTenantSubscription(ctx, query, nodes, nil,
-			func(n *SupportFeeCycle, e *TenantSubscription) { n.Edges.TenantSubscription = e }); err != nil {
+			func(n *SupportAgreement, e *TenantSubscription) { n.Edges.TenantSubscription = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := _q.withSupportPlan; query != nil {
 		if err := _q.loadSupportPlan(ctx, query, nodes, nil,
-			func(n *SupportFeeCycle, e *SubscriptionPlan) { n.Edges.SupportPlan = e }); err != nil {
+			func(n *SupportAgreement, e *SubscriptionPlan) { n.Edges.SupportPlan = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := _q.withAgreement; query != nil {
-		if err := _q.loadAgreement(ctx, query, nodes, nil,
-			func(n *SupportFeeCycle, e *SupportAgreement) { n.Edges.Agreement = e }); err != nil {
+	if query := _q.withCycles; query != nil {
+		if err := _q.loadCycles(ctx, query, nodes,
+			func(n *SupportAgreement) { n.Edges.Cycles = []*SupportFeeCycle{} },
+			func(n *SupportAgreement, e *SupportFeeCycle) { n.Edges.Cycles = append(n.Edges.Cycles, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *SupportFeeCycleQuery) loadTenantSubscription(ctx context.Context, query *TenantSubscriptionQuery, nodes []*SupportFeeCycle, init func(*SupportFeeCycle), assign func(*SupportFeeCycle, *TenantSubscription)) error {
+func (_q *SupportAgreementQuery) loadTenantSubscription(ctx context.Context, query *TenantSubscriptionQuery, nodes []*SupportAgreement, init func(*SupportAgreement), assign func(*SupportAgreement, *TenantSubscription)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*SupportFeeCycle)
+	nodeids := make(map[uuid.UUID][]*SupportAgreement)
 	for i := range nodes {
 		fk := nodes[i].TenantSubscriptionID
 		if _, ok := nodeids[fk]; !ok {
@@ -517,9 +519,9 @@ func (_q *SupportFeeCycleQuery) loadTenantSubscription(ctx context.Context, quer
 	}
 	return nil
 }
-func (_q *SupportFeeCycleQuery) loadSupportPlan(ctx context.Context, query *SubscriptionPlanQuery, nodes []*SupportFeeCycle, init func(*SupportFeeCycle), assign func(*SupportFeeCycle, *SubscriptionPlan)) error {
+func (_q *SupportAgreementQuery) loadSupportPlan(ctx context.Context, query *SubscriptionPlanQuery, nodes []*SupportAgreement, init func(*SupportAgreement), assign func(*SupportAgreement, *SubscriptionPlan)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*SupportFeeCycle)
+	nodeids := make(map[uuid.UUID][]*SupportAgreement)
 	for i := range nodes {
 		if nodes[i].SupportPlanID == nil {
 			continue
@@ -549,40 +551,41 @@ func (_q *SupportFeeCycleQuery) loadSupportPlan(ctx context.Context, query *Subs
 	}
 	return nil
 }
-func (_q *SupportFeeCycleQuery) loadAgreement(ctx context.Context, query *SupportAgreementQuery, nodes []*SupportFeeCycle, init func(*SupportFeeCycle), assign func(*SupportFeeCycle, *SupportAgreement)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*SupportFeeCycle)
+func (_q *SupportAgreementQuery) loadCycles(ctx context.Context, query *SupportFeeCycleQuery, nodes []*SupportAgreement, init func(*SupportAgreement), assign func(*SupportAgreement, *SupportFeeCycle)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*SupportAgreement)
 	for i := range nodes {
-		if nodes[i].AgreementID == nil {
-			continue
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
 		}
-		fk := *nodes[i].AgreementID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(supportfeecycle.FieldAgreementID)
 	}
-	query.Where(supportagreement.IDIn(ids...))
+	query.Where(predicate.SupportFeeCycle(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(supportagreement.CyclesColumn), fks...))
+	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		fk := n.AgreementID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "agreement_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "agreement_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "agreement_id" returned %v for node %v`, *fk, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
+		assign(node, n)
 	}
 	return nil
 }
 
-func (_q *SupportFeeCycleQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *SupportAgreementQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	_spec.Node.Columns = _q.ctx.Fields
 	if len(_q.ctx.Fields) > 0 {
@@ -591,8 +594,8 @@ func (_q *SupportFeeCycleQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *SupportFeeCycleQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(supportfeecycle.Table, supportfeecycle.Columns, sqlgraph.NewFieldSpec(supportfeecycle.FieldID, field.TypeUUID))
+func (_q *SupportAgreementQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(supportagreement.Table, supportagreement.Columns, sqlgraph.NewFieldSpec(supportagreement.FieldID, field.TypeUUID))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -601,20 +604,17 @@ func (_q *SupportFeeCycleQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, supportfeecycle.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, supportagreement.FieldID)
 		for i := range fields {
-			if fields[i] != supportfeecycle.FieldID {
+			if fields[i] != supportagreement.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
 		if _q.withTenantSubscription != nil {
-			_spec.Node.AddColumnOnce(supportfeecycle.FieldTenantSubscriptionID)
+			_spec.Node.AddColumnOnce(supportagreement.FieldTenantSubscriptionID)
 		}
 		if _q.withSupportPlan != nil {
-			_spec.Node.AddColumnOnce(supportfeecycle.FieldSupportPlanID)
-		}
-		if _q.withAgreement != nil {
-			_spec.Node.AddColumnOnce(supportfeecycle.FieldAgreementID)
+			_spec.Node.AddColumnOnce(supportagreement.FieldSupportPlanID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {
@@ -640,12 +640,12 @@ func (_q *SupportFeeCycleQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *SupportFeeCycleQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *SupportAgreementQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(supportfeecycle.Table)
+	t1 := builder.Table(supportagreement.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = supportfeecycle.Columns
+		columns = supportagreement.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -672,28 +672,28 @@ func (_q *SupportFeeCycleQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// SupportFeeCycleGroupBy is the group-by builder for SupportFeeCycle entities.
-type SupportFeeCycleGroupBy struct {
+// SupportAgreementGroupBy is the group-by builder for SupportAgreement entities.
+type SupportAgreementGroupBy struct {
 	selector
-	build *SupportFeeCycleQuery
+	build *SupportAgreementQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *SupportFeeCycleGroupBy) Aggregate(fns ...AggregateFunc) *SupportFeeCycleGroupBy {
+func (_g *SupportAgreementGroupBy) Aggregate(fns ...AggregateFunc) *SupportAgreementGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *SupportFeeCycleGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *SupportAgreementGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*SupportFeeCycleQuery, *SupportFeeCycleGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*SupportAgreementQuery, *SupportAgreementGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *SupportFeeCycleGroupBy) sqlScan(ctx context.Context, root *SupportFeeCycleQuery, v any) error {
+func (_g *SupportAgreementGroupBy) sqlScan(ctx context.Context, root *SupportAgreementQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -720,28 +720,28 @@ func (_g *SupportFeeCycleGroupBy) sqlScan(ctx context.Context, root *SupportFeeC
 	return sql.ScanSlice(rows, v)
 }
 
-// SupportFeeCycleSelect is the builder for selecting fields of SupportFeeCycle entities.
-type SupportFeeCycleSelect struct {
-	*SupportFeeCycleQuery
+// SupportAgreementSelect is the builder for selecting fields of SupportAgreement entities.
+type SupportAgreementSelect struct {
+	*SupportAgreementQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *SupportFeeCycleSelect) Aggregate(fns ...AggregateFunc) *SupportFeeCycleSelect {
+func (_s *SupportAgreementSelect) Aggregate(fns ...AggregateFunc) *SupportAgreementSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *SupportFeeCycleSelect) Scan(ctx context.Context, v any) error {
+func (_s *SupportAgreementSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*SupportFeeCycleQuery, *SupportFeeCycleSelect](ctx, _s.SupportFeeCycleQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*SupportAgreementQuery, *SupportAgreementSelect](ctx, _s.SupportAgreementQuery, _s, _s.inters, v)
 }
 
-func (_s *SupportFeeCycleSelect) sqlScan(ctx context.Context, root *SupportFeeCycleQuery, v any) error {
+func (_s *SupportAgreementSelect) sqlScan(ctx context.Context, root *SupportAgreementQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

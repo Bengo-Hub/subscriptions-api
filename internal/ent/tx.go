@@ -64,6 +64,8 @@ type Tx struct {
 	SubscriptionsRole *SubscriptionsRoleClient
 	// SubscriptionsUser is the client for interacting with the SubscriptionsUser builders.
 	SubscriptionsUser *SubscriptionsUserClient
+	// SupportAgreement is the client for interacting with the SupportAgreement builders.
+	SupportAgreement *SupportAgreementClient
 	// SupportFeeCycle is the client for interacting with the SupportFeeCycle builders.
 	SupportFeeCycle *SupportFeeCycleClient
 	// Tenant is the client for interacting with the Tenant builders.
@@ -235,6 +237,7 @@ func (tx *Tx) init() {
 	tx.SubscriptionsPermission = NewSubscriptionsPermissionClient(tx.config)
 	tx.SubscriptionsRole = NewSubscriptionsRoleClient(tx.config)
 	tx.SubscriptionsUser = NewSubscriptionsUserClient(tx.config)
+	tx.SupportAgreement = NewSupportAgreementClient(tx.config)
 	tx.SupportFeeCycle = NewSupportFeeCycleClient(tx.config)
 	tx.Tenant = NewTenantClient(tx.config)
 	tx.TenantEmailDomain = NewTenantEmailDomainClient(tx.config)

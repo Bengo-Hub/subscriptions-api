@@ -47,6 +47,10 @@ intentionally NOT part of this schedule — a PowerSuite one-time tenant only ev
   recurring tier's features/limits exactly; tier setup fee charged inline on top.
 - **`SUPPORT_{FAM}_{TIER}`**: ANNUAL, entitlement-only (no gating features), `is_public=false`,
   `metadata.support_plan=true`, excluded from `retireAnnualPlanRows`.
+  The listed price is the yearly list price. Each tenant is billed through a STANDARD support
+  agreement that can run monthly, quarterly, semi-annually, yearly or on a custom cycle (prorated
+  from this price, or an agreed amount), alongside any special support agreements. See
+  subscription-workflows.md section 19.
 
 ## Cross-service blocks (shared by all families)
 

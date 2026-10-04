@@ -827,3 +827,46 @@ This enables scenarios like:
 ---
 
 Regenerate this ERD whenever Ent schemas evolve. Always run `go generate ./internal/ent` before committing schema changes and update integration docs accordingly.
+
+## Support Agreements (Added October 2026)
+
+### support_agreements
+
+Recurring support charge of a tenant: the STANDARD hosting and support fee of a one-time license
+(one per license subscription, partial unique index) or a SPECIAL agreement set by the platform owner.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| tenant_id | uuid | indexed with status |
+| tenant_subscription_id | uuid FK tenant_subscriptions | unique where kind is STANDARD |
+| support_plan_id | uuid FK subscription_plans, nullable | SUPPORT_* row for STANDARD |
+| kind | varchar | STANDARD, SPECIAL |
+| name | varchar | shown on invoices |
+| billing_cycle | varchar | MONTHLY, QUARTERLY, SEMI_ANNUAL, ANNUAL, CUSTOM |
+| interval_count, interval_unit | int, varchar | period length; unit MONTH or DAY |
+| amount | float, nullable | agreed charge per period; null on STANDARD means the prorated catalog price |
+| currency | varchar | default KES |
+| billing_timing | varchar | ADVANCE (due at period start) or ARREARS (due at period end) |
+| starts_at, ends_at | timestamptz | ends_at optional |
+| status | varchar | ACTIVE, PAUSED, ENDED |
+| next_period_start | timestamptz | indexed with status; drives the generation scan |
+| cycle_count | int | charges generated so far |
+| metadata | jsonb | schedule_anchor, schedule_anchor_cycle, billing_email, change audit |
+
+### support_fee_cycles
+
+One billing period of an agreement.
+
+| Column | Type | Notes |
+|---|---|---|
+| agreement_id | uuid FK support_agreements, nullable | unique with cycle_number |
+| support_plan_id | uuid, nullable | null for SPECIAL agreements |
+| period_start, period_end, due_date | timestamptz | due_date is period_start (ADVANCE) or period_end (ARREARS) |
+| status | varchar | PENDING, INVOICED, OVERDUE, PAID, WAIVED |
+| base_price, custom_price | float | amount snapshotted at generation; optional per-charge override |
+| grace_until | timestamptz | due_date plus 7 days once OVERDUE |
+| metadata | jsonb | last_invoice_* markers, last_grace_reminder_date, settle and waive audit |
+
+Indexes: `(tenant_id, status, due_date)` for the JWT claim lookup, `(status, due_date)` for the
+invoice, overdue and receivables scans, `(agreement_id, cycle_number)` unique.

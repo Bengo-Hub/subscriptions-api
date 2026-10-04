@@ -12,6 +12,8 @@ import (
 	authclient "github.com/Bengo-Hub/shared-auth-client"
 	serviceclient "github.com/Bengo-Hub/shared-service-client"
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/supportagreement"
+	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/google/uuid"
@@ -175,8 +177,92 @@ func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 		invoices = append([]invoiceRow{row}, invoices...)
 	}
 	billing["invoices"] = invoices
+	h.addSupportCharges(r, tenantID, billing)
 
 	writeJSON(w, http.StatusOK, billing)
+}
+
+// addSupportCharges adds the tenant's support agreements and unpaid support charges (with pay
+// links) to the billing payload. supportBlocked mirrors RequireSupportFeeCurrentForMutations so
+// the UI can explain why create/edit/delete actions are refused. Best-effort: a failure only
+// omits the section.
+func (h *BillingHandler) addSupportCharges(r *http.Request, tenantID uuid.UUID, billing map[string]any) {
+	ctx := r.Context()
+	agreements, err := h.client.SupportAgreement.Query().
+		Where(supportagreement.TenantIDEQ(tenantID), supportagreement.StatusNEQ(supportagreement.StatusENDED)).
+		WithSupportPlan().
+		Order(ent.Asc(supportagreement.FieldKind), ent.Asc(supportagreement.FieldCreatedAt)).
+		All(ctx)
+	if err != nil {
+		h.log.Warn("billing: support agreements lookup failed", zap.Error(err))
+		return
+	}
+	cycles, err := h.client.SupportFeeCycle.Query().
+		Where(
+			supportfeecycle.TenantIDEQ(tenantID),
+			supportfeecycle.StatusIn(supportfeecycle.StatusPENDING, supportfeecycle.StatusINVOICED, supportfeecycle.StatusOVERDUE),
+		).
+		Order(ent.Asc(supportfeecycle.FieldDueDate)).
+		WithAgreement().
+		All(ctx)
+	if err != nil {
+		h.log.Warn("billing: support charges lookup failed", zap.Error(err))
+		return
+	}
+	now := time.Now().UTC()
+	ags := make([]map[string]any, 0, len(agreements))
+	for _, a := range agreements {
+		iv := subscriptions.AgreementInterval(a)
+		amount := subscriptions.AgreementPeriodAmount(a, a.Edges.SupportPlan)
+		ags = append(ags, map[string]any{
+			"id":                a.ID,
+			"kind":              a.Kind,
+			"name":              a.Name,
+			"billingCycle":      a.BillingCycle,
+			"intervalCount":     a.IntervalCount,
+			"intervalUnit":      a.IntervalUnit,
+			"periodAmount":      amount,
+			"monthlyEquivalent": subscriptions.MonthlyEquivalent(amount, iv),
+			"currency":          a.Currency,
+			"billingTiming":     a.BillingTiming,
+			"status":            a.Status,
+			"nextPeriodStart":   a.NextPeriodStart,
+		})
+	}
+	charges := make([]map[string]any, 0, len(cycles))
+	blocked := false
+	for _, c := range cycles {
+		graceEnds := c.DueDate.AddDate(0, 0, subscriptions.SupportFeeGraceDays)
+		isBlocking := now.After(graceEnds)
+		blocked = blocked || isBlocking
+		name := ""
+		currency := "KES"
+		if c.Edges.Agreement != nil {
+			name, currency = c.Edges.Agreement.Name, c.Edges.Agreement.Currency
+		}
+		pay, _ := c.Metadata["last_invoice_pay_url"].(string)
+		pdf, _ := c.Metadata["last_invoice_pdf_url"].(string)
+		num, _ := c.Metadata["last_invoice_number"].(string)
+		charges = append(charges, map[string]any{
+			"id":            c.ID,
+			"name":          name,
+			"periodStart":   c.PeriodStart,
+			"periodEnd":     c.PeriodEnd,
+			"dueDate":       c.DueDate,
+			"graceEndsAt":   graceEnds,
+			"status":        c.Status,
+			"amount":        subscriptions.EffectiveSupportPrice(c),
+			"invoiceTotal":  c.Metadata["last_invoice_total"],
+			"currency":      currency,
+			"invoiceNumber": num,
+			"payUrl":        pay,
+			"pdfUrl":        pdf,
+			"blocking":      isBlocking,
+		})
+	}
+	billing["supportAgreements"] = ags
+	billing["supportCharges"] = charges
+	billing["supportBlocked"] = blocked
 }
 
 type invoiceRow struct {

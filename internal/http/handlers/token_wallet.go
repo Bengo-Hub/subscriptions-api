@@ -83,7 +83,7 @@ func (h *TokenWalletHandler) GetBalance(w http.ResponseWriter, r *http.Request) 
 // @Param tenant_id path string true "Tenant UUID"
 // @Param service_tag query string false "Defaults to etims_api"
 // @Param limit query int false "Default 50, max 200"
-// @Param offset query int false
+// @Param offset query int false "Rows to skip"
 // @Success 200 {object} map[string]any
 // @Router /tenants/{tenant_id}/tokens/transactions [get]
 func (h *TokenWalletHandler) GetTransactions(w http.ResponseWriter, r *http.Request) {

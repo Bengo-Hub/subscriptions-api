@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/supportagreement"
 	"github.com/bengobox/subscription-service/internal/ent/supportfeecycle"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
@@ -25,23 +26,27 @@ type SupportFeeCycle struct {
 	TenantID uuid.UUID `json:"tenant_id,omitempty"`
 	// FK to the tenant's ONE TenantSubscription row — the perpetual license this support fee accompanies
 	TenantSubscriptionID uuid.UUID `json:"tenant_subscription_id,omitempty"`
-	// FK to the SUPPORT_* subscription_plans catalog row (e.g. SUPPORT_DUKA_GOLD)
-	SupportPlanID uuid.UUID `json:"support_plan_id,omitempty"`
-	// Tenant's real onboarding date (tenant_subscriptions.created_at at enrollment time). NEVER 'today' — every cycle's due_date is computed as anchor_date + cycle_number years, backdated for tenants already onboarded when support billing was introduced.
+	// SUPPORT_* catalog row for STANDARD agreement cycles; nil for SPECIAL agreements
+	SupportPlanID *uuid.UUID `json:"support_plan_id,omitempty"`
+	// The SupportAgreement this cycle bills. Rows created before agreements existed are linked by the enrollment job
+	AgreementID *uuid.UUID `json:"agreement_id,omitempty"`
+	// The agreement's starts_at when this cycle was generated (for STANDARD agreements, the license onboarding date)
 	AnchorDate time.Time `json:"anchor_date,omitempty"`
-	// 1 = first annual cycle since onboarding, 2 = second, etc.
+	// 1-based sequence within the agreement
 	CycleNumber int `json:"cycle_number,omitempty"`
-	// anchor_date + (cycle_number-1) years
+	// Start of the billed period
 	PeriodStart time.Time `json:"period_start,omitempty"`
-	// anchor_date + cycle_number years — payment due date
+	// End (exclusive) of the billed period
+	PeriodEnd *time.Time `json:"period_end,omitempty"`
+	// Payment due date: period_start for ADVANCE agreements, period_end for ARREARS
 	DueDate time.Time `json:"due_date,omitempty"`
-	// PENDING: not yet in the T-7 invoice window. INVOICED: invoice generated+emailed, not yet due. PAID: settled. OVERDUE: due_date passed unpaid — mutations blocked fleet-wide via RequireSupportFeeCurrentForMutations once grace_until also elapses; stays OVERDUE indefinitely after that (no further escalation) until paid or waived. WAIVED: platform admin manually excused this cycle.
+	// PENDING: not yet invoiced. INVOICED: invoice issued, not yet due. PAID: settled. OVERDUE: due_date passed unpaid; mutations are blocked fleet-wide by RequireSupportFeeCurrentForMutations once grace_until also passes, until paid or waived. WAIVED: excused by the platform owner (or cancelled with its agreement).
 	Status supportfeecycle.Status `json:"status,omitempty"`
 	// PaidAt holds the value of the "paid_at" field.
 	PaidAt *time.Time `json:"paid_at,omitempty"`
 	// due_date + 7 days, set the moment the cycle flips OVERDUE. Mutations stay allowed until this passes; reads are never blocked.
 	GraceUntil *time.Time `json:"grace_until,omitempty"`
-	// Snapshot of support_plan.base_price at cycle-creation time — survives a later re-price of the catalog row, matches setup_fee_amount's snapshot rationale on TenantSubscription
+	// Charge for this period, snapshotted from the agreement when the cycle is generated so a later re-price never changes an issued cycle
 	BasePrice float64 `json:"base_price,omitempty"`
 	// Platform-admin sales-agreed override for THIS tenant's support fee. Nil = use base_price
 	CustomPrice *float64 `json:"custom_price,omitempty"`
@@ -51,7 +56,7 @@ type SupportFeeCycle struct {
 	CustomPriceSetBy *uuid.UUID `json:"custom_price_set_by,omitempty"`
 	// CustomPriceSetAt holds the value of the "custom_price_set_at" field.
 	CustomPriceSetAt *time.Time `json:"custom_price_set_at,omitempty"`
-	// last_invoice_id/number/pay_url/total, last_reminder_date, billing_email override — mirrors TenantSubscription.metadata's invoicing bookkeeping
+	// last_invoice_id/number/pay_url/total, last_grace_reminder_date, waive/manual-payment audit
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
@@ -69,9 +74,11 @@ type SupportFeeCycleEdges struct {
 	TenantSubscription *TenantSubscription `json:"tenant_subscription,omitempty"`
 	// SupportPlan holds the value of the support_plan edge.
 	SupportPlan *SubscriptionPlan `json:"support_plan,omitempty"`
+	// Agreement holds the value of the agreement edge.
+	Agreement *SupportAgreement `json:"agreement,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // TenantSubscriptionOrErr returns the TenantSubscription value or an error if the edge
@@ -96,12 +103,23 @@ func (e SupportFeeCycleEdges) SupportPlanOrErr() (*SubscriptionPlan, error) {
 	return nil, &NotLoadedError{edge: "support_plan"}
 }
 
+// AgreementOrErr returns the Agreement value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e SupportFeeCycleEdges) AgreementOrErr() (*SupportAgreement, error) {
+	if e.Agreement != nil {
+		return e.Agreement, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: supportagreement.Label}
+	}
+	return nil, &NotLoadedError{edge: "agreement"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*SupportFeeCycle) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case supportfeecycle.FieldCustomPriceSetBy:
+		case supportfeecycle.FieldSupportPlanID, supportfeecycle.FieldAgreementID, supportfeecycle.FieldCustomPriceSetBy:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case supportfeecycle.FieldMetadata:
 			values[i] = new([]byte)
@@ -111,9 +129,9 @@ func (*SupportFeeCycle) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case supportfeecycle.FieldStatus, supportfeecycle.FieldCustomPriceReason:
 			values[i] = new(sql.NullString)
-		case supportfeecycle.FieldAnchorDate, supportfeecycle.FieldPeriodStart, supportfeecycle.FieldDueDate, supportfeecycle.FieldPaidAt, supportfeecycle.FieldGraceUntil, supportfeecycle.FieldCustomPriceSetAt, supportfeecycle.FieldCreatedAt, supportfeecycle.FieldUpdatedAt:
+		case supportfeecycle.FieldAnchorDate, supportfeecycle.FieldPeriodStart, supportfeecycle.FieldPeriodEnd, supportfeecycle.FieldDueDate, supportfeecycle.FieldPaidAt, supportfeecycle.FieldGraceUntil, supportfeecycle.FieldCustomPriceSetAt, supportfeecycle.FieldCreatedAt, supportfeecycle.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case supportfeecycle.FieldID, supportfeecycle.FieldTenantID, supportfeecycle.FieldTenantSubscriptionID, supportfeecycle.FieldSupportPlanID:
+		case supportfeecycle.FieldID, supportfeecycle.FieldTenantID, supportfeecycle.FieldTenantSubscriptionID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -149,10 +167,18 @@ func (_m *SupportFeeCycle) assignValues(columns []string, values []any) error {
 				_m.TenantSubscriptionID = *value
 			}
 		case supportfeecycle.FieldSupportPlanID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field support_plan_id", values[i])
-			} else if value != nil {
-				_m.SupportPlanID = *value
+			} else if value.Valid {
+				_m.SupportPlanID = new(uuid.UUID)
+				*_m.SupportPlanID = *value.S.(*uuid.UUID)
+			}
+		case supportfeecycle.FieldAgreementID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field agreement_id", values[i])
+			} else if value.Valid {
+				_m.AgreementID = new(uuid.UUID)
+				*_m.AgreementID = *value.S.(*uuid.UUID)
 			}
 		case supportfeecycle.FieldAnchorDate:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -171,6 +197,13 @@ func (_m *SupportFeeCycle) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field period_start", values[i])
 			} else if value.Valid {
 				_m.PeriodStart = value.Time
+			}
+		case supportfeecycle.FieldPeriodEnd:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field period_end", values[i])
+			} else if value.Valid {
+				_m.PeriodEnd = new(time.Time)
+				*_m.PeriodEnd = value.Time
 			}
 		case supportfeecycle.FieldDueDate:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -275,6 +308,11 @@ func (_m *SupportFeeCycle) QuerySupportPlan() *SubscriptionPlanQuery {
 	return NewSupportFeeCycleClient(_m.config).QuerySupportPlan(_m)
 }
 
+// QueryAgreement queries the "agreement" edge of the SupportFeeCycle entity.
+func (_m *SupportFeeCycle) QueryAgreement() *SupportAgreementQuery {
+	return NewSupportFeeCycleClient(_m.config).QueryAgreement(_m)
+}
+
 // Update returns a builder for updating this SupportFeeCycle.
 // Note that you need to call SupportFeeCycle.Unwrap() before calling this method if this SupportFeeCycle
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -304,8 +342,15 @@ func (_m *SupportFeeCycle) String() string {
 	builder.WriteString("tenant_subscription_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantSubscriptionID))
 	builder.WriteString(", ")
-	builder.WriteString("support_plan_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.SupportPlanID))
+	if v := _m.SupportPlanID; v != nil {
+		builder.WriteString("support_plan_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.AgreementID; v != nil {
+		builder.WriteString("agreement_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("anchor_date=")
 	builder.WriteString(_m.AnchorDate.Format(time.ANSIC))
@@ -315,6 +360,11 @@ func (_m *SupportFeeCycle) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("period_start=")
 	builder.WriteString(_m.PeriodStart.Format(time.ANSIC))
+	builder.WriteString(", ")
+	if v := _m.PeriodEnd; v != nil {
+		builder.WriteString("period_end=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("due_date=")
 	builder.WriteString(_m.DueDate.Format(time.ANSIC))
