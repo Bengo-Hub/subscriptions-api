@@ -67,7 +67,7 @@ var featureCatalog = func() []catalogEntry {
 		feat("payment_collection", treasury, "Payments & Gateways", "Online Payment Collection"),
 		feat("payment_links", treasury, "Payments & Gateways", "Shareable Payment Links"),
 		feat("paystack_integration", treasury, "Payments & Gateways", "Paystack Gateway"),
-		feat("mpesa_integration", treasury, "Payments & Gateways", "M-Pesa (Daraja) Integration"),
+		feat("mpesa_integration", treasury, "Payments & Gateways", "M-Pesa Integration (Daraja or PayHero)"),
 		feat("multi_currency", treasury, "Payments & Gateways", "Multi-Currency Support"),
 		feat("bulk_payouts", treasury, "Payments & Gateways", "Bulk Payouts"),
 		feat("escrow_management", treasury, "Payments & Gateways", "Escrow Management"),
