@@ -861,6 +861,27 @@ or Platform > Support Billing for single charges.
 | End | Future charges that are not invoiced are cancelled; issued charges stay payable |
 | One charge: reprice, record payment, waive, issue or re-send invoice | Platform > Support Billing, or the tenant's agreements panel |
 
+### Business or personal collection (2026-10-05)
+
+An agreement's `collection` is `business` (default) or `personal`. A personal agreement is the
+platform owner's own engagement with a tenant (for example a dedicated support engineer paid
+personally):
+
+- its charges are invoiced with `off_books` on the treasury invoice and on the payment intent;
+  treasury posts nothing for them (no ledger, AR or eTIMS), keeps them out of every business
+  report and lists them only under the platform owner's Invoices, Personal scope;
+- the invoice keeps the company letterhead but shows only the personal PayHero channel ("Payable
+  to" the payee), and the pay link offers M-Pesa only, since only the personal channel takes it;
+- platform stats leave it out of support MRR, total MRR, ARR and support receivables and report
+  it apart (`personalSupportMrr`, `personalSupportReceivables`);
+- the billed tenant still books the charge as its own expense and is gated on it like any other
+  support charge.
+
+Changing the collection applies to charges invoiced afterwards. Standard hosting and support
+agreements stay business. Payments to the platform (plans and support charges) are always charged
+on the platform's account and routed by its PayHero routing (support charges to the default
+channel unless "Support fees" is routed).
+
 ### Endpoints (platform owner)
 
 | Method | Path | Purpose |
