@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -120,7 +121,14 @@ func (h *BillingHandler) RegisterStandingOrder(w http.ResponseWriter, r *http.Re
 	if meta == nil {
 		meta = map[string]any{}
 	}
-	meta["payment_method"] = "mpesa_standing_order"
+	// Its own key: payment_method holds a saved payment method object (card or mobile money).
+	// Writing the string "mpesa_standing_order" there broke the billing page for that tenant
+	// (the UI read it as a payment method card and crashed on its missing phone).
+	meta["standing_order"] = map[string]any{
+		"phone":         req.Phone,
+		"frequency":     freq,
+		"registered_at": time.Now().UTC().Format(time.RFC3339),
+	}
 	if _, err := h.client.TenantSubscription.UpdateOneID(sub.ID).SetMetadata(meta).Save(r.Context()); err != nil {
 		h.log.Warn("standing order: metadata not saved", zap.Error(err))
 	}

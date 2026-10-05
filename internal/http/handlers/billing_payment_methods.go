@@ -56,15 +56,7 @@ func (h *BillingHandler) DeletePaymentMethod(w http.ResponseWriter, r *http.Requ
 		meta[k] = v
 	}
 
-	// Resolve the payment_methods array.
-	var methods []any
-	if pms, ok := meta["payment_methods"]; ok {
-		if arr, ok := pms.([]any); ok {
-			methods = arr
-		}
-	} else if pm, ok := meta["payment_method"]; ok {
-		methods = []any{pm}
-	}
+	methods := savedPaymentMethods(meta)
 
 	if len(methods) <= 1 {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "cannot remove the only payment method"})
@@ -154,12 +146,7 @@ func (h *BillingHandler) SetDefaultPaymentMethod(w http.ResponseWriter, r *http.
 		meta[k] = v
 	}
 
-	var methods []any
-	if pms, ok := meta["payment_methods"]; ok {
-		if arr, ok := pms.([]any); ok {
-			methods = arr
-		}
-	}
+	methods := savedPaymentMethods(meta)
 
 	// Move the selected method to the front (default = index 0).
 	reordered := make([]any, 0, len(methods))
@@ -275,4 +262,24 @@ func (h *BillingHandler) UndoCancelSubscription(w http.ResponseWriter, r *http.R
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{"status": "reactivated"})
+}
+
+// savedPaymentMethods is the subscription's saved payment methods (payment_methods, or the legacy
+// single payment_method), keeping only method objects. A bare string there (the standing-order
+// registration once wrote "mpesa_standing_order") is not a payment method: passed to the billing
+// page it crashed the page, and here it would be reordered or removed like a card.
+func savedPaymentMethods(meta map[string]any) []any {
+	var raw []any
+	if pms, ok := meta["payment_methods"]; ok {
+		raw, _ = pms.([]any)
+	} else if pm, ok := meta["payment_method"]; ok {
+		raw = []any{pm}
+	}
+	out := make([]any, 0, len(raw))
+	for _, m := range raw {
+		if _, ok := m.(map[string]any); ok {
+			out = append(out, m)
+		}
+	}
+	return out
 }

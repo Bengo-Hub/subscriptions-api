@@ -125,17 +125,14 @@ func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 
 	// Extract payment method from metadata if stored
 	if sub.Metadata != nil {
-		// Return payment_methods array (preferred) OR fall back to legacy payment_method singular.
-		if pms, ok := sub.Metadata["payment_methods"]; ok {
-			billing["paymentMethods"] = pms
-			// Also expose the default as paymentMethod for backwards compatibility.
-			if arr, ok := pms.([]any); ok && len(arr) > 0 {
-				billing["paymentMethod"] = arr[0]
-			}
-		} else if pm, ok := sub.Metadata["payment_method"]; ok {
-			billing["paymentMethod"] = pm
-			// Normalise legacy single entry into array form for UI.
-			billing["paymentMethods"] = []any{pm}
+		// Saved payment methods (payment_methods, or the legacy single payment_method), method
+		// objects only; the default is also exposed as paymentMethod for backwards compatibility.
+		if methods := savedPaymentMethods(sub.Metadata); len(methods) > 0 {
+			billing["paymentMethods"] = methods
+			billing["paymentMethod"] = methods[0]
+		}
+		if so, ok := sub.Metadata["standing_order"]; ok {
+			billing["standingOrder"] = so
 		}
 		if cc, ok := sub.Metadata["cancel_at_period_end"].(bool); ok && cc {
 			billing["cancelAtPeriodEnd"] = true
