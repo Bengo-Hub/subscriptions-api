@@ -875,6 +875,9 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 		cleanedMeta[MetaSetupFeeWaivedAmount] = sub.SetupFeeAmount
 		cleanedMeta[MetaSetupFeeWaiverReason] = SetupFeeWaiverReason(string(cycle))
 	}
+	if in.IntentID != "" {
+		cleanedMeta[MetaRenewedIntents] = appendRenewedIntent(sub.Metadata, in.IntentID)
+	}
 
 	tx, err := s.client.Tx(ctx)
 	if err != nil {
@@ -885,6 +888,7 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 			_ = tx.Rollback()
 		}
 	}()
+
 
 	update := tx.TenantSubscription.UpdateOneID(sub.ID).
 		SetPlanID(planID).
@@ -910,10 +914,34 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 		// the next invoice never bills it again.
 		update.SetSetupFeeChargedAt(now)
 	}
-	sub, err = update.Save(ctx)
-	if err != nil {
+	// One renewal per paid invoice or intent. The same invoice can be reported paid twice (a
+	// hand-recorded payment, then the gateway's late settlement of the same money; each publishes
+	// payment.succeeded with intent_id = the invoice id) and each call used to add a period:
+	// alpha-china-market's single payment on 2026-10-05 moved it to Nov 5 - Dec 5. The update
+	// matches only while the id is not yet recorded; Postgres re-checks that under the row lock,
+	// so two concurrent deliveries cannot both renew.
+	if in.IntentID != "" {
+		update.Where(notRenewedFor(in.IntentID))
+	}
+	renewed, uerr := update.Save(ctx)
+	if ent.IsNotFound(uerr) && in.IntentID != "" {
+		_ = tx.Rollback()
+		err = nil
+		s.log.Info("subscription already renewed for this payment, skipping",
+			zap.String("tenant_id", in.TenantID.String()), zap.String("intent_id", in.IntentID))
+		current, gerr := s.getSubscription(ctx, in.TenantID)
+		if gerr != nil {
+			return nil, gerr
+		}
+		plan, _ := s.client.SubscriptionPlan.Query().Where(subscriptionplan.IDEQ(current.PlanID)).
+			WithFeatures(func(q *ent.PlanFeatureQuery) { q.Where(planfeature.IsIncludedEQ(true)) }).Only(ctx)
+		return s.buildResult(current, plan), nil
+	}
+	if uerr != nil {
+		err = uerr
 		return nil, fmt.Errorf("renew subscription: %w", err)
 	}
+	sub = renewed
 
 	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, "renewed", map[string]any{
 		"tenant_id":     sub.TenantID.String(),

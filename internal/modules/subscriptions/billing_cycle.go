@@ -5,6 +5,10 @@ import (
 	"strings"
 	"time"
 
+	entsql "entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
+
+	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 )
 
@@ -110,10 +114,40 @@ const (
 	MetaPendingBillingCycle = "pending_billing_cycle" // string — cycle chosen at checkout
 	MetaPendingPlanCode     = "pending_plan_code"     // string — plan chosen at checkout
 	MetaPendingIntentID     = "pending_intent_id"     // string — treasury intent the choice is bound to
+	// MetaRenewedIntents: the most recent payment ids (treasury intent or invoice) that renewed
+	// the subscription, so the same payment never renews it twice (RenewSubscription).
+	MetaRenewedIntents = "renewed_intents"
 	MetaPendingSetupFee     = "pending_setup_fee_included" // bool — checkout amount included the setup fee
 )
 
 // SetupFeeWaiverReason is the human-readable audit reason stamped when the waiver applies.
 func SetupFeeWaiverReason(cycle string) string {
 	return fmt.Sprintf("waived: %d-month billing period (>= %d months)", BillingCycleMonths(cycle), SetupFeeWaiverMonths)
+}
+
+// renewedIntentsKept bounds MetaRenewedIntents; a redelivery or a second report of a payment
+// arrives within days, never a dozen renewals later.
+const renewedIntentsKept = 12
+
+// notRenewedFor matches a subscription whose MetaRenewedIntents does not hold id yet. Payment ids
+// are UUIDs; the id is written as a literal only after it parses as one (anything else is quoted),
+// since a raw expression's own placeholders would be misnumbered inside the update.
+func notRenewedFor(id string) predicate.TenantSubscription {
+	lit := strings.ReplaceAll(id, "'", "''")
+	if u, err := uuid.Parse(id); err == nil {
+		lit = u.String()
+	}
+	return func(s *entsql.Selector) {
+		s.Where(entsql.ExprP("NOT jsonb_exists(COALESCE(" + s.C("metadata") + "->'" + MetaRenewedIntents + "', '[]'::jsonb), '" + lit + "')"))
+	}
+}
+
+// appendRenewedIntent returns MetaRenewedIntents with id added, keeping the newest entries.
+func appendRenewedIntent(meta map[string]any, id string) []any {
+	list, _ := meta[MetaRenewedIntents].([]any)
+	out := append(append(make([]any, 0, len(list)+1), list...), id)
+	if len(out) > renewedIntentsKept {
+		out = out[len(out)-renewedIntentsKept:]
+	}
+	return out
 }
