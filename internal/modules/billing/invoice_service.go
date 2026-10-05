@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -242,10 +243,22 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 		return nil, fmt.Errorf("treasury client not configured")
 	}
 	periodKey := sub.CurrentPeriodEnd.UTC().Format(time.RFC3339)
+	startKey := sub.CurrentPeriodStart.UTC().Format(time.RFC3339)
 
-	// Idempotency guard (skippable with force=true for manual regenerate)
+	// Idempotency guard (skippable with force=true for manual regenerate). A billing cycle is
+	// identified by its start: giving the tenant more time moves the period end, not the cycle,
+	// so the open invoice's due date moves with it instead of a second invoice being raised
+	// (Gram Auto Spares got INV-260927-000028 and INV-261005-000031 for one cycle after a grace
+	// edit, because the guard compared only the period end).
 	if !force && sub.Metadata != nil {
-		if last, ok := sub.Metadata["last_invoice_period_end"].(string); ok && last == periodKey {
+		sameEnd := stringMeta(sub.Metadata, "last_invoice_period_end") == periodKey
+		sameCycle := stringMeta(sub.Metadata, "last_invoice_period_start") == startKey
+		if sameEnd || sameCycle {
+			if sameCycle && !sameEnd {
+				if err := s.MoveOpenInvoiceDueDate(ctx, sub, "subscription period end moved"); err != nil {
+					s.log.Warn("invoice: could not move the open invoice's due date", zap.String("subscription_id", sub.ID.String()), zap.Error(err))
+				}
+			}
 			return &InvoiceResult{
 				InvoiceID:     stringMeta(sub.Metadata, "last_invoice_id"),
 				InvoiceNumber: stringMeta(sub.Metadata, "last_invoice_number"),
@@ -372,6 +385,7 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 	meta["last_invoice_id"] = inv.ID
 	meta["last_invoice_number"] = inv.InvoiceNumber
 	meta["last_invoice_period_end"] = periodKey
+	meta["last_invoice_period_start"] = startKey
 	meta["last_invoice_pay_url"] = payURL
 	meta["last_invoice_pdf_url"] = pdfURL
 	meta["last_invoice_total"] = total
@@ -602,6 +616,44 @@ func subscriptionIntentRequest(sub *ent.TenantSubscription, invoiceID, invoiceNu
 			"invoice_number": invoiceNumber,
 		},
 	}
+}
+
+// MoveOpenInvoiceDueDate moves the due date of the cycle's open renewal invoice to the
+// subscription's current period end (the tenant was given more time) in treasury, and records
+// the new end as invoiced so the renewal job does not raise a second invoice for the same cycle.
+// No open invoice for the cycle (none raised yet, or already paid): nothing to move.
+func (s *InvoiceService) MoveOpenInvoiceDueDate(ctx context.Context, sub *ent.TenantSubscription, reason string) error {
+	invoiceID := stringMeta(sub.Metadata, "last_invoice_id")
+	if invoiceID == "" || s.treasury == nil {
+		return nil
+	}
+	if start := stringMeta(sub.Metadata, "last_invoice_period_start"); start != "" &&
+		start != sub.CurrentPeriodStart.UTC().Format(time.RFC3339) {
+		return nil // the last invoice belongs to an earlier cycle
+	}
+	periodEnd := sub.CurrentPeriodEnd.UTC().Format(time.RFC3339)
+	if stringMeta(sub.Metadata, "last_invoice_period_end") == periodEnd {
+		return nil
+	}
+	resp, err := s.treasury.Post(ctx, fmt.Sprintf("/api/v1/s2s/%s/invoices/%s/extend-due-date", s.platformTenantID, invoiceID),
+		map[string]any{"due_date": periodEnd, "reason": reason, "metadata": map[string]any{"period_end": periodEnd}}, s.headers())
+	if err != nil {
+		return fmt.Errorf("treasury extend due date: %w", err)
+	}
+	if !resp.IsSuccess() && resp.StatusCode != http.StatusUnprocessableEntity {
+		// 422: the invoice is paid or void; the cycle needs no invoice change.
+		return fmt.Errorf("treasury extend due date: HTTP %d", resp.StatusCode)
+	}
+	meta := cloneMeta(sub.Metadata)
+	meta["last_invoice_period_end"] = periodEnd
+	meta["last_invoice_period_start"] = sub.CurrentPeriodStart.UTC().Format(time.RFC3339)
+	if _, err := s.orm.TenantSubscription.UpdateOneID(sub.ID).SetMetadata(meta).Save(ctx); err != nil {
+		return fmt.Errorf("record moved due date: %w", err)
+	}
+	sub.Metadata = meta
+	s.log.Info("open renewal invoice due date moved", zap.String("subscription_id", sub.ID.String()),
+		zap.String("invoice_id", invoiceID), zap.String("due_date", periodEnd))
+	return nil
 }
 
 func stringMeta(m map[string]any, key string) string {

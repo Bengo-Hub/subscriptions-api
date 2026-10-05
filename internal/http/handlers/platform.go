@@ -1346,6 +1346,14 @@ func (h *PlatformHandler) UpdateSubscription(w http.ResponseWriter, r *http.Requ
 		h.featureHandler.InvalidateCache(ctx, sub.TenantID)
 	}
 
+	// More time for the same cycle: the open renewal invoice's due date follows the new period
+	// end, so the renewal job does not raise a second invoice for it.
+	if body.CurrentPeriodEnd != nil && h.invoiceSvc != nil && !updated.CurrentPeriodEnd.Equal(sub.CurrentPeriodEnd) {
+		if err := h.invoiceSvc.MoveOpenInvoiceDueDate(ctx, updated, "period end moved by platform admin"); err != nil {
+			h.log.Warn("admin subscription edit: open invoice due date not moved", zap.String("subscription_id", id.String()), zap.Error(err))
+		}
+	}
+
 	h.log.Info("subscription updated by admin",
 		zap.String("subscription_id", id.String()),
 		zap.String("tenant_id", sub.TenantID.String()),
