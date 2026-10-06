@@ -61,5 +61,10 @@ func (UsageEvent) Indexes() []ent.Index {
 		index.Fields("service_name"),
 		index.Fields("created_at"),
 		index.Fields("tenant_id", "service_name", "metric_type"),
+		// The usage page sums one tenant's events inside its billing period
+		// (tenant_id = ? AND created_at BETWEEN ...). Without this the planner reads every event
+		// the tenant ever had through the tenant_id index and filters by date, which slows down
+		// as history grows.
+		index.Fields("tenant_id", "created_at"),
 	}
 }

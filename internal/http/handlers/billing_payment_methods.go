@@ -191,8 +191,8 @@ func (h *BillingHandler) CancelSubscription(w http.ResponseWriter, r *http.Reque
 
 	h.log.Info("subscription marked for cancellation at period end", zap.String("tenant_id", tenantIDStr))
 	writeJSON(w, http.StatusOK, map[string]any{
-		"status":             "cancel_scheduled",
-		"effective_date":     sub.CurrentPeriodEnd.Format(time.RFC3339),
+		"status":               "cancel_scheduled",
+		"effective_date":       sub.CurrentPeriodEnd.Format(time.RFC3339),
 		"cancel_at_period_end": true,
 	})
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -407,6 +408,9 @@ func (h *UsageHandler) GetUsageSummary(w http.ResponseWriter, r *http.Request) {
 	if metrics == nil {
 		metrics = []metricResult{}
 	}
+	// Built from map iteration, so order was random per request and the usage cards reshuffled
+	// on every reload. Metrics closest to their limit come first, then by name.
+	sortUsageMetrics(metrics)
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"metrics": metrics,
@@ -500,6 +504,24 @@ func (h *UsageHandler) GetUsageDashboard(w http.ResponseWriter, r *http.Request)
 	}
 
 	writeJSON(w, http.StatusOK, result)
+}
+
+// sortUsageMetrics orders metrics by how close they are to their limit (unlimited last), then
+// by name, so the response is stable and the most urgent metric is first.
+func sortUsageMetrics(metrics []metricResult) {
+	ratio := func(m metricResult) float64 {
+		if m.Limit <= 0 {
+			return -1
+		}
+		return float64(m.Used) / float64(m.Limit)
+	}
+	sort.SliceStable(metrics, func(i, j int) bool {
+		ri, rj := ratio(metrics[i]), ratio(metrics[j])
+		if ri != rj {
+			return ri > rj
+		}
+		return metrics[i].Name < metrics[j].Name
+	})
 }
 
 // inferMetricType extracts the base metric name from a limit key.
@@ -681,10 +703,16 @@ func (h *UsageHandler) GetAlerts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Scan for all alert keys for this tenant: usage:alert:{tenantID}:*
+	// All alert keys for this tenant: usage:alert:{tenantID}:*. SCAN in pages rather than KEYS:
+	// KEYS walks the whole keyspace in one blocking call, which stalls every other Redis client
+	// as the number of keys across all tenants grows.
 	pattern := fmt.Sprintf("usage:alert:%s:*", tenantID.String())
-	keys, err := h.cache.Keys(ctx, pattern).Result()
-	if err != nil {
+	var keys []string
+	iter := h.cache.Scan(ctx, 0, pattern, 200).Iterator()
+	for iter.Next(ctx) {
+		keys = append(keys, iter.Val())
+	}
+	if err := iter.Err(); err != nil {
 		h.log.Warn("GetAlerts: redis scan failed", zap.Error(err))
 		writeJSON(w, http.StatusOK, map[string]any{"alerts": []any{}})
 		return

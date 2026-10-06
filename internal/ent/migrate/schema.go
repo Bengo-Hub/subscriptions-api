@@ -1496,6 +1496,11 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{UsageEventsColumns[1], UsageEventsColumns[3], UsageEventsColumns[2]},
 			},
+			{
+				Name:    "usageevent_tenant_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UsageEventsColumns[1], UsageEventsColumns[8]},
+			},
 		},
 	}
 	// UserRoleAssignmentsColumns holds the columns for the "user_role_assignments" table.

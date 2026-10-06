@@ -165,11 +165,11 @@ func (h *FeatureHandler) GetEntitlements(w http.ResponseWriter, r *http.Request)
 	}
 
 	resp := map[string]any{
-		"tenant_id":  tenantIDStr,
-		"plan_code":  result.PlanCode,
-		"status":     result.Status,
-		"features":   result.Features,
-		"limits":     result.Limits,
+		"tenant_id": tenantIDStr,
+		"plan_code": result.PlanCode,
+		"status":    result.Status,
+		"features":  result.Features,
+		"limits":    result.Limits,
 	}
 
 	if b, err := json.Marshal(resp); err == nil {
@@ -190,11 +190,20 @@ func (h *FeatureHandler) InvalidateCache(ctx context.Context, tenantID uuid.UUID
 	}
 	// Delete entitlements cache and any individual feature cache keys via pattern
 	_ = h.cache.Del(ctx, entitlementsCacheKey(tenantID)).Err()
-	// Individual feature keys follow subscription:feature:{tenantID}:* pattern
+	// Individual feature keys follow subscription:feature:{tenantID}:* pattern. SCAN in pages
+	// rather than KEYS, which blocks Redis while it walks every key of every tenant.
 	pattern := fmt.Sprintf("subscription:feature:%s:*", tenantID.String())
-	keys, err := h.cache.Keys(ctx, pattern).Result()
-	if err == nil && len(keys) > 0 {
-		_ = h.cache.Del(ctx, keys...).Err()
+	batch := make([]string, 0, 100)
+	iter := h.cache.Scan(ctx, 0, pattern, 200).Iterator()
+	for iter.Next(ctx) {
+		batch = append(batch, iter.Val())
+		if len(batch) == cap(batch) {
+			_ = h.cache.Del(ctx, batch...).Err()
+			batch = batch[:0]
+		}
+	}
+	if len(batch) > 0 {
+		_ = h.cache.Del(ctx, batch...).Err()
 	}
 }
 
@@ -205,4 +214,3 @@ func featureCacheKey(tenantID uuid.UUID, featureCode string) string {
 func entitlementsCacheKey(tenantID uuid.UUID) string {
 	return fmt.Sprintf("subscription:entitlements:%s", tenantID.String())
 }
-
