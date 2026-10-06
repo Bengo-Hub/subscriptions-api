@@ -11,6 +11,7 @@ import (
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 )
 
@@ -69,6 +70,7 @@ func graceEventPayload(sub *ent.TenantSubscription, graceUntil, now time.Time) m
 		"amount":         amount,
 		"invoice_number": invNo,
 		"pay_link":       payURL,
+		"invoice_url":    stringFromMeta(sub.Metadata, billing.MetaLastInvoiceURL),
 		"notification": map[string]any{
 			"target":          "tenant_admin",
 			"recipient_email": stringFromMeta(sub.Metadata, "billing_email"),

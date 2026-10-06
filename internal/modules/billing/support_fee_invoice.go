@@ -225,10 +225,7 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 	if payURL == "" && inv.PublicToken != "" {
 		payURL = fmt.Sprintf("%s/i/%s", s.treasuryUIBase, inv.PublicToken)
 	}
-	pdfURL := ""
-	if inv.PublicToken != "" {
-		pdfURL = fmt.Sprintf("%s/api/v1/public/invoices/%s/pdf", s.treasuryAPIBase, inv.PublicToken)
-	}
+	pdfURL, invoiceURL := publicInvoiceLinks(s.treasuryAPIBase, s.treasuryUIBase, inv.PublicToken)
 
 	// 4. Persist markers, flip INVOICED, emit the notification event (→ email).
 	meta := cloneMeta(cycle.Metadata)
@@ -237,6 +234,7 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 	meta["last_invoice_due_date"] = dueKey
 	meta["last_invoice_pay_url"] = payURL
 	meta["last_invoice_pdf_url"] = pdfURL
+	meta[MetaLastInvoiceURL] = invoiceURL
 	meta["last_invoice_total"] = total
 	meta["last_invoice_currency"] = currency
 
@@ -265,6 +263,7 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 		"due_date":       cycle.DueDate.UTC().Format(time.RFC3339),
 		"pay_url":        payURL,
 		"pdf_url":        pdfURL,
+		"invoice_url":    invoiceURL,
 		"notification": map[string]any{
 			"target":          "tenant_admin",
 			"recipient_email": customerEmail,

@@ -258,6 +258,7 @@ func supportCyclePayload(cycle *ent.SupportFeeCycle) map[string]any {
 		"currency":       stringFromMeta(cycle.Metadata, "last_invoice_currency"),
 		"invoice_number": stringFromMeta(cycle.Metadata, "last_invoice_number"),
 		"pay_link":       stringFromMeta(cycle.Metadata, "last_invoice_pay_url"),
+		"invoice_url":    stringFromMeta(cycle.Metadata, billing.MetaLastInvoiceURL),
 		"notification": map[string]any{
 			"target":          "tenant_admin",
 			"recipient_email": email,

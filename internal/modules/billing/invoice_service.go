@@ -375,10 +375,7 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 		// Fallback: public invoice page (still mints a fresh session on Pay).
 		payURL = fmt.Sprintf("%s/i/%s", s.treasuryUIBase, inv.PublicToken)
 	}
-	pdfURL := ""
-	if inv.PublicToken != "" {
-		pdfURL = fmt.Sprintf("%s/api/v1/public/invoices/%s/pdf", s.treasuryAPIBase, inv.PublicToken)
-	}
+	pdfURL, invoiceURL := publicInvoiceLinks(s.treasuryAPIBase, s.treasuryUIBase, inv.PublicToken)
 
 	// 4. Persist markers + emit the invoice_generated outbox event (→ notifications email).
 	meta := cloneMeta(sub.Metadata)
@@ -388,6 +385,7 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 	meta["last_invoice_period_start"] = startKey
 	meta["last_invoice_pay_url"] = payURL
 	meta["last_invoice_pdf_url"] = pdfURL
+	meta[MetaLastInvoiceURL] = invoiceURL
 	meta["last_invoice_total"] = total
 	meta["last_invoice_currency"] = currency
 
@@ -440,6 +438,7 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 		"due_date":       sub.CurrentPeriodEnd.UTC().Format(time.RFC3339),
 		"pay_url":        payURL,
 		"pdf_url":        pdfURL,
+		"invoice_url":    invoiceURL,
 		"notification": map[string]any{
 			"target":          "tenant_admin",
 			"recipient_email": customerEmail,
@@ -525,6 +524,7 @@ func (s *InvoiceService) ResendLast(ctx context.Context, tenantID uuid.UUID) (*I
 		"due_date":       sub.CurrentPeriodEnd.UTC().Format(time.RFC3339),
 		"pay_url":        payURL,
 		"pdf_url":        pdfURL,
+		"invoice_url":    stringMeta(sub.Metadata, MetaLastInvoiceURL),
 		"notification": map[string]any{
 			"target":          "tenant_admin",
 			"recipient_email": billingEmail(sub),
