@@ -74,6 +74,40 @@ type featureDefinitionDTO struct {
 	MinPlanCode  string `json:"minPlanCode,omitempty"`
 	MinTierLabel string `json:"minTierLabel,omitempty"`
 	MinTierOrder int    `json:"minTierOrder,omitempty"`
+	// ByFamily: plan family (planFamily, e.g. POWERSUITE_DUKA) -> the cheapest plan of THAT
+	// family unlocking the feature. The single global minimum above is often another family's
+	// plan (a retail tenant was told to upgrade to "PowerSuite Pharmacy (Dawa) - Professional"),
+	// so gates resolve the tenant's own family first; a family missing here does not offer the
+	// feature at all.
+	ByFamily map[string]familyPlan `json:"byFamily,omitempty"`
+}
+
+// familyPlan is one family's cheapest plan unlocking a feature.
+type familyPlan struct {
+	PlanCode  string `json:"planCode"`
+	TierLabel string `json:"tierLabel"`
+	TierOrder int    `json:"tierOrder"`
+}
+
+// shortTierLabel is the tier part of a plan code, as people say it: POWERSUITE_DUKA_BASIC ->
+// "Basic", POWERSUITE_HOSP_PRO -> "Pro", POWERSUITE_DUKA_GOLD_ONE_TIME -> "Gold". Badges and
+// upgrade prompts show this instead of the full plan name.
+func shortTierLabel(code string) string {
+	upper := strings.ToUpper(code)
+	for _, suffix := range []string{"_ONE_TIME", "_ANNUAL", "_MONTHLY", "_SEMI_ANNUAL", "_QUARTERLY"} {
+		upper = strings.TrimSuffix(upper, suffix)
+	}
+	seg := upper
+	if i := strings.LastIndex(upper, "_"); i != -1 {
+		seg = upper[i+1:]
+	}
+	switch seg {
+	case "PRO", "PROFESSIONAL":
+		return "Pro"
+	case "":
+		return code
+	}
+	return strings.ToUpper(seg[:1]) + strings.ToLower(seg[1:])
 }
 
 // minPlan is the cheapest plan that unlocks a given feature code or service tag. Exported
@@ -88,30 +122,41 @@ type minPlan struct {
 }
 
 // minUnlockingPlans builds featureCode → cheapest unlocking plan, by lowest (tier_order, base_price)
-// among active plans that include the feature. Powers the shared upgrade dialog's "Upgrade to X".
-func (h *FeatureCatalogHandler) minUnlockingPlans(ctx context.Context) map[string]minPlan {
+// among active plans that include the feature, overall and per plan family. Powers the shared
+// upgrade dialog's "Upgrade to X" and the locked badges.
+func (h *FeatureCatalogHandler) minUnlockingPlans(ctx context.Context) (map[string]minPlan, map[string]map[string]minPlan) {
 	res := map[string]minPlan{}
+	byFamily := map[string]map[string]minPlan{}
 	plans, err := h.orm.SubscriptionPlan.Query().
 		Where(subscriptionplan.IsActive(true)).
 		WithFeatures().
 		All(ctx)
 	if err != nil {
 		h.log.Warn("min-unlocking-plans: load plans failed (feature→tier omitted)", zap.Error(err))
-		return res
+		return res, byFamily
 	}
+	cheaper := func(a, b minPlan) bool { return a.Tier < b.Tier || (a.Tier == b.Tier && a.Price < b.Price) }
 	for _, p := range plans {
+		family := planFamily(p.PlanCode)
 		for _, pf := range p.Edges.Features {
 			if !pf.IsIncluded {
 				continue
 			}
 			cand := minPlan{Code: p.PlanCode, Name: p.Name, Tier: p.TierOrder, Price: p.BasePrice}
-			cur, ok := res[pf.FeatureCode]
-			if !ok || cand.Tier < cur.Tier || (cand.Tier == cur.Tier && cand.Price < cur.Price) {
+			if cur, ok := res[pf.FeatureCode]; !ok || cheaper(cand, cur) {
 				res[pf.FeatureCode] = cand
+			}
+			fam := byFamily[pf.FeatureCode]
+			if fam == nil {
+				fam = map[string]minPlan{}
+				byFamily[pf.FeatureCode] = fam
+			}
+			if cur, ok := fam[family]; !ok || cheaper(cand, cur) {
+				fam[family] = cand
 			}
 		}
 	}
-	return res
+	return res, byFamily
 }
 
 // minUnlockingPlansByServiceTag builds serviceTag → cheapest plan whose UNION of (its own
@@ -261,15 +306,21 @@ func (h *FeatureCatalogHandler) ListCatalog(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	minPlans := h.minUnlockingPlans(ctx)
+	minPlans, familyPlans := h.minUnlockingPlans(ctx)
 	items := make([]featureDefinitionDTO, len(defs))
 	services := map[string]bool{}
 	for i, d := range defs {
 		items[i] = toFeatureDefinitionDTO(d)
 		if mp, ok := minPlans[d.FeatureCode]; ok {
 			items[i].MinPlanCode = mp.Code
-			items[i].MinTierLabel = mp.Name
+			items[i].MinTierLabel = shortTierLabel(mp.Code)
 			items[i].MinTierOrder = mp.Tier
+		}
+		if fams := familyPlans[d.FeatureCode]; len(fams) > 0 {
+			items[i].ByFamily = make(map[string]familyPlan, len(fams))
+			for fam, mp := range fams {
+				items[i].ByFamily[fam] = familyPlan{PlanCode: mp.Code, TierLabel: shortTierLabel(mp.Code), TierOrder: mp.Tier}
+			}
 		}
 		services[d.ServiceTag] = true
 	}
