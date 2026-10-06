@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
@@ -10,12 +11,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// DeletePaymentMethod removes a payment method from the subscription metadata.
-// The last payment method cannot be removed. Deletion is only allowed when the
-// subscription is cancelled (cancel_at_period_end=true) or expired/inactive.
+// DeletePaymentMethod removes a saved payment method (card by last4, mobile money by phone).
+// The customer may remove any saved method at any time, including the last one: holding a card
+// they asked us to forget is not allowed, and with no saved method the next renewal simply comes
+// as an invoice to pay. (It used to refuse the last method and any method while the subscription
+// was active, which forced customers to cancel to delete their card.)
 //
 // @Summary Delete a saved payment method
-// @Description Removes a payment method by last4 from the subscription metadata.
+// @Description Removes a payment method by card last4 or mobile money phone from the subscription metadata.
 // @Tags Billing
 // @Accept json
 // @Produce json
@@ -57,34 +60,8 @@ func (h *BillingHandler) DeletePaymentMethod(w http.ResponseWriter, r *http.Requ
 	}
 
 	methods := savedPaymentMethods(meta)
-
-	if len(methods) <= 1 {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "cannot remove the only payment method"})
-		return
-	}
-
-	// Check subscription is cancelled or expired before allowing delete.
-	status := string(sub.Status)
-	cancelAtPeriodEnd, _ := meta["cancel_at_period_end"].(bool)
-	if status == "ACTIVE" && !cancelAtPeriodEnd {
-		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "payment method can only be removed after subscription is cancelled",
-		})
-		return
-	}
-
-	// Filter out the method with the given last4.
-	filtered := make([]any, 0, len(methods))
-	for _, m := range methods {
-		if mm, ok := m.(map[string]any); ok {
-			if l4, _ := mm["last4"].(string); l4 == body.Last4 {
-				continue
-			}
-		}
-		filtered = append(filtered, m)
-	}
-
-	if len(filtered) == len(methods) {
+	filtered, removed := withoutPaymentMethod(methods, body.Last4)
+	if !removed {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "payment method not found"})
 		return
 	}
@@ -151,11 +128,9 @@ func (h *BillingHandler) SetDefaultPaymentMethod(w http.ResponseWriter, r *http.
 	// Move the selected method to the front (default = index 0).
 	reordered := make([]any, 0, len(methods))
 	for _, m := range methods {
-		if mm, ok := m.(map[string]any); ok {
-			if l4, _ := mm["last4"].(string); l4 == body.Last4 {
-				reordered = append([]any{m}, reordered...)
-				continue
-			}
+		if paymentMethodMatches(m, body.Last4) {
+			reordered = append([]any{m}, reordered...)
+			continue
 		}
 		reordered = append(reordered, m)
 	}
@@ -262,6 +237,45 @@ func (h *BillingHandler) UndoCancelSubscription(w http.ResponseWriter, r *http.R
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{"status": "reactivated"})
+}
+
+// paymentMethodMatches reports whether a saved method is the one the customer picked. Cards are
+// keyed by last4; mobile money by phone, compared on digits so "+254 712..." matches "254712...".
+func paymentMethodMatches(m any, key string) bool {
+	mm, ok := m.(map[string]any)
+	if !ok || strings.TrimSpace(key) == "" {
+		return false
+	}
+	if l4, _ := mm["last4"].(string); l4 != "" && l4 == key {
+		return true
+	}
+	phone, _ := mm["phone"].(string)
+	want := digitsOnly(key)
+	return phone != "" && want != "" && digitsOnly(phone) == want
+}
+
+// withoutPaymentMethod returns the methods minus the picked one, and whether it was found.
+func withoutPaymentMethod(methods []any, key string) ([]any, bool) {
+	out := make([]any, 0, len(methods))
+	removed := false
+	for _, m := range methods {
+		if !removed && paymentMethodMatches(m, key) {
+			removed = true
+			continue
+		}
+		out = append(out, m)
+	}
+	return out, removed
+}
+
+func digitsOnly(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // savedPaymentMethods is the subscription's saved payment methods (payment_methods, or the legacy

@@ -1953,7 +1953,8 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Removes a payment method by last4 from the subscription metadata.
+      description: Removes a payment method by card last4 or mobile money phone from
+        the subscription metadata.
       produces:
       - application/json
       responses:
@@ -2133,6 +2134,20 @@ paths:
       tags:
       - Subscriptions
   /subscription/standing-order:
+    delete:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Cancel the M-Pesa standing order
+      tags:
+      - Billing
     get:
       produces:
       - application/json
@@ -2161,6 +2176,22 @@ paths:
       security:
       - BearerAuth: []
       summary: Pay the subscription automatically by M-Pesa standing order
+      tags:
+      - Billing
+  /subscription/standing-order/quote:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Standing order terms (amount, frequency, start date, payee) before
+        authorising
       tags:
       - Billing
   /subscriptions/expiring:

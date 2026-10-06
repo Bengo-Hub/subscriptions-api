@@ -166,7 +166,10 @@ func New(
 				r.Post("/subscription/payment-method/confirm", billingHandler.ConfirmPaymentMethod)
 				// Pay the subscription automatically by M-Pesa standing order (Ratiba).
 				r.Get("/subscription/standing-order", billingHandler.GetStandingOrder)
+				// Terms (payee, amount, frequency, start) shown before the customer authorises.
+				r.Get("/subscription/standing-order/quote", billingHandler.GetStandingOrderQuote)
 				r.Post("/subscription/standing-order", billingHandler.RegisterStandingOrder)
+				r.Delete("/subscription/standing-order", billingHandler.CancelStandingOrder)
 			}
 
 			// Credit wallet + coupon redemption
