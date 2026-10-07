@@ -153,8 +153,10 @@ func psTreasuryBlock(tier int, vendorAtT1 bool) []string {
 		)
 	}
 	if tier >= 3 {
+		// escrow_management: holding customers' money for beneficiaries is a tier 3 (Gold)
+		// treasury feature in every family (2026-10-07), as on the ERP suite.
 		base = append(base, "vouchers", "reconciliation", "basic_reconciliation", "audit_trail",
-			"financial_planning", "bi_reports")
+			"financial_planning", "bi_reports", "escrow_management")
 	}
 	return base
 }

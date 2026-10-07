@@ -59,7 +59,7 @@ func powerSuiteFeatures(tier int) []string {
 			"wallet_management", "payment_collection", "paystack_integration",
 			"payment_links", "transaction_reports", "invoice_generation",
 			"basic_reconciliation", "customer_management", "vendor_management",
-			"multi_currency", "bulk_payouts", "escrow_management",
+			"multi_currency", "bulk_payouts",
 			"payout_schedules", "reconciliation",
 			"ar_tracking", "ap_tracking", "ledger_posting", "tax_codes",
 			"etims_integration",
