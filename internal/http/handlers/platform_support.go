@@ -307,8 +307,10 @@ func (h *PlatformHandler) UpdateSupportAgreement(w http.ResponseWriter, r *http.
 		return
 	}
 	// A personal agreement's charges already invoiced on the company's books move off them too,
-	// so switching collection never leaves an open personal charge in revenue and AR.
-	if in.Collection != nil && subscriptions.IsPersonalAgreement(a.Metadata) && h.invoiceSvc != nil {
+	// so switching collection never leaves an open personal charge in revenue and AR. Checked on
+	// every save (charges already moved are skipped), so saving the agreement also repairs one
+	// raised before this check existed.
+	if subscriptions.IsPersonalAgreement(a.Metadata) && h.invoiceSvc != nil {
 		if _, merr := h.invoiceSvc.MoveOpenSupportChargesOffBooks(r.Context(), id); merr != nil {
 			h.log.Error("support agreement: open charges not moved off the books", zap.String("agreement_id", id.String()), zap.Error(merr))
 			writeJSON(w, http.StatusBadGateway, map[string]string{
