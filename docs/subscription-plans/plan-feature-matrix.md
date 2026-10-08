@@ -114,6 +114,29 @@ Every re-point is logged `MIGRATE sub <id> tenant <id> <old> -> <new>` — feed 
 treasury invoice-correction pass (void + regenerate PENDING subscription invoices whose plan
 price changed; PAID invoices are never touched).
 
+## Maskani property platform (added 2026-10-08)
+
+`cmd/seed/plans_maskani.go`, service tag `maskani`, monthly, priced by units under management
+(Maskani SRDD 25.3). Each tier is the maskani module switches plus the ERP set of the same tier
+(`erpFeatures`) plus a treasury block (invoices, ledger, M-Pesa and Paystack from tier 1, the
+tier 3 treasury set from Growth). Limits are `erpLimits(tier)` plus `max_units`.
+
+| Plan | KES / month | Units | ERP employees | Staff users | Adds |
+|---|---|---|---|---|---|
+| `MASKANI_STARTER` | 10,000 | 150 | 25 | 10 | All release 1 modules, payroll, leave, attendance, single level approvals |
+| `MASKANI_GROWTH` | 20,000 | 400 | 75 | 30 | Budgeting, approval workflows, asset management, BI reports, marketplace listings |
+| `MASKANI_PROFESSIONAL` | 35,000 | 1,000 | 200 | 100 | API access, custom workflows, audit trail, priority support |
+| `MASKANI_ENTERPRISE` | Quote (`custom_quote`) | Unlimited | Unlimited | Unlimited | Same features, no limits |
+
+- Module codes `maskani_properties`, `_billing`, `_utilities`, `_sales`, `_estate`, `_maintenance`,
+  `_providers`, `_gate`, `_staff`, `_communication`, `_leasing`, `_commercial`, `_portfolios`
+  (every tier) and `_marketplace` (Growth up). maskani-api gates each module on
+  `maskani_<module>` and also hides modules that are not released yet.
+- Owners, occupants, guards and vendor supervisors are portal users and never count as staff.
+- No plan setup fee: implementation is quoted per project. Annual prepayment (one month free) is
+  handled at invoicing, not as a separate plan.
+- `plans_maskani_test.go` checks catalog codes, the tier superset rule and the SRDD limits.
+
 ## Kept as-is (per spec notes)
 
 ERP standalone plans (`ERP_{STARTER,GROWTH,PROFESSIONAL,ENTERPRISE}` + `_ONE_TIME` tiers — now

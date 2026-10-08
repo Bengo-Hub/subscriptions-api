@@ -130,6 +130,12 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 		return fmt.Errorf("seed hospital support plans: %w", err)
 	}
 
+	// 2.1d Maskani property platform: MASKANI_{STARTER,GROWTH,PROFESSIONAL,ENTERPRISE}
+	// (maskani modules + ERP + treasury at the same tier) — see plans_maskani.go.
+	if err := seedMaskaniPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed maskani plans: %w", err)
+	}
+
 	// 2.5 Seed TruLoad org-level plans (Starter, Growth, Professional + License)
 	if err := seedTruLoadOrgPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed truload org plans: %w", err)

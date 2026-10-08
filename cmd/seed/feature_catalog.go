@@ -60,6 +60,7 @@ var featureCatalog = func() []catalogEntry {
 		platform   = "platform"
 		hospital   = "hospital"
 		etimsAPI   = "etims_api"
+		maskani    = "maskani"
 	)
 	entries := []catalogEntry{
 		// ─── Treasury / Finance ───────────────────────────────────────────────
@@ -284,6 +285,26 @@ var featureCatalog = func() []catalogEntry {
 		feat("khis_dhis2_reporting", hospital, "Compliance", "KHIS/DHIS2 Aggregate Reporting (ADX)"),
 		lim("max_patients_per_day", hospital, "Limits", "Patients per Day", ""),
 		lim("max_branches", hospital, "Limits", "Branches", ""),
+
+		// ─── Maskani (property platform) ──────────────────────────────────────
+		// See plans_maskani.go. Module switches checked by maskani-api's module gate
+		// (settings.FeatureCode = "maskani_" + module). Budgets, approvals, BI, API access and
+		// the rest of the tier differences reuse the ERP and treasury codes above.
+		feat("maskani_properties", maskani, "Register", "Properties, Units and Parties"),
+		feat("maskani_billing", maskani, "Money", "Service Charge Billing and Collections"),
+		feat("maskani_utilities", maskani, "Money", "Water Meters and Utility Billing"),
+		feat("maskani_sales", maskani, "Money", "Unit Sales and Instalments"),
+		feat("maskani_estate", maskani, "Operations", "Estate Management"),
+		feat("maskani_maintenance", maskani, "Operations", "Work Orders and Maintenance"),
+		feat("maskani_providers", maskani, "Operations", "Service Providers and Vendor Documents"),
+		feat("maskani_gate", maskani, "Security", "Gate, Visitor Passes and Incidents"),
+		feat("maskani_staff", maskani, "Operations", "Estate Staff"),
+		feat("maskani_communication", maskani, "Communication", "Notices and Owner Portal"),
+		feat("maskani_leasing", maskani, "Money", "Leasing and Rent (later release)"),
+		feat("maskani_commercial", maskani, "Money", "Commercial Leases (later release)"),
+		feat("maskani_portfolios", maskani, "Operations", "Landlord Portfolios (later release)"),
+		feat("maskani_marketplace", maskani, "Marketplace", "Marketplace Listings (later release)"),
+		lim("max_units", maskani, "Limits", "Units under Management", ""),
 
 		// ─── ERP ──────────────────────────────────────────────────────────────
 		feat("hr_management", erp, "ERP", "HR Management"),
