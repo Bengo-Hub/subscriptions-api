@@ -237,6 +237,11 @@ func (s *InvoiceService) GenerateAndSendSupportFeeInvoice(ctx context.Context, c
 	meta[MetaLastInvoiceURL] = invoiceURL
 	meta["last_invoice_total"] = total
 	meta["last_invoice_currency"] = currency
+	if personal {
+		meta[MetaCycleOffBooks] = true
+	} else {
+		delete(meta, MetaCycleOffBooks) // a forced re-issue after switching back to business
+	}
 
 	tx, err := s.orm.Tx(ctx)
 	if err != nil {

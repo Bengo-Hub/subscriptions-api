@@ -301,9 +301,21 @@ func (h *PlatformHandler) UpdateSupportAgreement(w http.ResponseWriter, r *http.
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
-	if _, err := h.subSvc.UpdateSupportAgreement(r.Context(), id, in, actorID(r)); err != nil {
+	a, err := h.subSvc.UpdateSupportAgreement(r.Context(), id, in, actorID(r))
+	if err != nil {
 		h.writeSupportError(w, err, "update support agreement")
 		return
+	}
+	// A personal agreement's charges already invoiced on the company's books move off them too,
+	// so switching collection never leaves an open personal charge in revenue and AR.
+	if in.Collection != nil && subscriptions.IsPersonalAgreement(a.Metadata) && h.invoiceSvc != nil {
+		if _, merr := h.invoiceSvc.MoveOpenSupportChargesOffBooks(r.Context(), id); merr != nil {
+			h.log.Error("support agreement: open charges not moved off the books", zap.String("agreement_id", id.String()), zap.Error(merr))
+			writeJSON(w, http.StatusBadGateway, map[string]string{
+				"error": "Collection is now personal, but some open invoices could not be moved off the books: " + merr.Error(),
+			})
+			return
+		}
 	}
 	h.writeAgreement(w, r, id, http.StatusOK)
 }

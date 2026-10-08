@@ -272,6 +272,17 @@ type invoiceRow struct {
 	Description string   `json:"description"`
 	PdfURL      string   `json:"pdfUrl,omitempty"`
 	PayURL      string   `json:"payUrl,omitempty"`
+	// Kind is "subscription" or "support": a support invoice is paid through its support charge
+	// (supportCharges), so the page must not offer it again as a subscription bill.
+	Kind string `json:"kind"`
+}
+
+// invoiceKind maps a treasury platform invoice reference_type to the billing page's kind.
+func invoiceKind(referenceType string) string {
+	if referenceType == "support_fee_cycle" {
+		return "support"
+	}
+	return "subscription"
 }
 
 // subscriptionInvoiceRow builds an invoice-history row from the latest subscription invoice
@@ -306,6 +317,7 @@ func subscriptionInvoiceRow(sub *ent.TenantSubscription) (invoiceRow, bool) {
 		Description: "Subscription invoice " + num,
 		PdfURL:      pdf,
 		PayURL:      pay,
+		Kind:        "subscription",
 	}, true
 }
 
@@ -338,6 +350,7 @@ func (h *BillingHandler) fetchInvoices(ctx context.Context, tenantID uuid.UUID) 
 		Description   string  `json:"description"`
 		PdfPath       string  `json:"pdf_path"`
 		PublicToken   string  `json:"public_token"`
+		ReferenceType string  `json:"reference_type"`
 	}
 	if err := resp.DecodeJSON(&raw); err != nil {
 		h.log.Warn("failed to decode treasury invoices", zap.Error(err))
@@ -353,6 +366,7 @@ func (h *BillingHandler) fetchInvoices(ctx context.Context, tenantID uuid.UUID) 
 		row := invoiceRow{
 			ID: inv.InvoiceNumber, Date: date, Amount: inv.Amount, AmountPaid: &paid,
 			Currency: inv.Currency, Status: inv.Status, Description: inv.Description,
+			Kind: invoiceKind(inv.ReferenceType),
 		}
 		if inv.PdfPath != "" && h.treasuryAPIBase != "" {
 			row.PdfURL = h.treasuryAPIBase + inv.PdfPath

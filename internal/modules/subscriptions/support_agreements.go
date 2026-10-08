@@ -581,8 +581,9 @@ func (s *Service) UpdateSupportAgreement(ctx context.Context, id uuid.UUID, in S
 		if err != nil {
 			return nil, err
 		}
-		// Applies to charges invoiced from now on; an invoice already raised keeps how it was
-		// booked.
+		// New charges are invoiced the new way. Switching to personal also moves the open charges
+		// already invoiced off the books (the admin handler calls
+		// billing.MoveOpenSupportChargesOffBooks); switching back to business leaves them personal.
 		if personal != IsPersonalAgreement(meta) {
 			changes = append(changes, "collection")
 		}
