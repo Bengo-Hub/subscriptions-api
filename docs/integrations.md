@@ -34,7 +34,7 @@ When auth-api issues a JWT, it calls `GET /api/v1/tenants/{tenant_id}/subscripti
   "roles": ["admin", "user"],
   "sub_plan": "ORDERING-GROWTH-MONTHLY",
   "sub_status": "ACTIVE",
-  "sub_features": [
+  "subscription_features": [
     "customer_portal",
     "loyalty_program",
     "multi_outlet",
@@ -55,7 +55,7 @@ When auth-api issues a JWT, it calls `GET /api/v1/tenants/{tenant_id}/subscripti
 |-----------|----------------|-------------|
 | `sub_plan` | `SubscriptionPlan` | Plan code (e.g. `ORDERING-GROWTH-MONTHLY`) |
 | `sub_status` | `SubscriptionStatus` | Status: `ACTIVE`, `TRIAL`, `EXPIRED`, `CANCELLED`, `PAUSED` |
-| `sub_features` | `SubscriptionFeatures` | Feature codes enabled for this plan |
+| `subscription_features` | `SubscriptionFeatures` | Feature codes enabled for this plan |
 | `sub_limits` | `SubscriptionLimits` | Plan limits as `map[string]int` |
 | `sub_expires` | `SubscriptionExpires` | Current period end as Unix timestamp (int64) |
 
@@ -115,7 +115,7 @@ func (s *OrderingService) CreateOrder(ctx context.Context, req CreateOrderReques
         return ErrForbidden
     }
 
-    // Layer 2: Licensing — from JWT sub_features (no runtime call needed)
+    // Layer 2: Licensing — from JWT subscription_features (no runtime call needed)
     if !claims.IsSuperuser() && !claims.IsPlatformOwner && !claims.IsSubscriptionActive() {
         return ErrSubscriptionInactive
     }
@@ -168,7 +168,7 @@ api.Use(func(next http.Handler) http.Handler {
 
 **How auth-api uses subscriptions-api**:
 
-1. At JWT issuance, auth-api calls `GET /api/v1/tenants/{tenant_id}/subscription` with `X-API-Key: INTERNAL_SERVICE_KEY` to fetch subscription data and embed `sub_plan`, `sub_status`, `sub_features`, `sub_limits`, `sub_expires` into the token.
+1. At JWT issuance, auth-api calls `GET /api/v1/tenants/{tenant_id}/subscription` with `X-API-Key: INTERNAL_SERVICE_KEY` to fetch subscription data and embed `sub_plan`, `sub_status`, `subscription_features`, `sub_limits`, `sub_expires` into the token.
 2. When subscriptions-api emits a `tenant.subscription.updated` event (on any plan change), auth-api consumes it and marks cached tokens for re-issuance.
 
 **Events consumed by subscriptions-api from auth-api**:
@@ -184,8 +184,8 @@ api.Use(func(next http.Handler) http.Handler {
 **Integration type**: NATS events (bidirectional)
 
 **Events published by subscriptions-api** (consumed by treasury):
-- `subscription.subscription.created` — New subscription provisioned; treasury may create initial invoice
-- `subscription.subscription.renewed` — Renewal billing event
+- `subscription.created` — New subscription provisioned; treasury may create initial invoice
+- `subscription.renewed` — Renewal billing event
 
 **Events consumed by subscriptions-api** (published by treasury):
 - `treasury.payment.succeeded` → Activate subscription
@@ -319,11 +319,11 @@ Subscriptions-api emits lifecycle events that notifications-api maps to email/SM
 
 | Event | Notification |
 |-------|-------------|
-| `subscription.subscription.created` | Welcome / trial started |
-| `subscription.subscription.expired` | Subscription expired — action required |
-| `subscription.subscription.cancelled` | Cancellation confirmation |
-| `subscription.subscription.upgraded` | Plan upgrade confirmation |
-| `subscription.subscription.downgraded` | Plan downgrade notification |
+| `subscription.created` | Welcome / trial started |
+| `subscription.expired` | Subscription expired — action required |
+| `subscription.cancelled` | Cancellation confirmation |
+| `subscription.upgraded` | Plan upgrade confirmation |
+| `subscription.downgraded` | Plan downgrade notification |
 
 **S2S endpoint** (for scheduled expiry warnings):
 
@@ -404,32 +404,37 @@ req.Header.Set("X-API-Key", os.Getenv("INTERNAL_SERVICE_KEY"))
 
 ### NATS Subject Format
 
-`{aggregate_type}.{event_type}` — e.g. `subscription.subscription.upgraded`, `tenant.subscription.updated`
+`{aggregate_type}.{event_type}`, for example `subscription.upgraded` (aggregate `subscription`, event `upgraded`) and `tenant.subscription.updated`
 
 ### Outbound Events (Published by Subscriptions-API)
 
 | Subject | When |
 |---------|------|
-| `subscription.subscription.created` | New subscription provisioned |
-| `subscription.subscription.activated` | Payment confirmed, subscription active |
-| `subscription.subscription.upgraded` | Plan tier increased |
-| `subscription.subscription.downgraded` | Plan tier decreased |
-| `subscription.subscription.cancelled` | Cancellation |
-| `subscription.subscription.expired` | Period/trial ended |
-| `subscription.subscription.renewed` | Renewal (free plan period extended) |
-| `subscription.subscription.suspended` | Manual suspension or payment failure |
-| `subscription.subscription.reactivated` | Suspension lifted |
-| `subscription.subscription.payment_required` | Treasury payment failed |
-| `subscription.subscription.renewal_initiated` | Saved-card charge of the renewal invoice attempted (paid plans) |
-| `subscription.addon.purchased` | Add-on feature purchased |
+| `subscription.created` | New subscription provisioned |
+| `subscription.activated` | Payment confirmed, subscription active |
+| `subscription.upgraded` | Plan tier increased |
+| `subscription.downgraded` | Plan tier decreased |
+| `subscription.cancelled` | Cancellation |
+| `subscription.expired` | Period/trial ended |
+| `subscription.renewed` | Renewal (free plan period extended) |
+| `subscription.renewal_initiated` | Saved-card charge of the renewal invoice attempted (paid plans) |
+| `subscription.payment_required` | Treasury payment failed |
+| `subscription.invoice_generated` | Renewal invoice generated |
+| `subscription.grace_started`, `subscription.grace_reminder` | Grace period started; reminder during grace |
+| `subscription.dormancy.warning`, `subscription.dormancy.suspended` | Dormant tenant warned; suspended |
+| `subscription.tenant_activated` | Tenant activated on its first subscription |
+| `subscription.support_fee_invoice_generated`, `subscription.support_fee_grace_reminder`, `subscription.support_fee_overdue` | Support fee billing |
+| `custom_addon.custom_addon.activated` | Custom add-on activated |
+| `email.license.*` | License assigned, unassigned, upgraded, suspended or expired |
 | `tenant.subscription.updated` | Any plan change (consistent event on tenant aggregate) |
+| `tenant.purge` | Tenant data purge requested |
 
-**Event payload example** (`subscription.subscription.upgraded`):
+**Event payload example** (`subscription.upgraded`):
 
 ```json
 {
   "id": "uuid",
-  "event_type": "subscription.upgraded",
+  "event_type": "upgraded",
   "aggregate_type": "subscription",
   "aggregate_id": "subscription-uuid",
   "tenant_id": "tenant-uuid",
