@@ -21,8 +21,8 @@ func powerSuiteFeatures(tier int) []string {
 			"pos_terminal", "table_management", "shift_reports", "offline_sync",
 			// POS Device-1 (mpesa_pos = Lipa Na M-Pesa POS till, included at Starter)
 			"mpesa_pos", "order_management", "receipt_printing", "daily_reports", "kds",
-			// Logistics Starter
-			"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch",
+			// Logistics Starter (live tracking is tier 3, see psLogisticsBlock)
+			"rider_management", "delivery_assignment", "basic_dispatch",
 			// Inventory Starter
 			"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports",
 			"bulk_import",
@@ -49,9 +49,9 @@ func powerSuiteFeatures(tier int) []string {
 			// POS Device-5 additions
 			"mpesa_pos", "order_management", "receipt_printing", "daily_reports",
 			"multi_cashier",
-			// Logistics Growth additions
-			"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch",
-			"route_optimisation", "driver_analytics", "performance_reports",
+			// Logistics Growth additions (live tracking and route optimisation are tier 3)
+			"rider_management", "delivery_assignment", "basic_dispatch",
+			"driver_analytics", "performance_reports",
 			// Inventory Growth additions
 			"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports",
 			"bulk_import", "multi_warehouse", "inventory_multiple_images", "batch_expiry_tracking", "supplier_portal",
@@ -139,7 +139,7 @@ func powerSuiteLimits(tier int) map[string]any {
 			"sms_notifications_per_month":   150,
 			// Logistics
 			"max_riders":                               5,
-			"live_tracking_requests_per_month":         2000,
+			"live_tracking_requests_per_month":         0, // live_tracking is tier 3
 			"routing_requests_per_month":               100,
 			"overage_rider_price_per_month":            250.0,
 			"overage_orders_price_per_100_month":       375.0,
@@ -181,7 +181,7 @@ func powerSuiteLimits(tier int) map[string]any {
 			"sms_notifications_per_month":   500,
 			// Logistics
 			"max_riders":                               15,
-			"live_tracking_requests_per_month":         10000,
+			"live_tracking_requests_per_month":         0, // live_tracking is tier 3
 			"routing_requests_per_month":               500,
 			"overage_rider_price_per_month":            250.0,
 			"overage_orders_price_per_100_month":       375.0,

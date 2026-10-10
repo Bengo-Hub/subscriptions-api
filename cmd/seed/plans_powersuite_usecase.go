@@ -52,14 +52,18 @@ func psOrderingBlock(tier int) []string {
 	return base
 }
 
-// psLogisticsBlock — Logistics coverage per tier (basic rider app access at every tier).
+// psLogisticsBlock is logistics coverage per tier. Tier 1 runs deliveries day to day (riders,
+// assignment, dispatch, delivery areas and quotes, proof of delivery). Tier 2 adds what a
+// medium delivery business (e.g. food delivery) needs to manage its fleet: driver analytics and
+// performance reports. Tier 3 adds the high-bandwidth and compute-heavy features: live GPS
+// tracking (fleet map and WebSocket streams), route optimisation, and API access.
 func psLogisticsBlock(tier int) []string {
-	base := []string{"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch", "basic_logistics_access"}
+	base := []string{"rider_management", "delivery_assignment", "basic_dispatch", "basic_logistics_access"}
 	if tier >= 2 {
-		base = append(base, "route_optimisation", "driver_analytics", "performance_reports")
+		base = append(base, "driver_analytics", "performance_reports")
 	}
 	if tier >= 3 {
-		base = append(base, "api_access", "webhooks", "custom_integrations")
+		base = append(base, "live_tracking", "route_optimisation", "api_access", "webhooks", "custom_integrations")
 	}
 	return base
 }
