@@ -252,6 +252,9 @@ var featureCatalog = func() []catalogEntry {
 		feat("route_optimisation", logistics, "Logistics", "Route Optimisation (Valhalla)"),
 		feat("driver_analytics", logistics, "Logistics", "Driver Performance Analytics"),
 		feat("performance_reports", logistics, "Logistics", "Fleet Performance Reports"),
+		feat("auto_dispatch", logistics, "Logistics", "Auto-assign Nearest Rider"),
+		feat("rider_shifts", logistics, "Logistics", "Rider Shift Scheduling"),
+		feat("rider_payouts", logistics, "Logistics", "Rider Earnings Statements & Payouts"),
 		// Thin reference into logistics-api's Task/PricingRule — no new dispatch engine, see
 		// hospital-api/docs/integrations.md §2A. Hospital tier only (plans_hospital.go).
 		feat("ambulance_dispatch", logistics, "Logistics", "Ambulance & Emergency Dispatch"),

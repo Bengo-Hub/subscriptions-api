@@ -52,6 +52,7 @@ func powerSuiteFeatures(tier int) []string {
 			// Logistics Growth additions (live tracking and route optimisation are tier 3)
 			"rider_management", "delivery_assignment", "basic_dispatch",
 			"driver_analytics", "performance_reports",
+			"auto_dispatch", "rider_shifts", "rider_payouts",
 			// Inventory Growth additions
 			"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports",
 			"bulk_import", "multi_warehouse", "inventory_multiple_images", "batch_expiry_tracking", "supplier_portal",
@@ -91,6 +92,7 @@ func powerSuiteFeatures(tier int) []string {
 			// Logistics Professional additions
 			"rider_management", "delivery_assignment", "live_tracking", "basic_dispatch",
 			"route_optimisation", "driver_analytics", "performance_reports",
+			"auto_dispatch", "rider_shifts", "rider_payouts",
 			"api_access", "webhooks", "custom_integrations",
 			// Inventory Professional additions
 			"stock_tracking", "low_stock_alerts", "purchase_orders", "basic_reports",
