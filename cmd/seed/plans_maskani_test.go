@@ -24,7 +24,7 @@ func TestMaskaniPlans(t *testing.T) {
 			}
 		}
 		prev = set
-		for _, must := range []string{"maskani_billing", "maskani_gate", "invoice_generation", "payroll", "mpesa_integration"} {
+		for _, must := range []string{"maskani_billing", "maskani_gate", "invoice_generation", "mpesa_integration"} {
 			if !set[must] {
 				t.Errorf("%s: missing %q", tier.code, must)
 			}
@@ -51,6 +51,23 @@ func TestMaskaniPlans(t *testing.T) {
 	for _, f := range []string{"budgeting", "approval_workflows", "bi_reports", "asset_management"} {
 		if starter[f] || !growth[f] {
 			t.Errorf("%q should start at Growth", f)
+		}
+	}
+
+	// ERP staff and payroll start at Professional: below it maskani syncs nothing with erp and
+	// staff and casual hands are paid by treasury payment voucher.
+	professional := map[string]bool{}
+	for _, f := range maskaniTierFeatures(3) {
+		professional[f] = true
+	}
+	for f := range maskaniERPStaffFeatures {
+		if starter[f] || growth[f] {
+			t.Errorf("%q should not be on Starter or Growth", f)
+		}
+	}
+	for _, f := range []string{"hr_management", "payroll"} {
+		if !professional[f] {
+			t.Errorf("%q should be on Professional", f)
 		}
 	}
 }

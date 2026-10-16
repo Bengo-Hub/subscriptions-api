@@ -22,8 +22,8 @@ import (
 // supervisors are portal users and never count as staff users.
 //
 // Tier differences come from the reused ERP set: Growth adds budgeting, approval workflows, asset
-// management and BI reports; Professional adds API access, custom workflows, audit trail and
-// priority support. Enterprise is unlimited and quoted. There is no plan setup fee: implementation
+// management and BI reports; Professional adds ERP staff and payroll (maskaniERPStaffFeatures,
+// removed below tier 3), API access, custom workflows, audit trail and priority support. Enterprise is unlimited and quoted. There is no plan setup fee: implementation
 // is quoted per project (setup_fees.go has no maskani entry). Later modules (leasing, commercial,
 // portfolios) come with every tier at no extra charge, marketplace listings from Growth; maskani-api
 // still hides modules that are not released yet.
@@ -47,8 +47,27 @@ func maskaniTreasuryBlock(tier int) []string {
 	return base
 }
 
+// maskaniERPStaffFeatures are the ERP staff and payroll features. Maskani carries them from tier 3
+// (Professional) only: on Starter and Growth an estate pays staff and casual hands with treasury
+// payment vouchers, and maskani-api syncs nothing with erp-api (its ERP gate reads these features).
+// The rest of the reused ERP set (budgeting, approval workflows, asset register, BI) stays per tier.
+var maskaniERPStaffFeatures = map[string]bool{
+	"hr_management": true, "payroll": true, "leave_management": true, "attendance": true,
+	"appraisals": true, "recruitment": true, "training": true, "staff_fund_from_salary": true,
+}
+
 func maskaniTierFeatures(tier int) []string {
-	f := unionFeatures(maskaniCoreModules(), erpFeatures(tier), maskaniTreasuryBlock(tier))
+	erp := erpFeatures(tier)
+	if tier < 3 {
+		kept := make([]string, 0, len(erp))
+		for _, code := range erp {
+			if !maskaniERPStaffFeatures[code] {
+				kept = append(kept, code)
+			}
+		}
+		erp = kept
+	}
+	f := unionFeatures(maskaniCoreModules(), erp, maskaniTreasuryBlock(tier))
 	if tier >= 2 {
 		f = append(f, "maskani_marketplace")
 	}
@@ -74,11 +93,11 @@ type maskaniTier struct {
 
 var maskaniTiers = []maskaniTier{
 	{code: "MASKANI_STARTER", label: "Maskani Starter", tier: 1, monthly: 10000,
-		desc: "Property management for up to 150 units: register, billing and collections, sales and instalments, owner portal, gate, vendors, work orders and notices, with ERP payroll and treasury included."},
+		desc: "Property management for up to 150 units: register, billing and collections, sales and instalments, owner portal, gate, vendors, work orders and notices, with treasury included. Staff and casual hands are paid by payment voucher."},
 	{code: "MASKANI_GROWTH", label: "Maskani Growth", tier: 2, monthly: 20000,
 		desc: "Up to 400 units with service charge budget against actual, multi-level approvals, asset register and BI reports. Recommended for most estates."},
 	{code: "MASKANI_PROFESSIONAL", label: "Maskani Professional", tier: 3, monthly: 35000,
-		desc: "Up to 1,000 units across several properties or phases, with API access, custom workflows, extended audit trail and priority support."},
+		desc: "Up to 1,000 units across several properties or phases, with ERP staff records and payroll, API access, custom workflows, extended audit trail and priority support."},
 	{code: "MASKANI_ENTERPRISE", label: "Maskani Enterprise", tier: 4, monthly: 0,
 		desc: "Unlimited units, staff and properties, scoped and priced to your organisation. Contact sales for a quote."},
 }
