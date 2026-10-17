@@ -2,9 +2,10 @@ package subscriptions
 
 import (
 	"fmt"
-	"math"
 	"strings"
 	"time"
+
+	"github.com/Bengo-Hub/httpware/money"
 
 	"github.com/bengobox/subscription-service/internal/ent/supportagreement"
 )
@@ -177,7 +178,7 @@ func (iv SupportInterval) IntervalMonths() float64 {
 // ProrateAnnualSupport returns the share of an annual support price for one period, rounded to
 // whole cents.
 func ProrateAnnualSupport(annual float64, iv SupportInterval) float64 {
-	return roundMoney(annual * iv.IntervalMonths() / 12)
+	return money.Round2(annual * iv.IntervalMonths() / 12)
 }
 
 // MonthlyEquivalent normalizes a per-period charge to a monthly amount.
@@ -187,8 +188,4 @@ func MonthlyEquivalent(perPeriod float64, iv SupportInterval) float64 {
 		return 0
 	}
 	return perPeriod / m
-}
-
-func roundMoney(v float64) float64 {
-	return math.Round(v*100) / 100
 }

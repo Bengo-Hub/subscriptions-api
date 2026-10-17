@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Bengo-Hub/httpware/money"
+
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/supportagreement"
 )
@@ -171,7 +173,7 @@ func TestProrationAndMonthlyEquivalent(t *testing.T) {
 		if p != c.period {
 			t.Fatalf("%+v prorate got %v want %v", c.iv, p, c.period)
 		}
-		if m := roundMoney(MonthlyEquivalent(p, c.iv)); m != c.monthly {
+		if m := money.Round2(MonthlyEquivalent(p, c.iv)); m != c.monthly {
 			t.Fatalf("%+v monthly got %v want %v", c.iv, m, c.monthly)
 		}
 	}

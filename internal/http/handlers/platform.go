@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Bengo-Hub/httpware/money"
 
 	entsql "entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqljson"
@@ -233,22 +234,20 @@ func (h *PlatformHandler) GetPlatformStats(w http.ResponseWriter, r *http.Reques
 		"trialingCount":       byStatus[string(tenantsubscription.StatusTRIAL)],
 		"churnedCount":        byStatus[string(tenantsubscription.StatusCANCELLED)] + byStatus[string(tenantsubscription.StatusEXPIRED)],
 		"statusCounts":        byStatus,
-		"mrr":                 roundCents(mrr),
+		"mrr":                 money.Round2(mrr),
 		"oneTimeLicenses":     oneTime,
-		"supportMrr":          roundCents(supportMRR),
-		"specialSupportMrr":   roundCents(specialMRR),
+		"supportMrr":          money.Round2(supportMRR),
+		"specialSupportMrr":   money.Round2(specialMRR),
 		"specialAgreements":   specialCount,
-		"totalMrr":            roundCents(mrr + supportMRR),
-		"arr":                 roundCents((mrr + supportMRR) * 12),
+		"totalMrr":            money.Round2(mrr + supportMRR),
+		"arr":                 money.Round2((mrr + supportMRR) * 12),
 		"supportReceivables":  receivables,
 		// The owner's personal engagements, outside every company figure above.
-		"personalSupportMrr":         roundCents(personalMRR),
+		"personalSupportMrr":         money.Round2(personalMRR),
 		"personalSupportReceivables": personalReceivables,
 		"currency":                   "KES",
 	})
 }
-
-func roundCents(v float64) float64 { return math.Round(v*100) / 100 }
 
 func sumAs(field, alias string) ent.AggregateFunc {
 	return func(s *entsql.Selector) string {
