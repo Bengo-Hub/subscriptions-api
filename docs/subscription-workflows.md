@@ -363,13 +363,20 @@ At next renewal cycle:
 | `notifications.push.sent` | push_sent | notifications |
 | `marketflow.campaign.created` | campaigns | marketflow |
 
-**Direct-report metrics (no NATS subject mapping)**: `etims_transactions` (2026-08-18) is reported
-by treasury-api calling `POST /usage/report` directly, one call per successfully-signed external
-eTIMS sale (`internal/platform/subscriptions.Client.ReportUsage` in treasury-api) — there is no
-NATS event for it, since a signed sale to an external API-only consumer has no corresponding
-domain event any other service would need to react to. It flows into the exact same
-`meteredMetrics`/`OverageCharge` pipeline as every subject-mapped metric above; only the ingestion
-path differs.
+**Metrics without a NATS subject**: external eTIMS calls are charged by treasury-api's API-key
+middleware before the sale is transmitted (token pre-flight through `SpendTokens`), not reported
+afterwards; treasury's old `POST /usage/report` client was removed on 2026-10-18.
+
+**Limit checks versus counting**: a service that must refuse an action at the limit asks
+`POST /usage/check` (decision only) and lets the event consumer above do the counting, deduplicated
+per event. pos-api and ordering-backend both work this way. ordering-backend called
+`/usage/report` until 2026-10-18 (`19958a5`), which counted every order twice against
+`max_orders_per_day` because `ordering.order.created` is counted too.
+
+**Idempotency ledger**: the consumers record each event in `processed_events` (shared-events
+`IdempotencyStore`); a daily job deletes rows older than 30 days (`c4bb773`). Before it existed,
+an August 2026 pos.sale.finalized redelivery storm left 4.8M rows and the database at 2 GB (25 MB
+after the 2026-10-18 cleanup).
 
 ---
 

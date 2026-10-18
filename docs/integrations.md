@@ -234,10 +234,11 @@ Content-Type: application/json
 usage pipeline above, specifically for treasury-api's `/api/v1/external/etims/*` route group
 (API-key-authenticated external consumers, not tenant-JWT sessions):
 
-1. Treasury-api's `TransmitExternalSale` reports one `etims_transactions` usage event per
-   successfully-signed sale via the existing `POST /usage/report` (same call shape pos-api/
-   ordering-backend already use — see `internal/platform/subscriptions.Client.ReportUsage` in
-   treasury-api).
+1. Treasury-api's API-key middleware charges each external eTIMS call before it reaches
+   `TransmitExternalSale` (token pre-flight through `SpendTokens`; an insufficient balance
+   refuses the call, an unreachable subscriptions-api fails open). The older after-the-fact
+   `POST /usage/report` call and treasury's `ReportUsage` client were removed (2026-10-18,
+   treasury-api `326efaf9`).
 2. `etims_transactions` is registered in `internal/modules/billing/overage_eligibility.go`'s
    `meteredMetrics` map (`PlanLimitKey: etims_transactions_per_month`, `OveragePriceKey:
    overage_etims_price_per_100_month`) — no new billing code, it flows through the exact same
