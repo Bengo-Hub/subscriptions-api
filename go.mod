@@ -12,7 +12,7 @@ require (
 	github.com/Bengo-Hub/httpware v0.11.0
 	github.com/Bengo-Hub/pagination v0.3.0
 	github.com/Bengo-Hub/shared-auth-client v0.4.0
-	github.com/Bengo-Hub/shared-events v0.7.0
+	github.com/Bengo-Hub/shared-events v0.8.0
 	github.com/Bengo-Hub/shared-service-client v0.3.1
 	github.com/alicebob/miniredis/v2 v2.39.0
 	github.com/gin-gonic/gin v1.11.0

@@ -61,6 +61,7 @@ type App struct {
 	treasuryClient       *serviceclient.Client
 	invoiceSvc           *billing.InvoiceService
 	overageSvc           *billing.OverageService
+	idemStore            *eventslib.IdempotencyStore // nil when its schema could not be ensured
 }
 
 func New(ctx context.Context) (*App, error) {
@@ -350,6 +351,7 @@ func New(ctx context.Context) (*App, error) {
 	idemStore := eventslib.NewIdempotencyStore(sqlDB)
 	if err := idemStore.EnsureSchema(context.Background()); err != nil {
 		log.Warn("usage idempotency schema ensure failed; metering will run without dedup", zap.Error(err))
+		idemStore = nil
 	} else {
 		usageConsumer.SetIdempotency(idemStore)
 		// Payment consumer too: RenewSubscription period-stacking + loyalty credits
@@ -375,6 +377,7 @@ func New(ctx context.Context) (*App, error) {
 		treasuryClient:       treasuryClient,
 		invoiceSvc:           invoiceSvc,
 		overageSvc:           overageSvc,
+		idemStore:            idemStore,
 	}, nil
 }
 
@@ -436,6 +439,11 @@ func (a *App) Run(ctx context.Context) error {
 	if a.orm != nil && a.overageSvc != nil {
 		go jobs.StartOverageJob(ctx, a.log, a.overageSvc)
 		a.log.Info("overage job started")
+	}
+
+	// Start the daily idempotency ledger prune (claims older than 30 days)
+	if a.idemStore != nil {
+		jobs.StartProcessedEventsPruneJob(ctx, a.log, a.idemStore)
 	}
 
 	// Start auth.tenant.created consumer for auto-provisioning new tenants
