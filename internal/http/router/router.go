@@ -35,8 +35,6 @@ func New(
 	couponAdminHandler *handlers.CouponAdminHandler,
 	featureCatalogHandler *handlers.FeatureCatalogHandler,
 	productActivationHandler *handlers.ProductActivationHandler,
-	backupHandler *handlers.BackupHandler,
-	backupDestHandler *handlers.BackupDestinationHandler,
 	emailLicenseHandler *handlers.EmailLicenseHandler,
 	rateLimitHandler *handlers.RateLimitHandler,
 	tokenWalletHandler *handlers.TokenWalletHandler,
@@ -279,46 +277,6 @@ func New(
 			// RBAC routes
 			if rbacHandler != nil {
 				rbacHandler.RegisterRoutes(r)
-			}
-
-			// Tenant-scoped backups (this tenant's data only) — admin-gated: platform owner
-			// or a tenant admin holding subscriptions.config.manage.
-			if backupHandler != nil {
-				r.Group(func(r chi.Router) {
-					r.Use(func(next http.Handler) http.Handler {
-						return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-							ctx := req.Context()
-							allowed := httpware.IsPlatformOwner(ctx)
-							if !allowed {
-								if claims, ok := authclient.ClaimsFromContext(ctx); ok {
-									allowed = claims.HasAnyPermission("subscriptions.config.manage", "subscriptions.config.view")
-								}
-							}
-							if !allowed {
-								w.Header().Set("Content-Type", "application/json")
-								w.WriteHeader(http.StatusForbidden)
-								_, _ = w.Write([]byte(`{"error":"forbidden"}`))
-								return
-							}
-							next.ServeHTTP(w, req)
-						})
-					})
-					backupHandler.RegisterRoutes(r)
-					// Per-tenant backup-destination override (mirrors backups off the
-					// PVC) — same admin/config gate as the tenant backups routes.
-					if backupDestHandler != nil {
-						backupDestHandler.RegisterRoutes(r)
-					}
-				})
-			}
-
-			// Platform-default backup destination (OneDrive/GDrive/S3/WebDAV/SFTP/SMB)
-			// — platform owner only. Mounted at /api/v1/platform/backups/destination.
-			if backupDestHandler != nil {
-				r.Route("/platform", func(r chi.Router) {
-					r.Use(requirePlatformOwner)
-					backupDestHandler.RegisterPlatformRoutes(r)
-				})
 			}
 
 			// Admin routes for plans (platform admin only)

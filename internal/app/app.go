@@ -32,7 +32,6 @@ import (
 	handlers "github.com/bengobox/subscription-service/internal/http/handlers"
 	router "github.com/bengobox/subscription-service/internal/http/router"
 	"github.com/bengobox/subscription-service/internal/jobs"
-	backupmod "github.com/bengobox/subscription-service/internal/modules/backup"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/consumers"
 	"github.com/bengobox/subscription-service/internal/modules/plans"
@@ -324,23 +323,10 @@ func New(ctx context.Context) (*App, error) {
 		featureCatalogHandler = handlers.NewFeatureCatalogHandler(log, ormClient)
 	}
 
-	// Pluggable backup destination (OneDrive/GDrive/S3/WebDAV/SFTP/SMB) — encrypted
-	// at rest with a SECRET_KEY-derived AES-256 key. The handler owns the
-	// destination Store; its Uploader is attached to the backup service so every
-	// PVC backup is additionally mirrored best-effort.
-	backupDestHandler := handlers.NewBackupDestinationHandler(ormClient, log)
+	// Tenant backups are made from the SSO client area (auth-api collects this service's
+	// /api/v1/s2s/tenant-export); the platform pg_dumpall covers disaster recovery.
 
-	// Tenant-scoped backups + daily 02:00 auto-backup scheduler + retention churn.
-	backupSvc := backupmod.NewService(sqlDB, ormClient, cfg.Backup.Dir, log).
-		WithMirrorer(backupDestHandler.Uploader())
-	backupHandler := handlers.NewBackupHandler(log, backupSvc, cfg.Backup.RetentionDays)
-	backupmod.NewScheduler(backupSvc, backupmod.SchedulerConfig{
-		Enabled:       cfg.Backup.ScheduleEnabled,
-		Hour:          cfg.Backup.ScheduleHour,
-		RetentionDays: cfg.Backup.RetentionDays,
-	}, log).WithRedis(redisClient).Start(ctx)
-
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, productActivationHandler, backupHandler, backupDestHandler, emailLicenseHandler, rateLimitHandler, tokenWalletHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer,
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, productActivationHandler, emailLicenseHandler, rateLimitHandler, tokenWalletHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer,
 		tenantExportHandler(sqlDB, cfg.Security.APIKey))
 
 	httpServer := &http.Server{
