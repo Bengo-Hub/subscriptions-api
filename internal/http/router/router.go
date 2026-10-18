@@ -44,6 +44,7 @@ func New(
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
 	tenantSyncer *tenant.Syncer,
+	tenantExport http.Handler,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -71,6 +72,11 @@ func New(
 	})
 	r.Get("/healthz", healthHandler.Health)
 	r.Get("/readyz", healthHandler.Health)
+	// Tenant export for auth-api's SSO tenant backups; the handler checks INTERNAL_SERVICE_KEY
+	// itself (httpware/tenantexport, Options.InternalKey).
+	if tenantExport != nil {
+		r.Get("/api/v1/s2s/tenant-export", tenantExport.ServeHTTP)
+	}
 
 	// Swagger docs (outside /api/v1 — no auth required)
 	r.Get("/v1/docs/*", handlers.SwaggerUI)

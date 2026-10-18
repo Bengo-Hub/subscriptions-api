@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	sharedcache "github.com/Bengo-Hub/cache"
+	"github.com/Bengo-Hub/httpware/tenantexport"
 	authclient "github.com/Bengo-Hub/shared-auth-client"
 	eventslib "github.com/Bengo-Hub/shared-events"
 	serviceclient "github.com/Bengo-Hub/shared-service-client"
@@ -62,6 +63,15 @@ type App struct {
 	invoiceSvc           *billing.InvoiceService
 	overageSvc           *billing.OverageService
 	idemStore            *eventslib.IdempotencyStore // nil when its schema could not be ensured
+}
+
+// tenantExportHandler serves auth-api's SSO tenant backups (httpware/tenantexport). Nil without an
+// INTERNAL_SERVICE_KEY, so the export is never reachable unauthenticated.
+func tenantExportHandler(db *sql.DB, internalKey string) http.Handler {
+	if internalKey == "" {
+		return nil
+	}
+	return tenantexport.Handler(db, tenantexport.Options{Service: "subscriptions", InternalKey: internalKey})
 }
 
 func New(ctx context.Context) (*App, error) {
@@ -330,7 +340,8 @@ func New(ctx context.Context) (*App, error) {
 		RetentionDays: cfg.Backup.RetentionDays,
 	}, log).WithRedis(redisClient).Start(ctx)
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, productActivationHandler, backupHandler, backupDestHandler, emailLicenseHandler, rateLimitHandler, tokenWalletHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer)
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, productActivationHandler, backupHandler, backupDestHandler, emailLicenseHandler, rateLimitHandler, tokenWalletHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer,
+		tenantExportHandler(sqlDB, cfg.Security.APIKey))
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port),
