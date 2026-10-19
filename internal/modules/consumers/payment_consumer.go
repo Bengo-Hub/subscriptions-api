@@ -13,6 +13,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
+	"github.com/bengobox/subscription-service/internal/modules/credits"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
@@ -72,6 +73,7 @@ type TreasuryPaymentConsumer struct {
 	svc           *subscriptions.Service
 	creditService *billing.CreditService
 	tokenWallet   *billing.TokenWalletService
+	credits       *credits.Service
 	idem          *eventslib.IdempotencyStore
 }
 
@@ -89,6 +91,9 @@ func NewTreasuryPaymentConsumer(log *zap.Logger, orm *ent.Client, db *sql.DB) *T
 func (c *TreasuryPaymentConsumer) SetSubscriptionService(svc *subscriptions.Service) {
 	c.svc = svc
 }
+
+// SetCredits injects the credits service that fulfils credit_purchase payments.
+func (c *TreasuryPaymentConsumer) SetCredits(svc *credits.Service) { c.credits = svc }
 
 // SetIdempotency wires per-event dedup: RenewSubscription stacks the billing period from
 // max(now, current_period_end), so a redelivery after a successful renew (lost ack, AckWait
@@ -227,6 +232,26 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 		return nil
 	}
 
+	// credit_purchase: an SMS, WhatsApp or AI credit bundle or tier. Fulfilment is idempotent per
+	// intent, so a redelivery cannot grant twice.
+	if refType == credits.RefTypeCreditPurchase {
+		if c.credits == nil {
+			return fmt.Errorf("credits service not wired")
+		}
+		intentID, perr := uuid.Parse(ev.Payload.IntentID)
+		if perr != nil {
+			c.log.Warn("credit purchase event without a valid intent id, skipping", zap.String("tenant_id", tenantIDStr))
+			c.markProcessed(ctx, eventID)
+			return nil
+		}
+		if ferr := c.credits.FulfilIntent(ctx, tenantID, intentID); ferr != nil {
+			c.log.Error("failed to fulfil credit purchase", zap.String("tenant_id", tenantIDStr), zap.Error(ferr))
+			return ferr
+		}
+		c.markProcessed(ctx, eventID)
+		return nil
+	}
+
 	// api_token_topup: a discrete, one-off ApiTokenWallet purchase (see subscriptions/
 	// token_topup.go's CreateTokenTopUpIntent + billing/token_wallet.go's TopUpTokens) — fulfil
 	// (credit the wallet) rather than falling through to subscription renewal.
@@ -303,6 +328,21 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 			return err
 		}
 		c.log.Info("subscription renewed via NATS payment event", zap.String("tenant_id", tenantIDStr))
+
+		if c.credits != nil && ev.Payload.IntentID != "" {
+			if intentID, perr := uuid.Parse(ev.Payload.IntentID); perr == nil {
+				// Credit add-ons chosen at checkout are paid in this same intent.
+				if aerr := c.credits.FulfilCheckoutAddons(ctx, tenantID, intentID); aerr != nil {
+					c.log.Error("failed to fulfil checkout add-ons", zap.String("tenant_id", tenantIDStr), zap.Error(aerr))
+					return aerr
+				}
+			}
+			// Paying the subscription invoice also renews the recurring credit tiers it billed.
+			if rerr := c.credits.RenewTiers(ctx, tenantID, ev.Payload.IntentID); rerr != nil {
+				c.log.Error("failed to renew credit tiers", zap.String("tenant_id", tenantIDStr), zap.Error(rerr))
+				return rerr
+			}
+		}
 	}
 
 	// Earn loyalty credits on successful subscription payment

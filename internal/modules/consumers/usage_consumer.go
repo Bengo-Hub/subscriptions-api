@@ -90,9 +90,8 @@ var usageSubjectMappings = map[string]usageEventMapping{
 	"auth.outlet.created": {metric: "outlets", service: "auth"},
 
 	// ── Notifications ─────────────────────────────────────────────────────────
-	"notifications.sms.sent":   {metric: "sms_sent", service: "notifications"},
+	// SMS and WhatsApp are metered by the credits ledger, never by usage events.
 	"notifications.email.sent": {metric: "emails_sent", service: "notifications"},
-	"notifications.push.sent":  {metric: "push_sent", service: "notifications"},
 
 	// ── MarketFlow ────────────────────────────────────────────────────────────
 	"marketflow.campaign.created": {metric: "campaigns", service: "marketflow"},

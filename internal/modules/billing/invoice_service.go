@@ -166,6 +166,14 @@ func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscrip
 		taxable += o.UnitsOver * o.UnitPriceKes
 	}
 
+	// Recurring credit tiers (WhatsApp) the tenant keeps on auto-renew, paid with the plan.
+	tierLines, tierTaxable, terr := tierRenewalLines(ctx, s.orm, sub, months, s.vatRate)
+	if terr != nil {
+		s.log.Warn("invoice: credit tier lines failed", zap.Error(terr))
+	}
+	lines = append(lines, tierLines...)
+	taxable += tierTaxable
+
 	// Active custom addons
 	addons, err := s.orm.CustomAddon.Query().
 		Where(customaddon.TenantIDEQ(sub.TenantID), customaddon.StatusEQ(customaddon.StatusActive)).
@@ -670,4 +678,15 @@ func cloneMeta(m map[string]any) map[string]any {
 		out[k] = v
 	}
 	return out
+}
+
+// overageDescription labels an overage invoice line, naming credit services in plain words.
+func overageDescription(metric string, units float64) string {
+	for _, code := range MeteredServiceCodes() {
+		spec, _ := LookupMeteredService(code)
+		if spec.OverageMetric == metric {
+			return fmt.Sprintf("%s messages beyond plan and bundles (%.0f at KES %.2f)", spec.Label, units, spec.UnitPriceKES)
+		}
+	}
+	return fmt.Sprintf("Overage: %s (%.0f units)", metric, units)
 }

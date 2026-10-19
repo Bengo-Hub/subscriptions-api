@@ -138,7 +138,6 @@ func powerSuiteLimits(tier int) map[string]any {
 			"api_calls_per_month":           30000,
 			"webhook_calls_per_month":       500,
 			"email_notifications_per_month": 200,
-			"sms_notifications_per_month":   150,
 			// Logistics
 			"max_riders":                               5,
 			"live_tracking_requests_per_month":         0, // live_tracking is tier 3
@@ -146,7 +145,6 @@ func powerSuiteLimits(tier int) map[string]any {
 			"overage_rider_price_per_month":            250.0,
 			"overage_orders_price_per_100_month":       375.0,
 			"overage_transactions_price_per_100_month": 200.0,
-			"overage_sms_price_per_100":                150.0,
 			// POS
 			"max_devices":  1,
 			"max_cashiers": 2,
@@ -180,7 +178,6 @@ func powerSuiteLimits(tier int) map[string]any {
 			"api_calls_per_month":           100000,
 			"webhook_calls_per_month":       2000,
 			"email_notifications_per_month": 1000,
-			"sms_notifications_per_month":   500,
 			// Logistics
 			"max_riders":                               15,
 			"live_tracking_requests_per_month":         0, // live_tracking is tier 3
@@ -188,7 +185,6 @@ func powerSuiteLimits(tier int) map[string]any {
 			"overage_rider_price_per_month":            250.0,
 			"overage_orders_price_per_100_month":       375.0,
 			"overage_transactions_price_per_100_month": 200.0,
-			"overage_sms_price_per_100":                150.0,
 			// POS
 			"max_devices":  5,
 			"max_cashiers": 10,
@@ -228,7 +224,6 @@ func powerSuiteLimits(tier int) map[string]any {
 			"api_calls_per_month":           500000,
 			"webhook_calls_per_month":       -1,
 			"email_notifications_per_month": -1,
-			"sms_notifications_per_month":   -1,
 			// Logistics — unlimited
 			"max_riders":                               -1,
 			"live_tracking_requests_per_month":         -1,
@@ -236,7 +231,6 @@ func powerSuiteLimits(tier int) map[string]any {
 			"overage_rider_price_per_month":            250.0,
 			"overage_orders_price_per_100_month":       375.0,
 			"overage_transactions_price_per_100_month": 200.0,
-			"overage_sms_price_per_100":                150.0,
 			// POS — unlimited
 			"max_devices":  -1,
 			"max_cashiers": -1,

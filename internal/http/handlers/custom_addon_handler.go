@@ -12,36 +12,21 @@ import (
 	authclient "github.com/Bengo-Hub/shared-auth-client"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/customaddon"
-	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 )
-
-// notificationsFulfilledAddonTypes are the service_addon_type values under service_code
-// "notifications" that need fulfillment inside notifications-api (a DIFFERENT service) when
-// activated — SMS credit grants and WhatsApp plan activation. Email hosting is deliberately NOT
-// here: it's a separate first-class product in this service with its own purchase/fulfillment
-// flow (EmailLicense/EmailPlan, see email_handler.go), not CustomAddon-shaped.
-var notificationsFulfilledAddonTypes = map[string]bool{
-	"sms_bundle":    true,
-	"whatsapp_plan": true,
-}
 
 // CustomAddonHandler manages platform-admin-configured recurring or one-time charges
 // attached to a specific tenant. Tenants have read-only access to their own addons.
 type CustomAddonHandler struct {
 	log    *zap.Logger
 	client *ent.Client
-	subSvc *subscriptions.Service
 }
 
-// subSvc is used to emit the custom_addon.activated outbox event (on the same "subscription"
-// aggregate stream notifications-api's cmd/worker/subscription_consumer.go already subscribes
-// to) when an SMS/WhatsApp addon needs fulfillment in that other service — see
-// notificationsFulfilledAddonTypes.
-func NewCustomAddonHandler(log *zap.Logger, client *ent.Client, subSvc *subscriptions.Service) *CustomAddonHandler {
+// NewCustomAddonHandler creates the handler. SMS, WhatsApp and AI credits are not custom add-ons:
+// they are sold and granted through the credits engine (see CreditsHandler).
+func NewCustomAddonHandler(log *zap.Logger, client *ent.Client) *CustomAddonHandler {
 	return &CustomAddonHandler{
 		log:    log.Named("custom_addon.handler"),
 		client: client,
-		subSvc: subSvc,
 	}
 }
 
@@ -54,19 +39,8 @@ type customAddonInput struct {
 	UnitPriceKes     int     `json:"unit_price_kes"`
 	Quantity         int     `json:"quantity"`
 	Notes            *string `json:"notes"`
-	// Metadata carries addon-specific provisioning parameters — e.g. {"sms_credits": 5000} for a
-	// sms_bundle addon, or {"whatsapp_plan_id": "<uuid>"} for a whatsapp_plan addon. Passed through
-	// verbatim to the fulfillment event; notifications-api's consumer interprets it.
+	// Metadata carries free-form notes for the platform team.
 	Metadata map[string]any `json:"metadata"`
-}
-
-// needsNotificationsFulfillment reports whether this addon requires an activation event to
-// notifications-api once it's active.
-func needsNotificationsFulfillment(serviceCode, serviceAddonType *string) bool {
-	if serviceCode == nil || *serviceCode != "notifications" || serviceAddonType == nil {
-		return false
-	}
-	return notificationsFulfilledAddonTypes[*serviceAddonType]
 }
 
 // CreateCustomAddon handles POST /admin/tenants/{tenant_id}/custom-addons
@@ -143,15 +117,6 @@ func (h *CustomAddonHandler) CreateCustomAddon(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if h.subSvc != nil && needsNotificationsFulfillment(inp.ServiceCode, inp.ServiceAddonType) {
-		h.subSvc.WriteOutboxEventPublic(ctx, tx, tenantID, "custom_addon", addon.ID, "custom_addon.activated", map[string]any{
-			"service_code":       *inp.ServiceCode,
-			"service_addon_type": *inp.ServiceAddonType,
-			"quantity":           qty,
-			"metadata":           inp.Metadata,
-		})
-	}
-
 	if err := tx.Commit(); err != nil {
 		h.log.Error("create custom addon: commit failed", zap.Error(err))
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create addon"})
@@ -218,9 +183,6 @@ func (h *CustomAddonHandler) UpdateCustomAddon(w http.ResponseWriter, r *http.Re
 	}
 	upd := tx.CustomAddon.UpdateOneID(existing.ID).SetUpdatedAt(time.Now())
 
-	wasActive := existing.Status == customaddon.StatusActive
-	newStatus := existing.Status
-
 	if v, ok := inp["name"].(string); ok && v != "" {
 		upd.SetName(v)
 	}
@@ -234,8 +196,7 @@ func (h *CustomAddonHandler) UpdateCustomAddon(w http.ResponseWriter, r *http.Re
 		upd.SetQuantity(int(v))
 	}
 	if v, ok := inp["status"].(string); ok {
-		newStatus = customaddon.Status(v)
-		upd.SetStatus(newStatus)
+		upd.SetStatus(customaddon.Status(v))
 	}
 	if v, ok := inp["notes"].(string); ok {
 		upd.SetNotes(v)
@@ -250,19 +211,6 @@ func (h *CustomAddonHandler) UpdateCustomAddon(w http.ResponseWriter, r *http.Re
 		h.log.Error("update custom addon failed", zap.Error(err))
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "update failed"})
 		return
-	}
-
-	// Reactivation (paused/cancelled -> active) re-fires fulfillment — e.g. an admin un-pausing an
-	// SMS addon should re-grant the credits, matching CreateCustomAddon's "active = fulfill" rule.
-	// A plain edit that leaves status active (or leaves it non-active) does NOT re-fire.
-	if h.subSvc != nil && !wasActive && newStatus == customaddon.StatusActive &&
-		needsNotificationsFulfillment(updated.ServiceCode, updated.ServiceAddonType) {
-		h.subSvc.WriteOutboxEventPublic(ctx, tx, tenantID, "custom_addon", updated.ID, "custom_addon.activated", map[string]any{
-			"service_code":       *updated.ServiceCode,
-			"service_addon_type": *updated.ServiceAddonType,
-			"quantity":           updated.Quantity,
-			"metadata":           updated.Metadata,
-		})
 	}
 
 	if err := tx.Commit(); err != nil {

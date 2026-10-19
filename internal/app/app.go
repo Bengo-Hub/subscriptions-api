@@ -34,6 +34,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/jobs"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/consumers"
+	"github.com/bengobox/subscription-service/internal/modules/credits"
 	"github.com/bengobox/subscription-service/internal/modules/plans"
 	"github.com/bengobox/subscription-service/internal/modules/rbac"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
@@ -61,6 +62,7 @@ type App struct {
 	treasuryClient       *serviceclient.Client
 	invoiceSvc           *billing.InvoiceService
 	overageSvc           *billing.OverageService
+	creditsSvc           *credits.Service
 	idemStore            *eventslib.IdempotencyStore // nil when its schema could not be ensured
 }
 
@@ -298,7 +300,7 @@ func New(ctx context.Context) (*App, error) {
 	rbacHandler := handlers.NewRBACHandler(log, rbacService, rbacRepo)
 
 	// Custom addon handler (platform-admin managed recurring/one-time charges)
-	customAddonHandler := handlers.NewCustomAddonHandler(log, ormClient, subscriptionSvc)
+	customAddonHandler := handlers.NewCustomAddonHandler(log, ormClient)
 	emailLicenseHandler := handlers.NewEmailLicenseHandler(log, ormClient, subscriptionSvc, emailProvisionerClient, cfg.Services.PlatformMailMXHost, cfg.Services.PlatformMailIP, cfg.Security.APIKey)
 
 	// Coupon + credit wallet handler
@@ -317,6 +319,11 @@ func New(ctx context.Context) (*App, error) {
 	// middleware, + tenant-facing top-up/estimate) — see internal/http/handlers/token_wallet.go.
 	tokenWalletHandler := handlers.NewTokenWalletHandler(log, ormClient, sqlDB, subscriptionSvc)
 
+	// One credits engine for SMS, WhatsApp and AI credits: entitlement, bundles, tiers, overage.
+	creditsSvc := credits.New(log, ormClient, billing.NewTokenWalletService(log, ormClient, sqlDB), subscriptionSvc)
+	subscriptionSvc.SetAddonResolver(credits.AddonResolver())
+	creditsHandler := handlers.NewCreditsHandler(log, creditsSvc, cfg.Security.APIKey)
+
 	// Feature catalog handler (platform-wide feature/limit registry for the plan builder)
 	var featureCatalogHandler *handlers.FeatureCatalogHandler
 	if ormClient != nil {
@@ -326,7 +333,7 @@ func New(ctx context.Context) (*App, error) {
 	// Tenant backups are made from the SSO client area (auth-api collects this service's
 	// /api/v1/s2s/tenant-export); the platform pg_dumpall covers disaster recovery.
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, productActivationHandler, emailLicenseHandler, rateLimitHandler, tokenWalletHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer,
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, productActivationHandler, emailLicenseHandler, rateLimitHandler, tokenWalletHandler, creditsHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer,
 		tenantExportHandler(sqlDB, cfg.Security.APIKey))
 
 	httpServer := &http.Server{
@@ -340,6 +347,7 @@ func New(ctx context.Context) (*App, error) {
 
 	paymentConsumer := consumers.NewTreasuryPaymentConsumer(log, ormClient, sqlDB)
 	paymentConsumer.SetSubscriptionService(subscriptionSvc)
+	paymentConsumer.SetCredits(creditsSvc)
 
 	// Usage consumer with per-event idempotency so JetStream redeliveries don't double-count
 	// rolling usage metrics. Schema-ensure is best-effort: on failure metering still runs
@@ -374,6 +382,7 @@ func New(ctx context.Context) (*App, error) {
 		treasuryClient:       treasuryClient,
 		invoiceSvc:           invoiceSvc,
 		overageSvc:           overageSvc,
+		creditsSvc:           creditsSvc,
 		idemStore:            idemStore,
 	}, nil
 }
@@ -436,6 +445,11 @@ func (a *App) Run(ctx context.Context) error {
 	if a.orm != nil && a.overageSvc != nil {
 		go jobs.StartOverageJob(ctx, a.log, a.overageSvc)
 		a.log.Info("overage job started")
+	}
+
+	// Start the credits job (monthly allowance refill for WhatsApp tiers and plan AI credits)
+	if a.orm != nil && a.creditsSvc != nil {
+		jobs.StartCreditsJob(ctx, a.log, a.creditsSvc)
 	}
 
 	// Start the daily idempotency ledger prune (claims older than 30 days)

@@ -36,10 +36,6 @@ var meteredMetrics = map[string]MeteredMetric{
 		Metric: "api_calls", PlanLimitKey: "api_calls_per_month",
 		OveragePriceKey: "overage_api_calls_price_per_1000_month", Unit: "per 1,000 API calls", PriceQuantum: 1000,
 	},
-	"sms_notifications": {
-		Metric: "sms_notifications", PlanLimitKey: "sms_notifications_per_month",
-		OveragePriceKey: "overage_sms_price_per_100", Unit: "per 100 SMS", PriceQuantum: 100,
-	},
 	"email_notifications": {
 		Metric: "email_notifications", PlanLimitKey: "email_notifications_per_month",
 		OveragePriceKey: "overage_email_price_per_1000", Unit: "per 1,000 emails", PriceQuantum: 1000,
@@ -56,6 +52,9 @@ var meteredMetrics = map[string]MeteredMetric{
 		Metric: "routing_requests", PlanLimitKey: "routing_requests_per_month",
 		OveragePriceKey: "overage_routing_price_per_1000", Unit: "per 1,000 routing requests", PriceQuantum: 1000,
 	},
+	// SMS and WhatsApp messages are not registered here: they run on the credits ledger
+	// (credit_ledger.go), which spends quota and bundles first and bills KES 1 per message beyond them.
+	//
 	// etims_transactions is NOT registered here — it moved off this soft-cap/monthly-overage
 	// pipeline onto the real-time prepaid ApiTokenWallet (see token_wallet.go, api_token_costs.go).
 	// The external eTIMS API's included-transaction/overage figures are now expressed as

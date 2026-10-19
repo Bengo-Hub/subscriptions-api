@@ -30,7 +30,11 @@ type Service struct {
 	// platformTenantID is the platform owner tenant that issues subscription invoices.
 	// It is exempt from subscriptions alongside the demo/codevertex tenants. See exemption.go.
 	platformTenantID uuid.UUID
+	addonResolver    AddonResolver
 }
+
+// SetAddonResolver registers the credit add-on pricer used at checkout.
+func (s *Service) SetAddonResolver(r AddonResolver) { s.addonResolver = r }
 
 // New creates a subscription lifecycle service. platformTenantID is the operating
 // platform-owner tenant UUID (PLATFORM_TENANT_ID); pass uuid.Nil to disable id-based
@@ -106,7 +110,29 @@ type InitiateSubscriptionInput struct {
 	// amount is months × base_price, plus the one-time setup fee when the period is shorter
 	// than SetupFeeWaiverMonths (6) and the fee has not been charged yet.
 	BillingCycle string `json:"billing_cycle,omitempty"`
+	// Addons are credit bundles or tiers (SMS, WhatsApp, AI credits) bought with the plan and
+	// paid in the same intent. They are priced server side by the registered AddonResolver.
+	Addons []AddonSelection `json:"addons,omitempty"`
 }
+
+// AddonSelection names one credit add-on chosen at checkout.
+type AddonSelection struct {
+	Service string `json:"service"`
+	Kind    string `json:"kind"` // bundle or tier
+	Code    string `json:"code"`
+}
+
+// AddonOffer is the priced result of resolving an AddonSelection.
+type AddonOffer struct {
+	PriceKES float64
+	Label    string
+	// Recurring offers (tiers) are charged for every month of the chosen billing period.
+	Recurring bool
+}
+
+// AddonResolver prices a selection. Registered by the credits module at startup so this package
+// does not depend on it.
+type AddonResolver func(sel AddonSelection) (AddonOffer, error)
 
 // InitiateSubscriptionResult contains payment intent info from Treasury.
 type InitiateSubscriptionResult struct {
@@ -240,6 +266,9 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 
 	// 2. For free plans, activate directly without Treasury
 	if plan.BasePrice == 0 {
+		if len(in.Addons) > 0 {
+			return nil, fmt.Errorf("add-ons cannot be bought with a free plan; buy them after activation")
+		}
 		return s.activateFreePlan(ctx, in, plan)
 	}
 
@@ -281,6 +310,29 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 		amount = amount.Add(decimal.NewFromFloat(setupFee))
 	}
 
+	// Credit add-ons chosen with the plan are added to the same intent. Recurring ones (tiers)
+	// cover every month of the period; bundles are one-off.
+	addonMeta := make([]map[string]any, 0, len(in.Addons))
+	var addonDesc string
+	if len(in.Addons) > 0 {
+		if s.addonResolver == nil {
+			return nil, fmt.Errorf("add-ons are not available")
+		}
+		for _, sel := range in.Addons {
+			offer, aerr := s.addonResolver(sel)
+			if aerr != nil {
+				return nil, aerr
+			}
+			qty := int64(1)
+			if offer.Recurring {
+				qty = int64(months)
+			}
+			amount = amount.Add(decimal.NewFromFloat(offer.PriceKES).Mul(decimal.NewFromInt(qty)))
+			addonMeta = append(addonMeta, map[string]any{"service": sel.Service, "kind": sel.Kind, "code": sel.Code, "months": qty})
+			addonDesc += ", " + offer.Label
+		}
+	}
+
 	// Description reflects the plan's actual billing cycle (from the DB) — a ONE_TIME perpetual
 	// licence is a single charge, not an N-month subscription.
 	var description string
@@ -295,6 +347,7 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 		description += " — setup fee waived"
 	}
 
+	description += addonDesc
 	req := map[string]any{
 		"amount":         amount,
 		"currency":       plan.Currency,
@@ -311,6 +364,7 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 			"months":             months,
 			"setup_fee":          setupFee,
 			"setup_fee_included": setupFeeIncluded,
+			"credit_addons":      addonMeta,
 		},
 	}
 

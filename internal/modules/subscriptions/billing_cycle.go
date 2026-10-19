@@ -116,8 +116,12 @@ const (
 	MetaPendingIntentID     = "pending_intent_id"     // string — treasury intent the choice is bound to
 	// MetaRenewedIntents: the most recent payment ids (treasury intent or invoice) that renewed
 	// the subscription, so the same payment never renews it twice (RenewSubscription).
-	MetaRenewedIntents = "renewed_intents"
-	MetaPendingSetupFee     = "pending_setup_fee_included" // bool — checkout amount included the setup fee
+	MetaRenewedIntents  = "renewed_intents"
+	MetaPendingSetupFee = "pending_setup_fee_included" // bool — checkout amount included the setup fee
+	// MetaPendingCreditAddons holds {intent_id, addons} for credit add-ons bought with the plan.
+	// It survives RenewSubscription (which only drops the pending_* keys it consumes) and is
+	// cleared by the credits module once granted.
+	MetaPendingCreditAddons = "pending_credit_addons"
 )
 
 // SetupFeeWaiverReason is the human-readable audit reason stamped when the waiver applies.

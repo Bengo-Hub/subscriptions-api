@@ -38,6 +38,7 @@ func New(
 	emailLicenseHandler *handlers.EmailLicenseHandler,
 	rateLimitHandler *handlers.RateLimitHandler,
 	tokenWalletHandler *handlers.TokenWalletHandler,
+	creditsHandler *handlers.CreditsHandler,
 	apiKey string,
 	authMiddleware *authclient.AuthMiddleware,
 	allowedOrigins []string,
@@ -95,6 +96,12 @@ func New(
 		// prospective external-API customer can estimate cost before signing up.
 		if tokenWalletHandler != nil {
 			r.Post("/tokens/estimate", tokenWalletHandler.Estimate)
+		}
+
+		// S2S credit spend and refund (service key checked inside the handler).
+		if creditsHandler != nil {
+			r.Post("/s2s/credits/{service}/consume", creditsHandler.Consume)
+			r.Post("/s2s/credits/{service}/refund", creditsHandler.Refund)
 		}
 
 		// S2S webhook routes (API key auth handled inside handler)
@@ -203,6 +210,13 @@ func New(
 				r.Post("/tenants/{tenant_id}/tokens/deduct", tokenWalletHandler.Deduct)
 				r.Post("/tenants/{tenant_id}/tokens/refund", tokenWalletHandler.Refund)
 				r.Post("/tenants/{tenant_id}/tokens/topup", tokenWalletHandler.InitiateTopUp)
+			}
+
+			// Tenant credits: SMS, WhatsApp and AI credit balances, history and purchases.
+			if creditsHandler != nil {
+				r.Get("/credits", creditsHandler.List)
+				r.Get("/credits/{service}/transactions", creditsHandler.Transactions)
+				r.Post("/credits/{service}/purchase", creditsHandler.Purchase)
 			}
 
 			// S2S expiring subscriptions — used by notifications-api for scheduled expiry warnings.
@@ -367,6 +381,11 @@ func New(
 						r.Patch("/{id}", customAddonHandler.UpdateCustomAddon)
 						r.Delete("/{id}", customAddonHandler.DeleteCustomAddon)
 					})
+				}
+
+				// Platform admin: add SMS, WhatsApp or AI credit units to a tenant without a payment
+				if creditsHandler != nil {
+					r.With(requirePlatformOwner).Post("/admin/tenants/{tenant_id}/credits/{service}/grant", creditsHandler.AdminGrant)
 				}
 
 				// Platform admin: extend trial for a tenant subscription

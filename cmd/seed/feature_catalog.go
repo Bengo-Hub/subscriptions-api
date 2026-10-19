@@ -152,12 +152,10 @@ var featureCatalog = func() []catalogEntry {
 		meteredLim("max_orders_per_month", ordering, "Limits", "Max Orders", "/ month", "ordering.order.created"),
 		meteredLim("webhook_calls_per_month", ordering, "Limits", "Webhook Calls", "/ month", "ordering.webhook.dispatched"),
 		meteredLim("email_notifications_per_month", ordering, "Limits", "Emails", "/ month", "notifications.email.sent"),
-		meteredLim("sms_notifications_per_month", ordering, "Limits", "SMS", "/ month", "notifications.sms.sent"),
 		lim("overage_rider_price_per_month", ordering, "Overage", "Extra Rider Overage", "KES / rider / month"),
 		lim("overage_orders_price_per_100_month", ordering, "Overage", "Orders Overage (per 100)", "KES / month"),
 		// Bundle (POWERSUITE_*) overage pricing — stored in tier_limits_json alongside caps.
 		lim("overage_transactions_price_per_100_month", treasury, "Overage", "Transactions Overage (per 100)", "KES / month"),
-		lim("overage_sms_price_per_100", platform, "Overage", "SMS Overage (per 100)", "KES / 100 SMS"),
 
 		// ─── POS ──────────────────────────────────────────────────────────────
 		feat("pos_terminal", pos, "POS", "POS Terminal Software"),
@@ -479,8 +477,6 @@ var featureCatalog = func() []catalogEntry {
 		feat("advanced_analytics_addon", platform, "Add-ons", "Advanced Analytics Add-on"),
 		feat("extra_api_quota_bundle", platform, "Add-ons", "Extra API Quota Bundle"),
 		feat("dedicated_support_addon", platform, "Add-ons", "Dedicated Support Add-on"),
-		feat("sms_bundle_100", platform, "Add-ons", "SMS Bundle (100)"),
-		feat("sms_bundle_500", platform, "Add-ons", "SMS Bundle (500)"),
 		feat("ai_credits_topup", marketflow, "Add-ons", "AI Credits Top-up"),
 		feat("extra_transporter_portal", truload, "Add-ons", "Extra Transporter Portal Seat"),
 

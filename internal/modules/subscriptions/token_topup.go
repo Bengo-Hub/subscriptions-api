@@ -46,11 +46,6 @@ func (s *Service) CreateTokenTopUpIntent(ctx context.Context, in TokenTopUpInput
 		return nil, fmt.Errorf("amount_kes too small to purchase any tokens at KES %.2f/token", tokenPriceKes)
 	}
 
-	headers := map[string]string{}
-	if s.treasuryAPIKey != "" {
-		headers["X-API-Key"] = s.treasuryAPIKey
-	}
-
 	req := map[string]any{
 		"amount":         in.AmountKes,
 		"currency":       "KES",
@@ -71,41 +66,19 @@ func (s *Service) CreateTokenTopUpIntent(ctx context.Context, in TokenTopUpInput
 		},
 	}
 
-	resp, err := s.treasuryClient.Post(ctx, fmt.Sprintf("/api/v1/%s/payments/intents", in.TenantID), req, headers)
-	if err != nil || !resp.IsSuccess() {
-		return nil, fmt.Errorf("payment initiation failed: %w", err)
-	}
-
-	var treasuryResp map[string]any
-	_ = resp.DecodeJSON(&treasuryResp)
-	return treasuryResp, nil
+	return s.CreatePaymentIntent(ctx, in.TenantID, req)
 }
 
 // GetTokenTopUpIntentMetadata reads back a Treasury payment intent's stored metadata to recover
 // service_tag/tokens/unit_cost_kes at fulfillment time.
 func (s *Service) GetTokenTopUpIntentMetadata(ctx context.Context, tenantID, intentID uuid.UUID) (serviceTag string, tokens int64, unitCostKes float64, err error) {
-	if s.treasuryClient == nil {
-		return "", 0, 0, fmt.Errorf("payment service unavailable")
-	}
-	headers := map[string]string{}
-	if s.treasuryAPIKey != "" {
-		headers["X-API-Key"] = s.treasuryAPIKey
+	meta, err := s.GetPaymentIntentMetadata(ctx, tenantID, intentID)
+	if err != nil {
+		return "", 0, 0, err
 	}
 
-	resp, err := s.treasuryClient.Get(ctx, fmt.Sprintf("/api/v1/%s/payments/intents/%s", tenantID, intentID), headers)
-	if err != nil || !resp.IsSuccess() {
-		return "", 0, 0, fmt.Errorf("fetch payment intent %s: %w", intentID, err)
-	}
-
-	var intent struct {
-		Metadata map[string]any `json:"metadata"`
-	}
-	if err := resp.DecodeJSON(&intent); err != nil {
-		return "", 0, 0, fmt.Errorf("decode payment intent: %w", err)
-	}
-
-	serviceTag, _ = intent.Metadata["service_tag"].(string)
-	switch t := intent.Metadata["tokens"].(type) {
+	serviceTag, _ = meta["service_tag"].(string)
+	switch t := meta["tokens"].(type) {
 	case float64:
 		tokens = int64(t)
 	case int64:
@@ -113,7 +86,7 @@ func (s *Service) GetTokenTopUpIntentMetadata(ctx context.Context, tenantID, int
 	case int:
 		tokens = int64(t)
 	}
-	switch u := intent.Metadata["unit_cost_kes"].(type) {
+	switch u := meta["unit_cost_kes"].(type) {
 	case float64:
 		unitCostKes = u
 	}

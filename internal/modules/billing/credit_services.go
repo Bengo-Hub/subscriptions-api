@@ -113,13 +113,13 @@ var creditServices = map[string]MeteredService{
 		Label: "WhatsApp",
 	},
 	ServiceAI: {
-		Code: ServiceAI, BundleTag: ServiceAI, QuotaTag: "ai_credits_quota", ProductCode: "marketflow_ai_credits",
+		Code: ServiceAI, BundleTag: ServiceAI, QuotaTag: "ai_credits_quota",
 		PlanQuotaKey: "ai_credits_monthly",
 		Bundles: []CreditBundle{
 			{Code: "bundle_100", Units: 100, PriceKES: 1000},
 			{Code: "bundle_500", Units: 500, PriceKES: 4000},
 		},
-		UnitPriceKES: 10, Label: "AI credits",
+		Label: "AI credits",
 	},
 }
 
@@ -160,3 +160,10 @@ func (s MeteredService) Tier(code string) (CreditTier, bool) {
 
 // AllowsOverage reports whether the service may run past its prepaid units.
 func (s MeteredService) AllowsOverage() bool { return s.OverageMetric != "" }
+
+// Metadata keys on the activation ProductSubscription of a tiered credit service.
+const (
+	MetaTierCode      = "tier_code"
+	MetaTierPeriodEnd = "tier_period_end"
+	MetaTierAutoRenew = "tier_auto_renew"
+)
