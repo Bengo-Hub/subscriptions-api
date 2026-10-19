@@ -70,7 +70,37 @@ Tenant facing:
 * `POST /api/v1/credits/{service}/purchase` creates a Treasury intent for a bundle or plan.
 * `POST /api/v1/credits/{service}/auto-renew` turns plan renewal on or off.
 
-Platform owner: `POST /api/v1/admin/tenants/{tenant_id}/credits/{service}/grant` adds units without a payment.
+Platform owner:
+
+* `POST /api/v1/admin/tenants/{tenant_id}/credits/{service}/grant` adds units without a payment.
+* `GET /api/v1/admin/credits/tenants` lists who holds what. See the next section.
+* `GET /api/v1/admin/credits/overview` gives platform totals per service.
+* `GET` and `PUT /api/v1/admin/credits/settings` read and change the messaging settings.
+
+## Platform reporting and settings
+
+These routes need the platform owner role and read the ledger with SQL aggregates, so they stay cheap as tenants and
+ledger rows grow. Months are UTC calendar months.
+
+`GET /api/v1/admin/credits/tenants?service=sms|whatsapp|ai_credits&q=&status=&limit=&offset=` returns one row per tenant
+that has a wallet, an activation or overage for the service, newest activity first. `q` matches tenant name or slug,
+`status` is one of `active`, `capped`, `not_activated`, `exempt`, `limit` defaults to 25 (max 100). The answer is
+`{service, data, total, limit, offset}`. Each row has the tenant id, slug and name, the base plan name and status,
+bundle balance, quota balance, tier code, name, period end and whether it is still live, `auto_renew`,
+`overage_pending_kes`, `overage_cap_kes`, `capped`, `units_used_month`, `last_activity_at`, `exempt` and `status`.
+A tenant is `capped` when its unpaid overage plus one more unit would pass the cap, which is the point where sends pause.
+A lapsed tier shows no quota, matching what a send would see. `total` is zero when the offset is past the last row.
+
+`GET /api/v1/admin/credits/overview` returns `{month_start, overage_cap_kes, services}` with, per service, tenants
+activated, units sold (paid bundles) and consumed this month, bundle revenue this month, overage accrued this month,
+overage still unpaid, and tenants at or over the cap. Tier subscription revenue is billed on the subscription invoice and
+is not part of the bundle revenue figure.
+
+`GET /api/v1/admin/credits/settings` and `PUT` with `{"overage_cap_kes": 500}` manage the one platform setting that
+the engine reads, `messaging.overage_cap_kes`. Zero means no cap, the upper bound is 1,000,000 and two decimal places are
+allowed. The write stores the value in `service_configs`, clears the cache on the replica that served it and the other
+replicas see it within a minute. There is no other messaging setting to edit: the low balance threshold on a wallet is
+a fixed per-wallet value that no messaging rule reads.
 
 Reasons a spend is refused: `no_subscription`, `service_not_activated`, `insufficient_credits`, `overage_cap`.
 
@@ -105,7 +135,7 @@ can be dropped in a later release once the totals have been checked.
 
 * Changing a price or a bundle size is a code change in the registry plus a release. Existing tenants keep the units
   they already bought.
-* The overage cap can be changed without a release by writing `messaging.overage_cap_kes` with no tenant.
+* The overage cap can be changed without a release through `PUT /api/v1/admin/credits/settings`.
 * marketflow-ai spends one AI credit per chat message through the consume endpoint and refunds it when no answer was
   produced. The old one time `MARKETFLOW_AI_CREDITS_*` plans are switched off by the seed; the same two packs are
   catalog bundles. Only a tenant that resolves to a real tenant row is billed, and the platform tenant is exempt.

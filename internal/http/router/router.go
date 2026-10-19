@@ -383,6 +383,15 @@ func New(
 				// Platform admin: add SMS, WhatsApp or AI credit units to a tenant without a payment
 				if creditsHandler != nil {
 					r.With(requirePlatformOwner).Post("/admin/tenants/{tenant_id}/credits/{service}/grant", creditsHandler.AdminGrant)
+					// Platform admin: who holds balances, tiers and overage, platform totals, and the
+					// messaging settings.
+					r.Route("/admin/credits", func(r chi.Router) {
+						r.Use(requirePlatformOwner)
+						r.Get("/tenants", creditsHandler.AdminTenants)
+						r.Get("/overview", creditsHandler.AdminOverview)
+						r.Get("/settings", creditsHandler.AdminGetSettings)
+						r.Put("/settings", creditsHandler.AdminPutSettings)
+					})
 				}
 
 				// Platform admin: extend trial for a tenant subscription

@@ -20,6 +20,111 @@ definitions:
       low_balance_threshold:
         type: integer
     type: object
+  credits.AdminOverview:
+    properties:
+      month_start:
+        type: string
+      overage_cap_kes:
+        type: number
+      services:
+        items:
+          $ref: '#/definitions/credits.AdminServiceOverview'
+        type: array
+    type: object
+  credits.AdminServiceOverview:
+    properties:
+      allows_overage:
+        type: boolean
+      bundle_revenue_month_kes:
+        type: number
+      label:
+        type: string
+      overage_accrued_month_kes:
+        type: number
+      overage_outstanding_kes:
+        type: number
+      service:
+        type: string
+      tenants_activated:
+        type: integer
+      tenants_at_cap:
+        type: integer
+      units_consumed_month:
+        type: integer
+      units_sold_month:
+        type: integer
+    type: object
+  credits.AdminSettings:
+    properties:
+      default_overage_cap_kes:
+        type: number
+      max_overage_cap_kes:
+        type: number
+      overage_cap_kes:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  credits.AdminTenantPage:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/credits.AdminTenantRow'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      service:
+        type: string
+      total:
+        type: integer
+    type: object
+  credits.AdminTenantRow:
+    properties:
+      activated:
+        type: boolean
+      auto_renew:
+        type: boolean
+      bundle_balance:
+        type: integer
+      capped:
+        type: boolean
+      exempt:
+        type: boolean
+      last_activity_at:
+        type: string
+      name:
+        type: string
+      overage_cap_kes:
+        type: number
+      overage_pending_kes:
+        type: number
+      plan_name:
+        type: string
+      plan_status:
+        type: string
+      quota_balance:
+        type: integer
+      slug:
+        type: string
+      status:
+        type: string
+      tenant_id:
+        type: string
+      tier_active:
+        type: boolean
+      tier_code:
+        type: string
+      tier_name:
+        type: string
+      tier_period_end:
+        type: string
+      units_used_month:
+        type: integer
+      unlimited:
+        type: boolean
+    type: object
   credits.LegacyWallet:
     properties:
       sms_balance:
@@ -55,6 +160,11 @@ definitions:
         type: string
       units:
         type: integer
+    type: object
+  handlers.creditAdminSettingsRequest:
+    properties:
+      overage_cap_kes:
+        type: number
     type: object
   handlers.creditAutoRenewRequest:
     properties:
@@ -455,141 +565,138 @@ info:
   title: Subscriptions API
   version: "1.0"
 paths:
-  /addons:
+  /admin/credits/overview:
     get:
-      description: Returns purchasable add-on features (is_included=false) for the
-        tenant's current plan, annotated with purchase status.
+      description: 'For each service: tenants activated, units sold and consumed this
+        UTC month, bundle revenue this month, overage accrued this month, overage
+        still unpaid, and tenants at or over the cap.'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
+            $ref: '#/definitions/credits.AdminOverview'
+        "403":
+          description: Forbidden
           schema:
             additionalProperties:
               type: string
             type: object
       security:
       - BearerAuth: []
-      summary: List available add-ons
+      summary: Platform totals per credit service (platform owner)
       tags:
-      - Addons
-  /addons/{feature_code}:
-    delete:
-      description: Deactivates a previously purchased add-on feature for the tenant.
-      parameters:
-      - description: Feature code of the add-on to remove
-        in: path
-        name: feature_code
-        required: true
-        type: string
+      - Credits
+  /admin/credits/settings:
+    get:
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
+            $ref: '#/definitions/credits.AdminSettings'
+        "403":
+          description: Forbidden
           schema:
             additionalProperties:
               type: string
             type: object
       security:
       - BearerAuth: []
-      summary: Remove an add-on
+      summary: Platform messaging settings (platform owner)
       tags:
-      - Addons
-  /addons/{feature_code}/purchase:
-    post:
+      - Credits
+    put:
       consumes:
       - application/json
-      description: Initiates purchase of a specific add-on feature. Free add-ons are
-        activated immediately; paid add-ons create a Treasury payment intent.
+      description: overage_cap_kes is the most unpaid overage in KES a tenant can
+        run up before SMS and WhatsApp sends pause. 0 means no cap, the maximum is
+        1,000,000, two decimal places at most. Takes effect immediately on the serving
+        replica and within one minute on the others.
       parameters:
-      - description: Feature code of the add-on
-        in: path
-        name: feature_code
-        required: true
-        type: string
-      - description: Optional return URL for payment redirect
+      - description: Settings
         in: body
-        name: body
+        name: request
+        required: true
         schema:
-          type: object
+          $ref: '#/definitions/handlers.creditAdminSettingsRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/credits.AdminSettings'
         "400":
           description: Bad Request
           schema:
             additionalProperties:
               type: string
             type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "409":
-          description: Conflict
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "503":
-          description: Service Unavailable
+        "403":
+          description: Forbidden
           schema:
             additionalProperties:
               type: string
             type: object
       security:
       - BearerAuth: []
-      summary: Purchase an add-on
+      summary: Change platform messaging settings (platform owner)
       tags:
-      - Addons
+      - Credits
+  /admin/credits/tenants:
+    get:
+      description: 'One row per tenant with a wallet, activation or overage for the
+        service: plan, bundle balance, tier and renewal, pending overage against the
+        cap, units used this UTC month and last activity. Sorted by last activity.'
+      parameters:
+      - description: sms, whatsapp or ai_credits
+        in: query
+        name: service
+        required: true
+        type: string
+      - description: Search tenant name or slug
+        in: query
+        name: q
+        type: string
+      - description: active, capped, not_activated or exempt
+        in: query
+        name: status
+        type: string
+      - description: Default 25, max 100
+        in: query
+        name: limit
+        type: integer
+      - description: Rows to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/credits.AdminTenantPage'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Tenants holding a messaging or AI credit position (platform owner)
+      tags:
+      - Credits
   /admin/feature-catalog:
     post:
       consumes:

@@ -182,6 +182,9 @@ func applyBalance(ctx context.Context, tx *sql.Tx, w *walletRow, delta int64, li
 	return nil
 }
 
+// DB exposes the SQL handle for read-only aggregate queries over the ledger tables.
+func (s *TokenWalletService) DB() *sql.DB { return s.db }
+
 func (s *TokenWalletService) requireDB() error {
 	if s.db == nil {
 		return errors.New("credit ledger database not configured")

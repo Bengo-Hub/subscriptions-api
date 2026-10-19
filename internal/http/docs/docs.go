@@ -15,49 +15,30 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/addons": {
+        "/admin/credits/overview": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns purchasable add-on features (is_included=false) for the tenant's current plan, annotated with purchase status.",
+                "description": "For each service: tenants activated, units sold and consumed this UTC month, bundle revenue this month, overage accrued this month, overage still unpaid, and tenants at or over the cap.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Addons"
+                    "Credits"
                 ],
-                "summary": "List available add-ons",
+                "summary": "Platform totals per credit service (platform owner)",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/credits.AdminOverview"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -68,58 +49,29 @@ const docTemplate = `{
                 }
             }
         },
-        "/addons/{feature_code}": {
-            "delete": {
+        "/admin/credits/settings": {
+            "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Deactivates a previously purchased add-on feature for the tenant.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Addons"
+                    "Credits"
                 ],
-                "summary": "Remove an add-on",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Feature code of the add-on to remove",
-                        "name": "feature_code",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
+                "summary": "Platform messaging settings (platform owner)",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/credits.AdminSettings"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -128,16 +80,14 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/addons/{feature_code}/purchase": {
-            "post": {
+            },
+            "put": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Initiates purchase of a specific add-on feature. Free add-ons are activated immediately; paid add-ons create a Treasury payment intent.",
+                "description": "overage_cap_kes is the most unpaid overage in KES a tenant can run up before SMS and WhatsApp sends pause. 0 means no cap, the maximum is 1,000,000, two decimal places at most. Takes effect immediately on the serving replica and within one minute on the others.",
                 "consumes": [
                     "application/json"
                 ],
@@ -145,23 +95,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Addons"
+                    "Credits"
                 ],
-                "summary": "Purchase an add-on",
+                "summary": "Change platform messaging settings (platform owner)",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Feature code of the add-on",
-                        "name": "feature_code",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Optional return URL for payment redirect",
-                        "name": "body",
+                        "description": "Settings",
+                        "name": "request",
                         "in": "body",
+                        "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/handlers.creditAdminSettingsRequest"
                         }
                     }
                 ],
@@ -169,8 +113,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/credits.AdminSettings"
                         }
                     },
                     "400": {
@@ -182,8 +125,75 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/credits/tenants": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "One row per tenant with a wallet, activation or overage for the service: plan, bundle balance, tier and renewal, pending overage against the cap, units used this UTC month and last activity. Sorted by last activity.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Tenants holding a messaging or AI credit position (platform owner)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sms, whatsapp or ai_credits",
+                        "name": "service",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search tenant name or slug",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "active, capped, not_activated or exempt",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Default 25, max 100",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Rows to skip",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/credits.AdminTenantPage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -191,26 +201,8 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3880,6 +3872,166 @@ const docTemplate = `{
                 }
             }
         },
+        "credits.AdminOverview": {
+            "type": "object",
+            "properties": {
+                "month_start": {
+                    "type": "string"
+                },
+                "overage_cap_kes": {
+                    "type": "number"
+                },
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/credits.AdminServiceOverview"
+                    }
+                }
+            }
+        },
+        "credits.AdminServiceOverview": {
+            "type": "object",
+            "properties": {
+                "allows_overage": {
+                    "type": "boolean"
+                },
+                "bundle_revenue_month_kes": {
+                    "type": "number"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "overage_accrued_month_kes": {
+                    "type": "number"
+                },
+                "overage_outstanding_kes": {
+                    "type": "number"
+                },
+                "service": {
+                    "type": "string"
+                },
+                "tenants_activated": {
+                    "type": "integer"
+                },
+                "tenants_at_cap": {
+                    "type": "integer"
+                },
+                "units_consumed_month": {
+                    "type": "integer"
+                },
+                "units_sold_month": {
+                    "type": "integer"
+                }
+            }
+        },
+        "credits.AdminSettings": {
+            "type": "object",
+            "properties": {
+                "default_overage_cap_kes": {
+                    "type": "number"
+                },
+                "max_overage_cap_kes": {
+                    "type": "number"
+                },
+                "overage_cap_kes": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "credits.AdminTenantPage": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/credits.AdminTenantRow"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "service": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "credits.AdminTenantRow": {
+            "type": "object",
+            "properties": {
+                "activated": {
+                    "type": "boolean"
+                },
+                "auto_renew": {
+                    "type": "boolean"
+                },
+                "bundle_balance": {
+                    "type": "integer"
+                },
+                "capped": {
+                    "type": "boolean"
+                },
+                "exempt": {
+                    "type": "boolean"
+                },
+                "last_activity_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "overage_cap_kes": {
+                    "type": "number"
+                },
+                "overage_pending_kes": {
+                    "type": "number"
+                },
+                "plan_name": {
+                    "type": "string"
+                },
+                "plan_status": {
+                    "type": "string"
+                },
+                "quota_balance": {
+                    "type": "integer"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "tenant_id": {
+                    "type": "string"
+                },
+                "tier_active": {
+                    "type": "boolean"
+                },
+                "tier_code": {
+                    "type": "string"
+                },
+                "tier_name": {
+                    "type": "string"
+                },
+                "tier_period_end": {
+                    "type": "string"
+                },
+                "units_used_month": {
+                    "type": "integer"
+                },
+                "unlimited": {
+                    "type": "boolean"
+                }
+            }
+        },
         "credits.LegacyWallet": {
             "type": "object",
             "properties": {
@@ -3926,6 +4078,14 @@ const docTemplate = `{
                 },
                 "units": {
                     "type": "integer"
+                }
+            }
+        },
+        "handlers.creditAdminSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "overage_cap_kes": {
+                    "type": "number"
                 }
             }
         },

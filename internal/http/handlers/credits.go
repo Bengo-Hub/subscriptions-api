@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -364,4 +365,110 @@ func (h *CreditsHandler) SetAutoRenew(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"auto_renew": req.AutoRenew})
+}
+
+// AdminTenants godoc
+// @Summary Tenants holding a messaging or AI credit position (platform owner)
+// @Description One row per tenant with a wallet, activation or overage for the service: plan, bundle balance, tier and renewal, pending overage against the cap, units used this UTC month and last activity. Sorted by last activity.
+// @Tags Credits
+// @Produce json
+// @Security BearerAuth
+// @Param service query string true "sms, whatsapp or ai_credits"
+// @Param q query string false "Search tenant name or slug"
+// @Param status query string false "active, capped, not_activated or exempt"
+// @Param limit query int false "Default 25, max 100"
+// @Param offset query int false "Rows to skip"
+// @Success 200 {object} credits.AdminTenantPage
+// @Failure 400 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Router /admin/credits/tenants [get]
+func (h *CreditsHandler) AdminTenants(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	limit, _ := strconv.Atoi(q.Get("limit"))
+	offset, _ := strconv.Atoi(q.Get("offset"))
+	page, err := h.svc.ListTenants(r.Context(), credits.AdminListParams{
+		Service: q.Get("service"), Q: q.Get("q"), Status: q.Get("status"), Limit: limit, Offset: offset,
+	})
+	if err != nil {
+		if errors.Is(err, credits.ErrInvalidAdminQuery) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
+		h.log.Error("credits admin tenants failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load tenants"})
+		return
+	}
+	writeJSON(w, http.StatusOK, page)
+}
+
+// AdminOverview godoc
+// @Summary Platform totals per credit service (platform owner)
+// @Description For each service: tenants activated, units sold and consumed this UTC month, bundle revenue this month, overage accrued this month, overage still unpaid, and tenants at or over the cap.
+// @Tags Credits
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} credits.AdminOverview
+// @Failure 403 {object} map[string]string
+// @Router /admin/credits/overview [get]
+func (h *CreditsHandler) AdminOverview(w http.ResponseWriter, r *http.Request) {
+	out, err := h.svc.Overview(r.Context())
+	if err != nil {
+		h.log.Error("credits admin overview failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load overview"})
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// AdminGetSettings godoc
+// @Summary Platform messaging settings (platform owner)
+// @Tags Credits
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} credits.AdminSettings
+// @Failure 403 {object} map[string]string
+// @Router /admin/credits/settings [get]
+func (h *CreditsHandler) AdminGetSettings(w http.ResponseWriter, r *http.Request) {
+	out, err := h.svc.Settings(r.Context())
+	if err != nil {
+		h.log.Error("credits admin settings failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load settings"})
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+type creditAdminSettingsRequest struct {
+	OverageCapKES *float64 `json:"overage_cap_kes"`
+}
+
+// AdminPutSettings godoc
+// @Summary Change platform messaging settings (platform owner)
+// @Description overage_cap_kes is the most unpaid overage in KES a tenant can run up before SMS and WhatsApp sends pause. 0 means no cap, the maximum is 1,000,000, two decimal places at most. Takes effect immediately on the serving replica and within one minute on the others.
+// @Tags Credits
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body creditAdminSettingsRequest true "Settings"
+// @Success 200 {object} credits.AdminSettings
+// @Failure 400 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Router /admin/credits/settings [put]
+func (h *CreditsHandler) AdminPutSettings(w http.ResponseWriter, r *http.Request) {
+	var req creditAdminSettingsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.OverageCapKES == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "overage_cap_kes is required"})
+		return
+	}
+	if err := credits.ValidateOverageCap(*req.OverageCapKES); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	out, err := h.svc.SetOverageCap(r.Context(), *req.OverageCapKES)
+	if err != nil {
+		h.log.Error("credits admin settings update failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save settings"})
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	entfeaturedefinition "github.com/bengobox/subscription-service/internal/ent/featuredefinition"
@@ -23,6 +24,17 @@ var ErrExemptTenant = errors.New("tenant is exempt from subscriptions")
 var exemptSlugs = map[string]bool{
 	"codevertex":      true, // platform owner (operating tenant)
 	"codevertex-demo": true, // demo sandbox — see project_demo_tenant memory
+}
+
+// ExemptSlugs lists the built-in exempt tenant slugs, for SQL reports that cannot call
+// IsExemptTenant once per row.
+func ExemptSlugs() []string {
+	out := make([]string, 0, len(exemptSlugs))
+	for slug := range exemptSlugs {
+		out = append(out, slug)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // IsExemptTenant reports whether the tenant bypasses subscriptions entirely. The local
