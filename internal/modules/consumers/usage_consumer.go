@@ -520,8 +520,3 @@ func (c *UsageConsumer) publishThresholdWarning(ctx context.Context, tenantID uu
 		zap.Int("pct", pct),
 	)
 }
-
-// isLimitExceeded and usageFindLimitKey are retired: the former had zero real callers
-// (dead code), and the latter is replaced fleet-wide by billing.ResolveLimitKey — see
-// usage_counter.go's doc comment for why a second independent copy of this mapping was
-// itself a bug.
