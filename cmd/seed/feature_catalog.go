@@ -424,10 +424,6 @@ var featureCatalog = func() []catalogEntry {
 		// (Centipid $0.25 ≈ KES 35), metered via the isp.subscriber.created event.
 		meteredLim("max_pppoe_subscribers", isp, "Limits", "PPPoE Subscribers", "/ month", "isp.subscriber.created"),
 		meteredLim("max_vouchers_per_month", isp, "Limits", "Vouchers", "/ month", ""),
-		// SMS bundles are prepaid TenantCredits in notifications-api and are NOT enforced as a plan
-		// limit; this catalog entry only exists because ISP plan tiers carry a nominal max_sms_per_month
-		// in tier_limits (keeps validateCatalogLinkage green — no service gates on it).
-		lim("max_sms_per_month", isp, "Limits", "SMS", "/ month"),
 		// ISP billing-engine inputs read from tier_limits (see plans_isp_billing.go): the per-subscriber
 		// PPPoE fee + the service-charge percentage/threshold. Catalogued as limits so the strict
 		// linkage check passes; they are pricing inputs, not enforced capacity caps.
@@ -477,7 +473,6 @@ var featureCatalog = func() []catalogEntry {
 		feat("advanced_analytics_addon", platform, "Add-ons", "Advanced Analytics Add-on"),
 		feat("extra_api_quota_bundle", platform, "Add-ons", "Extra API Quota Bundle"),
 		feat("dedicated_support_addon", platform, "Add-ons", "Dedicated Support Add-on"),
-		feat("ai_credits_topup", marketflow, "Add-ons", "AI Credits Top-up"),
 		feat("extra_transporter_portal", truload, "Add-ons", "Extra Transporter Portal Seat"),
 
 		// ─── Library Management ───────────────────────────────────────────────
@@ -524,7 +519,7 @@ var catalogLimitIndex = func() map[string]string {
 //
 // NOTE: this table is shared by feature codes AND tier-limit keys (both pass
 // through canonicalFeatureCode). Do not add a limit-only alias whose key also
-// names a distinct FEATURE add-on (e.g. ai_credits_topup) — it would corrupt
+// names a distinct FEATURE add-on — it would corrupt
 // seedPlanFeatures. Fix such drift at the plan-seed source instead.
 var featureCodeAliases = map[string]string{
 	"paystack_gateway": "paystack_integration", // duplicate online-gateway key
@@ -543,13 +538,6 @@ func canonicalFeatureCode(code string) string {
 // IsInCatalog reports whether a (canonicalized) code exists in the catalog.
 func isInCatalog(code string) bool {
 	return catalogCodeIndex[canonicalFeatureCode(code)]
-}
-
-// isCatalogLimit reports whether a (canonicalized) code is a LIMIT-kind entry in
-// the catalog — i.e. a valid key for a plan's tier_limits_json.
-func isCatalogLimit(code string) bool {
-	_, ok := catalogLimitIndex[canonicalFeatureCode(code)]
-	return ok
 }
 
 // limitServiceTag returns the owning service_tag of a LIMIT code, and whether it

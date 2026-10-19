@@ -120,14 +120,6 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 			services:    []string{"marketflow"},
 			isDefault:   true,
 		},
-		{
-			code:        "SC_MARKETFLOW_AI_CREDIT",
-			name:        "MarketFlow AI Credit Fee",
-			description: "Per-credit fee when purchasing AI chat credits beyond the plan allowance. KES 10 per credit.",
-			chargeType:  servicechargeplan.ChargeTypeFIXED_PER_TRANSACTION,
-			chargeValue: 10.0,
-			services:    []string{"marketflow"},
-		},
 	}
 
 	for _, p := range plans {
@@ -201,6 +193,19 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 		}
 	} else if !ent.IsNotFound(err) {
 		return fmt.Errorf("lookup SC_ISP_BILLING: %w", err)
+	}
+
+	// Deprecate SC_MARKETFLOW_AI_CREDIT: AI chat credits are prepaid bundles in the credits ledger
+	// (billing/credit_services.go), not a per-transaction service charge.
+	if old, err := tx.ServiceChargePlan.Query().Where(servicechargeplan.Code("SC_MARKETFLOW_AI_CREDIT")).Only(ctx); err == nil {
+		if old.IsActive {
+			if _, err := tx.ServiceChargePlan.UpdateOneID(old.ID).SetIsActive(false).SetIsDefault(false).Save(ctx); err != nil {
+				return fmt.Errorf("deactivate SC_MARKETFLOW_AI_CREDIT: %w", err)
+			}
+			log.Println("  ✓ Deprecated SC_MARKETFLOW_AI_CREDIT (AI credits are credit bundles)")
+		}
+	} else if !ent.IsNotFound(err) {
+		return fmt.Errorf("lookup SC_MARKETFLOW_AI_CREDIT: %w", err)
 	}
 
 	log.Println("  ✓ Service charge plans seeded")

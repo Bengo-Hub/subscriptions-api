@@ -468,7 +468,6 @@ Dual revenue model:
 | `SC_UNIVERSAL_FLAT_50` | FLAT | KES 50 | all | – |
 | `SC_TRULOAD_10PCT` | PERCENTAGE | 10% | truload | ✓ |
 | `SC_MARKETFLOW_ADS` | PERCENTAGE | varies | marketflow | ✓ |
-| `SC_MARKETFLOW_AI_CREDIT` | FLAT | varies | marketflow | – |
 
 ---
 
@@ -786,7 +785,6 @@ useQuery({ queryKey: ['admin-tenants'], ... })
 | `SC_UNIVERSAL_FLAT_50` | FLAT | KES 50 | all | – |
 | `SC_TRULOAD_10PCT` | PERCENTAGE | 10% | truload | ✓ |
 | `SC_MARKETFLOW_ADS` | PERCENTAGE | varies | marketflow | ✓ |
-| `SC_MARKETFLOW_AI_CREDIT` | FLAT | varies | marketflow | – |
 
 ---
 
