@@ -253,3 +253,26 @@ func (h *CreditsHandler) Import(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"dry_run": req.DryRun, "results": results})
 }
+
+type creditAutoRenewRequest struct {
+	AutoRenew bool `json:"auto_renew"`
+}
+
+// SetAutoRenew handles POST /credits/{service}/auto-renew. Turning it off keeps the plan until the
+// end of the paid period and stops it appearing on the next invoice.
+func (h *CreditsHandler) SetAutoRenew(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := h.tenant(w, r)
+	if !ok {
+		return
+	}
+	var req creditAutoRenewRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if err := h.svc.SetTierAutoRenew(r.Context(), tenantID, chi.URLParam(r, "service"), req.AutoRenew); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"auto_renew": req.AutoRenew})
+}

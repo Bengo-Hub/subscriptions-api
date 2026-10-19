@@ -219,6 +219,7 @@ func New(
 				r.Get("/credits", creditsHandler.List)
 				r.Get("/credits/{service}/transactions", creditsHandler.Transactions)
 				r.Post("/credits/{service}/purchase", creditsHandler.Purchase)
+				r.Post("/credits/{service}/auto-renew", creditsHandler.SetAutoRenew)
 			}
 
 			// S2S expiring subscriptions — used by notifications-api for scheduled expiry warnings.
