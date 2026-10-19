@@ -158,10 +158,10 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 	// 2.11 MarketFlow CRM standalone plans retired 2026-09-11 — folded into every PowerSuite
 	// tier's psCRMBlock (4 feature-code gaps closed: profile_pages, webhooks, deal_pipeline,
 	// whatsapp_integration); hard-deleted by migrateUseCasePowerSuite below. Its 2 AI-credit
-	// one-time top-up packs survive, relocated to seedAICreditsAddonPlans (plans_addons.go)
-	// since they're consumable purchases, not tier features.
-	if err := seedAICreditsAddonPlans(ctx, tx); err != nil {
-		return fmt.Errorf("seed ai-credits addon plans: %w", err)
+	// one-time top-up packs are now bundles in the credits catalog (billing/credit_services.go),
+	// so the old plan rows are switched off rather than seeded.
+	if err := retireAICreditsAddonPlans(ctx, tx); err != nil {
+		return fmt.Errorf("retire ai-credits addon plans: %w", err)
 	}
 
 	// 2.13 Seed ISP Billing standalone plans (hotspot + PPPoE product lines)

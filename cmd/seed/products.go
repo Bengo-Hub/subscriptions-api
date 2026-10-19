@@ -217,17 +217,6 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			onetimePrice:  0,
 			sortOrder:     40,
 		},
-		{
-			id:           uuid.MustParse("10000000-0000-0000-0000-000000000041"),
-			code:         "marketflow_ai_credits",
-			name:         "MarketFlow AI Credits",
-			description:  "Top-up pack of 100 AI chat credits for MarketFlow. Each credit = 1 user question + AI response. Base plan includes 5 free/month (Starter) or 100/month (Growth).",
-			category:     product.CategoryAddOn,
-			monthlyPrice: 1000,
-			yearlyPrice:  10000,
-			onetimePrice: 0,
-			sortOrder:    41,
-		},
 
 		// Inventory Management
 		{
