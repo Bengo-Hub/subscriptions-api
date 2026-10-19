@@ -84,6 +84,15 @@
 - **Admin UI**: Plan management interface
 - **All Services**: Query available plans API
 
+### 1b. Credits (SMS, WhatsApp, AI credits, API tokens)
+
+One prepaid ledger and price list for every unit the platform sells, with SMS and WhatsApp sends gated on an active
+subscription. Bundles, WhatsApp monthly plans, KES 1 overage billed on the next invoice with a pause cap, checkout
+add-ons and the monthly allowance refill are described in [messaging-credits.md](messaging-credits.md).
+
+**Entities Used**: `api_token_wallets`, `api_token_transactions` (ledger, keyed by `service_tag`), `overage_charges`,
+`product_subscriptions` (service activation and tier period), `service_configs` (`messaging.overage_cap_kes`)
+
 ### 2. Tenant Subscriptions
 
 **Subscription-Specific Features**:

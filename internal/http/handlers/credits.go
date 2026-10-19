@@ -40,9 +40,17 @@ type creditSpendRequest struct {
 	PlatformScope bool   `json:"platform_scope"`
 }
 
-// Consume handles POST /s2s/credits/{service}/consume.
-// It answers 200 with allowed=false and a reason when the spend is refused, so callers can tell a
-// refusal from a failure (5xx) and never send free on a failure.
+// Consume godoc
+// @Summary Spend credit units for one send (S2S)
+// @Description Spends units in order: plan allowance, bundle balance, then KES 1 overage up to the platform cap. Idempotent per key. Answers 200 with allowed=false and a reason when refused, so callers can tell a refusal from a failure (5xx) and never send free on a failure.
+// @Tags Credits
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param service path string true "sms, whatsapp or ai_credits"
+// @Param request body creditSpendRequest true "Spend request"
+// @Success 200 {object} map[string]any
+// @Router /s2s/credits/{service}/consume [post]
 func (h *CreditsHandler) Consume(w http.ResponseWriter, r *http.Request) {
 	if !h.isService(r) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "service key required"})
@@ -76,7 +84,17 @@ type creditRefundRequest struct {
 	RefundKey  string `json:"refund_key"`
 }
 
-// Refund handles POST /s2s/credits/{service}/refund.
+// Refund godoc
+// @Summary Reverse a spend (S2S)
+// @Description Restores the units and overage taken under consume_key, for example when the provider rejected the message. Idempotent per refund_key.
+// @Tags Credits
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param service path string true "sms, whatsapp or ai_credits"
+// @Param request body creditRefundRequest true "Refund request"
+// @Success 200 {object} map[string]any
+// @Router /s2s/credits/{service}/refund [post]
 func (h *CreditsHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	if !h.isService(r) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "service key required"})
@@ -110,12 +128,25 @@ func (h *CreditsHandler) tenant(w http.ResponseWriter, r *http.Request) (uuid.UU
 	return id, true
 }
 
-// Catalog handles GET /credits/catalog: bundle sizes, plans and prices. Public, no tenant state.
+// Catalog godoc
+// @Summary Price list for SMS, WhatsApp and AI credits
+// @Description Bundle sizes, monthly plans and the per-message price. Public, no tenant state.
+// @Tags Credits
+// @Produce json
+// @Success 200 {object} map[string]any
+// @Router /credits/catalog [get]
 func (h *CreditsHandler) Catalog(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"services": credits.Catalog()})
 }
 
-// List handles GET /credits: the caller's state for every credit service.
+// List godoc
+// @Summary Credit balances for the acting tenant
+// @Description Bundle units, plan allowance, owed overage against the cap, and what can be bought, for every credit service.
+// @Tags Credits
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]any
+// @Router /credits [get]
 func (h *CreditsHandler) List(w http.ResponseWriter, r *http.Request) {
 	tenantID, ok := h.tenant(w, r)
 	if !ok {
@@ -130,7 +161,16 @@ func (h *CreditsHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"services": snaps})
 }
 
-// Transactions handles GET /credits/{service}/transactions (bundle wallet history).
+// Transactions godoc
+// @Summary Bundle wallet history
+// @Tags Credits
+// @Produce json
+// @Security BearerAuth
+// @Param service path string true "sms, whatsapp or ai_credits"
+// @Param limit query int false "Default 50, max 200"
+// @Param offset query int false "Rows to skip"
+// @Success 200 {object} map[string]any
+// @Router /credits/{service}/transactions [get]
 func (h *CreditsHandler) Transactions(w http.ResponseWriter, r *http.Request) {
 	tenantID, ok := h.tenant(w, r)
 	if !ok {
@@ -158,8 +198,17 @@ type creditPurchaseRequest struct {
 	ReturnURL string `json:"return_url,omitempty"`
 }
 
-// Purchase handles POST /credits/{service}/purchase for a bundle or tier. Prices come from the
-// registry, never from the request.
+// Purchase godoc
+// @Summary Buy a bundle or monthly plan
+// @Description Creates a Treasury payment intent. Units or the plan are granted once payment succeeds. Prices come from the registry, never from the request.
+// @Tags Credits
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param service path string true "sms, whatsapp or ai_credits"
+// @Param request body creditPurchaseRequest true "Purchase request"
+// @Success 200 {object} map[string]any
+// @Router /credits/{service}/purchase [post]
 func (h *CreditsHandler) Purchase(w http.ResponseWriter, r *http.Request) {
 	tenantID, ok := h.tenant(w, r)
 	if !ok {
@@ -187,7 +236,17 @@ type creditAdminGrantRequest struct {
 	Key    string `json:"key"`
 }
 
-// AdminGrant handles POST /admin/tenants/{tenant_id}/credits/{service}/grant (platform owner).
+// AdminGrant godoc
+// @Summary Add credit units to a tenant without a payment
+// @Tags Credits
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Param service path string true "sms, whatsapp or ai_credits"
+// @Param request body creditAdminGrantRequest true "Grant request"
+// @Success 200 {object} map[string]any
+// @Router /admin/tenants/{tenant_id}/credits/{service}/grant [post]
 func (h *CreditsHandler) AdminGrant(w http.ResponseWriter, r *http.Request) {
 	tenantID, err := uuid.Parse(chi.URLParam(r, "tenant_id"))
 	if err != nil {
@@ -207,8 +266,17 @@ func (h *CreditsHandler) AdminGrant(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"balance": bal, "applied": applied})
 }
 
-// Check handles GET /s2s/credits/{service}/check?tenant_id=&units=&platform_scope=. It records
-// nothing; the worker's Consume call is the real decision.
+// Check godoc
+// @Summary Would this send be allowed (S2S, records nothing)
+// @Tags Credits
+// @Produce json
+// @Security ApiKeyAuth
+// @Param service path string true "sms, whatsapp or ai_credits"
+// @Param tenant_id query string true "Tenant UUID"
+// @Param units query int true "Units the send would use"
+// @Param platform_scope query bool false "Platform-owned send, never billed"
+// @Success 200 {object} map[string]any
+// @Router /s2s/credits/{service}/check [get]
 func (h *CreditsHandler) Check(w http.ResponseWriter, r *http.Request) {
 	if !h.isService(r) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "service key required"})
@@ -234,9 +302,16 @@ type creditImportRequest struct {
 	Items  []credits.LegacyWallet `json:"items"`
 }
 
-// Import handles POST /s2s/credits/import: moves balances from the retired notifications wallet
-// tables. Service key only. dry_run (the default when omitted from tooling) reports without
-// writing; a repeat run changes nothing.
+// Import godoc
+// @Summary Move legacy notifications balances into the credits ledger (S2S)
+// @Description Additive and idempotent. With dry_run it reports without writing.
+// @Tags Credits
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body creditImportRequest true "Import request"
+// @Success 200 {object} map[string]any
+// @Router /s2s/credits/import [post]
 func (h *CreditsHandler) Import(w http.ResponseWriter, r *http.Request) {
 	if !h.isService(r) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "service key required"})
@@ -263,8 +338,17 @@ type creditAutoRenewRequest struct {
 	AutoRenew bool `json:"auto_renew"`
 }
 
-// SetAutoRenew handles POST /credits/{service}/auto-renew. Turning it off keeps the plan until the
-// end of the paid period and stops it appearing on the next invoice.
+// SetAutoRenew godoc
+// @Summary Turn monthly plan renewal on or off
+// @Description Turning it off keeps the plan until the end of the paid period and stops it appearing on the next invoice.
+// @Tags Credits
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param service path string true "whatsapp"
+// @Param request body creditAutoRenewRequest true "Renewal choice"
+// @Success 200 {object} map[string]any
+// @Router /credits/{service}/auto-renew [post]
 func (h *CreditsHandler) SetAutoRenew(w http.ResponseWriter, r *http.Request) {
 	tenantID, ok := h.tenant(w, r)
 	if !ok {

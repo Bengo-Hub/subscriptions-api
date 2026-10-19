@@ -971,6 +971,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/tenants/{tenant_id}/credits/{service}/grant": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Add credit units to a tenant without a payment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sms, whatsapp or ai_credits",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Grant request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.creditAdminGrantRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/admin/tenants/{tenant_id}/exemption": {
             "patch": {
                 "security": [
@@ -1616,6 +1669,193 @@ const docTemplate = `{
                 }
             }
         },
+        "/credits": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Bundle units, plan allowance, owed overage against the cap, and what can be bought, for every credit service.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Credit balances for the acting tenant",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/credits/catalog": {
+            "get": {
+                "description": "Bundle sizes, monthly plans and the per-message price. Public, no tenant state.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Price list for SMS, WhatsApp and AI credits",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/credits/{service}/auto-renew": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Turning it off keeps the plan until the end of the paid period and stops it appearing on the next invoice.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Turn monthly plan renewal on or off",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "whatsapp",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Renewal choice",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.creditAutoRenewRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/credits/{service}/purchase": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a Treasury payment intent. Units or the plan are granted once payment succeeds. Prices come from the registry, never from the request.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Buy a bundle or monthly plan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sms, whatsapp or ai_credits",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Purchase request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.creditPurchaseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/credits/{service}/transactions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Bundle wallet history",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sms, whatsapp or ai_credits",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Default 50, max 200",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Rows to skip",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/features": {
             "get": {
                 "security": [
@@ -2041,6 +2281,194 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/subscriptions.EntitlementCheck"
+                        }
+                    }
+                }
+            }
+        },
+        "/s2s/credits/import": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Additive and idempotent. With dry_run it reports without writing.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Move legacy notifications balances into the credits ledger (S2S)",
+                "parameters": [
+                    {
+                        "description": "Import request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.creditImportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/s2s/credits/{service}/check": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Would this send be allowed (S2S, records nothing)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sms, whatsapp or ai_credits",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Units the send would use",
+                        "name": "units",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Platform-owned send, never billed",
+                        "name": "platform_scope",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/s2s/credits/{service}/consume": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Spends units in order: plan allowance, bundle balance, then KES 1 overage up to the platform cap. Idempotent per key. Answers 200 with allowed=false and a reason when refused, so callers can tell a refusal from a failure (5xx) and never send free on a failure.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Spend credit units for one send (S2S)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sms, whatsapp or ai_credits",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Spend request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.creditSpendRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/s2s/credits/{service}/refund": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Restores the units and overage taken under consume_key, for example when the provider rejected the message. Idempotent per refund_key.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Reverse a spend (S2S)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sms, whatsapp or ai_credits",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Refund request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.creditRefundRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -3452,6 +3880,30 @@ const docTemplate = `{
                 }
             }
         },
+        "credits.LegacyWallet": {
+            "type": "object",
+            "properties": {
+                "sms_balance": {
+                    "description": "SMSBalance is the whole number of SMS units left (KES balance at KES 1 per SMS).",
+                    "type": "integer"
+                },
+                "tenant_id": {
+                    "type": "string"
+                },
+                "whatsapp_expires_at": {
+                    "description": "WhatsAppExpires is when the paid WhatsApp month ends.",
+                    "type": "string"
+                },
+                "whatsapp_tier": {
+                    "description": "WhatsAppTier is the mapped tier code (tier_1, tier_2, pro), empty when none.",
+                    "type": "string"
+                },
+                "whatsapp_used": {
+                    "description": "WhatsAppUsed is how many messages the tenant already used in that month.",
+                    "type": "integer"
+                }
+            }
+        },
         "handlers.checkUsageRequest": {
             "type": "object",
             "properties": {
@@ -3460,6 +3912,90 @@ const docTemplate = `{
                 },
                 "value": {
                     "type": "number"
+                }
+            }
+        },
+        "handlers.creditAdminGrantRequest": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "units": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handlers.creditAutoRenewRequest": {
+            "type": "object",
+            "properties": {
+                "auto_renew": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "handlers.creditImportRequest": {
+            "type": "object",
+            "properties": {
+                "dry_run": {
+                    "type": "boolean"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/credits.LegacyWallet"
+                    }
+                }
+            }
+        },
+        "handlers.creditPurchaseRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "return_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.creditRefundRequest": {
+            "type": "object",
+            "properties": {
+                "consume_key": {
+                    "type": "string"
+                },
+                "refund_key": {
+                    "type": "string"
+                },
+                "tenant_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.creditSpendRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "platform_scope": {
+                    "type": "boolean"
+                },
+                "tenant_id": {
+                    "type": "string"
+                },
+                "units": {
+                    "type": "integer"
                 }
             }
         },

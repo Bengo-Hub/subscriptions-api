@@ -870,3 +870,40 @@ One billing period of an agreement.
 
 Indexes: `(tenant_id, status, due_date)` for the JWT claim lookup, `(status, due_date)` for the
 invoice, overdue and receivables scans, `(agreement_id, cycle_number)` unique.
+
+---
+
+## Credits ledger
+
+Rules and prices are in [messaging-credits.md](messaging-credits.md).
+
+### api_token_wallets
+
+One wallet per tenant and `service_tag`. Despite the name it holds the units of every prepaid service.
+
+| Column | Type | Notes |
+|---|---|---|
+| tenant_id, service_tag | uuid, varchar(64) | unique together. Tags: `sms`, `whatsapp`, `ai_credits` (bundle units), `whatsapp_quota`, `ai_credits_quota` (recurring allowance), `etims_api` (API tokens) |
+| balance | bigint | spendable units, never negative (the update only applies while balance stays at or above zero) |
+| lifetime_granted | bigint | cumulative units bought or granted, for display |
+| low_balance_threshold | bigint | default 50 |
+
+### api_token_transactions
+
+Append-only ledger of wallet movements.
+
+| Column | Type | Notes |
+|---|---|---|
+| wallet_id, tenant_id, service_tag | uuid, uuid, varchar | service_tag is denormalised for statement queries |
+| action | enum | `grant`, `topup`, `deduction`, `refund`, `adjustment`, `overage` (a unit sent beyond allowance and bundle, balance unchanged, billed in KES) |
+| tokens | bigint | positive adds, negative spends |
+| new_balance | bigint | wallet balance after the movement |
+| idempotency_key | varchar(160), nullable | one movement per key per wallet |
+| ref_id, ref_type, description, metadata | | origin of the movement |
+
+Indexes: `(wallet_id, idempotency_key)` unique (nulls are distinct, so unkeyed rows are unaffected),
+`(tenant_id, service_tag, created_at)` for statements, plus the single column indexes on tenant, wallet, action and time.
+
+Overage for SMS and WhatsApp accumulates in one open `overage_charges` row per subscription and metric
+(`messaging_sms`, `messaging_whatsapp`) until a subscription invoice marks it invoiced. A recurring WhatsApp plan is
+kept on the `product_subscriptions` row for `whatsapp_messaging` (`tier_code`, `tier_period_end`, `tier_auto_renew`).

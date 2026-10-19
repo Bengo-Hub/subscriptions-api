@@ -20,12 +20,86 @@ definitions:
       low_balance_threshold:
         type: integer
     type: object
+  credits.LegacyWallet:
+    properties:
+      sms_balance:
+        description: SMSBalance is the whole number of SMS units left (KES balance
+          at KES 1 per SMS).
+        type: integer
+      tenant_id:
+        type: string
+      whatsapp_expires_at:
+        description: WhatsAppExpires is when the paid WhatsApp month ends.
+        type: string
+      whatsapp_tier:
+        description: WhatsAppTier is the mapped tier code (tier_1, tier_2, pro), empty
+          when none.
+        type: string
+      whatsapp_used:
+        description: WhatsAppUsed is how many messages the tenant already used in
+          that month.
+        type: integer
+    type: object
   handlers.checkUsageRequest:
     properties:
       metric_type:
         type: string
       value:
         type: number
+    type: object
+  handlers.creditAdminGrantRequest:
+    properties:
+      key:
+        type: string
+      reason:
+        type: string
+      units:
+        type: integer
+    type: object
+  handlers.creditAutoRenewRequest:
+    properties:
+      auto_renew:
+        type: boolean
+    type: object
+  handlers.creditImportRequest:
+    properties:
+      dry_run:
+        type: boolean
+      items:
+        items:
+          $ref: '#/definitions/credits.LegacyWallet'
+        type: array
+    type: object
+  handlers.creditPurchaseRequest:
+    properties:
+      code:
+        type: string
+      kind:
+        type: string
+      return_url:
+        type: string
+    type: object
+  handlers.creditRefundRequest:
+    properties:
+      consume_key:
+        type: string
+      refund_key:
+        type: string
+      tenant_id:
+        type: string
+    type: object
+  handlers.creditSpendRequest:
+    properties:
+      description:
+        type: string
+      key:
+        type: string
+      platform_scope:
+        type: boolean
+      tenant_id:
+        type: string
+      units:
+        type: integer
     type: object
   handlers.deductRequest:
     properties:
@@ -1009,6 +1083,40 @@ paths:
       summary: List all tenants (admin)
       tags:
       - Platform
+  /admin/tenants/{tenant_id}/credits/{service}/grant:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      - description: sms, whatsapp or ai_credits
+        in: path
+        name: service
+        required: true
+        type: string
+      - description: Grant request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.creditAdminGrantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add credit units to a tenant without a payment
+      tags:
+      - Credits
   /admin/tenants/{tenant_id}/exemption:
     patch:
       consumes:
@@ -1439,6 +1547,129 @@ paths:
       summary: Get billing information
       tags:
       - Billing
+  /credits:
+    get:
+      description: Bundle units, plan allowance, owed overage against the cap, and
+        what can be bought, for every credit service.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Credit balances for the acting tenant
+      tags:
+      - Credits
+  /credits/{service}/auto-renew:
+    post:
+      consumes:
+      - application/json
+      description: Turning it off keeps the plan until the end of the paid period
+        and stops it appearing on the next invoice.
+      parameters:
+      - description: whatsapp
+        in: path
+        name: service
+        required: true
+        type: string
+      - description: Renewal choice
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.creditAutoRenewRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Turn monthly plan renewal on or off
+      tags:
+      - Credits
+  /credits/{service}/purchase:
+    post:
+      consumes:
+      - application/json
+      description: Creates a Treasury payment intent. Units or the plan are granted
+        once payment succeeds. Prices come from the registry, never from the request.
+      parameters:
+      - description: sms, whatsapp or ai_credits
+        in: path
+        name: service
+        required: true
+        type: string
+      - description: Purchase request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.creditPurchaseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Buy a bundle or monthly plan
+      tags:
+      - Credits
+  /credits/{service}/transactions:
+    get:
+      parameters:
+      - description: sms, whatsapp or ai_credits
+        in: path
+        name: service
+        required: true
+        type: string
+      - description: Default 50, max 200
+        in: query
+        name: limit
+        type: integer
+      - description: Rows to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Bundle wallet history
+      tags:
+      - Credits
+  /credits/catalog:
+    get:
+      description: Bundle sizes, monthly plans and the per-message price. Public,
+        no tenant state.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Price list for SMS, WhatsApp and AI credits
+      tags:
+      - Credits
   /features:
     get:
       description: Returns the full set of features and limits for the tenant's current
@@ -1727,6 +1958,130 @@ paths:
       summary: Check whether the caller's tenant may self-activate a product
       tags:
       - Products
+  /s2s/credits/{service}/check:
+    get:
+      parameters:
+      - description: sms, whatsapp or ai_credits
+        in: path
+        name: service
+        required: true
+        type: string
+      - description: Tenant UUID
+        in: query
+        name: tenant_id
+        required: true
+        type: string
+      - description: Units the send would use
+        in: query
+        name: units
+        required: true
+        type: integer
+      - description: Platform-owned send, never billed
+        in: query
+        name: platform_scope
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Would this send be allowed (S2S, records nothing)
+      tags:
+      - Credits
+  /s2s/credits/{service}/consume:
+    post:
+      consumes:
+      - application/json
+      description: 'Spends units in order: plan allowance, bundle balance, then KES
+        1 overage up to the platform cap. Idempotent per key. Answers 200 with allowed=false
+        and a reason when refused, so callers can tell a refusal from a failure (5xx)
+        and never send free on a failure.'
+      parameters:
+      - description: sms, whatsapp or ai_credits
+        in: path
+        name: service
+        required: true
+        type: string
+      - description: Spend request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.creditSpendRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Spend credit units for one send (S2S)
+      tags:
+      - Credits
+  /s2s/credits/{service}/refund:
+    post:
+      consumes:
+      - application/json
+      description: Restores the units and overage taken under consume_key, for example
+        when the provider rejected the message. Idempotent per refund_key.
+      parameters:
+      - description: sms, whatsapp or ai_credits
+        in: path
+        name: service
+        required: true
+        type: string
+      - description: Refund request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.creditRefundRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Reverse a spend (S2S)
+      tags:
+      - Credits
+  /s2s/credits/import:
+    post:
+      consumes:
+      - application/json
+      description: Additive and idempotent. With dry_run it reports without writing.
+      parameters:
+      - description: Import request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.creditImportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Move legacy notifications balances into the credits ledger (S2S)
+      tags:
+      - Credits
   /service-charges/plans:
     get:
       description: Returns all active service charge plans, optionally filtered by

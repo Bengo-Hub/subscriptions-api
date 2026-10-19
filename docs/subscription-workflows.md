@@ -358,10 +358,12 @@ At next renewal cycle:
 | `truload.shipment.created` | deliveries | truload |
 | `auth.user.created` (role-aware) | staff / admins / riders | auth |
 | `auth.outlet.created` | outlets | auth |
-| `notifications.sms.sent` | sms_sent | notifications |
 | `notifications.email.sent` | emails_sent | notifications |
-| `notifications.push.sent` | push_sent | notifications |
 | `marketflow.campaign.created` | campaigns | marketflow |
+
+**SMS, WhatsApp and push**: SMS and WhatsApp are not metered by usage events. Each send is charged against
+the credits ledger (bundles, plan allowance, KES 1 overage) through the S2S consume call, see
+[messaging-credits.md](messaging-credits.md). Push is free and not metered.
 
 **Metrics without a NATS subject**: external eTIMS calls are charged by treasury-api's API-key
 middleware before the sale is transmitted (token pre-flight through `SpendTokens`), not reported

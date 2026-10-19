@@ -330,6 +330,13 @@ Subscriptions-api emits lifecycle events that notifications-api maps to email/SM
 
 `GET /api/v1/subscriptions/expiring` — Returns subscriptions expiring within a configurable window. Called nightly by notifications-api with `X-API-Key`.
 
+**SMS and WhatsApp billing** (notifications-api asks, subscriptions-api decides):
+
+Before every tenant send the worker calls `POST /api/v1/s2s/credits/{service}/consume` with the stable key of the send
+attempt, and `POST /api/v1/s2s/credits/{service}/refund` when the provider rejects the message. The HTTP send API uses
+`GET /api/v1/s2s/credits/{service}/check` for an early 402. A failing call means the answer is unknown and nothing is sent.
+Rules, prices and the ledger are described in [messaging-credits.md](messaging-credits.md).
+
 ---
 
 ### Auth UI (Billing Tab)
@@ -450,7 +457,7 @@ req.Header.Set("X-API-Key", os.Getenv("INTERNAL_SERVICE_KEY"))
 | Subject | Action |
 |---------|--------|
 | `auth.tenant.created` | Auto-assign Starter plan with 14-day trial |
-| `treasury.payment.succeeded` | Activate subscription |
+| `treasury.payment.succeeded` | Activate subscription; with `reference_type=credit_purchase`, grant the SMS, WhatsApp or AI credit bundle or plan; after a subscription payment, grant checkout add-ons and renew recurring tiers |
 | `treasury.payment.failed` | Suspend/initiate dunning workflow |
 
 ---
