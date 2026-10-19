@@ -109,5 +109,5 @@ can be dropped in a later release once the totals have been checked.
 * marketflow-ai spends one AI credit per chat message through the consume endpoint and refunds it when no answer was
   produced. The old one time `MARKETFLOW_AI_CREDITS_*` plans are switched off by the seed; the same two packs are
   catalog bundles. Only a tenant that resolves to a real tenant row is billed, and the platform tenant is exempt.
-* The `addon_purchase` path in `internal/http/handlers/addon.go` has no payment consumer branch that settles it.
-  Plan feature add-ons bought that way are charged but never switched on, and should be retired or finished.
+* The old `addon_purchase` path (`/api/v1/addons`) was removed: it had no payment consumer branch that settled it.
+  The plan-feature add-on seed was removed with it.

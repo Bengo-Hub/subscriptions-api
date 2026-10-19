@@ -21,7 +21,6 @@ func New(
 	healthHandler *handlers.HealthHandler,
 	planHandler *handlers.PlanHandler,
 	subscriptionHandler *handlers.SubscriptionHandler,
-	addonHandler *handlers.AddonHandler,
 	featureHandler *handlers.FeatureHandler,
 	usageHandler *handlers.UsageHandler,
 	serviceChargeHandler *handlers.ServiceChargeHandler,
@@ -230,13 +229,6 @@ func New(
 			r.Put("/subscriptions/{id}/switch-plan", subscriptionHandler.SwitchPlan)
 
 			// Add-on management (PlanFeature-based tenant purchasable addons)
-			if addonHandler != nil {
-				r.Route("/addons", func(r chi.Router) {
-					r.Get("/", addonHandler.ListAddons)
-					r.Post("/{feature_code}/purchase", addonHandler.PurchaseAddon)
-					r.Delete("/{feature_code}", addonHandler.RemoveAddon)
-				})
-			}
 
 			// Custom addons — platform-admin configured; tenant read-only view
 			if customAddonHandler != nil {

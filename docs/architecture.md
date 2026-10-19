@@ -270,9 +270,8 @@ All routes under `/api/v1` (plus health at root `/healthz` and `/readyz`):
 | **Service Charges** | | | |
 | GET | `/api/v1/tenants/{tenantID}/service-charges` | Yes | Get tenant service charge config |
 | **Add-ons (JWT required)** | | | |
-| GET | `/api/v1/addons` | Yes | List available add-on features for tenant's plan |
-| POST | `/api/v1/addons/{feature_code}/purchase` | Yes | Purchase an add-on (free: instant; paid: Treasury intent) |
-| DELETE | `/api/v1/addons/{feature_code}` | Yes | Remove a purchased add-on |
+| GET | `/api/v1/credits` | Yes | SMS, WhatsApp and AI credit balances and what can be bought |
+| POST | `/api/v1/credits/{service}/purchase` | Yes | Buy a bundle or monthly plan (Treasury intent) |
 | **Webhooks (S2S — X-API-Key)** | | | |
 | POST | `/api/v1/webhooks/treasury/payment-status` | X-API-Key | Treasury payment completion/failure callback — activates or suspends subscription |
 | **Admin (Platform Owner only)** | | | |

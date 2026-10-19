@@ -268,7 +268,6 @@ func New(ctx context.Context) (*App, error) {
 
 	// Subscription, addon, and platform handlers (featureHandler injected for cache invalidation)
 	subscriptionHandler := handlers.NewSubscriptionHandler(log, ormClient, dbPool, subscriptionSvc, featureHandler, overageSvc)
-	addonHandler := handlers.NewAddonHandler(log, ormClient, subscriptionSvc, treasuryClient, cfg.Services.TreasuryAPIKey, featureHandler)
 
 	// Usage tracking handler (raw SQL — requires UsageEvent Ent schema codegen to create table)
 	usageHandler := handlers.NewUsageHandler(log, dbPool, ormClient, redisClient, overageSvc)
@@ -333,7 +332,7 @@ func New(ctx context.Context) (*App, error) {
 	// Tenant backups are made from the SSO client area (auth-api collects this service's
 	// /api/v1/s2s/tenant-export); the platform pg_dumpall covers disaster recovery.
 
-	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, addonHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, productActivationHandler, emailLicenseHandler, rateLimitHandler, tokenWalletHandler, creditsHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer,
+	httpRouter := router.New(log, healthHandler, planHandler, subscriptionHandler, featureHandler, usageHandler, serviceChargeHandler, billingHandler, platformHandler, rbacHandler, webhookHandler, customAddonHandler, couponHandler, usageAdminHandler, couponAdminHandler, featureCatalogHandler, productActivationHandler, emailLicenseHandler, rateLimitHandler, tokenWalletHandler, creditsHandler, cfg.Security.APIKey, authMiddleware, cfg.HTTP.AllowedOrigins, tenantSyncer,
 		tenantExportHandler(sqlDB, cfg.Security.APIKey))
 
 	httpServer := &http.Server{

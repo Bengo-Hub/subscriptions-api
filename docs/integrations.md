@@ -218,11 +218,9 @@ Content-Type: application/json
 - `completed` → sets subscription `ACTIVE`, updates `current_period_start/end`, publishes `subscription.activated`, invalidates feature cache.
 - `failed` → sets subscription `SUSPENDED`, publishes `subscription.payment_required`, invalidates feature cache.
 
-**Add-on purchase flow** (paid add-ons):
-
-1. Tenant calls `POST /api/v1/addons/{feature_code}/purchase`
-2. Subscriptions-api POSTs to Treasury `/api/v1/{tenant_id}/payments/intents` with `reference_type: "addon_purchase"`
-3. On payment completion, Treasury calls the webhook above with `metadata.addon: true`
+**Add-on purchases**: SMS, WhatsApp and AI credit bundles and plans are bought through `POST /api/v1/credits/{service}/purchase`
+(`reference_type: "credit_purchase"`, see [messaging-credits.md](messaging-credits.md)). The older plan-feature add-on
+endpoints (`/api/v1/addons`) were removed on 2026-10-19: they took payment but never switched anything on.
 
 **Renewal flow** (background job):
 
@@ -401,9 +399,8 @@ req.Header.Set("X-API-Key", os.Getenv("INTERNAL_SERVICE_KEY"))
 | POST | `/api/v1/usage/report` | JWT or API key | Domain services (returns 429 when plan limit exceeded) |
 | POST | `/api/v1/usage/check` | API key | Decision only, nothing counted: 200 when one more unit is allowed, 402 with the limit-reached body otherwise. pos-api calls it before creating a sale |
 | GET | `/api/v1/usage` | JWT | Tenant (self) |
-| GET | `/api/v1/addons` | JWT | Tenant (self) — list available add-ons |
-| POST | `/api/v1/addons/{code}/purchase` | JWT | Tenant (self) — purchase an add-on |
-| DELETE | `/api/v1/addons/{code}` | JWT | Tenant (self) — remove an add-on |
+| GET | `/api/v1/credits` | JWT | Tenant (self) — SMS, WhatsApp and AI credit balances and what can be bought |
+| POST | `/api/v1/credits/{service}/purchase` | JWT | Tenant (self) — buy a bundle or monthly plan |
 | POST | `/api/v1/webhooks/treasury/payment-status` | X-API-Key | Treasury (S2S webhook) |
 
 ---
