@@ -103,6 +103,7 @@ func New(
 			r.Get("/s2s/credits/{service}/check", creditsHandler.Check)
 			r.Post("/s2s/credits/{service}/consume", creditsHandler.Consume)
 			r.Post("/s2s/credits/{service}/refund", creditsHandler.Refund)
+			r.Post("/s2s/credits/import", creditsHandler.Import)
 		}
 
 		// S2S webhook routes (API key auth handled inside handler)

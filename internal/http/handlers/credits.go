@@ -223,3 +223,33 @@ func (h *CreditsHandler) Check(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, dec)
 }
+
+type creditImportRequest struct {
+	DryRun bool                   `json:"dry_run"`
+	Items  []credits.LegacyWallet `json:"items"`
+}
+
+// Import handles POST /s2s/credits/import: moves balances from the retired notifications wallet
+// tables. Service key only. dry_run (the default when omitted from tooling) reports without
+// writing; a repeat run changes nothing.
+func (h *CreditsHandler) Import(w http.ResponseWriter, r *http.Request) {
+	if !h.isService(r) {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "service key required"})
+		return
+	}
+	var req creditImportRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Items) == 0 || len(req.Items) > 500 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "between 1 and 500 items are required"})
+		return
+	}
+	results := make([]credits.ImportResult, 0, len(req.Items))
+	for _, it := range req.Items {
+		res, err := h.svc.ImportLegacy(r.Context(), it, req.DryRun)
+		if err != nil {
+			h.log.Error("credits import failed", zap.String("tenant_id", it.TenantID.String()), zap.Error(err))
+			res.Skipped = "error: " + err.Error()
+		}
+		results = append(results, res)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"dry_run": req.DryRun, "results": results})
+}

@@ -363,3 +363,41 @@ func TestCheckMirrorsConsumeWithoutRecording(t *testing.T) {
 		t.Fatalf("platform scope is always allowed: %+v", pd)
 	}
 }
+
+func TestImportLegacyIsAdditiveIdempotentAndKeepsUsage(t *testing.T) {
+	f := newFixture(t, map[string]any{})
+	ctx := context.Background()
+	exp := time.Now().Add(10 * 24 * time.Hour).UTC()
+	w := LegacyWallet{TenantID: f.tenantID, SMSBalance: 250, WhatsAppTier: "tier_2", WhatsAppExpires: &exp, WhatsAppUsed: 300}
+
+	dry, err := f.svc.ImportLegacy(ctx, w, true)
+	if err != nil || len(dry.Applied) != 2 || f.bal(t, "sms") != 0 {
+		t.Fatalf("dry run must report without writing: %+v bal=%d %v", dry, f.bal(t, "sms"), err)
+	}
+	for i := 0; i < 2; i++ {
+		if _, err := f.svc.ImportLegacy(ctx, w, false); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if f.bal(t, "sms") != 250 {
+		t.Fatalf("sms balance after two runs: %d", f.bal(t, "sms"))
+	}
+	if q := f.bal(t, "whatsapp_quota"); q != 500 {
+		t.Fatalf("tier 2 has 800, 300 used, 500 must remain: %d", q)
+	}
+	// The monthly job must not hand the used allowance back during the migrated month.
+	if _, err := f.svc.RefillAllowances(ctx, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if q := f.bal(t, "whatsapp_quota"); q != 500 {
+		t.Fatalf("refill job reset a migrated quota: %d", q)
+	}
+	if d := f.spend(t, "whatsapp", 1, "after-migration"); !d.Allowed || d.FromQuota != 1 {
+		t.Fatalf("migrated tenant can send: %+v", d)
+	}
+
+	none, err := f.svc.ImportLegacy(ctx, LegacyWallet{TenantID: uuid.New(), SMSBalance: 5}, false)
+	if err != nil || none.Skipped == "" {
+		t.Fatalf("tenant without a subscription is skipped and reported: %+v %v", none, err)
+	}
+}
