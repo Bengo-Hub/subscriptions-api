@@ -12,12 +12,6 @@ type ApiTokenTransaction func(*sql.Selector)
 // ApiTokenWallet is the predicate function for apitokenwallet builders.
 type ApiTokenWallet func(*sql.Selector)
 
-// Backup is the predicate function for backup builders.
-type Backup func(*sql.Selector)
-
-// BackupSetting is the predicate function for backupsetting builders.
-type BackupSetting func(*sql.Selector)
-
 // Bundle is the predicate function for bundle builders.
 type Bundle func(*sql.Selector)
 

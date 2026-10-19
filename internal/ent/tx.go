@@ -16,10 +16,6 @@ type Tx struct {
 	ApiTokenTransaction *ApiTokenTransactionClient
 	// ApiTokenWallet is the client for interacting with the ApiTokenWallet builders.
 	ApiTokenWallet *ApiTokenWalletClient
-	// Backup is the client for interacting with the Backup builders.
-	Backup *BackupClient
-	// BackupSetting is the client for interacting with the BackupSetting builders.
-	BackupSetting *BackupSettingClient
 	// Bundle is the client for interacting with the Bundle builders.
 	Bundle *BundleClient
 	// Coupon is the client for interacting with the Coupon builders.
@@ -213,8 +209,6 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.ApiTokenTransaction = NewApiTokenTransactionClient(tx.config)
 	tx.ApiTokenWallet = NewApiTokenWalletClient(tx.config)
-	tx.Backup = NewBackupClient(tx.config)
-	tx.BackupSetting = NewBackupSettingClient(tx.config)
 	tx.Bundle = NewBundleClient(tx.config)
 	tx.Coupon = NewCouponClient(tx.config)
 	tx.CustomAddon = NewCustomAddonClient(tx.config)
