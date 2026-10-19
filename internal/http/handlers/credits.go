@@ -201,3 +201,25 @@ func (h *CreditsHandler) AdminGrant(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"balance": bal, "applied": applied})
 }
+
+// Check handles GET /s2s/credits/{service}/check?tenant_id=&units=&platform_scope=. It records
+// nothing; the worker's Consume call is the real decision.
+func (h *CreditsHandler) Check(w http.ResponseWriter, r *http.Request) {
+	if !h.isService(r) {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "service key required"})
+		return
+	}
+	tenantID, err := uuid.Parse(r.URL.Query().Get("tenant_id"))
+	units, uerr := strconv.ParseInt(r.URL.Query().Get("units"), 10, 64)
+	if err != nil || uerr != nil || units < 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id and a non-negative units value are required"})
+		return
+	}
+	dec, err := h.svc.Check(r.Context(), tenantID, chi.URLParam(r, "service"), units, r.URL.Query().Get("platform_scope") == "true")
+	if err != nil {
+		h.log.Error("credits check failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "credit check failed"})
+		return
+	}
+	writeJSON(w, http.StatusOK, dec)
+}

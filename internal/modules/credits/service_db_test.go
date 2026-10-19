@@ -328,3 +328,38 @@ func TestResolveOfferPricesComeFromTheRegistry(t *testing.T) {
 		t.Fatal("SMS has no tiers")
 	}
 }
+
+func TestCheckMirrorsConsumeWithoutRecording(t *testing.T) {
+	f := newFixture(t, map[string]any{})
+	ctx := context.Background()
+	chk := func(service string, units int64) Decision {
+		d, err := f.svc.Check(ctx, f.tenantID, service, units, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return d
+	}
+	if d := chk("sms", 1); d.Allowed || d.Reason != ReasonServiceNotActivated {
+		t.Fatalf("not activated: %+v", d)
+	}
+	f.grant(t, "sms", KindBundle, "bundle_100", "g", 1)
+	if d := chk("sms", 100); !d.Allowed {
+		t.Fatalf("exactly the bundle: %+v", d)
+	}
+	if d := chk("sms", 400); !d.Allowed {
+		t.Fatalf("300 KES of overage is under the cap: %+v", d)
+	}
+	if d := chk("sms", 700); d.Allowed || d.Reason != billing.ReasonOverageCap {
+		t.Fatalf("600 KES of overage is over the cap: %+v", d)
+	}
+	if f.bal(t, "sms") != 100 {
+		t.Fatalf("check must not spend: %d", f.bal(t, "sms"))
+	}
+	if d := chk("whatsapp", 1); d.Allowed {
+		t.Fatalf("whatsapp not bought: %+v", d)
+	}
+	pd, _ := f.svc.Check(ctx, f.tenantID, "whatsapp", 1, true)
+	if !pd.Allowed {
+		t.Fatalf("platform scope is always allowed: %+v", pd)
+	}
+}

@@ -100,6 +100,7 @@ func New(
 
 		// S2S credit spend and refund (service key checked inside the handler).
 		if creditsHandler != nil {
+			r.Get("/s2s/credits/{service}/check", creditsHandler.Check)
 			r.Post("/s2s/credits/{service}/consume", creditsHandler.Consume)
 			r.Post("/s2s/credits/{service}/refund", creditsHandler.Refund)
 		}

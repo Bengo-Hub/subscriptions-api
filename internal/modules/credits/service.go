@@ -248,3 +248,53 @@ func planLimit(sub *ent.TenantSubscription, key string) int64 {
 	}
 	return 0
 }
+
+// Check answers "could this spend go through right now" without recording anything, so an HTTP
+// API can refuse early. It mirrors Consume's rules; the real decision is still made by Consume.
+func (s *Service) Check(ctx context.Context, tenantID uuid.UUID, service string, units int64, platformScope bool) (Decision, error) {
+	spec, ok := billing.LookupMeteredService(service)
+	if !ok || spec.ProductCode == "" && spec.PlanQuotaKey == "" {
+		return Decision{Reason: ReasonUnknownService}, nil
+	}
+	if platformScope {
+		return Decision{Allowed: true, Exempt: true}, nil
+	}
+	cov, err := s.Coverage(ctx, tenantID, spec)
+	if err != nil {
+		return Decision{}, err
+	}
+	if cov.Exempt {
+		return Decision{Allowed: true, Exempt: true}, nil
+	}
+	if !cov.Covered {
+		return Decision{Reason: cov.Reason}, nil
+	}
+	if cov.Unlimited && cov.QuotaLive {
+		return Decision{Allowed: true}, nil
+	}
+	var have int64
+	if bal, err := s.wallets.GetBalance(ctx, tenantID, spec.BundleTag); err == nil {
+		have += bal.Balance
+	}
+	if cov.QuotaLive && spec.QuotaTag != "" {
+		if bal, err := s.wallets.GetBalance(ctx, tenantID, spec.QuotaTag); err == nil {
+			have += bal.Balance
+		}
+	}
+	if have >= units {
+		return Decision{Allowed: true}, nil
+	}
+	if !cov.OverageOK {
+		return Decision{Reason: billing.ReasonInsufficient}, nil
+	}
+	if limit := s.overageCap(ctx); limit > 0 {
+		pending, err := s.pendingOverageKES(ctx, tenantID, spec.OverageMetric)
+		if err != nil {
+			return Decision{}, err
+		}
+		if pending+float64(units-have)*spec.UnitPriceKES > limit {
+			return Decision{Reason: billing.ReasonOverageCap}, nil
+		}
+	}
+	return Decision{Allowed: true}, nil
+}
