@@ -401,3 +401,27 @@ func TestImportLegacyIsAdditiveIdempotentAndKeepsUsage(t *testing.T) {
 		t.Fatalf("tenant without a subscription is skipped and reported: %+v %v", none, err)
 	}
 }
+
+func TestCatalogListsPublicPrices(t *testing.T) {
+	cat := Catalog()
+	var sms, wa *CatalogEntry
+	for i := range cat {
+		switch cat[i].Service {
+		case "sms":
+			sms = &cat[i]
+		case "whatsapp":
+			wa = &cat[i]
+		}
+	}
+	if sms == nil || wa == nil || len(sms.Bundles) != 4 || len(wa.Tiers) != 3 {
+		t.Fatalf("catalog %+v", cat)
+	}
+	if sms.UnitPriceKES != 1 || wa.UnitPriceKES != 1 {
+		t.Fatalf("messages cost KES 1 each: %v %v", sms.UnitPriceKES, wa.UnitPriceKES)
+	}
+	for _, e := range cat {
+		if e.Service == "etims_api" {
+			t.Fatal("the eTIMS token wallet is not a tenant catalog item")
+		}
+	}
+}

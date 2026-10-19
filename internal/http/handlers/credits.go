@@ -110,6 +110,11 @@ func (h *CreditsHandler) tenant(w http.ResponseWriter, r *http.Request) (uuid.UU
 	return id, true
 }
 
+// Catalog handles GET /credits/catalog: bundle sizes, plans and prices. Public, no tenant state.
+func (h *CreditsHandler) Catalog(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"services": credits.Catalog()})
+}
+
 // List handles GET /credits: the caller's state for every credit service.
 func (h *CreditsHandler) List(w http.ResponseWriter, r *http.Request) {
 	tenantID, ok := h.tenant(w, r)

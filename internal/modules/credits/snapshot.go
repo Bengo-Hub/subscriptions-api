@@ -31,6 +31,29 @@ type ServiceSnapshot struct {
 	Tiers         []billing.CreditTier   `json:"tiers"`
 }
 
+// CatalogEntry is the public price list of one credit service.
+type CatalogEntry struct {
+	Service      string                 `json:"service"`
+	Label        string                 `json:"label"`
+	UnitPriceKES float64                `json:"unit_price_kes"`
+	Bundles      []billing.CreditBundle `json:"bundles"`
+	Tiers        []billing.CreditTier   `json:"tiers"`
+}
+
+// Catalog returns what can be bought, with no tenant state, for pricing pages and docs.
+func Catalog() []CatalogEntry {
+	var out []CatalogEntry
+	for _, code := range billing.MeteredServiceCodes() {
+		spec, _ := billing.LookupMeteredService(code)
+		if spec.ProductCode == "" && spec.PlanQuotaKey == "" {
+			continue
+		}
+		out = append(out, CatalogEntry{Service: spec.Code, Label: spec.Label, UnitPriceKES: spec.UnitPriceKES, Bundles: spec.Bundles, Tiers: spec.Tiers})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Service < out[j].Service })
+	return out
+}
+
 // Snapshots returns the state of every tenant-purchasable credit service (those with a product
 // activation or plan allowance, so the eTIMS token wallet is excluded).
 func (s *Service) Snapshots(ctx context.Context, tenantID uuid.UUID) ([]ServiceSnapshot, error) {

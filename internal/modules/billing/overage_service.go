@@ -89,22 +89,25 @@ func (s *OverageService) processSubscriptionOverages(
 			continue
 		}
 
-		// Sum usage_events for this tenant+metric in the period
-		events, err := s.orm.UsageEvent.Query().
+		// Sum usage_events for this tenant+metric in the period, in the database (the
+		// (tenant_id, created_at) index serves the range).
+		var sums []struct {
+			Sum *float64 `json:"sum"`
+		}
+		if err := s.orm.UsageEvent.Query().
 			Where(
 				usageevent.TenantIDEQ(sub.TenantID),
 				usageevent.MetricTypeEQ(metricType),
 				usageevent.CreatedAtGTE(periodStart),
 				usageevent.CreatedAtLT(periodEnd),
 			).
-			All(ctx)
-		if err != nil {
-			return fmt.Errorf("query usage_events for %s: %w", metricType, err)
+			Aggregate(ent.Sum(usageevent.FieldValue)).
+			Scan(ctx, &sums); err != nil {
+			return fmt.Errorf("sum usage_events for %s: %w", metricType, err)
 		}
-
 		var totalUsage float64
-		for _, e := range events {
-			totalUsage += e.Value
+		if len(sums) > 0 && sums[0].Sum != nil {
+			totalUsage = *sums[0].Sum
 		}
 
 		if totalUsage <= float64(planLimit) {
