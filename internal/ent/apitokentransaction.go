@@ -42,6 +42,8 @@ type ApiTokenTransaction struct {
 	RefType *string `json:"ref_type,omitempty"`
 	// Description holds the value of the "description" field.
 	Description *string `json:"description,omitempty"`
+	// Caller-supplied key making one movement apply at most once per wallet, e.g. a message id for messaging consumption
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 	// Metadata holds the value of the "metadata" field.
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -85,7 +87,7 @@ func (*ApiTokenTransaction) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case apitokentransaction.FieldTokens, apitokentransaction.FieldNewBalance:
 			values[i] = new(sql.NullInt64)
-		case apitokentransaction.FieldServiceTag, apitokentransaction.FieldAction, apitokentransaction.FieldEndpointPattern, apitokentransaction.FieldRefType, apitokentransaction.FieldDescription:
+		case apitokentransaction.FieldServiceTag, apitokentransaction.FieldAction, apitokentransaction.FieldEndpointPattern, apitokentransaction.FieldRefType, apitokentransaction.FieldDescription, apitokentransaction.FieldIdempotencyKey:
 			values[i] = new(sql.NullString)
 		case apitokentransaction.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -183,6 +185,13 @@ func (_m *ApiTokenTransaction) assignValues(columns []string, values []any) erro
 				_m.Description = new(string)
 				*_m.Description = value.String
 			}
+		case apitokentransaction.FieldIdempotencyKey:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field idempotency_key", values[i])
+			} else if value.Valid {
+				_m.IdempotencyKey = new(string)
+				*_m.IdempotencyKey = value.String
+			}
 		case apitokentransaction.FieldMetadata:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
@@ -278,6 +287,11 @@ func (_m *ApiTokenTransaction) String() string {
 	builder.WriteString(", ")
 	if v := _m.Description; v != nil {
 		builder.WriteString("description=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.IdempotencyKey; v != nil {
+		builder.WriteString("idempotency_key=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

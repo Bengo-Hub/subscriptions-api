@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"sort"
@@ -27,11 +28,11 @@ type TokenWalletHandler struct {
 }
 
 // NewTokenWalletHandler creates a new TokenWalletHandler.
-func NewTokenWalletHandler(log *zap.Logger, orm *ent.Client, subsSvc *subscriptions.Service) *TokenWalletHandler {
+func NewTokenWalletHandler(log *zap.Logger, orm *ent.Client, db *sql.DB, subsSvc *subscriptions.Service) *TokenWalletHandler {
 	return &TokenWalletHandler{
 		log:     log.Named("token_wallet.handler"),
 		orm:     orm,
-		wallet:  billing.NewTokenWalletService(log, orm),
+		wallet:  billing.NewTokenWalletService(log, orm, db),
 		subsSvc: subsSvc,
 	}
 }

@@ -315,7 +315,7 @@ func New(ctx context.Context) (*App, error) {
 
 	// Prepaid API token wallet (S2S deduct/balance for treasury-api's external eTIMS API
 	// middleware, + tenant-facing top-up/estimate) — see internal/http/handlers/token_wallet.go.
-	tokenWalletHandler := handlers.NewTokenWalletHandler(log, ormClient, subscriptionSvc)
+	tokenWalletHandler := handlers.NewTokenWalletHandler(log, ormClient, sqlDB, subscriptionSvc)
 
 	// Feature catalog handler (platform-wide feature/limit registry for the plan builder)
 	var featureCatalogHandler *handlers.FeatureCatalogHandler
@@ -338,7 +338,7 @@ func New(ctx context.Context) (*App, error) {
 		IdleTimeout:       cfg.HTTP.IdleTimeout,
 	}
 
-	paymentConsumer := consumers.NewTreasuryPaymentConsumer(log, ormClient)
+	paymentConsumer := consumers.NewTreasuryPaymentConsumer(log, ormClient, sqlDB)
 	paymentConsumer.SetSubscriptionService(subscriptionSvc)
 
 	// Usage consumer with per-event idempotency so JetStream redeliveries don't double-count
@@ -369,7 +369,7 @@ func New(ctx context.Context) (*App, error) {
 		outletConsumer:       consumers.NewOutletCreatedConsumer(log, subscriptionSvc),
 		usageConsumer:        usageConsumer,
 		paymentConsumer:      paymentConsumer,
-		appPromotionConsumer: consumers.NewAppPromotionConsumer(log, billing.NewTokenWalletService(log, ormClient)),
+		appPromotionConsumer: consumers.NewAppPromotionConsumer(log, billing.NewTokenWalletService(log, ormClient, sqlDB)),
 		subscriptionSvc:      subscriptionSvc,
 		treasuryClient:       treasuryClient,
 		invoiceSvc:           invoiceSvc,

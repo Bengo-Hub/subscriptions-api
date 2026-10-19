@@ -38,6 +38,8 @@ const (
 	FieldRefType = "ref_type"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
+	// FieldIdempotencyKey holds the string denoting the idempotency_key field in the database.
+	FieldIdempotencyKey = "idempotency_key"
 	// FieldMetadata holds the string denoting the metadata field in the database.
 	FieldMetadata = "metadata"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -69,6 +71,7 @@ var Columns = []string{
 	FieldRefID,
 	FieldRefType,
 	FieldDescription,
+	FieldIdempotencyKey,
 	FieldMetadata,
 	FieldCreatedAt,
 }
@@ -92,6 +95,8 @@ var (
 	RefTypeValidator func(string) error
 	// DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
 	DescriptionValidator func(string) error
+	// IdempotencyKeyValidator is a validator for the "idempotency_key" field. It is called by the builders before save.
+	IdempotencyKeyValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
@@ -108,6 +113,7 @@ const (
 	ActionDeduction  Action = "deduction"
 	ActionRefund     Action = "refund"
 	ActionAdjustment Action = "adjustment"
+	ActionOverage    Action = "overage"
 )
 
 func (a Action) String() string {
@@ -117,7 +123,7 @@ func (a Action) String() string {
 // ActionValidator is a validator for the "action" field enum values. It is called by the builders before save.
 func ActionValidator(a Action) error {
 	switch a {
-	case ActionGrant, ActionTopup, ActionDeduction, ActionRefund, ActionAdjustment:
+	case ActionGrant, ActionTopup, ActionDeduction, ActionRefund, ActionAdjustment, ActionOverage:
 		return nil
 	default:
 		return fmt.Errorf("apitokentransaction: invalid enum value for action field: %q", a)
@@ -185,6 +191,11 @@ func ByRefType(opts ...sql.OrderTermOption) OrderOption {
 // ByDescription orders the results by the description field.
 func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// ByIdempotencyKey orders the results by the idempotency_key field.
+func ByIdempotencyKey(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIdempotencyKey, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

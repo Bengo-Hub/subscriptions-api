@@ -234,6 +234,26 @@ func (_u *ApiTokenTransactionUpdate) ClearDescription() *ApiTokenTransactionUpda
 	return _u
 }
 
+// SetIdempotencyKey sets the "idempotency_key" field.
+func (_u *ApiTokenTransactionUpdate) SetIdempotencyKey(v string) *ApiTokenTransactionUpdate {
+	_u.mutation.SetIdempotencyKey(v)
+	return _u
+}
+
+// SetNillableIdempotencyKey sets the "idempotency_key" field if the given value is not nil.
+func (_u *ApiTokenTransactionUpdate) SetNillableIdempotencyKey(v *string) *ApiTokenTransactionUpdate {
+	if v != nil {
+		_u.SetIdempotencyKey(*v)
+	}
+	return _u
+}
+
+// ClearIdempotencyKey clears the value of the "idempotency_key" field.
+func (_u *ApiTokenTransactionUpdate) ClearIdempotencyKey() *ApiTokenTransactionUpdate {
+	_u.mutation.ClearIdempotencyKey()
+	return _u
+}
+
 // SetMetadata sets the "metadata" field.
 func (_u *ApiTokenTransactionUpdate) SetMetadata(v map[string]interface{}) *ApiTokenTransactionUpdate {
 	_u.mutation.SetMetadata(v)
@@ -316,6 +336,11 @@ func (_u *ApiTokenTransactionUpdate) check() error {
 			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "ApiTokenTransaction.description": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.IdempotencyKey(); ok {
+		if err := apitokentransaction.IdempotencyKeyValidator(v); err != nil {
+			return &ValidationError{Name: "idempotency_key", err: fmt.Errorf(`ent: validator failed for field "ApiTokenTransaction.idempotency_key": %w`, err)}
+		}
+	}
 	if _u.mutation.WalletCleared() && len(_u.mutation.WalletIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ApiTokenTransaction.wallet"`)
 	}
@@ -387,6 +412,12 @@ func (_u *ApiTokenTransactionUpdate) sqlSave(ctx context.Context) (_node int, er
 	}
 	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(apitokentransaction.FieldDescription, field.TypeString)
+	}
+	if value, ok := _u.mutation.IdempotencyKey(); ok {
+		_spec.SetField(apitokentransaction.FieldIdempotencyKey, field.TypeString, value)
+	}
+	if _u.mutation.IdempotencyKeyCleared() {
+		_spec.ClearField(apitokentransaction.FieldIdempotencyKey, field.TypeString)
 	}
 	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(apitokentransaction.FieldMetadata, field.TypeJSON, value)
@@ -648,6 +679,26 @@ func (_u *ApiTokenTransactionUpdateOne) ClearDescription() *ApiTokenTransactionU
 	return _u
 }
 
+// SetIdempotencyKey sets the "idempotency_key" field.
+func (_u *ApiTokenTransactionUpdateOne) SetIdempotencyKey(v string) *ApiTokenTransactionUpdateOne {
+	_u.mutation.SetIdempotencyKey(v)
+	return _u
+}
+
+// SetNillableIdempotencyKey sets the "idempotency_key" field if the given value is not nil.
+func (_u *ApiTokenTransactionUpdateOne) SetNillableIdempotencyKey(v *string) *ApiTokenTransactionUpdateOne {
+	if v != nil {
+		_u.SetIdempotencyKey(*v)
+	}
+	return _u
+}
+
+// ClearIdempotencyKey clears the value of the "idempotency_key" field.
+func (_u *ApiTokenTransactionUpdateOne) ClearIdempotencyKey() *ApiTokenTransactionUpdateOne {
+	_u.mutation.ClearIdempotencyKey()
+	return _u
+}
+
 // SetMetadata sets the "metadata" field.
 func (_u *ApiTokenTransactionUpdateOne) SetMetadata(v map[string]interface{}) *ApiTokenTransactionUpdateOne {
 	_u.mutation.SetMetadata(v)
@@ -743,6 +794,11 @@ func (_u *ApiTokenTransactionUpdateOne) check() error {
 			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "ApiTokenTransaction.description": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.IdempotencyKey(); ok {
+		if err := apitokentransaction.IdempotencyKeyValidator(v); err != nil {
+			return &ValidationError{Name: "idempotency_key", err: fmt.Errorf(`ent: validator failed for field "ApiTokenTransaction.idempotency_key": %w`, err)}
+		}
+	}
 	if _u.mutation.WalletCleared() && len(_u.mutation.WalletIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ApiTokenTransaction.wallet"`)
 	}
@@ -831,6 +887,12 @@ func (_u *ApiTokenTransactionUpdateOne) sqlSave(ctx context.Context) (_node *Api
 	}
 	if _u.mutation.DescriptionCleared() {
 		_spec.ClearField(apitokentransaction.FieldDescription, field.TypeString)
+	}
+	if value, ok := _u.mutation.IdempotencyKey(); ok {
+		_spec.SetField(apitokentransaction.FieldIdempotencyKey, field.TypeString, value)
+	}
+	if _u.mutation.IdempotencyKeyCleared() {
+		_spec.ClearField(apitokentransaction.FieldIdempotencyKey, field.TypeString)
 	}
 	if value, ok := _u.mutation.Metadata(); ok {
 		_spec.SetField(apitokentransaction.FieldMetadata, field.TypeJSON, value)

@@ -2,6 +2,7 @@ package billing
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -26,13 +27,16 @@ import (
 type TokenWalletService struct {
 	log *zap.Logger
 	orm *ent.Client
+	db  *sql.DB
 }
 
-// NewTokenWalletService creates a new TokenWalletService.
-func NewTokenWalletService(log *zap.Logger, orm *ent.Client) *TokenWalletService {
+// NewTokenWalletService creates a new TokenWalletService. db is the raw SQL handle used by the
+// transactional ledger in credit_ledger.go (the same database the ent client uses).
+func NewTokenWalletService(log *zap.Logger, orm *ent.Client, db *sql.DB) *TokenWalletService {
 	return &TokenWalletService{
 		log: log.Named("billing.token_wallet"),
 		orm: orm,
+		db:  db,
 	}
 }
 
@@ -112,7 +116,7 @@ func (s *TokenWalletService) ensureWallet(ctx context.Context, tenantID uuid.UUI
 	return w, nil
 }
 
-// DeductInput describes one metered spend attempt.
+// DeductInput describes one metered spend attempt on a prepaid-only service.
 type DeductInput struct {
 	TenantID        uuid.UUID
 	ServiceTag      string
@@ -131,162 +135,54 @@ type DeductResult struct {
 }
 
 // DeductTokens atomically spends tokens from a tenant's wallet, refusing the spend if the
-// balance is insufficient. The allow/deny decision and the balance mutation happen in ONE
-// conditional UPDATE (WHERE balance >= tokens), so two concurrent deductions racing the same
-// wallet can never both succeed past the point where only one of them fits — the loser's
-// affected-row-count is 0, not a stale read.
+// balance is insufficient. It is a prepaid-only spend through the shared Consume core, so two
+// concurrent deductions racing the same wallet can never both succeed past the balance.
 func (s *TokenWalletService) DeductTokens(ctx context.Context, in DeductInput) (DeductResult, error) {
 	if in.Tokens < 0 {
 		return DeductResult{}, fmt.Errorf("tokens must be >= 0")
 	}
-	wallet, err := s.ensureWallet(ctx, in.TenantID, in.ServiceTag)
+	spec, ok := LookupMeteredService(in.ServiceTag)
+	if !ok {
+		spec = MeteredService{Code: in.ServiceTag, BundleTag: in.ServiceTag}
+	}
+	res, err := s.Consume(ctx, ConsumeRequest{
+		TenantID: in.TenantID, Service: spec, Units: in.Tokens,
+		EndpointPattern: in.EndpointPattern, RefID: in.RefID, RefType: in.RefType, Description: in.Description,
+	})
 	if err != nil {
 		return DeductResult{}, err
 	}
-	if in.Tokens == 0 {
-		// A zero-weight endpoint (e.g. a free lookup) — nothing to deduct, always allowed.
-		return DeductResult{Allowed: true, NewBalance: wallet.Balance, Charged: 0}, nil
+	if !res.Allowed {
+		return DeductResult{Allowed: false, NewBalance: res.BundleBalance}, nil
 	}
-
-	tx, err := s.orm.Tx(ctx)
-	if err != nil {
-		return DeductResult{}, fmt.Errorf("begin deduct tx: %w", err)
-	}
-
-	affected, err := tx.ApiTokenWallet.Update().
-		Where(apitokenwallet.IDEQ(wallet.ID), apitokenwallet.BalanceGTE(in.Tokens)).
-		AddBalance(-in.Tokens).
-		Save(ctx)
-	if err != nil {
-		_ = tx.Rollback()
-		return DeductResult{}, fmt.Errorf("deduct balance: %w", err)
-	}
-	if affected == 0 {
-		_ = tx.Rollback()
-		// Insufficient balance — report the CURRENT balance (may have changed since ensureWallet
-		// read it) so the caller's 402 body is accurate.
-		cur, cerr := s.orm.ApiTokenWallet.Get(ctx, wallet.ID)
-		bal := wallet.Balance
-		if cerr == nil {
-			bal = cur.Balance
-		}
-		return DeductResult{Allowed: false, NewBalance: bal, Charged: 0}, nil
-	}
-
-	updated, err := tx.ApiTokenWallet.Get(ctx, wallet.ID)
-	if err != nil {
-		_ = tx.Rollback()
-		return DeductResult{}, fmt.Errorf("reload wallet after deduct: %w", err)
-	}
-
-	txCreate := tx.ApiTokenTransaction.Create().
-		SetTenantID(in.TenantID).
-		SetWalletID(wallet.ID).
-		SetServiceTag(in.ServiceTag).
-		SetAction(apitokentransaction.ActionDeduction).
-		SetTokens(-in.Tokens).
-		SetNewBalance(updated.Balance)
-	if in.EndpointPattern != "" {
-		txCreate = txCreate.SetEndpointPattern(in.EndpointPattern)
-	}
-	if in.RefID != uuid.Nil {
-		txCreate = txCreate.SetRefID(in.RefID)
-	}
-	if in.RefType != "" {
-		txCreate = txCreate.SetRefType(in.RefType)
-	}
-	if in.Description != "" {
-		txCreate = txCreate.SetDescription(in.Description)
-	}
-	if _, err := txCreate.Save(ctx); err != nil {
-		_ = tx.Rollback()
-		return DeductResult{}, fmt.Errorf("record deduction: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return DeductResult{}, fmt.Errorf("commit deduct tx: %w", err)
-	}
-
-	return DeductResult{Allowed: true, NewBalance: updated.Balance, Charged: in.Tokens}, nil
+	return DeductResult{Allowed: true, NewBalance: res.BundleBalance, Charged: in.Tokens}, nil
 }
 
-// creditAction is one of grant|topup|refund|adjustment — the positive-movement actions, which
-// unlike deduction can never be refused (a wallet balance can't overflow in a way that matters
-// here), so they share one atomic-add implementation.
-func (s *TokenWalletService) credit(ctx context.Context, tenantID uuid.UUID, serviceTag string, tokens int64, action apitokentransaction.Action, unitCostKes *float64, refID uuid.UUID, refType, description string) (int64, error) {
-	if tokens <= 0 {
-		return 0, fmt.Errorf("tokens must be positive")
-	}
-	wallet, err := s.ensureWallet(ctx, tenantID, serviceTag)
-	if err != nil {
-		return 0, err
-	}
-
-	tx, err := s.orm.Tx(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("begin credit tx: %w", err)
-	}
-
-	update := tx.ApiTokenWallet.UpdateOneID(wallet.ID).
-		AddBalance(tokens).
-		SetUpdatedAt(time.Now())
-	if action == apitokentransaction.ActionGrant || action == apitokentransaction.ActionTopup {
-		update = update.AddLifetimeGranted(tokens)
-	}
-	updated, err := update.Save(ctx)
-	if err != nil {
-		_ = tx.Rollback()
-		return 0, fmt.Errorf("credit balance: %w", err)
-	}
-
-	txCreate := tx.ApiTokenTransaction.Create().
-		SetTenantID(tenantID).
-		SetWalletID(wallet.ID).
-		SetServiceTag(serviceTag).
-		SetAction(action).
-		SetTokens(tokens).
-		SetNewBalance(updated.Balance)
-	if unitCostKes != nil {
-		txCreate = txCreate.SetUnitCostKes(*unitCostKes)
-	}
-	if refID != uuid.Nil {
-		txCreate = txCreate.SetRefID(refID)
-	}
-	if refType != "" {
-		txCreate = txCreate.SetRefType(refType)
-	}
-	if description != "" {
-		txCreate = txCreate.SetDescription(description)
-	}
-	if _, err := txCreate.Save(ctx); err != nil {
-		_ = tx.Rollback()
-		return 0, fmt.Errorf("record credit: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return 0, fmt.Errorf("commit credit tx: %w", err)
-	}
-	return updated.Balance, nil
-}
-
-// GrantTokens credits a plan's included monthly token allowance. ADDITIVE — grants accumulate
-// and never expire/reset, per the confirmed product decision (a light-usage month isn't
-// punished; a purchased top-up and a monthly grant behave identically once in the wallet).
-// refID should be the tenant_subscription id + billing period as a stable per-period
-// idempotency key at the call site (mirrors how EarnLoyaltyCredits keys on payment ref) —
-// callers are responsible for not double-granting the same period, this method itself does not
-// dedupe.
+// GrantTokens credits a plan's included allowance. ADDITIVE: grants accumulate and never expire,
+// per the confirmed product decision for API tokens. key makes one grant apply once per period
+// (use the subscription id plus billing period).
 func (s *TokenWalletService) GrantTokens(ctx context.Context, tenantID uuid.UUID, serviceTag string, tokens int64, refID uuid.UUID, description string) (int64, error) {
-	bal, err := s.credit(ctx, tenantID, serviceTag, tokens, apitokentransaction.ActionGrant, nil, refID, "renewal", description)
+	bal, _, err := s.Credit(ctx, CreditRequest{
+		TenantID: tenantID, ServiceTag: serviceTag, Units: tokens, Action: ledgerGrant,
+		RefID: refID, RefType: "renewal", Description: description,
+	})
 	if err == nil {
 		s.log.Info("tokens granted", zap.String("tenant_id", tenantID.String()), zap.String("service_tag", serviceTag), zap.Int64("tokens", tokens))
 	}
 	return bal, err
 }
 
-// TopUpTokens credits a self-serve purchase. refID is the settled PaymentIntent id.
+// TopUpTokens credits a self-serve purchase. refID is the settled PaymentIntent id and doubles
+// as the idempotency key, so a redelivered payment event credits once.
 func (s *TokenWalletService) TopUpTokens(ctx context.Context, tenantID uuid.UUID, serviceTag string, tokens int64, unitCostKes float64, refID uuid.UUID) (int64, error) {
-	bal, err := s.credit(ctx, tenantID, serviceTag, tokens, apitokentransaction.ActionTopup, &unitCostKes, refID, "payment", "Token top-up")
+	key := ""
+	if refID != uuid.Nil {
+		key = "topup:" + refID.String()
+	}
+	bal, _, err := s.Credit(ctx, CreditRequest{
+		TenantID: tenantID, ServiceTag: serviceTag, Units: tokens, Action: ledgerTopup, Key: key,
+		RefID: refID, RefType: "payment", Description: "Top-up", UnitCostKES: &unitCostKes,
+	})
 	if err == nil {
 		s.log.Info("tokens topped up", zap.String("tenant_id", tenantID.String()), zap.String("service_tag", serviceTag), zap.Int64("tokens", tokens))
 	}
@@ -296,7 +192,11 @@ func (s *TokenWalletService) TopUpTokens(ctx context.Context, tenantID uuid.UUID
 // RefundTokens reverses a deduction (e.g. a downstream write failed after the token was already
 // spent). refID should be the original deduction's ref_id where available.
 func (s *TokenWalletService) RefundTokens(ctx context.Context, tenantID uuid.UUID, serviceTag string, tokens int64, refID uuid.UUID, description string) (int64, error) {
-	return s.credit(ctx, tenantID, serviceTag, tokens, apitokentransaction.ActionRefund, nil, refID, "refund", description)
+	bal, _, err := s.Credit(ctx, CreditRequest{
+		TenantID: tenantID, ServiceTag: serviceTag, Units: tokens, Action: ledgerRefund,
+		RefID: refID, RefType: "refund", Description: description,
+	})
+	return bal, err
 }
 
 // TransactionEntry is a summarized ledger row for the API.

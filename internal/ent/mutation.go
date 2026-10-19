@@ -114,6 +114,7 @@ type ApiTokenTransactionMutation struct {
 	ref_id           *uuid.UUID
 	ref_type         *string
 	description      *string
+	idempotency_key  *string
 	metadata         *map[string]interface{}
 	created_at       *time.Time
 	clearedFields    map[string]struct{}
@@ -750,6 +751,55 @@ func (m *ApiTokenTransactionMutation) ResetDescription() {
 	delete(m.clearedFields, apitokentransaction.FieldDescription)
 }
 
+// SetIdempotencyKey sets the "idempotency_key" field.
+func (m *ApiTokenTransactionMutation) SetIdempotencyKey(s string) {
+	m.idempotency_key = &s
+}
+
+// IdempotencyKey returns the value of the "idempotency_key" field in the mutation.
+func (m *ApiTokenTransactionMutation) IdempotencyKey() (r string, exists bool) {
+	v := m.idempotency_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIdempotencyKey returns the old "idempotency_key" field's value of the ApiTokenTransaction entity.
+// If the ApiTokenTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiTokenTransactionMutation) OldIdempotencyKey(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIdempotencyKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIdempotencyKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIdempotencyKey: %w", err)
+	}
+	return oldValue.IdempotencyKey, nil
+}
+
+// ClearIdempotencyKey clears the value of the "idempotency_key" field.
+func (m *ApiTokenTransactionMutation) ClearIdempotencyKey() {
+	m.idempotency_key = nil
+	m.clearedFields[apitokentransaction.FieldIdempotencyKey] = struct{}{}
+}
+
+// IdempotencyKeyCleared returns if the "idempotency_key" field was cleared in this mutation.
+func (m *ApiTokenTransactionMutation) IdempotencyKeyCleared() bool {
+	_, ok := m.clearedFields[apitokentransaction.FieldIdempotencyKey]
+	return ok
+}
+
+// ResetIdempotencyKey resets all changes to the "idempotency_key" field.
+func (m *ApiTokenTransactionMutation) ResetIdempotencyKey() {
+	m.idempotency_key = nil
+	delete(m.clearedFields, apitokentransaction.FieldIdempotencyKey)
+}
+
 // SetMetadata sets the "metadata" field.
 func (m *ApiTokenTransactionMutation) SetMetadata(value map[string]interface{}) {
 	m.metadata = &value
@@ -896,7 +946,7 @@ func (m *ApiTokenTransactionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiTokenTransactionMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.tenant_id != nil {
 		fields = append(fields, apitokentransaction.FieldTenantID)
 	}
@@ -929,6 +979,9 @@ func (m *ApiTokenTransactionMutation) Fields() []string {
 	}
 	if m.description != nil {
 		fields = append(fields, apitokentransaction.FieldDescription)
+	}
+	if m.idempotency_key != nil {
+		fields = append(fields, apitokentransaction.FieldIdempotencyKey)
 	}
 	if m.metadata != nil {
 		fields = append(fields, apitokentransaction.FieldMetadata)
@@ -966,6 +1019,8 @@ func (m *ApiTokenTransactionMutation) Field(name string) (ent.Value, bool) {
 		return m.RefType()
 	case apitokentransaction.FieldDescription:
 		return m.Description()
+	case apitokentransaction.FieldIdempotencyKey:
+		return m.IdempotencyKey()
 	case apitokentransaction.FieldMetadata:
 		return m.Metadata()
 	case apitokentransaction.FieldCreatedAt:
@@ -1001,6 +1056,8 @@ func (m *ApiTokenTransactionMutation) OldField(ctx context.Context, name string)
 		return m.OldRefType(ctx)
 	case apitokentransaction.FieldDescription:
 		return m.OldDescription(ctx)
+	case apitokentransaction.FieldIdempotencyKey:
+		return m.OldIdempotencyKey(ctx)
 	case apitokentransaction.FieldMetadata:
 		return m.OldMetadata(ctx)
 	case apitokentransaction.FieldCreatedAt:
@@ -1090,6 +1147,13 @@ func (m *ApiTokenTransactionMutation) SetField(name string, value ent.Value) err
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDescription(v)
+		return nil
+	case apitokentransaction.FieldIdempotencyKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIdempotencyKey(v)
 		return nil
 	case apitokentransaction.FieldMetadata:
 		v, ok := value.(map[string]interface{})
@@ -1189,6 +1253,9 @@ func (m *ApiTokenTransactionMutation) ClearedFields() []string {
 	if m.FieldCleared(apitokentransaction.FieldDescription) {
 		fields = append(fields, apitokentransaction.FieldDescription)
 	}
+	if m.FieldCleared(apitokentransaction.FieldIdempotencyKey) {
+		fields = append(fields, apitokentransaction.FieldIdempotencyKey)
+	}
 	if m.FieldCleared(apitokentransaction.FieldMetadata) {
 		fields = append(fields, apitokentransaction.FieldMetadata)
 	}
@@ -1220,6 +1287,9 @@ func (m *ApiTokenTransactionMutation) ClearField(name string) error {
 		return nil
 	case apitokentransaction.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case apitokentransaction.FieldIdempotencyKey:
+		m.ClearIdempotencyKey()
 		return nil
 	case apitokentransaction.FieldMetadata:
 		m.ClearMetadata()
@@ -1264,6 +1334,9 @@ func (m *ApiTokenTransactionMutation) ResetField(name string) error {
 		return nil
 	case apitokentransaction.FieldDescription:
 		m.ResetDescription()
+		return nil
+	case apitokentransaction.FieldIdempotencyKey:
+		m.ResetIdempotencyKey()
 		return nil
 	case apitokentransaction.FieldMetadata:
 		m.ResetMetadata()

@@ -131,6 +131,20 @@ func (_c *ApiTokenTransactionCreate) SetNillableDescription(v *string) *ApiToken
 	return _c
 }
 
+// SetIdempotencyKey sets the "idempotency_key" field.
+func (_c *ApiTokenTransactionCreate) SetIdempotencyKey(v string) *ApiTokenTransactionCreate {
+	_c.mutation.SetIdempotencyKey(v)
+	return _c
+}
+
+// SetNillableIdempotencyKey sets the "idempotency_key" field if the given value is not nil.
+func (_c *ApiTokenTransactionCreate) SetNillableIdempotencyKey(v *string) *ApiTokenTransactionCreate {
+	if v != nil {
+		_c.SetIdempotencyKey(*v)
+	}
+	return _c
+}
+
 // SetMetadata sets the "metadata" field.
 func (_c *ApiTokenTransactionCreate) SetMetadata(v map[string]interface{}) *ApiTokenTransactionCreate {
 	_c.mutation.SetMetadata(v)
@@ -260,6 +274,11 @@ func (_c *ApiTokenTransactionCreate) check() error {
 			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "ApiTokenTransaction.description": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.IdempotencyKey(); ok {
+		if err := apitokentransaction.IdempotencyKeyValidator(v); err != nil {
+			return &ValidationError{Name: "idempotency_key", err: fmt.Errorf(`ent: validator failed for field "ApiTokenTransaction.idempotency_key": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ApiTokenTransaction.created_at"`)}
 	}
@@ -341,6 +360,10 @@ func (_c *ApiTokenTransactionCreate) createSpec() (*ApiTokenTransaction, *sqlgra
 	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(apitokentransaction.FieldDescription, field.TypeString, value)
 		_node.Description = &value
+	}
+	if value, ok := _c.mutation.IdempotencyKey(); ok {
+		_spec.SetField(apitokentransaction.FieldIdempotencyKey, field.TypeString, value)
+		_node.IdempotencyKey = &value
 	}
 	if value, ok := _c.mutation.Metadata(); ok {
 		_spec.SetField(apitokentransaction.FieldMetadata, field.TypeJSON, value)
@@ -596,6 +619,24 @@ func (u *ApiTokenTransactionUpsert) UpdateDescription() *ApiTokenTransactionUpse
 // ClearDescription clears the value of the "description" field.
 func (u *ApiTokenTransactionUpsert) ClearDescription() *ApiTokenTransactionUpsert {
 	u.SetNull(apitokentransaction.FieldDescription)
+	return u
+}
+
+// SetIdempotencyKey sets the "idempotency_key" field.
+func (u *ApiTokenTransactionUpsert) SetIdempotencyKey(v string) *ApiTokenTransactionUpsert {
+	u.Set(apitokentransaction.FieldIdempotencyKey, v)
+	return u
+}
+
+// UpdateIdempotencyKey sets the "idempotency_key" field to the value that was provided on create.
+func (u *ApiTokenTransactionUpsert) UpdateIdempotencyKey() *ApiTokenTransactionUpsert {
+	u.SetExcluded(apitokentransaction.FieldIdempotencyKey)
+	return u
+}
+
+// ClearIdempotencyKey clears the value of the "idempotency_key" field.
+func (u *ApiTokenTransactionUpsert) ClearIdempotencyKey() *ApiTokenTransactionUpsert {
+	u.SetNull(apitokentransaction.FieldIdempotencyKey)
 	return u
 }
 
@@ -875,6 +916,27 @@ func (u *ApiTokenTransactionUpsertOne) UpdateDescription() *ApiTokenTransactionU
 func (u *ApiTokenTransactionUpsertOne) ClearDescription() *ApiTokenTransactionUpsertOne {
 	return u.Update(func(s *ApiTokenTransactionUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetIdempotencyKey sets the "idempotency_key" field.
+func (u *ApiTokenTransactionUpsertOne) SetIdempotencyKey(v string) *ApiTokenTransactionUpsertOne {
+	return u.Update(func(s *ApiTokenTransactionUpsert) {
+		s.SetIdempotencyKey(v)
+	})
+}
+
+// UpdateIdempotencyKey sets the "idempotency_key" field to the value that was provided on create.
+func (u *ApiTokenTransactionUpsertOne) UpdateIdempotencyKey() *ApiTokenTransactionUpsertOne {
+	return u.Update(func(s *ApiTokenTransactionUpsert) {
+		s.UpdateIdempotencyKey()
+	})
+}
+
+// ClearIdempotencyKey clears the value of the "idempotency_key" field.
+func (u *ApiTokenTransactionUpsertOne) ClearIdempotencyKey() *ApiTokenTransactionUpsertOne {
+	return u.Update(func(s *ApiTokenTransactionUpsert) {
+		s.ClearIdempotencyKey()
 	})
 }
 
@@ -1324,6 +1386,27 @@ func (u *ApiTokenTransactionUpsertBulk) UpdateDescription() *ApiTokenTransaction
 func (u *ApiTokenTransactionUpsertBulk) ClearDescription() *ApiTokenTransactionUpsertBulk {
 	return u.Update(func(s *ApiTokenTransactionUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetIdempotencyKey sets the "idempotency_key" field.
+func (u *ApiTokenTransactionUpsertBulk) SetIdempotencyKey(v string) *ApiTokenTransactionUpsertBulk {
+	return u.Update(func(s *ApiTokenTransactionUpsert) {
+		s.SetIdempotencyKey(v)
+	})
+}
+
+// UpdateIdempotencyKey sets the "idempotency_key" field to the value that was provided on create.
+func (u *ApiTokenTransactionUpsertBulk) UpdateIdempotencyKey() *ApiTokenTransactionUpsertBulk {
+	return u.Update(func(s *ApiTokenTransactionUpsert) {
+		s.UpdateIdempotencyKey()
+	})
+}
+
+// ClearIdempotencyKey clears the value of the "idempotency_key" field.
+func (u *ApiTokenTransactionUpsertBulk) ClearIdempotencyKey() *ApiTokenTransactionUpsertBulk {
+	return u.Update(func(s *ApiTokenTransactionUpsert) {
+		s.ClearIdempotencyKey()
 	})
 }
 

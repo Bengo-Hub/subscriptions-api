@@ -2,6 +2,7 @@ package consumers
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -75,12 +76,12 @@ type TreasuryPaymentConsumer struct {
 }
 
 // NewTreasuryPaymentConsumer creates a new consumer.
-func NewTreasuryPaymentConsumer(log *zap.Logger, orm *ent.Client) *TreasuryPaymentConsumer {
+func NewTreasuryPaymentConsumer(log *zap.Logger, orm *ent.Client, db *sql.DB) *TreasuryPaymentConsumer {
 	return &TreasuryPaymentConsumer{
 		log:           log.Named("consumers.treasury_payment"),
 		orm:           orm,
 		creditService: billing.NewCreditService(log, orm),
-		tokenWallet:   billing.NewTokenWalletService(log, orm),
+		tokenWallet:   billing.NewTokenWalletService(log, orm, db),
 	}
 }
 

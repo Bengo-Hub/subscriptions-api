@@ -36,6 +36,7 @@ func (ApiTokenTransaction) Fields() []ent.Field {
 				"deduction",  // spent on a metered API call
 				"refund",     // reversal of a deduction (e.g. a failed downstream write)
 				"adjustment", // platform admin manual correction
+				"overage",    // unit consumed beyond quota and balance, billed in KES on the next invoice (balance unchanged)
 			),
 		field.Int64("tokens").
 			Comment("Positive = added to balance; negative = deducted"),
@@ -63,6 +64,11 @@ func (ApiTokenTransaction) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			MaxLen(255),
+		field.String("idempotency_key").
+			Optional().
+			Nillable().
+			MaxLen(160).
+			Comment("Caller-supplied key making one movement apply at most once per wallet, e.g. a message id for messaging consumption"),
 		field.JSON("metadata", map[string]any{}).
 			Optional(),
 		field.Time("created_at").
@@ -88,5 +94,10 @@ func (ApiTokenTransaction) Indexes() []ent.Index {
 		index.Fields("service_tag"),
 		index.Fields("action"),
 		index.Fields("created_at"),
+		// Per-wallet replay guard. Postgres treats NULL keys as distinct, so ledger rows
+		// written without a key (top-ups, grants) are unaffected.
+		index.Fields("wallet_id", "idempotency_key").Unique(),
+		// Tenant statement queries: newest first per service.
+		index.Fields("tenant_id", "service_tag", "created_at"),
 	}
 }

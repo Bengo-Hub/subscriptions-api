@@ -64,8 +64,12 @@ func init() {
 	apitokentransactionDescDescription := apitokentransactionFields[11].Descriptor()
 	// apitokentransaction.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
 	apitokentransaction.DescriptionValidator = apitokentransactionDescDescription.Validators[0].(func(string) error)
+	// apitokentransactionDescIdempotencyKey is the schema descriptor for idempotency_key field.
+	apitokentransactionDescIdempotencyKey := apitokentransactionFields[12].Descriptor()
+	// apitokentransaction.IdempotencyKeyValidator is a validator for the "idempotency_key" field. It is called by the builders before save.
+	apitokentransaction.IdempotencyKeyValidator = apitokentransactionDescIdempotencyKey.Validators[0].(func(string) error)
 	// apitokentransactionDescCreatedAt is the schema descriptor for created_at field.
-	apitokentransactionDescCreatedAt := apitokentransactionFields[13].Descriptor()
+	apitokentransactionDescCreatedAt := apitokentransactionFields[14].Descriptor()
 	// apitokentransaction.DefaultCreatedAt holds the default value on creation for the created_at field.
 	apitokentransaction.DefaultCreatedAt = apitokentransactionDescCreatedAt.Default.(func() time.Time)
 	// apitokentransactionDescID is the schema descriptor for id field.
