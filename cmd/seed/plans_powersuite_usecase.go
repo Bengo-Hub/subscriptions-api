@@ -135,6 +135,25 @@ func psProjectsBlock(tier int) []string {
 	return base
 }
 
+// psSuiteERPBlock and psSuiteProjectsBlock are what the PowerSuite plans (hospitality, retail,
+// pharmacy) grant: ERP and Projects open only at tier 3 (decision 2026-10-20). Tier 1 and 2 are
+// the shop floor and the books; HR, payroll and project modules start at tier 3, so a tier 2
+// tenant gets no erp or projects service access at all. The standalone ERP family keeps its own
+// tiers through erpFeatures, which uses psProjectsBlock directly.
+func psSuiteERPBlock(tier int) []string {
+	if tier < 3 {
+		return nil
+	}
+	return psERPBlock(tier)
+}
+
+func psSuiteProjectsBlock(tier int) []string {
+	if tier < 3 {
+		return nil
+	}
+	return psProjectsBlock(tier)
+}
+
 // psTreasuryBlock — Treasury coverage per tier.
 //
 // Tier 1: Transactions + Customers + Quotations + Purchases & Bills + core Tax & Compliance
@@ -184,7 +203,7 @@ func psInventoryCore() []string {
 // hospSuiteFeatures — Hospitality family (hotels, restaurants, bars, cafes).
 // Never grants lots & batches / expiry tracking / expiry alerts (excluded at every tier).
 func hospSuiteFeatures(tier int) []string {
-	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psERPBlock(tier), psProjectsBlock(tier), psTreasuryBlock(tier, false))
+	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psSuiteERPBlock(tier), psSuiteProjectsBlock(tier), psTreasuryBlock(tier, false))
 	f = append(f, "table_management") // Floor & Service from tier 1
 	if tier >= 2 {
 		f = append(f,
@@ -209,7 +228,7 @@ func hospSuiteFeatures(tier int) []string {
 // Never grants lots & batches / expiry tracking / expiry alerts or the hotel stack.
 // Warranties is a RETAIL-ONLY module, tier 2+.
 func dukaSuiteFeatures(tier int) []string {
-	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psERPBlock(tier), psProjectsBlock(tier), psTreasuryBlock(tier, true))
+	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psSuiteERPBlock(tier), psSuiteProjectsBlock(tier), psTreasuryBlock(tier, true))
 	f = append(f, "barcode_scanning")
 	if tier >= 2 {
 		f = append(f,
@@ -231,7 +250,7 @@ func dukaSuiteFeatures(tier int) []string {
 // Pharmacy clinical modules (prescriptions, patients, claims) unlock at tier 2 per the spec
 // (tier 1 "Pharmacy → no access"); stock take + stock alerts unlock at tier 3.
 func dawaSuiteFeatures(tier int) []string {
-	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psERPBlock(tier), psProjectsBlock(tier), psTreasuryBlock(tier, true))
+	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psSuiteERPBlock(tier), psSuiteProjectsBlock(tier), psTreasuryBlock(tier, true))
 	f = append(f, "lots_batches", "batch_expiry_tracking", "expiry_alerts")
 	if tier >= 2 {
 		f = append(f,
