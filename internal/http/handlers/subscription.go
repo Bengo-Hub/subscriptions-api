@@ -10,6 +10,7 @@ import (
 
 	httpware "github.com/Bengo-Hub/httpware"
 	authclient "github.com/Bengo-Hub/shared-auth-client"
+	"github.com/bengobox/subscription-service/internal/domain"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
@@ -447,6 +448,51 @@ func (h *SubscriptionHandler) GetServiceSubscriptions(w http.ResponseWriter, r *
 	}
 
 	h.respondWithJSON(w, http.StatusOK, result)
+}
+
+// GetEntitledServices lists every billable service with whether the tenant's plan covers it.
+// It reads the same resolved active_service_tags as the JWT claim and GET /subscription, so the
+// backup picker, service gates and app switcher can never disagree. Exempt tenants get every
+// service. A plan that lapsed still lists its services: a tenant must be able to export its data.
+// GET /api/v1/tenants/{tenant_id}/entitled-services
+func (h *SubscriptionHandler) GetEntitledServices(w http.ResponseWriter, r *http.Request) {
+	tenantIDStr := chi.URLParam(r, "tenant_id")
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid tenant_id")
+		return
+	}
+	// Same rule as GetByTenantID: S2S key, platform owner, or the tenant's own users only.
+	if claims, ok := authclient.ClaimsFromContext(r.Context()); ok && claims != nil {
+		if !claims.IsService && !claims.IsPlatformOwner && claims.TenantID != tenantIDStr {
+			h.respondWithError(w, http.StatusForbidden, "not authorized for this tenant")
+			return
+		}
+	}
+
+	exempt := h.service.IsExemptTenant(r.Context(), tenantID)
+	entitled := map[string]bool{}
+	sub, err := h.service.GetSubscriptionResult(r.Context(), tenantID)
+	if err == nil {
+		exempt = exempt || sub.Exempt
+		for _, t := range sub.ActiveServiceTags {
+			entitled[t] = true
+		}
+	}
+
+	type entry struct {
+		domain.ServiceCatalogEntry
+		Entitled bool `json:"entitled"`
+	}
+	services := make([]entry, 0, len(domain.ServiceCatalog))
+	for _, e := range domain.ServiceCatalog {
+		services = append(services, entry{ServiceCatalogEntry: e, Entitled: exempt || entitled[e.Tag]})
+	}
+	h.respondWithJSON(w, http.StatusOK, map[string]any{
+		"tenant_id": tenantIDStr,
+		"exempt":    exempt,
+		"services":  services,
+	})
 }
 
 // SwitchPlan changes the plan for a subscription identified by its ID.

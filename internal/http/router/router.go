@@ -197,6 +197,8 @@ func New(
 			r.Get("/tenants/{tenant_id}/subscription", subscriptionHandler.GetByTenantID)
 			// Per-service-tag subscription view — used by auth-ui billing tab.
 			r.Get("/tenants/{tenant_id}/subscriptions", subscriptionHandler.GetServiceSubscriptions)
+			// Catalog of billable services with the tenant's entitlement per service (backup picker).
+			r.Get("/tenants/{tenant_id}/entitled-services", subscriptionHandler.GetEntitledServices)
 
 			// S2S effective rate-limit resolution — used by treasury-api's external eTIMS API
 			// middleware to enforce per-tenant requests/minute before counting against Redis.
