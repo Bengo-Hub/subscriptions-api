@@ -424,10 +424,6 @@ var featureCatalog = func() []catalogEntry {
 		// (Centipid $0.25 ≈ KES 35), metered via the isp.subscriber.created event.
 		meteredLim("max_pppoe_subscribers", isp, "Limits", "PPPoE Subscribers", "/ month", "isp.subscriber.created"),
 		meteredLim("max_vouchers_per_month", isp, "Limits", "Vouchers", "/ month", ""),
-		// Not enforced anywhere (SMS runs on the credits ledger). Kept only because six retired, inactive
-		// ISP plan rows in the database still carry this key and the catalog linkage check reads the
-		// database. Remove it after the key has been cleared from those rows.
-		lim("max_sms_per_month", isp, "Limits", "SMS", "/ month"),
 		// ISP billing-engine inputs read from tier_limits (see plans_isp_billing.go): the per-subscriber
 		// PPPoE fee + the service-charge percentage/threshold. Catalogued as limits so the strict
 		// linkage check passes; they are pricing inputs, not enforced capacity caps.
