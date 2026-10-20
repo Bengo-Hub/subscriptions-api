@@ -46,6 +46,55 @@ func (s *Service) GetPaymentIntentMetadata(ctx context.Context, tenantID, intent
 	return intent.Metadata, nil
 }
 
+// SavedCardCharge is the outcome of an automatic charge to a tenant's saved card.
+type SavedCardCharge struct {
+	// Status is Treasury's intent status when the call went through ("succeeded", "pending", ...).
+	Status string
+	// Failure is the reason when the card was declined or Treasury refused the request.
+	Failure string
+}
+
+// ChargeSavedCard asks Treasury to charge the tenant's saved card for the intent request. Treasury
+// intents are idempotent per reference_id, so a caller that derives the reference from the day and
+// the purchase can never charge twice for it. A transport error means the outcome is unknown.
+func (s *Service) ChargeSavedCard(ctx context.Context, tenantID uuid.UUID, authCode string, req map[string]any) (SavedCardCharge, error) {
+	if s.treasuryClient == nil {
+		return SavedCardCharge{}, fmt.Errorf("payment service unavailable")
+	}
+	if authCode == "" {
+		return SavedCardCharge{Failure: "no saved card"}, nil
+	}
+	body := make(map[string]any, len(req)+1)
+	for k, v := range req {
+		body[k] = v
+	}
+	body["authorization_code"] = authCode
+	resp, err := s.treasuryClient.Post(ctx, fmt.Sprintf("/api/v1/s2s/%s/payments/intents/charge-saved-card", tenantID), body, s.treasuryHeaders())
+	if err != nil {
+		return SavedCardCharge{}, fmt.Errorf("charge saved card: %w", err)
+	}
+	var out struct {
+		Status string `json:"status"`
+		Error  string `json:"error"`
+	}
+	_ = resp.DecodeJSON(&out)
+	if resp.StatusCode >= 500 {
+		// Treasury failed on its side: the charge may or may not have happened. Unknown, not declined.
+		return SavedCardCharge{}, fmt.Errorf("charge saved card: payment service answered %d", resp.StatusCode)
+	}
+	if !resp.IsSuccess() {
+		reason := out.Error
+		if reason == "" {
+			reason = fmt.Sprintf("payment service answered %d", resp.StatusCode)
+		}
+		return SavedCardCharge{Status: "failed", Failure: reason}, nil
+	}
+	if out.Status == "failed" {
+		return SavedCardCharge{Status: "failed", Failure: "the card was declined"}, nil
+	}
+	return SavedCardCharge{Status: out.Status}, nil
+}
+
 func (s *Service) treasuryHeaders() map[string]string {
 	headers := map[string]string{}
 	if s.treasuryAPIKey != "" {

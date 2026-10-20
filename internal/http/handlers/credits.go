@@ -367,6 +367,74 @@ func (h *CreditsHandler) SetAutoRenew(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"auto_renew": req.AutoRenew})
 }
 
+type creditAutoTopupRequest struct {
+	Enabled         bool     `json:"enabled"`
+	Threshold       int64    `json:"threshold"`
+	BundleCode      string   `json:"bundle_code"`
+	MonthlyLimitKES *float64 `json:"monthly_limit_kes,omitempty"`
+}
+
+// GetAutoTopup godoc
+// @Summary Auto top-up setting for a service
+// @Tags Credits
+// @Produce json
+// @Security BearerAuth
+// @Param service path string true "sms or whatsapp"
+// @Success 200 {object} credits.AutoTopup
+// @Router /credits/{service}/auto-topup [get]
+func (h *CreditsHandler) GetAutoTopup(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := h.tenant(w, r)
+	if !ok {
+		return
+	}
+	a, err := h.svc.GetAutoTopup(r.Context(), tenantID, chi.URLParam(r, "service"))
+	if err != nil {
+		h.autoTopupError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, a)
+}
+
+// SetAutoTopup godoc
+// @Summary Turn auto top-up on or off
+// @Description Buys the chosen bundle with the saved card when the bundle balance falls below the threshold. At most one purchase per service per day, never above the monthly limit (default KES 5000). A declined card switches it off and notifies the tenant admin.
+// @Tags Credits
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param service path string true "sms or whatsapp"
+// @Param request body creditAutoTopupRequest true "Auto top-up setting"
+// @Success 200 {object} credits.AutoTopup
+// @Router /credits/{service}/auto-topup [put]
+func (h *CreditsHandler) SetAutoTopup(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := h.tenant(w, r)
+	if !ok {
+		return
+	}
+	var req creditAutoTopupRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	a, err := h.svc.SetAutoTopup(r.Context(), tenantID, chi.URLParam(r, "service"), credits.AutoTopupInput{
+		Enabled: req.Enabled, Threshold: req.Threshold, BundleCode: req.BundleCode, MonthlyLimitKES: req.MonthlyLimitKES,
+	})
+	if err != nil {
+		h.autoTopupError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, a)
+}
+
+func (h *CreditsHandler) autoTopupError(w http.ResponseWriter, err error) {
+	if errors.Is(err, credits.ErrAutoTopup) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	h.log.Error("auto top-up failed", zap.Error(err))
+	writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "auto top-up could not be saved"})
+}
+
 // AdminTenants godoc
 // @Summary Tenants holding a messaging or AI credit position (platform owner)
 // @Description One row per tenant with a wallet, activation or overage for the service: plan, bundle balance, tier and renewal, pending overage against the cap, units used this UTC month and last activity. Sorted by last activity.

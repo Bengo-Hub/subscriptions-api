@@ -115,6 +115,28 @@ Reasons a spend is refused: `no_subscription`, `service_not_activated`, `insuffi
   month of the billing period. Paying the invoice extends the tier by those months.
 * Platform owner grants are adjustments with a reason, never top-ups, so revenue reports stay clean.
 
+## Auto top-up
+
+A tenant can have a bundle bought automatically with the saved card when the bundle balance falls below a number the tenant
+chooses (`PUT /api/v1/credits/{service}/auto-topup`, read with `GET`, also shown as `auto_topup` in `GET /api/v1/credits`). The
+tenant picks the bundle and a monthly spend limit (default KES 5,000, at most KES 100,000, at least one bundle). It needs the
+service activated and a saved card.
+
+Safety rules, all tested:
+
+* At most one attempt per service per day. The Treasury reference carries the day (`AUTOTOP-<tenant>-<service>-<yyyymmdd>`),
+  so even a replayed attempt cannot charge twice, and the attempt is recorded before the card is charged.
+* The monthly limit counts what was charged; a month change resets it. At the limit nothing is bought and extra messages fall
+  back to KES 1 overage on the invoice.
+* A declined card or a refusal switches the setting off, records the reason and sends the tenant admin an email and a WhatsApp
+  message (`credits_auto_topup_failed`, WhatsApp template `credits_auto_topup_failed_v1_btn`). Nothing is counted as spent.
+* A Treasury server error means the outcome is unknown: it is not retried the same day, not counted, and the setting stays on.
+* Exempt tenants, suspended subscriptions and tenants with no setting are never charged.
+
+The hourly credits job runs it after the allowance refill. The units arrive through the normal `credit_purchase` payment event.
+After deploying notifications-api, run the WhatsApp template sync so the new template is submitted to Meta; until it is approved
+the tenant still gets the email.
+
 ## Background work
 
 `jobs.StartCreditsJob` runs hourly. It sets each recurring allowance to the current month's value (live tier units,

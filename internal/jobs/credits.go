@@ -35,6 +35,18 @@ func runCredits(ctx context.Context, log *zap.Logger, svc *credits.Service) {
 	if !sharedcache.ClaimPeriod(ctx, "subscriptions:credits-refill", 50*time.Minute) {
 		return
 	}
+	// Auto top-up runs after the refill so a fresh month's allowance is counted first. It buys at most
+	// one bundle per service per day, so the hourly cadence only bounds how late a top-up lands.
+	defer func() {
+		res, err := svc.RunAutoTopups(ctx, time.Now().UTC())
+		if err != nil {
+			log.Error("auto top-up run failed", zap.Error(err))
+			return
+		}
+		if res.Charged > 0 || res.Failed > 0 {
+			log.Info("auto top-up run", zap.Int("checked", res.Checked), zap.Int("charged", res.Charged), zap.Int("failed", res.Failed))
+		}
+	}()
 	n, err := svc.RefillAllowances(ctx, time.Now().UTC())
 	if err != nil {
 		log.Error("credit allowance refill failed", zap.Error(err))

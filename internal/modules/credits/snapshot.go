@@ -29,6 +29,9 @@ type ServiceSnapshot struct {
 	UnitPriceKES  float64                `json:"unit_price_kes"`
 	Bundles       []billing.CreditBundle `json:"bundles"`
 	Tiers         []billing.CreditTier   `json:"tiers"`
+	// AutoTopup is the tenant's auto top-up setting, present once the service is activated and it
+	// sells bundles.
+	AutoTopup *AutoTopup `json:"auto_topup,omitempty"`
 }
 
 // CatalogEntry is the public price list of one credit service.
@@ -101,6 +104,10 @@ func (s *Service) Snapshot(ctx context.Context, tenantID uuid.UUID, spec billing
 			}
 		}
 		snap.AutoRenew, _ = cov.Product.Metadata[MetaTierAutoRenew].(bool)
+		if len(spec.Bundles) > 0 {
+			at := readAutoTopup(cov.Product.Metadata)
+			snap.AutoTopup = &at
+		}
 	}
 	if spec.AllowsOverage() {
 		snap.OverageCapKES = s.overageCap(ctx)

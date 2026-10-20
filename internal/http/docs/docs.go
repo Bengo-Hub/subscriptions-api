@@ -1755,6 +1755,83 @@ const docTemplate = `{
                 }
             }
         },
+        "/credits/{service}/auto-topup": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Auto top-up setting for a service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sms or whatsapp",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/credits.AutoTopup"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Buys the chosen bundle with the saved card when the bundle balance falls below the threshold. At most one purchase per service per day, never above the monthly limit (default KES 5000). A declined card switches it off and notifies the tenant admin.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Turn auto top-up on or off",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sms or whatsapp",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Auto top-up setting",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.creditAutoTopupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/credits.AutoTopup"
+                        }
+                    }
+                }
+            }
+        },
         "/credits/{service}/purchase": {
             "post": {
                 "security": [
@@ -4032,6 +4109,38 @@ const docTemplate = `{
                 }
             }
         },
+        "credits.AutoTopup": {
+            "type": "object",
+            "properties": {
+                "bundle_code": {
+                    "type": "string"
+                },
+                "disabled_reason": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "last_attempt_day": {
+                    "type": "string"
+                },
+                "last_charge_at": {
+                    "type": "string"
+                },
+                "monthly_limit_kes": {
+                    "type": "number"
+                },
+                "spent_kes": {
+                    "type": "number"
+                },
+                "spent_month": {
+                    "type": "string"
+                },
+                "threshold": {
+                    "type": "integer"
+                }
+            }
+        },
         "credits.LegacyWallet": {
             "type": "object",
             "properties": {
@@ -4094,6 +4203,23 @@ const docTemplate = `{
             "properties": {
                 "auto_renew": {
                     "type": "boolean"
+                }
+            }
+        },
+        "handlers.creditAutoTopupRequest": {
+            "type": "object",
+            "properties": {
+                "bundle_code": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "monthly_limit_kes": {
+                    "type": "number"
+                },
+                "threshold": {
+                    "type": "integer"
                 }
             }
         },

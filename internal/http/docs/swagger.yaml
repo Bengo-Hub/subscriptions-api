@@ -125,6 +125,27 @@ definitions:
       unlimited:
         type: boolean
     type: object
+  credits.AutoTopup:
+    properties:
+      bundle_code:
+        type: string
+      disabled_reason:
+        type: string
+      enabled:
+        type: boolean
+      last_attempt_day:
+        type: string
+      last_charge_at:
+        type: string
+      monthly_limit_kes:
+        type: number
+      spent_kes:
+        type: number
+      spent_month:
+        type: string
+      threshold:
+        type: integer
+    type: object
   credits.LegacyWallet:
     properties:
       sms_balance:
@@ -170,6 +191,17 @@ definitions:
     properties:
       auto_renew:
         type: boolean
+    type: object
+  handlers.creditAutoTopupRequest:
+    properties:
+      bundle_code:
+        type: string
+      enabled:
+        type: boolean
+      monthly_limit_kes:
+        type: number
+      threshold:
+        type: integer
     type: object
   handlers.creditImportRequest:
     properties:
@@ -1700,6 +1732,57 @@ paths:
       security:
       - BearerAuth: []
       summary: Turn monthly plan renewal on or off
+      tags:
+      - Credits
+  /credits/{service}/auto-topup:
+    get:
+      parameters:
+      - description: sms or whatsapp
+        in: path
+        name: service
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/credits.AutoTopup'
+      security:
+      - BearerAuth: []
+      summary: Auto top-up setting for a service
+      tags:
+      - Credits
+    put:
+      consumes:
+      - application/json
+      description: Buys the chosen bundle with the saved card when the bundle balance
+        falls below the threshold. At most one purchase per service per day, never
+        above the monthly limit (default KES 5000). A declined card switches it off
+        and notifies the tenant admin.
+      parameters:
+      - description: sms or whatsapp
+        in: path
+        name: service
+        required: true
+        type: string
+      - description: Auto top-up setting
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.creditAutoTopupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/credits.AutoTopup'
+      security:
+      - BearerAuth: []
+      summary: Turn auto top-up on or off
       tags:
       - Credits
   /credits/{service}/purchase:
