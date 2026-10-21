@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"crypto/subtle"
+	httpware "github.com/Bengo-Hub/httpware"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -29,8 +29,7 @@ func NewCreditsHandler(log *zap.Logger, svc *credits.Service, internalKey string
 }
 
 func (h *CreditsHandler) isService(r *http.Request) bool {
-	got := r.Header.Get("X-API-Key")
-	return h.internalKey != "" && got != "" && subtle.ConstantTimeCompare([]byte(got), []byte(h.internalKey)) == 1
+	return httpware.ValidServiceKey(r, h.internalKey)
 }
 
 type creditSpendRequest struct {

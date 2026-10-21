@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"go.uber.org/zap"
 
 	httpware "github.com/Bengo-Hub/httpware"
@@ -55,14 +54,7 @@ func New(
 	r.Use(httpware.Recover(log))
 
 	// CORS
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   allowedOrigins,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "Origin", "X-Request-ID", "X-CSRF-Token", "X-API-Key", "X-Tenant-ID", "X-Tenant-Slug"},
-		ExposedHeaders:   []string{"Link", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset", "Retry-After"},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}))
+	r.Use(httpware.CORS(httpware.StandardCORS(allowedOrigins)))
 
 	// Root redirect to Swagger UI docs
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {

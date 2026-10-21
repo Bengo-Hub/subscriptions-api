@@ -60,7 +60,7 @@ func (h *EmailLicenseHandler) isTrustedAdminCaller(r *http.Request) bool {
 	if httpware.IsPlatformOwner(r.Context()) {
 		return true
 	}
-	return h.internalAPIKey != "" && r.Header.Get("X-API-Key") == h.internalAPIKey
+	return httpware.ValidServiceKey(r, h.internalAPIKey)
 }
 
 func (h *EmailLicenseHandler) tenantID(r *http.Request) (uuid.UUID, bool) {

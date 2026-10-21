@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	httpware "github.com/Bengo-Hub/httpware"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -48,7 +49,7 @@ func NewWebhookHandler(log *zap.Logger, orm *ent.Client, svc *subscriptions.Serv
 // @Router /webhooks/treasury/payment-status [post]
 func (h *WebhookHandler) HandleTreasuryPayment(w http.ResponseWriter, r *http.Request) {
 	// Validate S2S API key
-	if h.apiKey != "" && r.Header.Get("X-API-Key") != h.apiKey {
+	if !httpware.ValidServiceKey(r, h.apiKey) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}

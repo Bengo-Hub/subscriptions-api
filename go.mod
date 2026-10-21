@@ -9,7 +9,7 @@ require (
 	ariga.io/atlas v1.1.0
 	entgo.io/ent v0.14.5
 	github.com/Bengo-Hub/cache v0.5.5
-	github.com/Bengo-Hub/httpware v0.14.2
+	github.com/Bengo-Hub/httpware v0.16.0
 	github.com/Bengo-Hub/pagination v0.3.0
 	github.com/Bengo-Hub/shared-auth-client v0.4.0
 	github.com/Bengo-Hub/shared-events v0.8.0
@@ -17,7 +17,6 @@ require (
 	github.com/alicebob/miniredis/v2 v2.39.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-chi/chi/v5 v5.3.2
-	github.com/go-chi/cors v1.2.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/joho/godotenv v1.5.1
