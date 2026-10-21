@@ -163,3 +163,70 @@ can be dropped in a later release once the totals have been checked.
   catalog bundles. Only a tenant that resolves to a real tenant row is billed, and the platform tenant is exempt.
 * The old `addon_purchase` path (`/api/v1/addons`) was removed: it had no payment consumer branch that settled it.
   The plan-feature add-on seed was removed with it.
+
+## AI credits for video ads (proposed, not seeded, 2026-10-22)
+
+Status: **proposed, not seeded.** Nothing in this section is live. Design source:
+`.claude/plans/marketflow-ads-autopilot-2026-10-22.md` (section 4.4). The registry and seed change only when the
+MarketFlow ads autopilot work is built. The prices below are a proposal for the platform owner to confirm.
+
+AI credits will pay for MarketFlow video ads (scripts, storyboards, renders) as well as chat. They stay in the same
+`ai_credits` ledger. There is no new wallet and no new service tag.
+
+### Rules
+
+* **Cost basis KES 5.** One credit stands for at most KES 5 of real provider cost (vendor price, FX at the daily
+  rate plus a 5% buffer, 15% for retries and failures). Credits consumed per output come from MarketFlow's model
+  registry as `ceil(cost_kes / 5)`, never from code.
+* **Every selling price is at least 30% above cost**, so each channel carries the platform fee.
+* **Prepaid only, no overage** (confirmed 2026-10-22). A spend that does not fit is refused before any vendor is
+  called. Low-balance alerts go out at 20% and 0% of the monthly allowance, with a "Buy credits" button.
+* **The allowance resets every period.** `credit_services.go` documents that the quota wallet is reset to the
+  allowance by `SetQuota` at every period roll, so unused allowance does not carry over. Purchased units never expire.
+* **One-time buyers** (no plan) pay KES 7.50 per credit, which is a 50% fee and deliberately the dearest channel.
+  They buy exactly what one ad needs through the normal `credit_purchase` intent (platform billed). The credits are
+  credited and consumed at once, and a failed render refunds them to the balance.
+
+### Proposed refill bundles (replace today's 100 for KES 1000 and 500 for KES 4000)
+
+| Bundle | KES | KES per credit | Above cost |
+|---|---|---|---|
+| 100 credits | 700 | 7.00 | 40% |
+| 500 credits | 3,400 | 6.80 | 36% |
+| 1,000 credits | 6,600 | 6.60 | 32% |
+
+Price order per credit: one-time (7.50), then bundles (6.60 to 7.00), then AI Studio plans (6.70 to 6.82), all
+above the KES 5.00 cost. The plans are in `subscription-plans/plan-feature-matrix.md`.
+
+### Credits per output (indicative; live values come from the registry)
+
+| Output | Our cost (KES) | Credits |
+|---|---|---|
+| Script plus 3 hooks, or one revision | 1 to 2 | 1 |
+| Storyboard (6 keyframes) | 3 to 23 | 3 |
+| Template or motion ad, 30 s | about 59 | 12 |
+| AI presenter, standard avatar, 30 s | about 209 | 42 |
+| AI presenter, premium avatar, 30 s | about 366 | 74 |
+| Cinematic 20 s, Lite model | about 218 | 44 |
+| Cinematic 20 s, Fast model | about 374 | 75 |
+| Cinematic 20 s, Standard model | about 1,309 | 262 |
+| Vera chat message | under 1 | 1 (unchanged) |
+
+Fixed vendor subscriptions are added per render as a small surcharge (fixed monthly cost divided by last month's
+renders, with a volume floor). It is about 2 to 5 credits at launch volumes.
+
+### PowerSuite allowances
+
+* PowerSuite Gold grants `ai_credits_monthly: -1` (unlimited) today (`cmd/seed/plans_powersuite_builders.go` and the
+  use-case limits). That was safe for chat. Once the same credits buy video it becomes an open-ended vendor cost, so
+  the proposal caps it at **600 a month**.
+* Basic (5) and Pro (100) stay as they are.
+* The hourly refill would add the AI Studio plan's allowance to the base plan's allowance when a tenant has both.
+
+### Changes when this is built
+
+* `internal/modules/billing/credit_services.go`: the three new bundle sizes and prices in the `ai_credits` entry.
+* `cmd/seed`: the AI Studio plan rows and the Gold cap.
+* `internal/modules/credits` refill: sum the base-plan and AI Studio plan quotas.
+* Check before launch: `credit_purchase` must settle to the platform's collecting account. It was not seen in
+  treasury's platform-billed registry (`treasury-api/internal/modules/finance/billing_types.go`).

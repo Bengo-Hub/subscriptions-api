@@ -252,3 +252,62 @@ own plans page (`app/plans/page.tsx`) both consume this to filter what a tenant 
 subscriptions-ui fix also plugged a stale gap from the DAWA→AFYA_CHEMIST migration note above
 — `hospital` was never a key in that page's `USECASE_GROUPS` map at all, so a hospital-service
 tenant fell through to "show every group" instead of just its own `AFYA_*` plans.
+
+## MarketFlow AI Studio plans (proposed, not seeded, 2026-10-22)
+
+Status: **proposed, not seeded.** Design source: `.claude/plans/marketflow-ads-autopilot-2026-10-22.md`
+(section 4.4.2). Credit pricing rules are in `../messaging-credits.md`, under "AI credits for video ads".
+
+### Why a MarketFlow family returns
+
+The standalone `MARKETFLOW_*` plans were removed on 2026-09-11 because every CRM feature they granted already
+existed in PowerSuite. The AI Studio family is a different product: monthly AI-credit allowances and video-ad
+capabilities (generation, publishing, paid ads launch, Autopilot agents). It is sold standalone or on top of
+PowerSuite, because FBOs, course sellers and service businesses need marketing without buying a POS suite. The CRM
+features stay in the PowerSuite blocks above and are not duplicated here.
+
+Plan codes: `MARKETFLOW_STUDIO_STARTER`, `MARKETFLOW_STUDIO_GROWTH`, `MARKETFLOW_STUDIO_PRO` on the existing
+`marketflow` product (`service_tag: marketflow`, no `use_case`, so it matches any tenant). Each row carries
+`ai_credits_monthly`, and the hourly credits refill adds it to the base plan's allowance.
+
+### Tiers
+
+| | Starter | Growth | Pro |
+|---|---|---|---|
+| Price per month | KES 1,500 | KES 3,500 | KES 7,500 |
+| `ai_credits_monthly` | 220 | 520 | 1,120 |
+| KES per credit (above KES 5 cost) | 6.82 (36%) | 6.73 (35%) | 6.70 (34%) |
+| Roughly buys per month | 13 template ads, or 4 presenter ads | 32 template ads, or 11 presenter ads | 70 template ads, or 24 presenter ads |
+
+### Features (strict superset per tier)
+
+| Code | Starter | Growth | Pro |
+|---|---|---|---|
+| `ai_video_template` | yes | yes | yes |
+| `ai_video_presenter` | | yes | yes |
+| `ai_video_cinematic` (Lite and Fast models) | | yes | yes |
+| `paid_ads_launch` | | yes | yes |
+| `autopilot_auto_publish` | | yes | yes |
+| `ai_video_presenter_premium` | | | yes |
+| `ai_video_cinematic_premium` (Standard models) | | | yes |
+| `custom_avatar` | | | yes |
+| `marketflow_autopilot` | yes | yes | yes |
+
+### Limits
+
+| Key | Starter | Growth | Pro |
+|---|---|---|---|
+| `max_connected_social_accounts` | 3 | 8 | 20 |
+| `max_autopilot_agents` | 1 | 3 | 10 |
+| `max_brand_kits` | 1 | 1 | 3 |
+
+### Related PowerSuite changes (proposed)
+
+* PowerSuite Gold `ai_credits_monthly` changes from -1 (unlimited) to **600**. One ledger now buys video, so
+  unlimited would be an open-ended vendor cost.
+* PowerSuite Pro and Gold get `ai_video_template`, so those tenants can try the studio with their allowance.
+* A one-time buyer (no plan) can use every video type except `custom_avatar` and Autopilot, at KES 7.50 per credit.
+* A trial grants 30 credits once per verified phone and business.
+
+These rows need a reseed, a feature catalog entry for each new code (`cmd/seed/feature_catalog.go`), and the platform
+owner's confirmation of the prices before seeding.
