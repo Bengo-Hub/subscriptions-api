@@ -306,7 +306,7 @@ Plan codes: `MARKETFLOW_STUDIO_STARTER`, `MARKETFLOW_STUDIO_GROWTH`, `MARKETFLOW
 * PowerSuite Gold `ai_credits_monthly` changes from -1 (unlimited) to **600**. One ledger now buys video, so
   unlimited would be an open-ended vendor cost.
 * PowerSuite Pro and Gold get `ai_video_template`, so those tenants can try the studio with their allowance.
-* A one-time buyer (no plan) can use every video type except `custom_avatar` and Autopilot, at KES 7.50 per credit.
+* A tenant without a plan pre-buys refill bundles (see `messaging-credits.md`) and can then use every video type except `custom_avatar` and Autopilot.
 * A trial grants 30 credits once per verified phone and business.
 
 These rows need a reseed, a feature catalog entry for each new code (`cmd/seed/feature_catalog.go`), and the platform

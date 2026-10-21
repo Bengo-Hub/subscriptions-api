@@ -183,11 +183,12 @@ AI credits will pay for MarketFlow video ads (scripts, storyboards, renders) as 
   called. Low-balance alerts go out at 20% and 0% of the monthly allowance, with a "Buy credits" button.
 * **The allowance resets every period.** `credit_services.go` documents that the quota wallet is reset to the
   allowance by `SetQuota` at every period roll, so unused allowance does not carry over. Purchased units never expire.
-* **One-time buyers** (no plan) pay KES 7.50 per credit, which is a 50% fee and deliberately the dearest channel.
-  They buy exactly what one ad needs through the normal `credit_purchase` intent (platform billed). The credits are
-  credited and consumed at once, and a failed render refunds them to the balance.
+* **Tenants without a plan pre-buy credits** (decided 2026-10-22). They buy one of the refill bundles below
+  through the normal `credit_purchase` intent (platform billed) before anything is generated. From then on every
+  tenant uses the same `Check`, `Consume` and `RefundConsume` calls on the same bundle wallet, so there is one
+  balance check for everyone and no media is ever produced before it is paid for. There is no per-ad price.
 
-### Proposed refill bundles (replace today's 100 for KES 1000 and 500 for KES 4000)
+### Proposed refill bundles (replace today's 100 for KES 1000 and 500 for KES 4000; sold to subscribers and to tenants without a plan)
 
 | Bundle | KES | KES per credit | Above cost |
 |---|---|---|---|
@@ -195,8 +196,10 @@ AI credits will pay for MarketFlow video ads (scripts, storyboards, renders) as 
 | 500 credits | 3,400 | 6.80 | 36% |
 | 1,000 credits | 6,600 | 6.60 | 32% |
 
-Price order per credit: one-time (7.50), then bundles (6.60 to 7.00), then AI Studio plans (6.70 to 6.82), all
-above the KES 5.00 cost. The plans are in `subscription-plans/plan-feature-matrix.md`.
+Per credit, bundles cost 6.60 to 7.00 and AI Studio plans 6.70 to 6.82, all at least 30% above the KES 5.00 cost.
+A plan's extra value is its monthly allowance and its capabilities, not a lower credit price. A subscriber discount,
+if wanted, fits only on the 100 pack (5% gives 6.65); the same discount on the 500 or 1,000 pack would fall below
+the 30% floor. The plans are in `subscription-plans/plan-feature-matrix.md`.
 
 ### Credits per output (indicative; live values come from the registry)
 
