@@ -220,9 +220,11 @@ renders, with a volume floor). It is about 2 to 5 credits at launch volumes.
 
 ### PowerSuite allowances
 
-* PowerSuite Gold grants `ai_credits_monthly: -1` (unlimited) today (`cmd/seed/plans_powersuite_builders.go` and the
-  use-case limits). That was safe for chat. Once the same credits buy video it becomes an open-ended vendor cost, so
-  the proposal caps it at **600 a month**.
+* PowerSuite Gold granted `ai_credits_monthly: -1` (unlimited). That was safe for chat, but once the same credits buy
+  video it becomes an open-ended vendor cost. **The seed now sets 600 a month** (`cmd/seed/plans_powersuite_builders.go`,
+  approved 2026-10-22, guarded by `plans_powersuite_ai_credits_test.go`). The seed runs on every deploy, and the next
+  refill run sets the quota within the current month (unlimited tenants had no quota row this month). Tell Gold tenants
+  before the deploy, and check their recent AI usage so heavy chat users can buy a refill in time.
 * Basic (5) and Pro (100) stay as they are.
 * The hourly refill would add the AI Studio plan's allowance to the base plan's allowance when a tenant has both.
 

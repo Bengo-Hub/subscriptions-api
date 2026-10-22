@@ -246,13 +246,15 @@ func powerSuiteLimits(tier int) map[string]any {
 			"max_payment_links":          -1,
 			"max_currencies":             -1,
 			"max_bulk_payout_rows":       -1,
-			// MarketFlow CRM — unlimited
+			// MarketFlow CRM — unlimited, except AI credits: the one ai_credits ledger also pays for
+			// video generation (MarketFlow Ads Autopilot), a real vendor cost per use, so Gold gets a
+			// monthly allowance of 600 instead of unlimited. More credits come from refill bundles.
 			"max_contacts":       -1,
 			"max_leads":          -1,
 			"max_campaigns":      -1,
 			"max_sequences":      -1,
 			"max_funnels":        -1,
-			"ai_credits_monthly": -1,
+			"ai_credits_monthly": 600,
 			"max_integrations":   -1,
 			"max_tickets":        -1,
 			"max_agents":         -1,
