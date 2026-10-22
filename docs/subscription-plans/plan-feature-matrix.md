@@ -283,6 +283,7 @@ Plan codes: `MARKETFLOW_STUDIO_STARTER`, `MARKETFLOW_STUDIO_GROWTH`, `MARKETFLOW
 
 | Code | Starter | Growth | Pro |
 |---|---|---|---|
+| `ai_static_ads` (posters and carousels, proposed 2026-10-22 for the MarketFlow Marketing OS) | yes | yes | yes |
 | `ai_video_template` | yes | yes | yes |
 | `ai_video_presenter` | | yes | yes |
 | `ai_video_cinematic` (Lite and Fast models) | | yes | yes |
@@ -306,7 +307,7 @@ Plan codes: `MARKETFLOW_STUDIO_STARTER`, `MARKETFLOW_STUDIO_GROWTH`, `MARKETFLOW
 * PowerSuite Gold `ai_credits_monthly` changes from -1 (unlimited) to **600**. One ledger now buys video, so
   unlimited would be an open-ended vendor cost. Done in the seed 2026-10-22 (applies on the next deploy; see
   `messaging-credits.md` for the rollout note).
-* PowerSuite Pro and Gold get `ai_video_template`, so those tenants can try the studio with their allowance.
+* PowerSuite Pro and Gold get `ai_video_template` and `ai_static_ads`, so those tenants can try the studio with their allowance.
 * A tenant without a plan pre-buys refill bundles (see `messaging-credits.md`) and can then use every video type except `custom_avatar` and Autopilot.
 * A trial grants 30 credits once per verified phone and business.
 
