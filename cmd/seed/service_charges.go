@@ -27,11 +27,9 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 	}
 
 	minCharge50 := 50.0
-	minCharge5 := 5.0
 	minCharge2 := 2.0
 	maxCharge5000 := 5000.0
 	maxCharge2000 := 2000.0
-	maxCharge500 := 500.0
 	maxCharge250 := 250.0
 
 	plans := []scPlan{
@@ -107,17 +105,6 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 			chargeType:  servicechargeplan.ChargeTypePERCENTAGE,
 			chargeValue: 10.0,
 			services:    []string{"truload"},
-			isDefault:   true,
-		},
-		{
-			code:        "SC_MARKETFLOW_ADS",
-			name:        "MarketFlow Ads Service Fee",
-			description: "Platform fee on ad campaign budgets processed through MarketFlow. 5% of ads budget, KES 5 minimum, KES 500 max per campaign. Configurable from /platform/billing.",
-			chargeType:  servicechargeplan.ChargeTypePERCENTAGE,
-			chargeValue: 5.0,
-			minCharge:   &minCharge5,
-			maxCharge:   &maxCharge500,
-			services:    []string{"marketflow"},
 			isDefault:   true,
 		},
 	}
@@ -206,6 +193,19 @@ func seedServiceChargePlans(ctx context.Context, tx *ent.Tx) error {
 		}
 	} else if !ent.IsNotFound(err) {
 		return fmt.Errorf("lookup SC_MARKETFLOW_AI_CREDIT: %w", err)
+	}
+
+	// Deprecate SC_MARKETFLOW_ADS: ad budgets go straight to the client's own ad account at cost
+	// and MarketFlow charges only AI credits (decision 2026-10-22, plans/marketflow-ads-autopilot).
+	if old, err := tx.ServiceChargePlan.Query().Where(servicechargeplan.Code("SC_MARKETFLOW_ADS")).Only(ctx); err == nil {
+		if old.IsActive || old.IsDefault {
+			if _, err := tx.ServiceChargePlan.UpdateOneID(old.ID).SetIsActive(false).SetIsDefault(false).Save(ctx); err != nil {
+				return fmt.Errorf("deactivate SC_MARKETFLOW_ADS: %w", err)
+			}
+			log.Println("  ✓ Deprecated SC_MARKETFLOW_ADS (no fee on ad budgets; MarketFlow bills AI credits only)")
+		}
+	} else if !ent.IsNotFound(err) {
+		return fmt.Errorf("lookup SC_MARKETFLOW_ADS: %w", err)
 	}
 
 	log.Println("  ✓ Service charge plans seeded")

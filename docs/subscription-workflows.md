@@ -467,7 +467,8 @@ Dual revenue model:
 | `SC_POS_2PCT` | PERCENTAGE | 2% | pos | ✓ |
 | `SC_UNIVERSAL_FLAT_50` | FLAT | KES 50 | all | – |
 | `SC_TRULOAD_10PCT` | PERCENTAGE | 10% | truload | ✓ |
-| `SC_MARKETFLOW_ADS` | PERCENTAGE | varies | marketflow | ✓ |
+
+`SC_MARKETFLOW_ADS` (5% of ad budgets) and `SC_MARKETFLOW_AI_CREDIT` are retired: the seed deactivates them. MarketFlow ad budgets go to the client's own ad account at cost, and MarketFlow bills only AI credits (plan or prepaid bundles in the credits ledger).
 
 ---
 
@@ -784,7 +785,8 @@ useQuery({ queryKey: ['admin-tenants'], ... })
 | `SC_POS_2PCT` | PERCENTAGE | 2% | pos | ✓ |
 | `SC_UNIVERSAL_FLAT_50` | FLAT | KES 50 | all | – |
 | `SC_TRULOAD_10PCT` | PERCENTAGE | 10% | truload | ✓ |
-| `SC_MARKETFLOW_ADS` | PERCENTAGE | varies | marketflow | ✓ |
+
+MarketFlow has no service-charge plan: `SC_MARKETFLOW_ADS` and `SC_MARKETFLOW_AI_CREDIT` are deactivated by the seed.
 
 ---
 
