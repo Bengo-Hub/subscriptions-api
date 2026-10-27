@@ -3,6 +3,7 @@ package subscriptions
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	entfeaturedefinition "github.com/bengobox/subscription-service/internal/ent/featuredefinition"
@@ -90,27 +91,47 @@ func overlayPlanEntitlements(result *SubscriptionResult, plan *ent.SubscriptionP
 		}
 	}
 	for k, v := range plan.TierLimitsJSON {
-		var iv int
-		switch t := v.(type) {
-		case float64:
-			iv = int(t)
-		case int:
-			iv = t
-		default:
-			continue
-		}
-		cur, ok := result.Limits[k]
+		iv, ok := limitValue(v)
 		if !ok {
-			result.Limits[k] = iv
 			continue
 		}
-		if cur == -1 || iv == -1 {
-			result.Limits[k] = -1
-			continue
-		}
-		if iv > cur {
+		if cur, ok := result.Limits[k]; ok {
+			result.Limits[k] = maxLimit(cur, iv)
+		} else {
 			result.Limits[k] = iv
 		}
+	}
+}
+
+// addFeatures appends the codes result does not hold yet (union).
+func addFeatures(result *SubscriptionResult, codes []string) {
+	seen := make(map[string]bool, len(result.Features))
+	for _, f := range result.Features {
+		seen[f] = true
+	}
+	for _, code := range codes {
+		if !seen[code] {
+			result.Features = append(result.Features, code)
+			seen[code] = true
+		}
+	}
+}
+
+func planFeatureCodes(plan *ent.SubscriptionPlan) []string {
+	out := make([]string, 0, len(plan.Edges.Features))
+	for _, f := range plan.Edges.Features {
+		out = append(out, f.FeatureCode)
+	}
+	return out
+}
+
+// attachSchedule reports a running upgrade trial and a waiting plan change on result.
+func (s *Service) attachSchedule(result *SubscriptionResult, sub *ent.TenantSubscription, now time.Time) {
+	if t, ok := ActiveUpgradeTrial(sub, now); ok {
+		result.UpgradeTrial = t.info(now)
+	}
+	if pc, ok := PendingPlanChange(sub); ok {
+		result.ScheduledChange = pc.info()
 	}
 }
 
@@ -132,12 +153,20 @@ func (s *Service) GetSubscriptionResult(ctx context.Context, tenantID uuid.UUID)
 		return nil, err
 	}
 
-	plan, err := s.loadPlanWithFeatures(ctx, sub.PlanID)
+	// The plan in force is the paid plan, or an upgrade trial's plan while one runs (see
+	// PlanIDInForce). Features, limits, tier and plan code come from it so tokens and gates see
+	// the trial tier; the paid plan's features stay in the union so a trial never removes one.
+	now := time.Now().UTC()
+	paid, plan, err := s.loadPlanInForce(ctx, sub, now)
 	if err != nil {
-		return nil, fmt.Errorf("lookup plan: %w", err)
+		return nil, err
 	}
 
 	result := s.buildResult(sub, plan)
+	if plan != paid {
+		addFeatures(result, planFeatureCodes(paid))
+	}
+	s.attachSchedule(result, sub, now)
 
 	// Overlay active product subscriptions' plans (composite multi-use-case entitlements).
 	productPlans, perr := s.resolveProductPlans(ctx, sub.ID)
@@ -163,16 +192,7 @@ func (s *Service) GetSubscriptionResult(ctx context.Context, tenantID uuid.UUID)
 		s.log.Warn("composite entitlements: failed to load tenant feature grants",
 			zap.String("tenant_id", tenantID.String()), zap.Error(gerr))
 	} else if len(grantCodes) > 0 {
-		seen := make(map[string]bool, len(result.Features))
-		for _, f := range result.Features {
-			seen[f] = true
-		}
-		for _, code := range grantCodes {
-			if !seen[code] {
-				result.Features = append(result.Features, code)
-				seen[code] = true
-			}
-		}
+		addFeatures(result, grantCodes)
 	}
 
 	if tags, terr := s.resolveActiveServiceTags(ctx, result.Features, plan); terr != nil {

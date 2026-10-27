@@ -1197,6 +1197,91 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/tenants/{tenant_id}/plan-change": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Cancel a tenant's scheduled plan change (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.SubscriptionResult"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenants/{tenant_id}/plan-change/apply": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Moves the tenant to the scheduled plan today instead of on the renewal date.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Apply a scheduled plan change now (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.SubscriptionResult"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/admin/tenants/{tenant_id}/products": {
             "get": {
                 "security": [
@@ -1621,6 +1706,266 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/handlers.supportAgreementDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenants/{tenant_id}/upgrade-trial": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "The tenant's policy with both levels, running trial, scheduled change, history and,\nwith plan_code, eligibility as the platform owner would grant it.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Tenant upgrade trial status (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Plan to check",
+                        "name": "plan_code",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.UpgradeTrialStatus"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Starts a trial of plan_code for the tenant, regardless of the policy switch or an\nearlier trial of the same plan. days (1 to 90) overrides the configured length.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Grant an upgrade trial (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "{plan_code, days}",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.SubscriptionResult"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Ends the running trial now; the tenant stays on its paid plan.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "End a tenant's upgrade trial (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.SubscriptionResult"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenants/{tenant_id}/upgrade-trial/policy": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "enabled and days override the platform setting for this tenant; null (or absent)\nremoves that override so the tenant follows the platform setting.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Set a tenant's upgrade trial override (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "{enabled: bool|null, days: int|null}",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.UpgradeTrialPolicy"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/upgrade-trial/settings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "The platform-wide upgrade trial switch and length (platform owner).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Platform upgrade trial settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.UpgradeTrialPolicy"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Turns upgrade trials on or off for every tenant without its own setting, and sets\nthe default trial length in days (1 to 90). Platform owner.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Set platform upgrade trial settings",
+                "parameters": [
+                    {
+                        "description": "{enabled, days}",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.UpgradeTrialPolicy"
                         }
                     },
                     "400": {
@@ -3041,7 +3386,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Upgrades or downgrades the tenant's subscription plan",
+                "description": "Moves the tenant to another plan. A tenant's move to a dearer plan is scheduled for\nthe next renewal date (the renewal invoice bills it); a move to a plan costing the\nsame or less applies at once. The platform owner's change always applies at once.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3062,6 +3407,40 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/plan-change": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Drops the plan change waiting for the next renewal date.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Cancel the scheduled plan change",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.SubscriptionResult"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3272,6 +3651,117 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/upgrade-trial": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Whether upgrade trials are on for the tenant, any running trial or scheduled plan\nchange, past trials and, with plan_code, whether a trial of that plan can start.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Upgrade trial status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Plan to check eligibility for",
+                        "name": "plan_code",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.UpgradeTrialStatus"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Gives the tenant a higher tier of its current product for the configured number of\ndays and schedules the upgrade for the first renewal date after the trial ends.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Start an upgrade trial",
+                "parameters": [
+                    {
+                        "description": "{plan_code}",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.SubscriptionResult"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Ends the trial now. The tenant stays on the plan it pays for and the upgrade the\ntrial scheduled is cancelled.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "End the running upgrade trial",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.SubscriptionResult"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -4727,6 +5217,152 @@ const docTemplate = `{
                 }
             }
         },
+        "subscriptions.ScheduledChangeInfo": {
+            "type": "object",
+            "properties": {
+                "effective_at": {
+                    "type": "string"
+                },
+                "from_plan_code": {
+                    "type": "string"
+                },
+                "from_plan_name": {
+                    "type": "string"
+                },
+                "plan_code": {
+                    "type": "string"
+                },
+                "plan_name": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                }
+            }
+        },
+        "subscriptions.SubscriptionResult": {
+            "type": "object",
+            "properties": {
+                "access_status": {
+                    "description": "AccessStatus is derived gating state for clients: \"active\" (full access),\n\"grace\" (past period end but within the grace window — still accessible, pay soon),\nor \"blocked\" (expired/cancelled/suspended). GraceEndsAt is set while in grace.",
+                    "type": "string"
+                },
+                "active_products": {
+                    "description": "ActiveProducts is the product_code of every currently-active ProductSubscription — minted\ninto the JWT active_products claim so the app-switcher can show only activated apps\nwithout an extra network call. See ActiveProductCodes.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "active_service_tags": {
+                    "description": "ActiveServiceTags is the set of FeatureDefinition.service_tag values the tenant currently\nhas ANY entitlement in (main plan's own service_tag + the service_tag of every feature\ncode in Features, including product-overlay and TenantFeatureGrant additions), minted into\nthe JWT active_service_tags claim. This is coarser than Features: it answers \"is this whole\nmodule part of the tenant's plan at all\" (e.g. \"erp\"), which a PowerSuite tenant below the\ntier that unlocks its first ERP feature has none of — distinct from activeServiceTags()\nbelow, which only looks at a plan's single primary service_tag and is wrong for a bundle.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "allow_overage": {
+                    "description": "AllowOverage is the tenant's opt-in master switch for pay-as-you-go extra usage.\nWhen true, metered throughput limits may be exceeded and the excess accrues as\nOverageCharge billed on the next renewal.",
+                    "type": "boolean"
+                },
+                "billing_cycle": {
+                    "description": "Scenario resolution — lets each service pick whichever plan scenario a tenant chose.\nBillingCycle mirrors the plan (MONTHLY/QUARTERLY/ANNUAL/ONE_TIME).\nBillingMode is the resolved scenario: \"recurring\" | \"one_time\" | \"service_charge\".\nPlanType mirrors the plan's plan_type (TIERED/STANDALONE_SERVICE/BUNDLE/CUSTOM).\nIsPerpetual is true for a paid ONE_TIME licence — non-expiring entitlement; auth\nomits the JWT expiry for these so the subscription gate never blocks them.",
+                    "type": "string"
+                },
+                "billing_mode": {
+                    "type": "string"
+                },
+                "bundle_code": {
+                    "type": "string"
+                },
+                "cancel_reason": {
+                    "type": "string"
+                },
+                "cancelled_at": {
+                    "type": "string"
+                },
+                "current_period_end": {
+                    "type": "string"
+                },
+                "current_period_start": {
+                    "type": "string"
+                },
+                "exempt": {
+                    "description": "Exempt is true for tenants the platform has exempted from subscriptions entirely\n(platform/demo tenants + explicitly-flagged tenants). auth-api embeds this as the\nJWT sub_exempt claim so every downstream service bypasses subscription gating.",
+                    "type": "boolean"
+                },
+                "facility_type": {
+                    "description": "FacilityType is the resolved plan's presentation-only facility/use-case hint (e.g.\nhospital-api's Afya family: \"chemist\" | \"clinic\" | \"facility\" | \"hospital\"), read from the\nplan's Metadata JSON (see cmd/seed/plans_hospital.go's afyaTier.facilityType). Empty for\nplan families that don't set it — callers must not assume it's always populated. Additive:\nconsumed by hospital-ui's adaptive sidebar (facility-nomenclature.ts) via this same\nGET /subscription / GET /tenants/{id}/subscription response, no new endpoint needed.",
+                    "type": "string"
+                },
+                "features": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "grace_ends_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_perpetual": {
+                    "type": "boolean"
+                },
+                "limits": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "plan_code": {
+                    "type": "string"
+                },
+                "plan_name": {
+                    "type": "string"
+                },
+                "plan_type": {
+                    "type": "string"
+                },
+                "scheduled_change": {
+                    "description": "ScheduledChange is a plan switch waiting for the next renewal date.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/subscriptions.ScheduledChangeInfo"
+                        }
+                    ]
+                },
+                "status": {
+                    "type": "string"
+                },
+                "support_fee_due_at": {
+                    "type": "string"
+                },
+                "support_fee_status": {
+                    "description": "SupportFeeStatus/SupportFeeDueAt reflect the tenant's CURRENT SupportFeeCycle (perpetual/\none-time-license tenants only — see internal/ent/schema/support_fee_cycle.go). Empty/nil\nwhen the tenant has no support-fee obligation at all. Minted into the JWT\nsupport_fee_status/support_fee_due_at claims for RequireSupportFeeCurrentForMutations.",
+                    "type": "string"
+                },
+                "tenant_id": {
+                    "type": "string"
+                },
+                "tier_order": {
+                    "description": "TierOrder is the resolved plan's tier rank (1=Starter, 2=Growth, 3=Professional; higher\nfor licenses). Lets clients gate by tier: a feature whose cheapest unlocking plan is at\ntier ≤ TierOrder (same family) is unlocked, so the upgrade wrapper never shows for\nat/below-tier features. 0 for exempt/demo (always unlocked anyway).",
+                    "type": "integer"
+                },
+                "trial_ends_at": {
+                    "type": "string"
+                },
+                "upgrade_trial": {
+                    "description": "UpgradeTrial is set while a trial of a higher tier runs. PlanCode/TierOrder/Features/Limits\nthen describe the trial plan; UpgradeTrial.BasePlanCode is the plan the tenant pays for.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/subscriptions.UpgradeTrialInfo"
+                        }
+                    ]
+                }
+            }
+        },
         "subscriptions.SupportAgreementInput": {
             "type": "object",
             "properties": {
@@ -4782,6 +5418,157 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
+                }
+            }
+        },
+        "subscriptions.UpgradeTrialEligibility": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer"
+                },
+                "eligible": {
+                    "type": "boolean"
+                },
+                "ends_at": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "plan_code": {
+                    "type": "string"
+                },
+                "plan_name": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "upgrade_at": {
+                    "description": "UpgradeAt is the renewal date the upgrade would take effect after the trial.",
+                    "type": "string"
+                }
+            }
+        },
+        "subscriptions.UpgradeTrialInfo": {
+            "type": "object",
+            "properties": {
+                "base_plan_code": {
+                    "type": "string"
+                },
+                "base_plan_name": {
+                    "type": "string"
+                },
+                "days_remaining": {
+                    "type": "integer"
+                },
+                "ends_at": {
+                    "type": "string"
+                },
+                "plan_code": {
+                    "type": "string"
+                },
+                "plan_name": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "tier_order": {
+                    "type": "integer"
+                }
+            }
+        },
+        "subscriptions.UpgradeTrialPolicy": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer"
+                },
+                "days_source": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "enabled_source": {
+                    "type": "string"
+                },
+                "max_days": {
+                    "type": "integer"
+                },
+                "platform": {
+                    "$ref": "#/definitions/subscriptions.UpgradeTrialSetting"
+                },
+                "tenant": {
+                    "$ref": "#/definitions/subscriptions.UpgradeTrialSetting"
+                }
+            }
+        },
+        "subscriptions.UpgradeTrialRecord": {
+            "type": "object",
+            "properties": {
+                "base_plan_code": {
+                    "type": "string"
+                },
+                "ended_at": {
+                    "type": "string"
+                },
+                "outcome": {
+                    "type": "string"
+                },
+                "plan_code": {
+                    "type": "string"
+                },
+                "started_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "subscriptions.UpgradeTrialSetting": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "subscriptions.UpgradeTrialStatus": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "$ref": "#/definitions/subscriptions.UpgradeTrialInfo"
+                },
+                "eligibility": {
+                    "$ref": "#/definitions/subscriptions.UpgradeTrialEligibility"
+                },
+                "history": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/subscriptions.UpgradeTrialRecord"
+                    }
+                },
+                "policy": {
+                    "$ref": "#/definitions/subscriptions.UpgradeTrialPolicy"
+                },
+                "scheduled_change": {
+                    "$ref": "#/definitions/subscriptions.ScheduledChangeInfo"
+                },
+                "used": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         }

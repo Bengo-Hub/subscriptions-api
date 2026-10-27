@@ -8,6 +8,7 @@ import (
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -123,7 +124,8 @@ func resolveUsage(ctx context.Context, orm *ent.Client, cache *redis.Client, log
 		return UsageIncrementResult{}
 	}
 
-	planLimits := sub.Edges.Plan.TierLimitsJSON
+	// The limits the tenant's token carries: an upgrade trial's plan and product overlays count.
+	planLimits, _ := subscriptions.EntitlementLimits(ctx, orm, sub)
 	limitKey, ok := ResolveLimitKey(metricType, planLimits)
 	if !ok {
 		return UsageIncrementResult{}

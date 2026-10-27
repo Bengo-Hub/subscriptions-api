@@ -321,6 +321,14 @@ func New(ctx context.Context) (*App, error) {
 	// One credits engine for SMS, WhatsApp and AI credits: entitlement, bundles, tiers, overage.
 	creditsSvc := credits.New(log, ormClient, billing.NewTokenWalletService(log, ormClient, sqlDB), subscriptionSvc)
 	subscriptionSvc.SetAddonResolver(credits.AddonResolver())
+	subscriptionSvc.SetUIBaseURL(cfg.Services.SubscriptionsUI)
+	// A plan change scheduled (or cancelled) after the renewal invoice went out bills or voids
+	// the price difference on a separate plan-change invoice.
+	subscriptionSvc.SetRenewalInvoiceReissuer(func(ctx context.Context, tenantID uuid.UUID) {
+		if err := invoiceSvc.ReconcileOpenRenewalInvoice(ctx, tenantID); err != nil {
+			log.Warn("plan change: open renewal invoice not reconciled", zap.String("tenant_id", tenantID.String()), zap.Error(err))
+		}
+	})
 	creditsHandler := handlers.NewCreditsHandler(log, creditsSvc, cfg.Security.APIKey)
 
 	// Feature catalog handler (platform-wide feature/limit registry for the plan builder)
@@ -413,6 +421,12 @@ func (a *App) Run(ctx context.Context) error {
 	if a.orm != nil && a.invoiceSvc != nil {
 		go jobs.StartInvoiceJob(ctx, a.log, a.orm, a.invoiceSvc)
 		a.log.Info("subscription invoice job started")
+	}
+
+	// Start the plan schedule job (upgrade trial reminders and ends, scheduled plan changes)
+	if a.subscriptionSvc != nil {
+		go jobs.StartPlanScheduleJob(ctx, a.log, a.subscriptionSvc)
+		a.log.Info("plan schedule job started")
 	}
 
 	// Start grace reminder job (daily countdown emails while in the grace window)

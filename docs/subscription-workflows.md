@@ -27,6 +27,7 @@
 17. [Frontend ↔ Backend API Map](#17-frontend--backend-api-map)
 18. [Seeded Data Reference](#18-seeded-data-reference)
 19. [Support agreements for one-time licenses](#19-support-agreements-for-one-time-licenses-2026-10-04)
+20. [Signup trial expiry, upgrade trials and scheduled plan changes](#20-signup-trial-expiry-upgrade-trials-and-scheduled-plan-changes-2026-10-27)
 
 ---
 
@@ -94,7 +95,7 @@ PostgreSQL       Redis (counters)      NATS JetStream
 
 | State | Description |
 |---|---|
-| `TRIAL` | Free trial; full feature access; `trial_ends_at` is the expiry |
+| `TRIAL` | Free trial; full feature access; `trial_ends_at` (equal to `current_period_end`) is the expiry. Since 2026-10-27 a lapsed paid-plan trial gets the 7-day grace, then EXPIRED (section 20) |
 | `ACTIVE` | Paid and active; `current_period_end` is the next billing date |
 | `EXPIRED` | Period ended, no renewal initiated or payment not started |
 | `SUSPENDED` | Payment failed; dunning in progress; feature access restricted |
@@ -130,6 +131,11 @@ PostgreSQL       Redis (counters)      NATS JetStream
                     trial_ends_at = now + 14 days
                     current_period_end = trial_ends_at
 ```
+
+> **Status 2026-10-27:** this consumer creates nothing in practice. There is no bare `STARTER` plan
+> any more and it passes no T&C acceptance, so `CreateSubscription` refuses it; signups subscribe
+> through `POST /subscription` instead, and the seeded `subscriptions.trial_days` is never read.
+> Kept as an open item in `docs/upgrade-trials.md`.
 
 > **Frontend:** `/plans` page allows tenants to select a different plan at onboarding.
 > Selecting a plan calls `POST /subscription` with `{ plan_code, billing_cycle, tenant_id? }`.
@@ -806,6 +812,12 @@ The `metadata` JSON column on `tenant_subscriptions` stores dynamic subscription
 | `seeded` | bool | Internal flag indicating row was created by seed script |
 | `tier` | string | Plan code snapshot at seed time |
 | `tenant_name` | string | Tenant display name snapshot |
+| `upgrade_trial` | object | Running upgrade trial (plan, base plan, `ends_at`, source); see upgrade-trials.md |
+| `scheduled_plan_change` | object | Plan switch waiting for `effective_at` (the next renewal date) |
+| `upgrade_trials_used` / `upgrade_trial_history` | []string / []object | Plans already tried; last 10 trials with outcome |
+| `last_invoice_plan_id` | string | Plan the last renewal invoice billed |
+| `plan_change_invoice_*` / `plan_change_payment_refs` | string / []string | Plan-change (price difference) invoice of the cycle and the ids that pay it |
+| `trial_lapsed_at` | RFC3339 | A signup trial expired unpaid |
 
 ## 18. Automatic collection (2026-09-28)
 
@@ -915,3 +927,33 @@ and `period_end`, and makes `support_plan_id` optional. The online migrator runs
 (the old unique `(tenant_subscription_id, cycle_number)` would reject the first charge of a second
 agreement). Charges created before agreements existed are linked to their tenant's STANDARD
 agreement by the first job run.
+
+## 20. Signup trial expiry, upgrade trials and scheduled plan changes (2026-10-27)
+
+### Signup trials now end
+
+Before this change a TRIAL subscription was never expired or invoiced: the expiry, grace and
+invoice jobs only looked at ACTIVE rows, so a lapsed trial kept full access. Now:
+
+- the invoice job raises the first invoice for a paid-plan trial 7 days before it ends, due on the
+  trial end (every trial path keeps `current_period_end` equal to `trial_ends_at`, including
+  `AssignPlanToTenant` with `startTrial`, fixed in the same change);
+- when the trial ends unpaid the expiry job sets `grace_until` (7 days) and emits `trial_ended`
+  (grace email); daily `grace_reminder` emails follow; then the subscription is EXPIRED and marked
+  `trial_lapsed_at`;
+- a trial on a free plan (price 0, or a custom price of 0) becomes ACTIVE for the next period, since
+  there is nothing to pay;
+- paying at any point renews as before and clears grace;
+- a trial on a one-time licence plan is not treated as a paid perpetual licence: it keeps trial
+  gating and its token carries an expiry; a licence bought through checkout is perpetual as before.
+
+Production had no TRIAL subscriptions when this shipped (7 subscriptions, all ACTIVE), so no live
+tenant entered grace on deploy.
+
+### Upgrade trials and upgrades at renewal
+
+A tenant can try a higher tier of its product free for the configured days (platform switch, per
+tenant override). Upgrades made before the current period ends, including the one after a trial,
+take effect on the next renewal date and that renewal is billed at the new price; the end of an
+upgrade trial has no grace. The full rules, configuration, billing, jobs, events and endpoints are
+in [upgrade-trials.md](upgrade-trials.md).

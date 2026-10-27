@@ -83,14 +83,13 @@ func (s *InvoiceService) headers() map[string]string {
 // SubscriptionCredit balance once the invoice is confirmed created — this function only
 // computes, it does not mutate the wallet).
 func (s *InvoiceService) buildLines(ctx context.Context, sub *ent.TenantSubscription) ([]map[string]any, float64, string, float64, error) {
-	if sub.Edges.Plan == nil {
-		plan, err := s.orm.TenantSubscription.QueryPlan(sub).Only(ctx)
-		if err != nil {
-			return nil, 0, "", 0, fmt.Errorf("load plan: %w", err)
-		}
-		sub.Edges.Plan = plan
+	// The renewal invoice bills the plan in force from current_period_end: a plan change
+	// scheduled for that renewal (an upgrade made mid-period or the upgrade after a trial) is
+	// billed from it, while plan_id still holds the plan in use until then.
+	plan, err := subscriptions.BillingPlanFor(ctx, s.orm, sub)
+	if err != nil {
+		return nil, 0, "", 0, err
 	}
-	plan := sub.Edges.Plan
 	currency := plan.Currency
 	if currency == "" {
 		currency = "KES"
@@ -291,9 +290,10 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 	}
 	customerEmail := billingEmail(sub)
 	now := time.Now().UTC()
+	billedPlanID := subscriptions.BillingPlanIDFor(sub)
 	planCode := ""
-	if sub.Edges.Plan != nil {
-		planCode = sub.Edges.Plan.PlanCode
+	if bp, perr := subscriptions.BillingPlanFor(ctx, s.orm, sub); perr == nil {
+		planCode = bp.PlanCode
 	}
 
 	// 1. Create the invoice under the PLATFORM tenant (issuer); customer = billed tenant.
@@ -396,6 +396,9 @@ func (s *InvoiceService) GenerateAndSend(ctx context.Context, sub *ent.TenantSub
 	meta[MetaLastInvoiceURL] = invoiceURL
 	meta["last_invoice_total"] = total
 	meta["last_invoice_currency"] = currency
+	// The plan this invoice billed, so a plan change scheduled after it went out can bill only
+	// the difference (ReconcileOpenRenewalInvoice).
+	meta[MetaLastInvoicePlanID] = billedPlanID.String()
 
 	tx, err := s.orm.Tx(ctx)
 	if err != nil {

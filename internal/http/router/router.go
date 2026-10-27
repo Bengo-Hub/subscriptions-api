@@ -162,6 +162,13 @@ func New(
 				r.Get("/overage", subscriptionHandler.GetOverage)
 				r.Post("/overage/enable", subscriptionHandler.EnableOverage)
 				r.Post("/overage/disable", subscriptionHandler.DisableOverage)
+				// Upgrade trials: a higher tier for the configured days, then the upgrade on the
+				// next renewal date. DELETE ends the trial and keeps the paid plan.
+				r.Get("/upgrade-trial", subscriptionHandler.GetUpgradeTrial)
+				r.Post("/upgrade-trial", subscriptionHandler.StartUpgradeTrial)
+				r.Delete("/upgrade-trial", subscriptionHandler.EndUpgradeTrial)
+				// Cancel a plan change waiting for the next renewal date.
+				r.Delete("/plan-change", subscriptionHandler.CancelPlanChange)
 			})
 
 			// Billing
@@ -341,6 +348,20 @@ func New(
 					// Support agreements: standard hosting and support plus special support
 					r.Get("/{tenant_id}/support-agreements", platformHandler.ListTenantSupportAgreements)
 					r.Post("/{tenant_id}/support-agreements", platformHandler.CreateTenantSupportAgreement)
+					// Upgrade trials: per-tenant override, grant, end; scheduled plan change override.
+					r.Get("/{tenant_id}/upgrade-trial", subscriptionHandler.AdminGetTenantUpgradeTrial)
+					r.Put("/{tenant_id}/upgrade-trial/policy", subscriptionHandler.AdminPutTenantUpgradeTrialPolicy)
+					r.Post("/{tenant_id}/upgrade-trial", subscriptionHandler.AdminStartUpgradeTrial)
+					r.Delete("/{tenant_id}/upgrade-trial", subscriptionHandler.AdminEndUpgradeTrial)
+					r.Post("/{tenant_id}/plan-change/apply", subscriptionHandler.AdminApplyPlanChange)
+					r.Delete("/{tenant_id}/plan-change", subscriptionHandler.AdminCancelPlanChange)
+				})
+
+				// Platform-wide upgrade trial switch and length.
+				r.Route("/admin/upgrade-trial", func(r chi.Router) {
+					r.Use(requirePlatformOwner)
+					r.Get("/settings", subscriptionHandler.GetUpgradeTrialSettings)
+					r.Put("/settings", subscriptionHandler.PutUpgradeTrialSettings)
 				})
 
 				r.Route("/admin/subscriptions", func(r chi.Router) {

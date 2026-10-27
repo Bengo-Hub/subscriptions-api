@@ -6,6 +6,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/ratelimitconfig"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -85,7 +86,8 @@ func (h *RateLimitHandler) GetEffectiveRateLimit(w http.ResponseWriter, r *http.
 			WithPlan().
 			Only(ctx)
 		if serr == nil && sub.Edges.Plan != nil {
-			if raw, ok := sub.Edges.Plan.TierLimitsJSON["api_requests_per_minute"]; ok {
+			limits, _ := subscriptions.EntitlementLimits(ctx, h.orm, sub)
+			if raw, ok := limits["api_requests_per_minute"]; ok {
 				if n, ok := toPositiveInt(raw); ok {
 					writeJSON(w, http.StatusOK, rateLimitResponse{
 						RequestsPerWindow: n,

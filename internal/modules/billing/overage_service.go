@@ -9,6 +9,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent/overagecharge"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/usageevent"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -65,12 +66,16 @@ func (s *OverageService) processSubscriptionOverages(
 	sub *ent.TenantSubscription,
 	periodDate, periodStart, periodEnd time.Time,
 ) error {
-	limits := sub.Edges.Plan.TierLimitsJSON
-
 	// Overage is only accrued for tenants that have opted in to extra usage, and only
 	// for the canonical metered throughput metrics (structural caps hard-block instead).
 	if !sub.AllowOverage {
 		return nil
+	}
+	// Overage counts only beyond the limits the tenant is entitled to: an upgrade trial's plan
+	// and product overlays raise them, exactly as on the token.
+	limits, err := subscriptions.EntitlementLimits(ctx, s.orm, sub)
+	if err != nil {
+		return err
 	}
 
 	for metricType, meta := range meteredMetrics {

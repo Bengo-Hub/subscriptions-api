@@ -484,6 +484,11 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 	// with a finite ~1-month current_period_end — it must inherit ONE_TIME and be perpetual.
 	cycle := subscriptions.ResolveAssignedCycle(body.BillingCycle, plan.BillingCycle)
 	periodEnd := subscriptions.ResolvePeriodEnd(now, string(cycle))
+	// A trial's period ends with the trial, like every other trial path (CreateSubscription,
+	// ExtendTrial): the trial invoice falls due and the expiry job lapses it on that date.
+	if trialEndsPtr != nil {
+		periodEnd = *trialEndsPtr
+	}
 
 	var sub interface{}
 	if existing != nil {
@@ -1291,6 +1296,10 @@ func (h *PlatformHandler) UpdateSubscription(w http.ResponseWriter, r *http.Requ
 			return
 		}
 		upd = upd.SetCurrentPeriodEnd(t)
+		// A plan change waiting for the old renewal date moves with it.
+		if meta, moved := subscriptions.WithScheduledChangeMoved(sub, t); moved {
+			upd = upd.SetMetadata(meta)
+		}
 	}
 
 	if body.Status != nil {

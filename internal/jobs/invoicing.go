@@ -2,8 +2,9 @@ package jobs
 
 import (
 	"context"
-	sharedcache "github.com/Bengo-Hub/cache"
 	"time"
+
+	sharedcache "github.com/Bengo-Hub/cache"
 
 	"go.uber.org/zap"
 
@@ -64,8 +65,10 @@ func generateUpcomingInvoices(ctx context.Context, log *zap.Logger, orm *ent.Cli
 	windowEnd := now.AddDate(0, 0, InvoiceLeadDays)
 
 	upcoming, err := orm.TenantSubscription.Query().
+		// A paid-plan trial is invoiced before it ends just like a period end: every trial path
+		// keeps current_period_end equal to trial_ends_at, so the due date is the trial end.
 		Where(
-			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
+			tenantsubscription.StatusIn(tenantsubscription.StatusACTIVE, tenantsubscription.StatusTRIAL),
 			tenantsubscription.CurrentPeriodEndLTE(windowEnd),
 			notPerpetual(), // one-time/perpetual licenses are invoiced once at purchase, never recurring
 		).

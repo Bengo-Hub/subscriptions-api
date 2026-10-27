@@ -544,6 +544,145 @@ definitions:
       min_plan_tier:
         type: integer
     type: object
+  subscriptions.ScheduledChangeInfo:
+    properties:
+      effective_at:
+        type: string
+      from_plan_code:
+        type: string
+      from_plan_name:
+        type: string
+      plan_code:
+        type: string
+      plan_name:
+        type: string
+      source:
+        type: string
+    type: object
+  subscriptions.SubscriptionResult:
+    properties:
+      access_status:
+        description: |-
+          AccessStatus is derived gating state for clients: "active" (full access),
+          "grace" (past period end but within the grace window — still accessible, pay soon),
+          or "blocked" (expired/cancelled/suspended). GraceEndsAt is set while in grace.
+        type: string
+      active_products:
+        description: |-
+          ActiveProducts is the product_code of every currently-active ProductSubscription — minted
+          into the JWT active_products claim so the app-switcher can show only activated apps
+          without an extra network call. See ActiveProductCodes.
+        items:
+          type: string
+        type: array
+      active_service_tags:
+        description: |-
+          ActiveServiceTags is the set of FeatureDefinition.service_tag values the tenant currently
+          has ANY entitlement in (main plan's own service_tag + the service_tag of every feature
+          code in Features, including product-overlay and TenantFeatureGrant additions), minted into
+          the JWT active_service_tags claim. This is coarser than Features: it answers "is this whole
+          module part of the tenant's plan at all" (e.g. "erp"), which a PowerSuite tenant below the
+          tier that unlocks its first ERP feature has none of — distinct from activeServiceTags()
+          below, which only looks at a plan's single primary service_tag and is wrong for a bundle.
+        items:
+          type: string
+        type: array
+      allow_overage:
+        description: |-
+          AllowOverage is the tenant's opt-in master switch for pay-as-you-go extra usage.
+          When true, metered throughput limits may be exceeded and the excess accrues as
+          OverageCharge billed on the next renewal.
+        type: boolean
+      billing_cycle:
+        description: |-
+          Scenario resolution — lets each service pick whichever plan scenario a tenant chose.
+          BillingCycle mirrors the plan (MONTHLY/QUARTERLY/ANNUAL/ONE_TIME).
+          BillingMode is the resolved scenario: "recurring" | "one_time" | "service_charge".
+          PlanType mirrors the plan's plan_type (TIERED/STANDALONE_SERVICE/BUNDLE/CUSTOM).
+          IsPerpetual is true for a paid ONE_TIME licence — non-expiring entitlement; auth
+          omits the JWT expiry for these so the subscription gate never blocks them.
+        type: string
+      billing_mode:
+        type: string
+      bundle_code:
+        type: string
+      cancel_reason:
+        type: string
+      cancelled_at:
+        type: string
+      current_period_end:
+        type: string
+      current_period_start:
+        type: string
+      exempt:
+        description: |-
+          Exempt is true for tenants the platform has exempted from subscriptions entirely
+          (platform/demo tenants + explicitly-flagged tenants). auth-api embeds this as the
+          JWT sub_exempt claim so every downstream service bypasses subscription gating.
+        type: boolean
+      facility_type:
+        description: |-
+          FacilityType is the resolved plan's presentation-only facility/use-case hint (e.g.
+          hospital-api's Afya family: "chemist" | "clinic" | "facility" | "hospital"), read from the
+          plan's Metadata JSON (see cmd/seed/plans_hospital.go's afyaTier.facilityType). Empty for
+          plan families that don't set it — callers must not assume it's always populated. Additive:
+          consumed by hospital-ui's adaptive sidebar (facility-nomenclature.ts) via this same
+          GET /subscription / GET /tenants/{id}/subscription response, no new endpoint needed.
+        type: string
+      features:
+        items:
+          type: string
+        type: array
+      grace_ends_at:
+        type: string
+      id:
+        type: string
+      is_perpetual:
+        type: boolean
+      limits:
+        additionalProperties:
+          type: integer
+        type: object
+      plan_code:
+        type: string
+      plan_name:
+        type: string
+      plan_type:
+        type: string
+      scheduled_change:
+        allOf:
+        - $ref: '#/definitions/subscriptions.ScheduledChangeInfo'
+        description: ScheduledChange is a plan switch waiting for the next renewal
+          date.
+      status:
+        type: string
+      support_fee_due_at:
+        type: string
+      support_fee_status:
+        description: |-
+          SupportFeeStatus/SupportFeeDueAt reflect the tenant's CURRENT SupportFeeCycle (perpetual/
+          one-time-license tenants only — see internal/ent/schema/support_fee_cycle.go). Empty/nil
+          when the tenant has no support-fee obligation at all. Minted into the JWT
+          support_fee_status/support_fee_due_at claims for RequireSupportFeeCurrentForMutations.
+        type: string
+      tenant_id:
+        type: string
+      tier_order:
+        description: |-
+          TierOrder is the resolved plan's tier rank (1=Starter, 2=Growth, 3=Professional; higher
+          for licenses). Lets clients gate by tier: a feature whose cheapest unlocking plan is at
+          tier ≤ TierOrder (same family) is unlocked, so the upgrade wrapper never shows for
+          at/below-tier features. 0 for exempt/demo (always unlocked anyway).
+        type: integer
+      trial_ends_at:
+        type: string
+      upgrade_trial:
+        allOf:
+        - $ref: '#/definitions/subscriptions.UpgradeTrialInfo'
+        description: |-
+          UpgradeTrial is set while a trial of a higher tier runs. PlanCode/TierOrder/Features/Limits
+          then describe the trial plan; UpgradeTrial.BasePlanCode is the plan the tenant pays for.
+    type: object
   subscriptions.SupportAgreementInput:
     properties:
       amount:
@@ -588,6 +727,106 @@ definitions:
         type: string
       status:
         type: string
+    type: object
+  subscriptions.UpgradeTrialEligibility:
+    properties:
+      days:
+        type: integer
+      eligible:
+        type: boolean
+      ends_at:
+        type: string
+      message:
+        type: string
+      plan_code:
+        type: string
+      plan_name:
+        type: string
+      reason:
+        type: string
+      upgrade_at:
+        description: UpgradeAt is the renewal date the upgrade would take effect after
+          the trial.
+        type: string
+    type: object
+  subscriptions.UpgradeTrialInfo:
+    properties:
+      base_plan_code:
+        type: string
+      base_plan_name:
+        type: string
+      days_remaining:
+        type: integer
+      ends_at:
+        type: string
+      plan_code:
+        type: string
+      plan_name:
+        type: string
+      source:
+        type: string
+      started_at:
+        type: string
+      tier_order:
+        type: integer
+    type: object
+  subscriptions.UpgradeTrialPolicy:
+    properties:
+      days:
+        type: integer
+      days_source:
+        type: string
+      enabled:
+        type: boolean
+      enabled_source:
+        type: string
+      max_days:
+        type: integer
+      platform:
+        $ref: '#/definitions/subscriptions.UpgradeTrialSetting'
+      tenant:
+        $ref: '#/definitions/subscriptions.UpgradeTrialSetting'
+    type: object
+  subscriptions.UpgradeTrialRecord:
+    properties:
+      base_plan_code:
+        type: string
+      ended_at:
+        type: string
+      outcome:
+        type: string
+      plan_code:
+        type: string
+      started_at:
+        type: string
+    type: object
+  subscriptions.UpgradeTrialSetting:
+    properties:
+      days:
+        type: integer
+      enabled:
+        type: boolean
+      updated_at:
+        type: string
+    type: object
+  subscriptions.UpgradeTrialStatus:
+    properties:
+      active:
+        $ref: '#/definitions/subscriptions.UpgradeTrialInfo'
+      eligibility:
+        $ref: '#/definitions/subscriptions.UpgradeTrialEligibility'
+      history:
+        items:
+          $ref: '#/definitions/subscriptions.UpgradeTrialRecord'
+        type: array
+      policy:
+        $ref: '#/definitions/subscriptions.UpgradeTrialPolicy'
+      scheduled_change:
+        $ref: '#/definitions/subscriptions.ScheduledChangeInfo'
+      used:
+        items:
+          type: string
+        type: array
     type: object
 host: pricingapi.codevertexafrica.com
 info:
@@ -1378,6 +1617,60 @@ paths:
       summary: Revoke a tenant's add-on feature grant (platform admin)
       tags:
       - Platform
+  /admin/tenants/{tenant_id}/plan-change:
+    delete:
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.SubscriptionResult'
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Cancel a tenant's scheduled plan change (admin)
+      tags:
+      - Platform
+  /admin/tenants/{tenant_id}/plan-change/apply:
+    post:
+      description: Moves the tenant to the scheduled plan today instead of on the
+        renewal date.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.SubscriptionResult'
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Apply a scheduled plan change now (admin)
+      tags:
+      - Platform
   /admin/tenants/{tenant_id}/products:
     get:
       description: Returns the product subscriptions attached to the tenant's main
@@ -1668,6 +1961,178 @@ paths:
       security:
       - BearerAuth: []
       summary: Create a support agreement for a tenant (admin)
+      tags:
+      - Platform
+  /admin/tenants/{tenant_id}/upgrade-trial:
+    delete:
+      description: Ends the running trial now; the tenant stays on its paid plan.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.SubscriptionResult'
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: End a tenant's upgrade trial (admin)
+      tags:
+      - Platform
+    get:
+      description: |-
+        The tenant's policy with both levels, running trial, scheduled change, history and,
+        with plan_code, eligibility as the platform owner would grant it.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      - description: Plan to check
+        in: query
+        name: plan_code
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.UpgradeTrialStatus'
+      security:
+      - BearerAuth: []
+      summary: Tenant upgrade trial status (admin)
+      tags:
+      - Platform
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Starts a trial of plan_code for the tenant, regardless of the policy switch or an
+        earlier trial of the same plan. days (1 to 90) overrides the configured length.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      - description: '{plan_code, days}'
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.SubscriptionResult'
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Grant an upgrade trial (admin)
+      tags:
+      - Platform
+  /admin/tenants/{tenant_id}/upgrade-trial/policy:
+    put:
+      consumes:
+      - application/json
+      description: |-
+        enabled and days override the platform setting for this tenant; null (or absent)
+        removes that override so the tenant follows the platform setting.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      - description: '{enabled: bool|null, days: int|null}'
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.UpgradeTrialPolicy'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Set a tenant's upgrade trial override (admin)
+      tags:
+      - Platform
+  /admin/upgrade-trial/settings:
+    get:
+      description: The platform-wide upgrade trial switch and length (platform owner).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.UpgradeTrialPolicy'
+      security:
+      - BearerAuth: []
+      summary: Platform upgrade trial settings
+      tags:
+      - Platform
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Turns upgrade trials on or off for every tenant without its own setting, and sets
+        the default trial length in days (1 to 90). Platform owner.
+      parameters:
+      - description: '{enabled, days}'
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.UpgradeTrialPolicy'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Set platform upgrade trial settings
       tags:
       - Platform
   /billing:
@@ -2589,7 +3054,10 @@ paths:
     put:
       consumes:
       - application/json
-      description: Upgrades or downgrades the tenant's subscription plan
+      description: |-
+        Moves the tenant to another plan. A tenant's move to a dearer plan is scheduled for
+        the next renewal date (the renewal invoice bills it); a move to a plan costing the
+        same or less applies at once. The platform owner's change always applies at once.
       produces:
       - application/json
       responses:
@@ -2607,6 +3075,27 @@ paths:
       security:
       - BearerAuth: []
       summary: Change subscription plan
+      tags:
+      - Subscriptions
+  /subscription/plan-change:
+    delete:
+      description: Drops the plan change waiting for the next renewal date.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.SubscriptionResult'
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Cancel the scheduled plan change
       tags:
       - Subscriptions
   /subscription/referral-code:
@@ -2739,6 +3228,81 @@ paths:
         authorising
       tags:
       - Billing
+  /subscription/upgrade-trial:
+    delete:
+      description: |-
+        Ends the trial now. The tenant stays on the plan it pays for and the upgrade the
+        trial scheduled is cancelled.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.SubscriptionResult'
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: End the running upgrade trial
+      tags:
+      - Subscriptions
+    get:
+      description: |-
+        Whether upgrade trials are on for the tenant, any running trial or scheduled plan
+        change, past trials and, with plan_code, whether a trial of that plan can start.
+      parameters:
+      - description: Plan to check eligibility for
+        in: query
+        name: plan_code
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.UpgradeTrialStatus'
+      security:
+      - BearerAuth: []
+      summary: Upgrade trial status
+      tags:
+      - Subscriptions
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Gives the tenant a higher tier of its current product for the configured number of
+        days and schedules the upgrade for the first renewal date after the trial ends.
+      parameters:
+      - description: '{plan_code}'
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.SubscriptionResult'
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Start an upgrade trial
+      tags:
+      - Subscriptions
   /subscriptions/expiring:
     get:
       description: Returns subscriptions expiring within the specified number of days.

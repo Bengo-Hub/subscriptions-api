@@ -2,8 +2,9 @@ package jobs
 
 import (
 	"context"
-	sharedcache "github.com/Bengo-Hub/cache"
 	"time"
+
+	sharedcache "github.com/Bengo-Hub/cache"
 
 	"go.uber.org/zap"
 
@@ -22,8 +23,36 @@ func notPerpetual() predicate.TenantSubscription {
 	return tenantsubscription.Not(tenantsubscription.HasPlanWith(subscriptionplan.BillingCycleEQ("ONE_TIME")))
 }
 
+// lapsedPaidOrTrial matches subscriptions whose paid time or trial has run out: ACTIVE past
+// current_period_end (never a perpetual licence), or TRIAL past trial_ends_at / period end.
+func lapsedPaidOrTrial(now time.Time) predicate.TenantSubscription {
+	return tenantsubscription.Or(
+		tenantsubscription.And(
+			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
+			tenantsubscription.CurrentPeriodEndLT(now),
+			notPerpetual(),
+		),
+		tenantsubscription.And(
+			tenantsubscription.StatusEQ(tenantsubscription.StatusTRIAL),
+			tenantsubscription.Or(
+				tenantsubscription.CurrentPeriodEndLT(now),
+				tenantsubscription.TrialEndsAtLT(now),
+			),
+		),
+	)
+}
+
+// lapsedAt is when a subscription's paid time or trial ran out.
+func lapsedAt(sub *ent.TenantSubscription) time.Time {
+	if sub.Status == tenantsubscription.StatusTRIAL && sub.TrialEndsAt != nil && sub.TrialEndsAt.Before(sub.CurrentPeriodEnd) {
+		return sub.TrialEndsAt.UTC()
+	}
+	return sub.CurrentPeriodEnd.UTC()
+}
+
 // StartRenewalJob runs two background goroutines:
-//   - Expiry: marks ACTIVE subscriptions past current_period_end as EXPIRED (runs every hour)
+//   - Expiry: ACTIVE subscriptions past current_period_end and TRIAL subscriptions past their
+//     trial end get GraceDays of grace, then EXPIRED (runs every hour)
 //   - Renewal: extends free plans and charges a saved card for paid ones expiring within 24h
 //     (runs every hour, offset 30m)
 func StartRenewalJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, invSvc *billing.InvoiceService) {
@@ -83,9 +112,10 @@ func runRenewalJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *s
 const GraceDays = 7
 
 // expireSubscriptions runs the grace lifecycle for ACTIVE subscriptions past their period
-// end. First pass: enter a GraceDays grace window (keep ACTIVE, set metadata.grace_until,
-// notify). Second pass: once grace_until elapses, mark EXPIRED (total block). Paying clears
-// grace via RenewSubscription.
+// end and TRIAL subscriptions past their trial end. First pass: enter a GraceDays grace window
+// (status unchanged, set metadata.grace_until, notify). Second pass: once grace_until elapses,
+// mark EXPIRED (total block). Paying clears grace via RenewSubscription. A trial on a free plan
+// simply becomes ACTIVE: there is nothing to pay.
 func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service) {
 	// Runs on every replica's ticker; only the first replica in each period does the work.
 	if !sharedcache.ClaimPeriod(ctx, "subscriptions:expiry", time.Hour) {
@@ -94,11 +124,8 @@ func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, 
 	now := time.Now().UTC()
 
 	pastDue, err := orm.TenantSubscription.Query().
-		Where(
-			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
-			tenantsubscription.CurrentPeriodEndLT(now),
-			notPerpetual(), // never expire a paid one-time/perpetual license
-		).
+		Where(lapsedPaidOrTrial(now)).
+		WithPlan().
 		All(ctx)
 	if err != nil {
 		log.Error("expiry job: failed to query subscriptions", zap.Error(err))
@@ -107,11 +134,16 @@ func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, 
 
 	graceStarted, expiredCount := 0, 0
 	for _, sub := range pastDue {
+		isTrial := sub.Status == tenantsubscription.StatusTRIAL
+		if isTrial && sub.Edges.Plan != nil && subscriptions.EffectivePrice(sub, sub.Edges.Plan) == 0 {
+			activateFreeTrial(ctx, log, orm, svc, sub)
+			continue
+		}
 		graceUntil, inGrace := graceUntilOf(sub)
 
 		if !inGrace {
-			// Enter grace: keep ACTIVE, set grace_until, notify tenant.
-			gu := sub.CurrentPeriodEnd.UTC().AddDate(0, 0, GraceDays)
+			// Enter grace: keep the status, set grace_until, notify tenant.
+			gu := lapsedAt(sub).AddDate(0, 0, GraceDays)
 			meta := mergeMeta(sub.Metadata, map[string]any{"grace_until": gu.Format(time.RFC3339)})
 			tx, err := orm.Tx(ctx)
 			if err != nil {
@@ -123,7 +155,15 @@ func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, 
 				log.Error("expiry job: failed to enter grace", zap.String("sub_id", sub.ID.String()), zap.Error(err))
 				continue
 			}
-			svc.WriteOutboxEventPublic(ctx, tx, sub.TenantID, "subscription", sub.ID, "grace_started", graceEventPayload(sub, gu, now))
+			event, payload := "grace_started", graceEventPayload(sub, gu, now)
+			if isTrial {
+				event = "trial_ended"
+				if sub.Edges.Plan != nil {
+					payload["plan_code"] = sub.Edges.Plan.PlanCode
+					payload["plan_name"] = sub.Edges.Plan.Name
+				}
+			}
+			svc.WriteOutboxEventPublic(ctx, tx, sub.TenantID, "subscription", sub.ID, event, payload)
 			if err := tx.Commit(); err != nil {
 				log.Error("expiry job: grace commit failed", zap.String("sub_id", sub.ID.String()), zap.Error(err))
 				continue
@@ -143,9 +183,12 @@ func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, 
 			log.Error("expiry job: tx start failed", zap.String("sub_id", sub.ID.String()), zap.Error(err))
 			continue
 		}
-		updated, err := tx.TenantSubscription.UpdateOneID(sub.ID).
-			SetStatus(tenantsubscription.StatusEXPIRED).
-			Save(ctx)
+		expire := tx.TenantSubscription.UpdateOneID(sub.ID).SetStatus(tenantsubscription.StatusEXPIRED)
+		if isTrial {
+			// A lapsed trial is not a paid licence (see buildResult's one-time handling).
+			expire.SetMetadata(mergeMeta(sub.Metadata, map[string]any{subscriptions.MetaTrialLapsedAt: now.Format(time.RFC3339)}))
+		}
+		updated, err := expire.Save(ctx)
 		if err != nil {
 			_ = tx.Rollback()
 			log.Error("expiry job: failed to expire subscription", zap.String("sub_id", sub.ID.String()), zap.Error(err))
@@ -220,6 +263,39 @@ func initiateRenewals(ctx context.Context, log *zap.Logger, orm *ent.Client, svc
 	if len(upcoming) > 0 {
 		log.Info("renewal job: processed", zap.Int("count", len(upcoming)))
 	}
+}
+
+// activateFreeTrial turns a lapsed trial on a free plan (or one waived to 0) into an ACTIVE
+// subscription for the next period: there is nothing to invoice, so no grace applies.
+func activateFreeTrial(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, sub *ent.TenantSubscription) {
+	start := lapsedAt(sub)
+	end := subscriptions.ResolvePeriodEnd(start, string(sub.BillingCycle))
+	tx, err := orm.Tx(ctx)
+	if err != nil {
+		log.Error("expiry job: tx start failed for free trial", zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
+		return
+	}
+	updated, err := tx.TenantSubscription.UpdateOneID(sub.ID).
+		SetStatus(tenantsubscription.StatusACTIVE).
+		ClearTrialEndsAt().
+		SetCurrentPeriodStart(start).
+		SetCurrentPeriodEnd(end).
+		Save(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		log.Error("expiry job: failed to activate free trial", zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
+		return
+	}
+	svc.WriteOutboxEventPublic(ctx, tx, updated.TenantID, "subscription", updated.ID, "renewed", map[string]any{
+		"tenant_id":      updated.TenantID.String(),
+		"free_plan":      true,
+		"new_period_end": end.Format(time.RFC3339),
+	})
+	if err := tx.Commit(); err != nil {
+		log.Error("expiry job: commit failed for free trial", zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
+		return
+	}
+	log.Info("expiry job: free plan trial became active", zap.String("tenant_id", updated.TenantID.String()))
 }
 
 func extendFreePlan(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, sub *ent.TenantSubscription) {

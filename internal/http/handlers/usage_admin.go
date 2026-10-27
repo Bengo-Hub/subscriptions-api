@@ -10,6 +10,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -76,9 +77,7 @@ func (h *UsageAdminHandler) GetTenantUsage(w http.ResponseWriter, r *http.Reques
 		if serr == nil {
 			periodStart = sub.CurrentPeriodStart
 			periodEnd = sub.CurrentPeriodEnd
-			if sub.Edges.Plan != nil && sub.Edges.Plan.TierLimitsJSON != nil {
-				planLimits = sub.Edges.Plan.TierLimitsJSON
-			}
+			planLimits, _ = subscriptions.EntitlementLimits(ctx, h.orm, sub)
 		}
 	}
 

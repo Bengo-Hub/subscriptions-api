@@ -12,6 +12,7 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -299,10 +300,9 @@ func (h *UsageHandler) GetUsageSummary(w http.ResponseWriter, r *http.Request) {
 			periodEnd = sub.CurrentPeriodEnd
 			if sub.Edges.Plan != nil {
 				planName = sub.Edges.Plan.Name
-				if sub.Edges.Plan.TierLimitsJSON != nil {
-					planLimits = sub.Edges.Plan.TierLimitsJSON
-				}
 			}
+			// Same composite limits as the token (upgrade trial + product overlays).
+			planLimits, _ = subscriptions.EntitlementLimits(ctx, h.orm, sub)
 		}
 	}
 
@@ -454,9 +454,7 @@ func (h *UsageHandler) GetUsageDashboard(w http.ResponseWriter, r *http.Request)
 		if serr == nil {
 			periodStart = sub.CurrentPeriodStart
 			periodEnd = sub.CurrentPeriodEnd
-			if sub.Edges.Plan != nil && sub.Edges.Plan.TierLimitsJSON != nil {
-				planLimits = sub.Edges.Plan.TierLimitsJSON
-			}
+			planLimits, _ = subscriptions.EntitlementLimits(ctx, h.orm, sub)
 		}
 	}
 

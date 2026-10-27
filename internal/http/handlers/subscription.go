@@ -41,6 +41,22 @@ func NewSubscriptionHandler(log *zap.Logger, client *ent.Client, db *pgxpool.Poo
 	}
 }
 
+// bodyTenantAllowed reports whether a request may act on bodyID taken from its JSON body. Only
+// service callers and the platform owner may name another tenant; everyone else acts on the
+// tenant the gateway resolved for them (header/JWT, mismatches already refused by httpware).
+func bodyTenantAllowed(r *http.Request, bodyID uuid.UUID) bool {
+	if bodyID == uuid.Nil {
+		return true
+	}
+	if claims, ok := authclient.ClaimsFromContext(r.Context()); ok && claims != nil {
+		if claims.IsService || claims.IsPlatformOwner {
+			return true
+		}
+		return claims.TenantID == bodyID.String()
+	}
+	return httpware.IsPlatformOwner(r.Context())
+}
+
 // Get godoc
 // @Summary Get current subscription
 // @Description Returns the current tenant's subscription with plan details
@@ -130,6 +146,10 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
+	if !bodyTenantAllowed(r, in.TenantID) {
+		h.respondWithError(w, http.StatusForbidden, "not authorized for this tenant")
+		return
+	}
 	if in.TenantID == uuid.Nil {
 		if tenantIDStr := resolveTenantID(r); tenantIDStr != "" {
 			in.TenantID, _ = uuid.Parse(tenantIDStr)
@@ -181,10 +201,11 @@ func (h *SubscriptionHandler) GetTerms(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ChangePlan upgrades or downgrades the subscription.
 // ChangePlan godoc
 // @Summary Change subscription plan
-// @Description Upgrades or downgrades the tenant's subscription plan
+// @Description Moves the tenant to another plan. A tenant's move to a dearer plan is scheduled for
+// @Description the next renewal date (the renewal invoice bills it); a move to a plan costing the
+// @Description same or less applies at once. The platform owner's change always applies at once.
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
@@ -200,6 +221,10 @@ func (h *SubscriptionHandler) ChangePlan(w http.ResponseWriter, r *http.Request)
 	}
 
 	ctx := r.Context()
+	if !bodyTenantAllowed(r, in.TenantID) {
+		h.respondWithError(w, http.StatusForbidden, "not authorized for this tenant")
+		return
+	}
 	if in.TenantID == uuid.Nil {
 		if tenantIDStr := resolveTenantID(r); tenantIDStr != "" {
 			in.TenantID, _ = uuid.Parse(tenantIDStr)
@@ -211,14 +236,16 @@ func (h *SubscriptionHandler) ChangePlan(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	in.ByPlatform = httpware.IsPlatformOwner(ctx)
+	in.RequestedBy = actingUserID(r)
 	sub, err := h.service.ChangePlan(ctx, in)
 	if err != nil {
 		if subscriptions.IsExemptErr(err) {
 			h.respondWithJSON(w, http.StatusOK, demoBypasResponse(in.TenantID.String()))
 			return
 		}
-		h.log.Error("failed to change plan", zap.Error(err))
-		h.respondWithError(w, http.StatusInternalServerError, err.Error())
+		h.log.Warn("failed to change plan", zap.String("tenant_id", in.TenantID.String()), zap.Error(err))
+		h.respondPlanScheduleError(w, in.TenantID, err)
 		return
 	}
 
@@ -248,6 +275,10 @@ func (h *SubscriptionHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
+	if !bodyTenantAllowed(r, in.TenantID) {
+		h.respondWithError(w, http.StatusForbidden, "not authorized for this tenant")
+		return
+	}
 	if in.TenantID == uuid.Nil {
 		if tenantIDStr := resolveTenantID(r); tenantIDStr != "" {
 			in.TenantID, _ = uuid.Parse(tenantIDStr)
@@ -495,9 +526,14 @@ func (h *SubscriptionHandler) GetEntitledServices(w http.ResponseWriter, r *http
 	})
 }
 
-// SwitchPlan changes the plan for a subscription identified by its ID.
+// SwitchPlan changes the plan for a subscription identified by its ID, at once. Platform owner
+// only: the id names any tenant's subscription and the change skips checkout.
 // PUT /api/v1/subscriptions/{id}/switch-plan
 func (h *SubscriptionHandler) SwitchPlan(w http.ResponseWriter, r *http.Request) {
+	if !httpware.IsPlatformOwner(r.Context()) {
+		h.respondWithError(w, http.StatusForbidden, "forbidden")
+		return
+	}
 	subIDStr := chi.URLParam(r, "id")
 	if subIDStr == "" {
 		h.respondWithError(w, http.StatusBadRequest, "subscription id required")

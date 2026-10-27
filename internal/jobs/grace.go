@@ -3,17 +3,29 @@ package jobs
 import (
 	"context"
 	"fmt"
-	sharedcache "github.com/Bengo-Hub/cache"
 	"math"
 	"time"
+
+	entsql "entgo.io/ent/dialect/sql"
+
+	"entgo.io/ent/dialect/sql/sqljson"
+	sharedcache "github.com/Bengo-Hub/cache"
 
 	"go.uber.org/zap"
 
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/predicate"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/billing"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 )
+
+// hasGraceUntil matches subscriptions carrying a grace deadline.
+func hasGraceUntil() predicate.TenantSubscription {
+	return func(sel *entsql.Selector) {
+		sel.Where(sqljson.HasKey(sel.C(tenantsubscription.FieldMetadata), sqljson.Path("grace_until")))
+	}
+}
 
 // graceUntilOf returns the grace deadline stored in subscription metadata, if any.
 func graceUntilOf(sub *ent.TenantSubscription) (time.Time, bool) {
@@ -112,13 +124,10 @@ func sendGraceReminders(ctx context.Context, log *zap.Logger, orm *ent.Client, s
 	now := time.Now().UTC()
 	today := now.Format("2006-01-02")
 
-	// Candidates: ACTIVE subs past period end (in grace). Grace state lives in metadata,
-	// so filter precisely in Go.
+	// Candidates: lapsed ACTIVE or TRIAL subs that entered grace. The grace deadline lives in
+	// metadata, so the exact window is checked in Go.
 	subs, err := orm.TenantSubscription.Query().
-		Where(
-			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
-			tenantsubscription.CurrentPeriodEndLT(now),
-		).
+		Where(lapsedPaidOrTrial(now), hasGraceUntil()).
 		WithTenant().
 		All(ctx)
 	if err != nil {

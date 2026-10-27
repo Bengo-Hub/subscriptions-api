@@ -28,6 +28,20 @@ func seedServiceConfigs(ctx context.Context, tx *ent.Tx) error {
 			configType:  "int",
 			description: "Default number of trial days for new subscriptions",
 		},
+		// Upgrade trials ship switched off; the platform owner turns them on (for everyone or
+		// per tenant) from the admin UI. Keys match subscriptions.UpgradeTrial*ConfigKey.
+		{
+			configKey:   "subscriptions.upgrade_trial_enabled",
+			configValue: "false",
+			configType:  "bool",
+			description: "Whether tenants can start a free trial of a higher plan tier before paying for it",
+		},
+		{
+			configKey:   "subscriptions.upgrade_trial_days",
+			configValue: "14",
+			configType:  "int",
+			description: "Length in days of a free trial of a higher plan tier",
+		},
 		{
 			configKey:   "subscriptions.max_plans_per_tenant",
 			configValue: "1",

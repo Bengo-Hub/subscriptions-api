@@ -31,6 +31,11 @@ type Service struct {
 	// It is exempt from subscriptions alongside the demo/codevertex tenants. See exemption.go.
 	platformTenantID uuid.UUID
 	addonResolver    AddonResolver
+	// uiBaseURL is the subscriptions UI origin for links in tenant emails (SetUIBaseURL).
+	uiBaseURL string
+	// reissueRenewalInvoice voids and reissues an open renewal invoice whose plan changed
+	// (SetRenewalInvoiceReissuer).
+	reissueRenewalInvoice func(ctx context.Context, tenantID uuid.UUID)
 }
 
 // SetAddonResolver registers the credit add-on pricer used at checkout.
@@ -80,6 +85,10 @@ type ChangePlanInput struct {
 	// BillingCycle optionally switches the billing period with the plan change
 	// (MONTHLY/SEMI_ANNUAL/ANNUAL); empty keeps the current cycle.
 	BillingCycle string `json:"billing_cycle,omitempty"`
+	// ByPlatform is set by the handler for the platform owner, whose change applies at once.
+	ByPlatform bool `json:"-"`
+	// RequestedBy is the acting user id, kept on a scheduled change for audit.
+	RequestedBy string `json:"-"`
 }
 
 // CancelInput defines the payload for cancellation.
@@ -212,6 +221,11 @@ type SubscriptionResult struct {
 	// support_fee_status/support_fee_due_at claims for RequireSupportFeeCurrentForMutations.
 	SupportFeeStatus string     `json:"support_fee_status,omitempty"`
 	SupportFeeDueAt  *time.Time `json:"support_fee_due_at,omitempty"`
+	// UpgradeTrial is set while a trial of a higher tier runs. PlanCode/TierOrder/Features/Limits
+	// then describe the trial plan; UpgradeTrial.BasePlanCode is the plan the tenant pays for.
+	UpgradeTrial *UpgradeTrialInfo `json:"upgrade_trial,omitempty"`
+	// ScheduledChange is a plan switch waiting for the next renewal date.
+	ScheduledChange *ScheduledChangeInfo `json:"scheduled_change,omitempty"`
 }
 
 // --- State machine ---
@@ -637,7 +651,9 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 	return s.buildResult(sub, plan), nil
 }
 
-// ChangePlan upgrades or downgrades a tenant's subscription plan.
+// ChangePlan moves a tenant to another plan. The platform owner's change applies at once. A
+// tenant's own move to a dearer plan waits for the next renewal date and the renewal invoice
+// bills the new plan; a move to a plan costing the same or less applies at once.
 func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*SubscriptionResult, error) {
 	// Demo + platform-owner tenants never own a subscription record.
 	if err := s.guardExempt(ctx, in.TenantID); err != nil {
@@ -650,19 +666,15 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 	}
 
 	// Only ACTIVE or TRIAL subscriptions can change plans
-	if sub.Status != tenantsubscription.StatusACTIVE && sub.Status != tenantsubscription.StatusTRIAL {
+	if !grantsAccess(sub.Status) {
 		return nil, fmt.Errorf("cannot change plan in %s status", sub.Status)
 	}
 
-	// Lookup new plan
 	newPlan, err := s.client.SubscriptionPlan.Query().
 		Where(
 			subscriptionplan.PlanCodeEQ(in.NewPlanCode),
 			subscriptionplan.IsActiveEQ(true),
 		).
-		WithFeatures(func(q *ent.PlanFeatureQuery) {
-			q.Where(planfeature.IsIncludedEQ(true))
-		}).
 		Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -670,20 +682,53 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 		}
 		return nil, fmt.Errorf("lookup plan: %w", err)
 	}
+	oldPlan, err := s.client.SubscriptionPlan.Get(ctx, sub.PlanID)
+	if err != nil {
+		return nil, fmt.Errorf("lookup current plan: %w", err)
+	}
 
-	oldPlanID := sub.PlanID
+	cycle, err := NormalizeBillingCycle(in.BillingCycle)
+	if err != nil {
+		return nil, err
+	}
+	if newPlan.ID == oldPlan.ID && cycle == "" {
+		return nil, fmt.Errorf("the subscription is already on %s", newPlan.Name)
+	}
 
-	// Load old plan for proration calculation
-	oldPlan, _ := s.client.SubscriptionPlan.Get(ctx, oldPlanID)
-
-	// Calculate proration credit for mid-cycle upgrade
-	var prorationCredit float64
-	if oldPlan != nil && oldPlan.BasePrice > 0 && sub.CurrentPeriodEnd.After(time.Now().UTC()) {
-		totalDays := sub.CurrentPeriodEnd.Sub(sub.CurrentPeriodStart).Hours() / 24
-		remainingDays := sub.CurrentPeriodEnd.Sub(time.Now().UTC()).Hours() / 24
-		if totalDays > 0 {
-			prorationCredit = oldPlan.BasePrice * (remainingDays / totalDays)
+	if !in.ByPlatform {
+		// Self-serve rules: hidden plans (eligibility-gated tiers) stay admin-only, and one-time
+		// licences are bought through checkout.
+		if !newPlan.IsPublic {
+			return nil, fmt.Errorf("plan not found: %s", in.NewPlanCode)
 		}
+		if oldPlan.BillingCycle == "ONE_TIME" || newPlan.BillingCycle == "ONE_TIME" {
+			return nil, fmt.Errorf("one-time licences are bought through checkout")
+		}
+		if newPlan.BasePrice > oldPlan.BasePrice {
+			if sub.CurrentPeriodEnd.Before(time.Now().UTC()) {
+				return nil, fmt.Errorf("pay the outstanding subscription invoice before upgrading")
+			}
+			if cycle != "" && cycle != sub.BillingCycle {
+				if _, err := s.UpdateBillingCycle(ctx, in.TenantID, string(cycle)); err != nil {
+					return nil, err
+				}
+				if sub, err = s.getSubscription(ctx, in.TenantID); err != nil {
+					return nil, err
+				}
+			}
+			if err := s.schedulePlanChange(ctx, sub, oldPlan, newPlan, sub.CurrentPeriodEnd, ChangeSourceTenant, in.RequestedBy); err != nil {
+				return nil, err
+			}
+			return s.GetSubscriptionResult(ctx, in.TenantID)
+		}
+	}
+
+	now := time.Now().UTC()
+	metadata := cloneMetadata(sub.Metadata)
+	// The move replaces whatever was waiting: a scheduled change and any running trial.
+	delete(metadata, MetaScheduledPlanChange)
+	if t, ok := upgradeTrialOf(sub); ok {
+		metadata = withTrialClosed(metadata, t, TrialOutcomePlanChanged, now)
 	}
 
 	tx, err := s.client.Tx(ctx)
@@ -696,86 +741,34 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 		}
 	}()
 
-	// Store proration credit in metadata for next renewal
-	metadata := sub.Metadata
-	if metadata == nil {
-		metadata = map[string]any{}
-	}
-	if prorationCredit > 0 && newPlan.TierOrder > 0 && oldPlan != nil && newPlan.TierOrder > oldPlan.TierOrder {
-		// Upgrade: store credit balance to reduce next renewal charge
-		metadata["proration_credit"] = prorationCredit
-		metadata["proration_credit_expires"] = sub.CurrentPeriodEnd.Format(time.RFC3339)
-	} else if oldPlan != nil && newPlan.TierOrder < oldPlan.TierOrder {
-		// Downgrade: credit carries to next renewal, clear any existing upgrade credit
-		metadata["proration_credit"] = 0
-	}
-
-	update := tx.TenantSubscription.UpdateOneID(sub.ID).
-		SetPlanID(newPlan.ID).
-		SetStatus(tenantsubscription.StatusACTIVE)
+	update := tx.TenantSubscription.UpdateOneID(sub.ID).SetPlanID(newPlan.ID)
 
 	// Optional billing-period switch alongside the plan change (effective next renewal).
 	// A >= 6-month period waives the still-uncharged one-time setup fee (audit in metadata).
-	if c, cerr := NormalizeBillingCycle(in.BillingCycle); cerr != nil {
-		return nil, cerr
-	} else if c != "" && c != tenantsubscription.BillingCycleONE_TIME {
-		update.SetBillingCycle(c)
-		if sub.SetupFeeChargedAt == nil && sub.SetupFeeAmount > 0 && CycleWaivesSetupFee(string(c)) {
+	if cycle != "" && cycle != tenantsubscription.BillingCycleONE_TIME {
+		update.SetBillingCycle(cycle)
+		if sub.SetupFeeChargedAt == nil && sub.SetupFeeAmount > 0 && CycleWaivesSetupFee(string(cycle)) {
 			metadata[MetaSetupFeeWaived] = true
 			metadata[MetaSetupFeeWaivedAmount] = sub.SetupFeeAmount
-			metadata[MetaSetupFeeWaiverReason] = SetupFeeWaiverReason(string(c))
+			metadata[MetaSetupFeeWaiverReason] = SetupFeeWaiverReason(string(cycle))
 			update.SetSetupFeeAmount(0)
 		}
 	}
 
-	sub, err = update.SetMetadata(metadata).Save(ctx)
+	updated, err := update.SetMetadata(metadata).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("update subscription plan: %w", err)
 	}
-
-	// Determine if upgrade or downgrade (reuse oldPlan already loaded for proration)
-	direction := "changed"
-	if newPlan.TierOrder > 0 && oldPlan != nil {
-		if newPlan.TierOrder > oldPlan.TierOrder {
-			direction = "upgraded"
-		} else if newPlan.TierOrder < oldPlan.TierOrder {
-			direction = "downgraded"
-		}
+	if newPlan.ID != oldPlan.ID {
+		s.emitPlanChanged(ctx, tx, updated, oldPlan, newPlan)
 	}
-
-	// Include tenant_slug so downstream subscribers can invalidate keyed Redis caches
-	tenantSlug := ""
-	if t, err := tx.Tenant.Get(ctx, sub.TenantID); err == nil {
-		tenantSlug = t.Slug
-	}
-
-	eventPayload := map[string]any{
-		"tenant_id":     sub.TenantID.String(),
-		"tenant_slug":   tenantSlug,
-		"new_plan_code": newPlan.PlanCode,
-		"new_plan_name": newPlan.Name,
-		"service_tag": func() string {
-			if newPlan.ServiceTag != nil {
-				return *newPlan.ServiceTag
-			}
-			return ""
-		}(),
-		"old_plan_id": oldPlanID.String(),
-		"direction":   direction,
-		"notification": map[string]any{
-			"target": "tenant_admin",
-		},
-	}
-	// Directional event (subscription.upgraded / subscription.downgraded / subscription.changed)
-	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, direction, eventPayload)
-	// Consistent event for downstream services that subscribe to plan changes regardless of direction
-	s.writeOutboxEvent(ctx, tx, sub.TenantID, "tenant", sub.TenantID, "subscription.updated", eventPayload)
 
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit: %w", err)
 	}
+	s.afterBillingPlanChange(sub.TenantID, BillingPlanIDFor(sub), BillingPlanIDFor(updated))
 
-	return s.buildResult(sub, newPlan), nil
+	return s.GetSubscriptionResult(ctx, in.TenantID)
 }
 
 // CancelSubscription cancels a tenant's subscription.
@@ -804,6 +797,15 @@ func (s *Service) CancelSubscription(ctx context.Context, in CancelInput) (*Subs
 	update := tx.TenantSubscription.UpdateOneID(sub.ID).
 		SetStatus(tenantsubscription.StatusCANCELLED).
 		SetCancelledAt(now)
+	// A cancelled subscription keeps no running trial or waiting plan change.
+	if _, hasTrial := upgradeTrialOf(sub); hasTrial || sub.Metadata[MetaScheduledPlanChange] != nil {
+		meta := cloneMetadata(sub.Metadata)
+		delete(meta, MetaScheduledPlanChange)
+		if t, ok := upgradeTrialOf(sub); ok {
+			meta = withTrialClosed(meta, t, TrialOutcomeCancelled, now)
+		}
+		update.SetMetadata(meta)
+	}
 	if in.Reason != "" {
 		update.SetCancelReason(in.Reason)
 	}
@@ -888,7 +890,6 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 		if err != nil {
 			return nil, fmt.Errorf("plan not found: %s", planCode)
 		}
-		planID = newPlan.ID
 	}
 
 	// Switch the billing period when the tenant chose a new one for this renewal.
@@ -913,7 +914,7 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 	cleanedMeta := make(map[string]any, len(sub.Metadata))
 	for k, v := range sub.Metadata {
 		switch k {
-		case "grace_until", "last_grace_reminder_date",
+		case "grace_until", "last_grace_reminder_date", MetaTrialLapsedAt,
 			MetaPendingBillingCycle, MetaPendingPlanCode, MetaPendingIntentID, MetaPendingSetupFee:
 			// drop — grace ended on payment; checkout choice applied above
 		default:
@@ -931,6 +932,38 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 	}
 	if in.IntentID != "" {
 		cleanedMeta[MetaRenewedIntents] = appendRenewedIntent(sub.Metadata, in.IntentID)
+	}
+
+	// A plan paid for early takes effect on the renewal date (base), like any upgrade made
+	// before the current period ends; with no paid time left it applies now. A scheduled
+	// change whose date has passed is applied here too, since the invoice just paid billed it.
+	// One-time licences switch at once: their period end is perpetual.
+	if newPlan != nil && newPlan.ID != sub.PlanID {
+		if base.After(now) && grantsAccess(sub.Status) && newPlan.BillingCycle != "ONE_TIME" {
+			if cur, cerr := s.client.SubscriptionPlan.Get(ctx, sub.PlanID); cerr == nil && cur.BillingCycle != "ONE_TIME" {
+				cleanedMeta[MetaScheduledPlanChange] = encodeMeta(&ScheduledPlanChange{
+					PlanID: newPlan.ID, PlanCode: newPlan.PlanCode, PlanName: newPlan.Name,
+					FromPlanID: cur.ID, FromPlanCode: cur.PlanCode, FromPlanName: cur.Name,
+					EffectiveAt: base, Source: ChangeSourceCheckout, RequestedAt: now,
+				})
+			} else {
+				planID = newPlan.ID
+			}
+		} else {
+			planID = newPlan.ID
+		}
+	} else if pc, ok := PendingPlanChange(sub); ok && !now.Before(pc.EffectiveAt) {
+		planID = pc.PlanID
+	}
+	if planID != sub.PlanID {
+		delete(cleanedMeta, MetaScheduledPlanChange)
+		if t, ok := upgradeTrialOf(sub); ok {
+			outcome := TrialOutcomePlanChanged
+			if t.PlanID == planID {
+				outcome = TrialOutcomePaid
+			}
+			cleanedMeta = withTrialClosed(cleanedMeta, t, outcome, now)
+		}
 	}
 
 	tx, err := s.client.Tx(ctx)
@@ -995,16 +1028,28 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 		err = uerr
 		return nil, fmt.Errorf("renew subscription: %w", err)
 	}
+	prevPlanID := sub.PlanID
 	sub = renewed
 
-	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, "renewed", map[string]any{
+	renewedPayload := map[string]any{
 		"tenant_id":     sub.TenantID.String(),
 		"billing_cycle": string(cycle),
 		"period_end":    periodEnd.Format(time.RFC3339),
 		"notification": map[string]any{
 			"target": "tenant_admin",
 		},
-	})
+	}
+	if p, perr := tx.SubscriptionPlan.Get(ctx, sub.PlanID); perr == nil {
+		renewedPayload["plan_code"] = p.PlanCode
+		renewedPayload["plan_name"] = p.Name
+		// A renewal that moved plan_id tells auth-api and other services, as ChangePlan does.
+		if sub.PlanID != prevPlanID {
+			if old, oerr := tx.SubscriptionPlan.Get(ctx, prevPlanID); oerr == nil {
+				s.emitPlanChanged(ctx, tx, sub, old, p)
+			}
+		}
+	}
+	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, "renewed", renewedPayload)
 
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit: %w", err)
@@ -1064,8 +1109,8 @@ func (s *Service) UpdateBillingCycle(ctx context.Context, tenantID uuid.UUID, bi
 	return s.GetSubscriptionResult(ctx, tenantID)
 }
 
-// SwitchPlanByID changes the plan for a subscription identified by its UUID.
-// Delegates to ChangePlan after resolving the tenant from the subscription record.
+// SwitchPlanByID changes the plan for a subscription identified by its UUID. Platform owner
+// only (the handler enforces it), so the change applies at once.
 func (s *Service) SwitchPlanByID(ctx context.Context, subscriptionID uuid.UUID, newPlanCode string) (*SubscriptionResult, error) {
 	sub, err := s.client.TenantSubscription.Get(ctx, subscriptionID)
 	if err != nil {
@@ -1077,6 +1122,7 @@ func (s *Service) SwitchPlanByID(ctx context.Context, subscriptionID uuid.UUID, 
 	return s.ChangePlan(ctx, ChangePlanInput{
 		TenantID:    sub.TenantID,
 		NewPlanCode: newPlanCode,
+		ByPlatform:  true,
 	})
 }
 
@@ -1475,11 +1521,6 @@ type ServiceSubscriptionsResult struct {
 func (s *Service) GetServiceSubscriptions(ctx context.Context, tenantID uuid.UUID) (*ServiceSubscriptionsResult, error) {
 	sub, err := s.client.TenantSubscription.Query().
 		Where(tenantsubscription.TenantIDEQ(tenantID)).
-		WithPlan(func(q *ent.SubscriptionPlanQuery) {
-			q.WithFeatures(func(fq *ent.PlanFeatureQuery) {
-				fq.Where(planfeature.IsIncludedEQ(true))
-			})
-		}).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("query subscription: %w", err)
@@ -1487,12 +1528,19 @@ func (s *Service) GetServiceSubscriptions(ctx context.Context, tenantID uuid.UUI
 
 	result := &ServiceSubscriptionsResult{TenantID: tenantID}
 
-	// Composite: a tenant is ACTIVE for every service tag covered by its main plan AND by
-	// any active per-product subscription's override plan (multi-use-case tenants).
+	// Composite: a tenant is ACTIVE for every service tag covered by the plan in force (an
+	// upgrade trial's plan while one runs) AND by any active per-product subscription's
+	// override plan (multi-use-case tenants).
 	activeTags := map[string]bool{}
-	if sub != nil && sub.Edges.Plan != nil {
-		result.Subscription = s.buildResult(sub, sub.Edges.Plan)
-		activeTags = s.activeServiceTags(ctx, sub, sub.Edges.Plan)
+	var inForce *ent.SubscriptionPlan
+	if sub != nil {
+		now := time.Now().UTC()
+		if _, p, perr := s.loadPlanInForce(ctx, sub, now); perr == nil {
+			inForce = p
+			result.Subscription = s.buildResult(sub, p)
+			s.attachSchedule(result.Subscription, sub, now)
+			activeTags = s.activeServiceTags(ctx, sub, p)
+		}
 	}
 
 	services := make([]ServiceSubscriptionEntry, 0, len(domain.AllServiceTags))
@@ -1500,9 +1548,9 @@ func (s *Service) GetServiceSubscriptions(ctx context.Context, tenantID uuid.UUI
 		entry := ServiceSubscriptionEntry{ServiceTag: tag, Status: "NONE"}
 		if sub != nil && activeTags[tag] {
 			entry.Status = string(sub.Status)
-			if sub.Edges.Plan != nil {
-				code := sub.Edges.Plan.PlanCode
-				name := sub.Edges.Plan.Name
+			if inForce != nil {
+				code := inForce.PlanCode
+				name := inForce.Name
 				entry.PlanCode = &code
 				entry.PlanName = &name
 			}
@@ -1523,14 +1571,15 @@ type ExpiringSubscription struct {
 	DaysRemaining    int       `json:"days_remaining"`
 }
 
-// ListExpiring returns ACTIVE subscriptions expiring within the given number of days.
+// ListExpiring returns ACTIVE and TRIAL subscriptions whose period (or trial) ends within the
+// given number of days. Trials end at current_period_end too (every trial path keeps the two equal).
 func (s *Service) ListExpiring(ctx context.Context, days int) ([]ExpiringSubscription, error) {
 	now := time.Now().UTC()
 	deadline := now.AddDate(0, 0, days)
 
 	subs, err := s.client.TenantSubscription.Query().
 		Where(
-			tenantsubscription.StatusEQ(tenantsubscription.StatusACTIVE),
+			tenantsubscription.StatusIn(tenantsubscription.StatusACTIVE, tenantsubscription.StatusTRIAL),
 			tenantsubscription.CurrentPeriodEndGTE(now),
 			tenantsubscription.CurrentPeriodEndLTE(deadline),
 		).
@@ -1783,14 +1832,20 @@ func (s *Service) buildResult(sub *ent.TenantSubscription, plan *ent.Subscriptio
 
 		// One-time licence → perpetual entitlement: never expires. Force active access
 		// regardless of the stored period end so the gate and JWT treat it as permanent.
+		// A licence only being tried (TRIAL, or a trial that lapsed unpaid) is not paid for,
+		// so it keeps normal trial gating and its token carries an expiry.
 		if plan.BillingCycle == "ONE_TIME" {
 			result.BillingMode = "one_time"
-			result.IsPerpetual = true
 			result.BillingCycle = "ONE_TIME" // legacy subs may carry the old MONTHLY default
-
-			if sub.Status != tenantsubscription.StatusCANCELLED && sub.Status != tenantsubscription.StatusSUSPENDED {
-				result.AccessStatus = "active"
-				result.GraceEndsAt = nil
+			_, lapsedTrial := sub.Metadata[MetaTrialLapsedAt]
+			paidLicence := sub.Status != tenantsubscription.StatusTRIAL &&
+				!(sub.Status == tenantsubscription.StatusEXPIRED && lapsedTrial)
+			if paidLicence {
+				result.IsPerpetual = true
+				if sub.Status != tenantsubscription.StatusCANCELLED && sub.Status != tenantsubscription.StatusSUSPENDED {
+					result.AccessStatus = "active"
+					result.GraceEndsAt = nil
+				}
 			}
 		}
 	}

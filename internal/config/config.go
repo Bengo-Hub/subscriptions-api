@@ -41,6 +41,9 @@ type ServicesConfig struct {
 	// internal/config's HTTP_PUBLIC_BASE_URL vs. its internal-only client configs.
 	TreasuryPublicAPI string `envconfig:"TREASURY_PUBLIC_API_URL" default:"https://booksapi.codevertexafrica.com"`
 	TreasuryUI        string `envconfig:"TREASURY_UI_URL" default:"https://books.codevertexafrica.com"`
+	// SubscriptionsUI is this service's own browser UI, linked from tenant emails (upgrade trials,
+	// scheduled plan changes).
+	SubscriptionsUI string `envconfig:"SUBSCRIPTIONS_UI_URL" default:"https://pricing.codevertexafrica.com"`
 	TreasuryAPIKey    string `envconfig:"INTERNAL_SERVICE_KEY"`
 	MarketflowAPI     string `envconfig:"MARKETFLOW_API_URL" default:"https://marketflowapi.codevertexafrica.com"`
 	// ISPBillingAPI is the isp-billing backend used to fetch the exact point-in-time active

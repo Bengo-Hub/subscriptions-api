@@ -311,6 +311,21 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 		return nil
 	}
 
+	// A plan-change invoice (the price difference of a change scheduled after the renewal invoice
+	// went out) settles in treasury like any subscription invoice, but the renewal itself is paid
+	// by the renewal invoice: renewing here would add a second period.
+	if c.svc != nil {
+		refID := ev.Payload.ReferenceID
+		if refID == "" {
+			refID = ev.ReferenceID
+		}
+		if c.svc.IsPlanChangePayment(ctx, tenantID, ev.Payload.IntentID, refID) {
+			c.log.Info("plan-change invoice paid; no renewal", zap.String("tenant_id", tenantIDStr), zap.String("intent_id", ev.Payload.IntentID))
+			c.markProcessed(ctx, eventID)
+			return nil
+		}
+	}
+
 	// Subscription payment: activate/renew
 	if c.svc != nil {
 		planCode := ev.Payload.PlanCode

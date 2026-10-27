@@ -171,18 +171,22 @@ add-ons and the monthly allowance refill are described in [messaging-credits.md]
 
 ### 6. Plan Transitions
 
-**Subscription-Specific Features**:
-- Upgrade/downgrade scheduling
-- Proration calculation
-- Immediate vs. period-end transitions
-- Grace period handling
-- Transition approval workflows
-- Feature activation/deactivation
+**Built (2026-10-27)**, see [upgrade-trials.md](upgrade-trials.md):
+- Upgrade trials: a higher tier of the same product free for the configured days, switched on for
+  every tenant or per tenant by the platform owner (`subscriptions.upgrade_trial_enabled` /
+  `subscriptions.upgrade_trial_days`, platform row plus tenant override rows).
+- Period-end transitions: a tenant's upgrade (with or without a trial, or paid early at checkout)
+  is scheduled for the next renewal date and that renewal bills the new plan; a plan-change
+  invoice covers the difference when the renewal invoice was already out.
+- Immediate transitions: downgrades to a plan costing the same or less, platform owner changes and
+  "Apply now", and checkout with no paid time left.
+- Signup trials expire through the normal grace window.
+- State lives in `tenant_subscriptions.metadata` (`upgrade_trial`, `scheduled_plan_change`, trial
+  history), with no new tables.
 
-**Entities Owned**:
-- `plan_transitions` - Transition records
-- `proration_calculations` - Proration audit trail
-- `transition_approvals` - Manual approval tracking
+**Not built**: proration credit on downgrades, transition approval workflows. The earlier
+`plan_transitions`, `proration_calculations` and `transition_approvals` tables were never created
+and are not planned; the metadata history covers the audit need.
 
 **Integration Points**:
 - **treasury-service**: Proration invoicing

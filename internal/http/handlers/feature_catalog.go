@@ -13,30 +13,8 @@ import (
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/featuredefinition"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 )
-
-// planFamily mirrors shared-ui-lib's feature-gate.tsx planFamily() exactly: a plan code's
-// family, upper-cased. PowerSuite plans return their first TWO segments (POWERSUITE_DUKA_GOLD
-// -> "POWERSUITE_DUKA") because the PowerSuite line encodes a further disjoint use-case
-// sub-family (Hospitality/Retail/Pharmacy) as its second segment; every other product line
-// (ERP_*, LIBRARY_*, TRULOAD_*, ...) has no such split, so the first segment is correct there.
-// Used to prefer an in-family upgrade suggestion (e.g. "upgrade your own PowerSuite Duka tier")
-// over a globally-cheaper but practically-irrelevant cross-product one (e.g. suggesting a bare
-// ERP_STARTER purchase to a PowerSuite tenant just because it has a lower tier_order).
-func planFamily(code string) string {
-	upper := strings.ToUpper(code)
-	if strings.HasPrefix(upper, "POWERSUITE_") {
-		parts := strings.SplitN(upper, "_", 3)
-		if len(parts) >= 2 {
-			return parts[0] + "_" + parts[1]
-		}
-		return upper
-	}
-	if i := strings.Index(upper, "_"); i != -1 {
-		return upper[:i]
-	}
-	return upper
-}
 
 // FeatureCatalogHandler serves the platform-wide feature/limit catalog that
 // powers the admin plan-builder UI (service-grouped, categorized feature picker)
@@ -137,7 +115,7 @@ func (h *FeatureCatalogHandler) minUnlockingPlans(ctx context.Context) (map[stri
 	}
 	cheaper := func(a, b minPlan) bool { return a.Tier < b.Tier || (a.Tier == b.Tier && a.Price < b.Price) }
 	for _, p := range plans {
-		family := planFamily(p.PlanCode)
+		family := subscriptions.PlanFamily(p.PlanCode)
 		for _, pf := range p.Edges.Features {
 			if !pf.IsIncluded {
 				continue
@@ -176,7 +154,7 @@ func (h *FeatureCatalogHandler) minUnlockingPlans(ctx context.Context) (map[stri
 func (h *FeatureCatalogHandler) minUnlockingPlansByServiceTag(ctx context.Context, currentPlanCode string) map[string]minPlan {
 	overall := map[string]minPlan{}
 	sameFamily := map[string]minPlan{}
-	family := planFamily(currentPlanCode)
+	family := subscriptions.PlanFamily(currentPlanCode)
 
 	plans, err := h.orm.SubscriptionPlan.Query().
 		Where(subscriptionplan.IsActive(true)).
@@ -227,7 +205,7 @@ func (h *FeatureCatalogHandler) minUnlockingPlansByServiceTag(ctx context.Contex
 			}
 		}
 		cand := minPlan{Code: p.PlanCode, Name: p.Name, Tier: p.TierOrder, Price: p.BasePrice}
-		inFamily := family != "" && planFamily(p.PlanCode) == family
+		inFamily := family != "" && subscriptions.PlanFamily(p.PlanCode) == family
 		for tag := range tags {
 			if cur, ok := overall[tag]; !ok || cand.Tier < cur.Tier || (cand.Tier == cur.Tier && cand.Price < cur.Price) {
 				overall[tag] = cand
