@@ -105,18 +105,22 @@ func (s *Service) InitiatePurchase(ctx context.Context, in PurchaseInput) (map[s
 	return s.subs.CreatePaymentIntent(ctx, in.TenantID, req)
 }
 
-// FulfilIntent grants what a settled intent bought. Safe to call twice for the same intent.
+// FulfilIntent grants what a settled intent bought. Safe to call twice for the same intent. Only a
+// paid credit_purchase intent for at least the offer's price grants anything.
 func (s *Service) FulfilIntent(ctx context.Context, tenantID, intentID uuid.UUID) error {
-	meta, err := s.subs.GetPaymentIntentMetadata(ctx, tenantID, intentID)
+	paid, err := s.subs.GetSettledPurchase(ctx, tenantID, intentID, RefTypeCreditPurchase)
 	if err != nil {
 		return err
 	}
-	service, _ := meta["credit_service"].(string)
-	kind, _ := meta["purchase_kind"].(string)
-	code, _ := meta["purchase_code"].(string)
+	service, _ := paid.Metadata["credit_service"].(string)
+	kind, _ := paid.Metadata["purchase_kind"].(string)
+	code, _ := paid.Metadata["purchase_code"].(string)
 	offer, err := ResolveOffer(service, PurchaseKind(kind), code)
 	if err != nil {
 		return err
+	}
+	if paid.Amount+0.005 < offer.PriceKES {
+		return fmt.Errorf("payment intent %s paid KES %.2f, less than the KES %.2f %s", intentID, paid.Amount, offer.PriceKES, offer.Label)
 	}
 	return s.Grant(ctx, tenantID, offer, 1, "intent:"+intentID.String(), intentID)
 }

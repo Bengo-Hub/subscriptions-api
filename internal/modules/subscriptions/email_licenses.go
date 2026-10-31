@@ -99,27 +99,12 @@ func (s *Service) CreateEmailLicensePurchaseIntent(ctx context.Context, in Email
 // authoritative source, same read-back pattern treasury-api's own
 // CheckTransactionStatus uses for intent.Metadata.
 func (s *Service) GetEmailLicensePurchaseIntentMetadata(ctx context.Context, tenantID, intentID uuid.UUID) (planCode string, quantity int, err error) {
-	if s.treasuryClient == nil {
-		return "", 0, fmt.Errorf("payment service unavailable")
-	}
-	headers := map[string]string{}
-	if s.treasuryAPIKey != "" {
-		headers["X-API-Key"] = s.treasuryAPIKey
+	paid, err := s.GetSettledPurchase(ctx, tenantID, intentID, "email_license_purchase")
+	if err != nil {
+		return "", 0, err
 	}
 
-	resp, err := s.treasuryClient.Get(ctx, fmt.Sprintf("/api/v1/%s/payments/intents/%s", tenantID, intentID), headers)
-	if err != nil || !resp.IsSuccess() {
-		return "", 0, fmt.Errorf("fetch payment intent %s: %w", intentID, err)
-	}
-
-	var intent struct {
-		Metadata map[string]any `json:"metadata"`
-	}
-	if err := resp.DecodeJSON(&intent); err != nil {
-		return "", 0, fmt.Errorf("decode payment intent: %w", err)
-	}
-
-	planCode, quantity, ok := parsePlanCodeAndQuantity(intent.Metadata)
+	planCode, quantity, ok := parsePlanCodeAndQuantity(paid.Metadata)
 	if !ok {
 		return "", 0, fmt.Errorf("payment intent %s has no valid plan_code/quantity in metadata", intentID)
 	}

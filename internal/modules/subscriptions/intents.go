@@ -2,7 +2,9 @@ package subscriptions
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/google/uuid"
 )
@@ -23,27 +25,49 @@ func (s *Service) CreatePaymentIntent(ctx context.Context, tenantID uuid.UUID, r
 	return out, nil
 }
 
-// GetPaymentIntentMetadata reads back the metadata stored on a Treasury payment intent. Purchase
-// flows resolve what was bought at checkout time and store it on the intent, because the
-// payment.succeeded event does not carry intent metadata.
-func (s *Service) GetPaymentIntentMetadata(ctx context.Context, tenantID, intentID uuid.UUID) (map[string]any, error) {
+// SettledPurchase is a Treasury payment intent that paid for a platform purchase.
+type SettledPurchase struct {
+	Amount   float64
+	Metadata map[string]any
+}
+
+// GetSettledPurchase reads back a Treasury payment intent for fulfilment and refuses one that is
+// not a settled payment of refType. Purchase flows resolve what was bought at checkout time and
+// store it on the intent, because the payment.succeeded event does not carry intent metadata.
+// Checking the type and status here means an intent of another kind (a tenant's own sale) or one
+// that never settled can never be fulfilled as a platform purchase.
+func (s *Service) GetSettledPurchase(ctx context.Context, tenantID, intentID uuid.UUID, refType string) (SettledPurchase, error) {
 	if s.treasuryClient == nil {
-		return nil, fmt.Errorf("payment service unavailable")
+		return SettledPurchase{}, fmt.Errorf("payment service unavailable")
 	}
 	resp, err := s.treasuryClient.Get(ctx, fmt.Sprintf("/api/v1/%s/payments/intents/%s", tenantID, intentID), s.treasuryHeaders())
 	if err != nil || !resp.IsSuccess() {
-		return nil, fmt.Errorf("fetch payment intent %s: %w", intentID, err)
+		return SettledPurchase{}, fmt.Errorf("fetch payment intent %s: %w", intentID, err)
 	}
 	var intent struct {
-		Metadata map[string]any `json:"metadata"`
+		ReferenceType string         `json:"reference_type"`
+		Status        string         `json:"status"`
+		Amount        json.Number    `json:"amount"`
+		Metadata      map[string]any `json:"metadata"`
 	}
 	if err := resp.DecodeJSON(&intent); err != nil {
-		return nil, fmt.Errorf("decode payment intent: %w", err)
+		return SettledPurchase{}, fmt.Errorf("decode payment intent: %w", err)
+	}
+	if intent.ReferenceType != refType {
+		return SettledPurchase{}, fmt.Errorf("payment intent %s is a %q payment, not %q", intentID, intent.ReferenceType, refType)
+	}
+	if intent.Status != "succeeded" {
+		return SettledPurchase{}, fmt.Errorf("payment intent %s is %q, not paid", intentID, intent.Status)
+	}
+	// Treasury sends the amount as a decimal string ("500"), which json.Number accepts.
+	amount, err := strconv.ParseFloat(intent.Amount.String(), 64)
+	if err != nil {
+		return SettledPurchase{}, fmt.Errorf("payment intent %s amount %q: %w", intentID, intent.Amount, err)
 	}
 	if intent.Metadata == nil {
 		intent.Metadata = map[string]any{}
 	}
-	return intent.Metadata, nil
+	return SettledPurchase{Amount: amount, Metadata: intent.Metadata}, nil
 }
 
 // SavedCardCharge is the outcome of an automatic charge to a tenant's saved card.

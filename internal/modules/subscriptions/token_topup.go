@@ -72,10 +72,11 @@ func (s *Service) CreateTokenTopUpIntent(ctx context.Context, in TokenTopUpInput
 // GetTokenTopUpIntentMetadata reads back a Treasury payment intent's stored metadata to recover
 // service_tag/tokens/unit_cost_kes at fulfillment time.
 func (s *Service) GetTokenTopUpIntentMetadata(ctx context.Context, tenantID, intentID uuid.UUID) (serviceTag string, tokens int64, unitCostKes float64, err error) {
-	meta, err := s.GetPaymentIntentMetadata(ctx, tenantID, intentID)
+	paid, err := s.GetSettledPurchase(ctx, tenantID, intentID, "api_token_topup")
 	if err != nil {
 		return "", 0, 0, err
 	}
+	meta := paid.Metadata
 
 	serviceTag, _ = meta["service_tag"].(string)
 	switch t := meta["tokens"].(type) {

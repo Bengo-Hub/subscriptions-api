@@ -107,7 +107,10 @@ Reasons a spend is refused: `no_subscription`, `service_not_activated`, `insuffi
 ## Buying
 
 * Standalone: the purchase endpoint creates a Treasury intent with `reference_type=credit_purchase`. The payment
-  consumer grants it when `payment.succeeded` arrives, keyed by the intent id.
+  consumer grants it when `payment.succeeded` arrives, keyed by the intent id. Treasury charges it on the platform's
+  collecting account whatever gateway the tenant has, and refuses a tenant user who tries to settle it by hand.
+* Fulfilment reads the intent back (`subscriptions.GetSettledPurchase`, shared with email licences and API tokens) and
+  grants only a `succeeded` intent of the expected type that paid at least the offer's price.
 * With a plan: `POST /subscription/initiate` accepts `addons` (`service`, `kind`, `code`). The prices are added to the
   one payment, the selection is kept in the subscription metadata (`pending_credit_addons`) beside the pending
   intent, and it is granted when that intent pays. A free plan or a trial cannot carry add-ons.
@@ -233,5 +236,6 @@ renders, with a volume floor). It is about 2 to 5 credits at launch volumes.
 * `internal/modules/billing/credit_services.go`: the three new bundle sizes and prices in the `ai_credits` entry.
 * `cmd/seed`: the AI Studio plan rows and the Gold cap.
 * `internal/modules/credits` refill: sum the base-plan and AI Studio plan quotas.
-* Check before launch: `credit_purchase` must settle to the platform's collecting account. It was not seen in
-  treasury's platform-billed registry (`treasury-api/internal/modules/finance/billing_types.go`).
+* `credit_purchase` settles to the platform's collecting account: it is in treasury's platform-billed registry
+  (`treasury-api/internal/modules/finance/billing_types.go`) since 2026-10-31. Before that one WhatsApp Tier 1 was
+  charged on the buying tenant's own PayHero channel; that grant was voided.
