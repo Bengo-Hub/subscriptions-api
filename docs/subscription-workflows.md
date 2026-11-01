@@ -157,17 +157,12 @@ TRIAL subscription
   │
   ├─ FREE plan? ──yes──▶ Extend period by 30 days (no payment)
   │
-  └─ PAID plan? ──yes──▶ POST /api/v1/{tenant_id}/payments/intents
-                          {
-                            amount:         plan.base_price,
-                            currency:       "KES",
-                            payment_method: "auto",    ← Paystack saved card
-                            reference_type: "renewal",
-                            plan_code:      plan.plan_code,
-                            source_service: "subscription-service",
-                          }
+  └─ PAID plan + saved card? ──yes──▶ InvoiceService.ChargeSavedCard
+                          (period invoice, then
+                           POST /api/v1/s2s/{tenant_id}/payments/intents/charge-saved-card,
+                           reference SUB-...-C{yymmdd}, once per invoice per day)
                                │
-                               │ Treasury creates Paystack charge
+                               │ Treasury charges the saved Paystack card
                                ▼
                      [Paystack processes card]
                                │
@@ -258,8 +253,13 @@ Treasury reports payment failure
 [payment failure consumer / webhook]
   │
   ├─ Sets subscription.status = SUSPENDED
-  ├─ Increments metadata.dunning_attempt (0 → 1)
   └─ Publishes outbox event: subscription.payment_failed
+
+[dunning job, daily, billing/dunning_service.go]
+  ├─ Skips exempt tenants and dormant accounts awaiting purge (pending_purge)
+  ├─ First sight: stores metadata.dunning {started_at, period_end, attempts: 0}
+  ├─ Retry day reached: attempts + 1, InvoiceService.ChargeSavedCard (same charge as renewal)
+  └─ Past day 7 with 3 attempts: CancelSubscription(reason dunning_exhausted)
 
                     SUSPENDED
                        │
@@ -278,7 +278,9 @@ Treasury reports payment failure
                               └─▶ outbox: subscription.cancelled
 ```
 
-**Frontend dunning banner** (billing page):
+Days count from `metadata.dunning.started_at`, not `updated_at`: every metadata write moves `updated_at`, so the old clock restarted after each retry and dunning never got past the first attempt. A later suspension (another `period_end`) starts a fresh state. Until 2026-11-01 the retry posted to `/api/v1/payments/intents`, a Treasury route that does not exist, so no dunning retry ever charged.
+
+**Frontend dunning banner** (billing page, planned; no UI reads the dunning state yet):
 - Status `SUSPENDED` → shows "Payment failed. Retry on [date]. Attempt X of 3."
 - CTA: "Update Payment Method" → triggers Paystack card setup flow
 
@@ -561,7 +563,7 @@ Addons are `PlanFeature` records with `is_included=false` that tenants can purch
   │        InvalidateCache() → feature check immediately reflects new addon
   │
   └─ PAID addon?
-       └─▶ POST /api/v1/{tenant_id}/payments/intents
+       └─▶ POST /api/v1/s2s/{tenant_id}/payments/intents
               {
                 amount: feature.overage_unit_price,
                 reference_type: "addon_purchase",
@@ -807,7 +809,7 @@ The `metadata` JSON column on `tenant_subscriptions` stores dynamic subscription
 | `payment_method` | object | `{ type, brand, last4, expiryMonth, expiryYear }` |
 | `purchased_addons` | []string | Feature codes of self-service addons purchased |
 | `addon_activated_at_{code}` | RFC3339 | When a specific addon was activated |
-| `dunning_attempt` | int | Current dunning retry count (1–3) |
+| `dunning` | object | `{ started_at, period_end, attempts }` for the current suspension (replaces `dunning_attempt`, dropped on the next write) |
 | `billing_email` | string | Override billing email (fallback: JWT claims email) |
 | `seeded` | bool | Internal flag indicating row was created by seed script |
 | `tier` | string | Plan code snapshot at seed time |

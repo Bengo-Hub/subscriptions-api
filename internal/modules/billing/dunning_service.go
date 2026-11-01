@@ -2,53 +2,54 @@ package billing
 
 import (
 	"context"
-	"fmt"
 	sharedcache "github.com/Bengo-Hub/cache"
 	"time"
 
 	"go.uber.org/zap"
 
-	serviceclient "github.com/Bengo-Hub/shared-service-client"
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/bengobox/subscription-service/internal/modules/subscriptions"
 )
 
-// dunningSchedule lists how many days after suspension to attempt retry.
+// dunningSchedule lists the days after suspension on which a payment retry is attempted.
 var dunningSchedule = []int{1, 3, 7}
+
+// metaDunning holds the dunning state of a suspended subscription: when dunning started, the
+// period it is chasing and how many retries ran. The clock lives here, not on updated_at, because
+// every metadata write (this job's own included) moves updated_at and would restart the count.
+const metaDunning = "dunning"
 
 // StartDunningJob runs a daily background job that retries payment for SUSPENDED subscriptions.
 // After the last retry day (day 7), the subscription is cancelled.
-func StartDunningJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, treasuryClient *serviceclient.Client, treasuryAPIKey string) {
+func StartDunningJob(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, invSvc *InvoiceService) {
 	log = log.Named("dunning.job")
 
 	ticker := time.NewTicker(24 * time.Hour)
 	defer ticker.Stop()
 
-	runDunning(ctx, log, orm, svc, treasuryClient, treasuryAPIKey)
+	runDunning(ctx, log, orm, svc, invSvc)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			runDunning(ctx, log, orm, svc, treasuryClient, treasuryAPIKey)
+			runDunning(ctx, log, orm, svc, invSvc)
 		}
 	}
 }
 
-func runDunning(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, treasuryClient *serviceclient.Client, treasuryAPIKey string) {
+func runDunning(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, invSvc *InvoiceService) {
 	// Runs on every replica's ticker; only the first replica in each period does the work.
 	if !sharedcache.ClaimPeriod(ctx, "subscriptions:dunning", 24*time.Hour) {
 		return
 	}
-	// Find subscriptions that have been SUSPENDED for at least 1 day
-	cutoff := time.Now().UTC().Add(-24 * time.Hour)
-
+	// A dormant account awaiting purge is suspended too, but the dormancy job owns it.
 	suspended, err := orm.TenantSubscription.Query().
 		Where(
 			tenantsubscription.StatusEQ(tenantsubscription.StatusSUSPENDED),
-			tenantsubscription.UpdatedAtLTE(cutoff),
+			tenantsubscription.PendingPurge(false),
 		).
 		WithPlan().
 		All(ctx)
@@ -57,8 +58,12 @@ func runDunning(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subs
 		return
 	}
 
+	now := time.Now().UTC()
 	for _, sub := range suspended {
-		processDunning(ctx, log, orm, svc, sub, treasuryClient, treasuryAPIKey)
+		if svc.IsExemptTenant(ctx, sub.TenantID) {
+			continue
+		}
+		processDunning(ctx, log, orm, svc, invSvc, sub, now)
 	}
 
 	if len(suspended) > 0 {
@@ -66,29 +71,41 @@ func runDunning(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subs
 	}
 }
 
-func processDunning(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, sub *ent.TenantSubscription, treasuryClient *serviceclient.Client, treasuryAPIKey string) {
-	daysSuspended := int(time.Since(sub.UpdatedAt).Hours() / 24)
+// dunningState is the decoded metaDunning entry.
+type dunningState struct {
+	StartedAt time.Time
+	PeriodEnd string
+	Attempts  int
+}
 
-	// Determine current attempt from metadata
-	meta := make(map[string]any)
-	for k, v := range sub.Metadata {
-		meta[k] = v
-	}
-	attemptRaw, _ := meta["dunning_attempt"].(float64)
-	attempt := int(attemptRaw)
-
-	// Check if today is a retry day
-	shouldRetry := false
-	for _, d := range dunningSchedule {
-		if daysSuspended >= d && attempt < d {
-			shouldRetry = true
-			break
+// readDunningState returns the dunning state for the subscription's current suspension. A state
+// left from an earlier suspension (another period end) starts over, as does a missing one.
+func readDunningState(sub *ent.TenantSubscription, now time.Time) (dunningState, bool) {
+	periodEnd := sub.CurrentPeriodEnd.UTC().Format(time.RFC3339)
+	raw, _ := sub.Metadata[metaDunning].(map[string]any)
+	if raw != nil && raw["period_end"] == periodEnd {
+		if started, err := time.Parse(time.RFC3339, stringMeta(raw, "started_at")); err == nil {
+			attempts, _ := raw["attempts"].(float64)
+			return dunningState{StartedAt: started, PeriodEnd: periodEnd, Attempts: int(attempts)}, true
 		}
 	}
+	return dunningState{StartedAt: now, PeriodEnd: periodEnd}, false
+}
 
-	// Cancel after last retry day (7 days) with no success
-	maxDay := dunningSchedule[len(dunningSchedule)-1]
-	if daysSuspended > maxDay && attempt >= maxDay {
+// nextDunningStep says whether a retry is due today and whether dunning is exhausted.
+func nextDunningStep(st dunningState, now time.Time) (retry, cancel bool) {
+	days := int(now.Sub(st.StartedAt).Hours() / 24)
+	if st.Attempts < len(dunningSchedule) {
+		return days >= dunningSchedule[st.Attempts], false
+	}
+	return false, days > dunningSchedule[len(dunningSchedule)-1]
+}
+
+func processDunning(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *subscriptions.Service, invSvc *InvoiceService, sub *ent.TenantSubscription, now time.Time) {
+	st, known := readDunningState(sub, now)
+	retry, cancel := nextDunningStep(st, now)
+
+	if cancel {
 		if _, err := svc.CancelSubscription(ctx, subscriptions.CancelInput{
 			TenantID: sub.TenantID,
 			Reason:   "dunning_exhausted",
@@ -99,79 +116,46 @@ func processDunning(ctx context.Context, log *zap.Logger, orm *ent.Client, svc *
 		}
 		return
 	}
-
-	if !shouldRetry {
+	if !retry && known {
 		return
 	}
-
-	// Increment attempt counter
-	meta["dunning_attempt"] = attempt + 1
-	_, _ = orm.TenantSubscription.UpdateOneID(sub.ID).
-		SetMetadata(meta).
-		Save(ctx)
-
-	// Attempt charge if auth code is available
-	authCode, _ := meta["paystack_auth_code"].(string)
-	if authCode == "" || treasuryClient == nil || sub.Edges.Plan == nil {
-		log.Info("dunning job: no auth code or treasury client, skipping charge attempt",
-			zap.String("tenant_id", sub.TenantID.String()),
-			zap.Int("attempt", attempt+1),
-		)
-		return
+	if retry {
+		st.Attempts++
 	}
 
-	if err := initiateAutoCharge(ctx, log, sub, authCode, treasuryClient, treasuryAPIKey); err != nil {
-		log.Warn("dunning job: auto-charge attempt failed",
-			zap.String("tenant_id", sub.TenantID.String()),
-			zap.Int("attempt", attempt+1),
-			zap.Error(err),
-		)
-	} else {
-		log.Info("dunning job: auto-charge initiated",
-			zap.String("tenant_id", sub.TenantID.String()),
-			zap.Int("attempt", attempt+1),
-		)
-	}
-}
-
-func initiateAutoCharge(ctx context.Context, log *zap.Logger, sub *ent.TenantSubscription, authCode string, treasuryClient *serviceclient.Client, treasuryAPIKey string) error {
-	plan := sub.Edges.Plan
-	if plan == nil {
-		return fmt.Errorf("plan not loaded")
-	}
-
-	headers := map[string]string{}
-	if treasuryAPIKey != "" {
-		headers["X-API-Key"] = treasuryAPIKey
-	}
-
-	req := map[string]any{
-		"amount":         subscriptions.EffectivePrice(sub, plan),
-		"currency":       plan.Currency,
-		"payment_method": "auto",
-		"reference_id":   sub.ID.String(),
-		"reference_type": "subscription_renewal",
-		"source_service": "subscriptions",
-		"description":    fmt.Sprintf("Subscription renewal (dunning) — %s", plan.Name),
-		"metadata": map[string]any{
-			"tenant_id":          sub.TenantID.String(),
-			"plan_code":          plan.PlanCode,
-			"dunning":            true,
-			"paystack_auth_code": authCode,
-		},
-	}
-
-	resp, err := treasuryClient.Post(ctx, "/api/v1/payments/intents", req, headers)
-	if err != nil || !resp.IsSuccess() {
-		if err == nil {
-			return fmt.Errorf("treasury charge returned non-success")
+	meta := make(map[string]any, len(sub.Metadata)+1)
+	for k, v := range sub.Metadata {
+		if k != "dunning_attempt" { // the old counter, replaced by metaDunning
+			meta[k] = v
 		}
-		return err
+	}
+	meta[metaDunning] = map[string]any{
+		"started_at": st.StartedAt.Format(time.RFC3339),
+		"period_end": st.PeriodEnd,
+		"attempts":   st.Attempts,
+	}
+	if _, err := orm.TenantSubscription.UpdateOneID(sub.ID).SetMetadata(meta).Save(ctx); err != nil {
+		log.Error("dunning job: failed to save dunning state", zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
+		return
+	}
+	if !retry {
+		return
 	}
 
-	log.Info("dunning job: charge request sent",
-		zap.String("tenant_id", sub.TenantID.String()),
-		zap.String("plan_code", plan.PlanCode),
-	)
-	return nil
+	// Collect the open invoice from the saved card, the same charge the renewal job makes.
+	// Without a saved card nothing is attempted; the tenant pays from the emailed invoice link.
+	if invSvc == nil || sub.Edges.Plan == nil {
+		log.Info("dunning job: no invoice service or plan, skipping charge attempt",
+			zap.String("tenant_id", sub.TenantID.String()), zap.Int("attempt", st.Attempts))
+		return
+	}
+	res, err := invSvc.ChargeSavedCard(ctx, sub)
+	if err != nil {
+		log.Warn("dunning job: saved-card charge failed",
+			zap.String("tenant_id", sub.TenantID.String()), zap.Int("attempt", st.Attempts), zap.Error(err))
+		return
+	}
+	log.Info("dunning job: saved-card charge",
+		zap.String("tenant_id", sub.TenantID.String()), zap.Int("attempt", st.Attempts),
+		zap.Bool("attempted", res.Attempted), zap.String("status", res.Status), zap.String("reason", res.Reason))
 }

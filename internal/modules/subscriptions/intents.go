@@ -5,23 +5,70 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
+	serviceclient "github.com/Bengo-Hub/shared-service-client"
 	"github.com/google/uuid"
 )
 
+// TreasuryIntentsPath is Treasury's S2S route for a tenant's payment intents. Every intent this
+// service creates is a platform-billed payment (plan, credits, licences, tokens), and Treasury
+// refuses those on the tenant-user route /api/v1/{tenant}/payments/intents with a 403, so a
+// tenant user can never create or settle a platform bill themselves.
+func TreasuryIntentsPath(tenantID uuid.UUID) string {
+	return fmt.Sprintf("/api/v1/s2s/%s/payments/intents", tenantID)
+}
+
+// NewPurchaseReference builds the reference_id of a one-off purchase intent. Treasury returns the
+// existing intent for a repeated reference, so a reference without a unique part would hand a
+// second purchase the first one's intent (already paid, or at the first purchase's amount) and
+// grant nothing. Recurring charges that must collapse to one intent per period build their own.
+func NewPurchaseReference(prefix string, tenantID uuid.UUID, what string) string {
+	return fmt.Sprintf("%s-%s-%s-%s-%s", prefix, tenantID.String()[:8], what,
+		time.Now().UTC().Format("060102150405"), uuid.NewString()[:8])
+}
+
+// TreasuryFailure turns a failed Treasury call into an error that says why: the transport error,
+// or Treasury's status and its "error" message. A failed status carries no Go error, so wrapping
+// err alone printed "%!w(<nil>)" and hid the real reason.
+func TreasuryFailure(action string, resp *serviceclient.Response, err error) error {
+	if err != nil {
+		return fmt.Errorf("%s: %w", action, err)
+	}
+	if resp == nil {
+		return fmt.Errorf("%s: no answer from the payment service", action)
+	}
+	var body struct {
+		Error   string `json:"error"`
+		Message string `json:"message"`
+	}
+	_ = resp.DecodeJSON(&body)
+	reason := strings.TrimSpace(body.Error)
+	if reason == "" {
+		reason = strings.TrimSpace(body.Message)
+	}
+	if reason == "" {
+		return fmt.Errorf("%s: payment service answered %d", action, resp.StatusCode)
+	}
+	return fmt.Errorf("%s: payment service answered %d: %s", action, resp.StatusCode, reason)
+}
+
 // CreatePaymentIntent creates a Treasury payment intent for tenantID and returns Treasury's
 // response body. It is the one place subscriptions-api builds the S2S intent call, shared by
-// every purchase flow (API token and credit top-ups, bundles, tiers, overage payment).
+// every purchase flow (API token and credit top-ups, bundles, tiers, email licences).
 func (s *Service) CreatePaymentIntent(ctx context.Context, tenantID uuid.UUID, req map[string]any) (map[string]any, error) {
 	if s.treasuryClient == nil {
 		return nil, fmt.Errorf("payment service unavailable")
 	}
-	resp, err := s.treasuryClient.Post(ctx, fmt.Sprintf("/api/v1/%s/payments/intents", tenantID), req, s.treasuryHeaders())
+	resp, err := s.treasuryClient.Post(ctx, TreasuryIntentsPath(tenantID), req, s.treasuryHeaders())
 	if err != nil || !resp.IsSuccess() {
-		return nil, fmt.Errorf("payment initiation failed: %w", err)
+		return nil, TreasuryFailure("payment initiation failed", resp, err)
 	}
 	var out map[string]any
-	_ = resp.DecodeJSON(&out)
+	if err := resp.DecodeJSON(&out); err != nil {
+		return nil, fmt.Errorf("decode payment intent: %w", err)
+	}
 	return out, nil
 }
 
@@ -40,9 +87,9 @@ func (s *Service) GetSettledPurchase(ctx context.Context, tenantID, intentID uui
 	if s.treasuryClient == nil {
 		return SettledPurchase{}, fmt.Errorf("payment service unavailable")
 	}
-	resp, err := s.treasuryClient.Get(ctx, fmt.Sprintf("/api/v1/%s/payments/intents/%s", tenantID, intentID), s.treasuryHeaders())
+	resp, err := s.treasuryClient.Get(ctx, TreasuryIntentsPath(tenantID)+"/"+intentID.String(), s.treasuryHeaders())
 	if err != nil || !resp.IsSuccess() {
-		return SettledPurchase{}, fmt.Errorf("fetch payment intent %s: %w", intentID, err)
+		return SettledPurchase{}, TreasuryFailure(fmt.Sprintf("fetch payment intent %s", intentID), resp, err)
 	}
 	var intent struct {
 		ReferenceType string         `json:"reference_type"`
@@ -93,7 +140,7 @@ func (s *Service) ChargeSavedCard(ctx context.Context, tenantID uuid.UUID, authC
 		body[k] = v
 	}
 	body["authorization_code"] = authCode
-	resp, err := s.treasuryClient.Post(ctx, fmt.Sprintf("/api/v1/s2s/%s/payments/intents/charge-saved-card", tenantID), body, s.treasuryHeaders())
+	resp, err := s.treasuryClient.Post(ctx, TreasuryIntentsPath(tenantID)+"/charge-saved-card", body, s.treasuryHeaders())
 	if err != nil {
 		return SavedCardCharge{}, fmt.Errorf("charge saved card: %w", err)
 	}

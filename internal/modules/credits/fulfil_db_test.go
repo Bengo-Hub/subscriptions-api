@@ -22,7 +22,7 @@ func TestFulfilIntentGrantsOnlyForAPaidCreditPurchase(t *testing.T) {
 	intents := map[string]string{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for id, body := range intents {
-			if r.URL.Path == "/api/v1/"+f.tenantID.String()+"/payments/intents/"+id {
+			if r.URL.Path == "/api/v1/s2s/"+f.tenantID.String()+"/payments/intents/"+id {
 				_, _ = w.Write([]byte(body))
 				return
 			}

@@ -413,7 +413,7 @@ func (a *App) Run(ctx context.Context) error {
 
 	// Start dunning job — retries payment for SUSPENDED subscriptions on days 1, 3, 7
 	if a.orm != nil && a.subscriptionSvc != nil {
-		go billing.StartDunningJob(ctx, a.log, a.orm, a.subscriptionSvc, a.treasuryClient, a.cfg.Services.TreasuryAPIKey)
+		go billing.StartDunningJob(ctx, a.log, a.orm, a.subscriptionSvc, a.invoiceSvc)
 		a.log.Info("dunning job started")
 	}
 

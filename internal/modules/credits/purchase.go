@@ -97,7 +97,7 @@ func (s *Service) InitiatePurchase(ctx context.Context, in PurchaseInput) (map[s
 	}
 	req := map[string]any{
 		"amount": offer.PriceKES, "currency": "KES", "payment_method": "pending",
-		"reference_id":   fmt.Sprintf("CRED-%s-%s-%d", in.TenantID.String()[:8], offer.Service.Code, time.Now().UnixNano()),
+		"reference_id":   subscriptions.NewPurchaseReference("CRED", in.TenantID, offer.Service.Code),
 		"reference_type": RefTypeCreditPurchase, "source_service": "subscriptions",
 		"description": offer.Label, "callback_url": in.ReturnURL,
 		"metadata": offer.IntentMetadata(in.TenantID),

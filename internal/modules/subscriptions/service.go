@@ -383,17 +383,9 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 	}
 
 	// 3. Call Treasury-API
-	var treasuryHeaders map[string]string
-	if s.treasuryAPIKey != "" {
-		treasuryHeaders = map[string]string{"X-API-Key": s.treasuryAPIKey}
-	}
-	resp, err := s.treasuryClient.Post(ctx, fmt.Sprintf("/api/v1/%s/payments/intents", in.TenantID), req, treasuryHeaders)
-	if err != nil {
-		return nil, fmt.Errorf("treasury api error: %w", err)
-	}
-
-	if !resp.IsSuccess() {
-		return nil, fmt.Errorf("treasury api failed with status %d: %s", resp.StatusCode, string(resp.Body))
+	resp, err := s.treasuryClient.Post(ctx, TreasuryIntentsPath(in.TenantID), req, s.treasuryHeaders())
+	if err != nil || !resp.IsSuccess() {
+		return nil, TreasuryFailure("payment initiation failed", resp, err)
 	}
 
 	var treasuryResp struct {

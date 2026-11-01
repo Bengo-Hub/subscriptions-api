@@ -55,16 +55,11 @@ func (s *Service) CreateEmailLicensePurchaseIntent(ctx context.Context, in Email
 		return nil, fmt.Errorf("unknown or inactive plan_code %q", in.PlanCode)
 	}
 
-	headers := map[string]string{}
-	if s.treasuryAPIKey != "" {
-		headers["X-API-Key"] = s.treasuryAPIKey
-	}
-
 	req := map[string]any{
 		"amount":         plan.PricePerUserMonthly * float64(in.Quantity),
 		"currency":       "KES",
 		"payment_method": "pending",
-		"reference_id":   fmt.Sprintf("EMAILLIC-%s-%s-%d", in.TenantID.String()[:8], in.PlanCode, in.Quantity),
+		"reference_id":   NewPurchaseReference("EMAILLIC", in.TenantID, fmt.Sprintf("%s-%d", in.PlanCode, in.Quantity)),
 		"reference_type": "email_license_purchase",
 		"source_service": "subscriptions",
 		"description":    emailLicensePurchaseDescription(in.Quantity, in.PlanCode),
@@ -81,14 +76,7 @@ func (s *Service) CreateEmailLicensePurchaseIntent(ctx context.Context, in Email
 		},
 	}
 
-	resp, err := s.treasuryClient.Post(ctx, fmt.Sprintf("/api/v1/%s/payments/intents", in.TenantID), req, headers)
-	if err != nil || !resp.IsSuccess() {
-		return nil, fmt.Errorf("payment initiation failed: %w", err)
-	}
-
-	var treasuryResp map[string]any
-	_ = resp.DecodeJSON(&treasuryResp)
-	return treasuryResp, nil
+	return s.CreatePaymentIntent(ctx, in.TenantID, req)
 }
 
 // GetEmailLicensePurchaseIntentMetadata reads back a Treasury payment

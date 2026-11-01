@@ -50,7 +50,7 @@ func (s *Service) CreateTokenTopUpIntent(ctx context.Context, in TokenTopUpInput
 		"amount":         in.AmountKes,
 		"currency":       "KES",
 		"payment_method": "pending",
-		"reference_id":   fmt.Sprintf("TOKTOP-%s-%s", in.TenantID.String()[:8], in.ServiceTag),
+		"reference_id":   NewPurchaseReference("TOKTOP", in.TenantID, in.ServiceTag),
 		"reference_type": "api_token_topup",
 		"source_service": "subscriptions",
 		"description":    fmt.Sprintf("API token top-up: %d tokens (%s)", tokens, in.ServiceTag),

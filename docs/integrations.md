@@ -225,8 +225,10 @@ endpoints (`/api/v1/addons`) were removed on 2026-10-19: they took payment but n
 **Renewal flow** (background job):
 
 1. Hourly job finds `ACTIVE` subscriptions expiring within 24h
-2. Paid plans: POSTs to Treasury `/api/v1/payments/intents` with `reference_type: "subscription_renewal"`
-3. On payment completion, Treasury calls the webhook — `completed` triggers another renewal cycle
+2. Paid plans with a saved card: the period's invoice is charged to the card through `POST /api/v1/s2s/{tenant}/payments/intents/charge-saved-card`. Without a saved card the tenant pays from the emailed invoice link.
+3. On payment completion, the payment.succeeded event renews the subscription.
+
+**Every payment intent goes through S2S** (2026-11-01). Plan checkouts, credit bundles and tiers, email licences and API token top-ups are platform-billed payments, and since 2026-10-02 Treasury refuses those on the tenant-user route `/api/v1/{tenant}/payments/intents` with a 403. subscriptions-api builds every intent path with `subscriptions.TreasuryIntentsPath` (`/api/v1/s2s/{tenant}/payments/intents`), and `subscriptions.TreasuryFailure` reports Treasury's status and reason when a call is refused. Until this fix every purchase failed with "payment initiation failed: %!w(<nil>)". One-off purchases take their reference from `subscriptions.NewPurchaseReference`, which adds a unique part: Treasury returns the existing intent for a repeated reference, so API token top-ups (one reference per tenant and service) and repeat email licence purchases (one per plan and quantity) used to get the first purchase's intent back.
 
 **External eTIMS API metering** (2026-08-18) — a narrower, one-directional slice of the same
 usage pipeline above, specifically for treasury-api's `/api/v1/external/etims/*` route group
