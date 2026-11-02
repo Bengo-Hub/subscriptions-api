@@ -38,3 +38,5 @@ config/certs/*.key
 KubeSecrets/
 kubeSecrets/
 pg_local.log
+
+__pycache__/
