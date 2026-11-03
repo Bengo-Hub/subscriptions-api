@@ -40,6 +40,8 @@ type MeteredService struct {
 	PlanQuotaKey string
 	// Label is the display name.
 	Label string
+	// Unit names what one unit is (credits, tokens, messages), for balance alerts.
+	Unit string
 }
 
 // CreditBundle is a purchasable pack of units.
@@ -94,12 +96,12 @@ func bundleCode(units int64) string {
 // creditServices is the registry, keyed by Code.
 var creditServices = map[string]MeteredService{
 	ServiceETIMS: {
-		Code: ServiceETIMS, BundleTag: ServiceETIMS, Label: "eTIMS API tokens",
+		Code: ServiceETIMS, BundleTag: ServiceETIMS, Label: "eTIMS API tokens", Unit: "tokens",
 	},
 	ServiceSMS: {
 		Code: ServiceSMS, BundleTag: ServiceSMS, ProductCode: "sms_messaging",
 		OverageMetric: "messaging_sms", UnitPriceKES: MessagingOverageUnitKES,
-		Bundles: messagingBundles(), Label: "SMS",
+		Bundles: messagingBundles(), Label: "SMS", Unit: "messages",
 	},
 	ServiceWhatsApp: {
 		Code: ServiceWhatsApp, BundleTag: ServiceWhatsApp, QuotaTag: "whatsapp_quota", ProductCode: "whatsapp_messaging",
@@ -110,7 +112,7 @@ var creditServices = map[string]MeteredService{
 			{Code: "tier_2", Name: "Tier 2", PriceKES: 1000, MonthlyUnit: 800},
 			{Code: "pro", Name: "Pro", PriceKES: 2000, MonthlyUnit: -1},
 		},
-		Label: "WhatsApp",
+		Label: "WhatsApp", Unit: "messages",
 	},
 	ServiceAI: {
 		Code: ServiceAI, BundleTag: ServiceAI, QuotaTag: "ai_credits_quota",
@@ -119,7 +121,7 @@ var creditServices = map[string]MeteredService{
 			{Code: "bundle_100", Units: 100, PriceKES: 1000},
 			{Code: "bundle_500", Units: 500, PriceKES: 4000},
 		},
-		Label: "AI credits",
+		Label: "AI credits", Unit: "credits",
 	},
 }
 
@@ -127,6 +129,16 @@ var creditServices = map[string]MeteredService{
 func LookupMeteredService(code string) (MeteredService, bool) {
 	s, ok := creditServices[code]
 	return s, ok
+}
+
+// serviceByQuotaTag finds the service whose allowance wallet is quotaTag.
+func serviceByQuotaTag(quotaTag string) (MeteredService, bool) {
+	for _, s := range creditServices {
+		if s.QuotaTag != "" && s.QuotaTag == quotaTag {
+			return s, true
+		}
+	}
+	return MeteredService{}, false
 }
 
 // MeteredServiceCodes lists the registered codes.

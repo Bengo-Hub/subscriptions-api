@@ -156,6 +156,16 @@ SMS units become one adjustment per tenant, a live WhatsApp plan keeps its end d
 already used that month. A tenant with no subscription here is reported and skipped. The old tables are not touched and
 can be dropped in a later release once the totals have been checked.
 
+## Low-balance alerts (2026-11-03)
+
+Every metered service in `billing/credit_services.go` (AI credits, eTIMS API tokens, SMS, WhatsApp, and any service added later) raises the same alert, `billing.balance.low`, from the one spend path, `TokenWalletService.Consume`. notifications-api turns it into an email and a WhatsApp message with a Buy credits button for the tenant's admin.
+
+- **When.** A spend that takes the remaining units to or below the low mark, or to zero. Remaining is the allowance plus the bundle for a service with a monthly allowance, or the bundle alone for a prepaid-only service.
+- **Low mark.** `billing.low_balance_threshold` (ServiceConfig, default `0.20`) of the period's total. The total is the allowance plus the bundle, recorded on the allowance reset row (`period_total`). A service without an allowance uses its bundle wallet's `low_balance_threshold`.
+- **Once.** One alert per tenant, service, level (`low` or `empty`) and month. A top-up re-arms it. The claim is a `balance_alert` marker on the spend's ledger rows and the event is written to the outbox in the same transaction, so a rolled-back spend raises nothing.
+- **Shared logic.** The crossing check, the event shape and the dedupe key come from shared-events `balancealert` (v0.11.0), which marketflow-ai also uses for the platform owner's provider balances. The `subscription` stream binds `billing.>`.
+- **Adding a service.** Register it in `credit_services.go` with a `Label` and a `Unit`; nothing else is needed for alerts.
+
 ## Notes for operators
 
 * Changing a price or a bundle size is a code change in the registry plus a release. Existing tenants keep the units

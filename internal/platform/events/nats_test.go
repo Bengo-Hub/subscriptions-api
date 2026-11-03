@@ -46,7 +46,7 @@ func TestMissingSubjects(t *testing.T) {
 			name:     "the real 2026-08-19 bug: existing stream predates email.>",
 			existing: []string{"subscription.>"},
 			want:     RequiredSubjects,
-			missing:  []string{"email.>"},
+			missing:  []string{"email.>", "billing.>"},
 		},
 		{
 			name:     "brand-new stream is missing everything",

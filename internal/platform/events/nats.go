@@ -31,7 +31,9 @@ func Connect(cfg config.EventsConfig) (*nats.Conn, error) {
 // added after "subscription.>" was already live in production; a stream that
 // exists but doesn't cover a subject silently black-holes every publish for
 // it — see the 2026-08-19 email-license outbox bug this fixed).
-var RequiredSubjects = []string{"subscription.>", "email.>"}
+// "billing.>" carries the central low-balance alert (shared-events balancealert), which this
+// service and marketflow-ai (provider balances) both publish.
+var RequiredSubjects = []string{"subscription.>", "email.>", "billing.>"}
 
 // EnsureStream creates the JetStream stream for this service's outbox events
 // if it doesn't exist, and — critically — extends an already-existing

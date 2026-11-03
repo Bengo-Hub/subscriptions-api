@@ -42,6 +42,14 @@ func seedServiceConfigs(ctx context.Context, tx *ent.Tx) error {
 			configType:  "int",
 			description: "Length in days of a free trial of a higher plan tier",
 		},
+		// Low-balance alert ratio for every metered credit service (billing.ConfigLowBalanceThreshold):
+		// a tenant is told when remaining units fall to this share of the period's total.
+		{
+			configKey:   "billing.low_balance_threshold",
+			configValue: "0.20",
+			configType:  "float",
+			description: "Share of a credit service's period total at which the tenant gets a low-balance alert",
+		},
 		{
 			configKey:   "subscriptions.max_plans_per_tenant",
 			configValue: "1",

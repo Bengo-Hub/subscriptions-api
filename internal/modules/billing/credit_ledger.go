@@ -75,6 +75,9 @@ type walletRow struct {
 	id      uuid.UUID
 	tag     string
 	balance int64
+	// lowThreshold and lifetime feed the low-balance alert (balance_alert.go).
+	lowThreshold int64
+	lifetime     int64
 }
 
 func legKey(key, leg string) string { return key + "|" + leg }
@@ -96,8 +99,8 @@ func (s *TokenWalletService) lockWallets(ctx context.Context, tx *sql.Tx, tenant
 		}
 		w := &walletRow{tag: tag}
 		if err := tx.QueryRowContext(ctx, `
-			SELECT id, balance FROM api_token_wallets
-			WHERE tenant_id = $1 AND service_tag = $2 FOR UPDATE`, tenantID, tag).Scan(&w.id, &w.balance); err != nil {
+			SELECT id, balance, low_balance_threshold, lifetime_granted FROM api_token_wallets
+			WHERE tenant_id = $1 AND service_tag = $2 FOR UPDATE`, tenantID, tag).Scan(&w.id, &w.balance, &w.lowThreshold, &w.lifetime); err != nil {
 			return nil, fmt.Errorf("lock wallet %s: %w", tag, err)
 		}
 		out[tag] = w
@@ -265,7 +268,25 @@ func (s *TokenWalletService) Consume(ctx context.Context, req ConsumeRequest) (C
 		}
 	}
 
+	// A spend that crosses the low mark or reaches zero raises the central low-balance alert
+	// in this transaction; an unlimited tier never runs low.
+	var alertKey string
+	if !req.UnlimitedQuota {
+		before := bundle.balance + balanceOf(quota)
+		after := before - fromQuota - fromBundle
+		if alertKey, err = s.balanceAlertFor(ctx, tx, req, bundle, quota, before, after); err != nil {
+			return ConsumeResult{}, err
+		}
+	}
+
 	row := func(w *walletRow, action string, tokens int64, leg string, meta map[string]any) error {
+		if alertKey != "" {
+			m := map[string]any{ledgerAlertKey: alertKey}
+			for k, v := range meta {
+				m[k] = v
+			}
+			meta = m
+		}
 		ok, err := insertLedger(ctx, tx, ledgerRow{
 			tenantID: req.TenantID, wallet: w, action: action, tokens: tokens, newBalance: w.balance,
 			endpoint: req.EndpointPattern, refID: req.RefID, refType: req.RefType, description: req.Description,
@@ -628,9 +649,20 @@ func (s *TokenWalletService) SetQuota(ctx context.Context, tenantID uuid.UUID, q
 		return false, fmt.Errorf("set quota: %w", err)
 	}
 	w.balance = target
+	// The period's total (allowance plus the bundle now) is what the low-balance alert
+	// measures remaining units against for the rest of the period.
+	periodTotal := target
+	if spec, ok := serviceByQuotaTag(quotaTag); ok {
+		var bundleBal int64
+		if err := tx.QueryRowContext(ctx, `SELECT COALESCE((SELECT balance FROM api_token_wallets WHERE tenant_id = $1 AND service_tag = $2), 0)`,
+			tenantID, spec.BundleTag).Scan(&bundleBal); err == nil && bundleBal > 0 {
+			periodTotal += bundleBal
+		}
+	}
 	if _, err := insertLedger(ctx, tx, ledgerRow{
 		tenantID: tenantID, wallet: w, action: ledgerAdjustment, tokens: delta, newBalance: target,
 		refType: "quota_reset", description: description, key: key,
+		metadata: map[string]any{"period_total": periodTotal},
 	}); err != nil {
 		return false, err
 	}

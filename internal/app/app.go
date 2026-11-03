@@ -333,6 +333,7 @@ func New(ctx context.Context) (*App, error) {
 	creditsSvc := credits.New(log, ormClient, billing.NewTokenWalletService(log, ormClient, sqlDB), subscriptionSvc)
 	subscriptionSvc.SetAddonResolver(credits.AddonResolver())
 	subscriptionSvc.SetUIBaseURL(cfg.Services.SubscriptionsUI)
+	billing.SetBuyCreditsBase(cfg.Services.SubscriptionsUI)
 	// A plan change scheduled (or cancelled) after the renewal invoice went out bills or voids
 	// the price difference on a separate plan-change invoice.
 	subscriptionSvc.SetRenewalInvoiceReissuer(func(ctx context.Context, tenantID uuid.UUID) {
