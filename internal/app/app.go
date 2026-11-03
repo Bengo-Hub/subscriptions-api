@@ -245,6 +245,17 @@ func New(ctx context.Context) (*App, error) {
 		}
 	}
 
+	// tenant.purge (dormancy, a deleted tenant, a declined registration): delete every row this
+	// service holds for the tenant, by the shared schema-driven purger.
+	if natsConn != nil {
+		if js, err := natsConn.JetStream(); err == nil {
+			purger := &eventslib.TenantPurger{DB: sqlDB, Log: log.Named("tenant-purge"), Service: "subscriptions"}
+			if err := purger.Subscribe(js); err != nil {
+				log.Warn("tenant purge consumer not started", zap.Error(err))
+			}
+		}
+	}
+
 	// Create subscription service. The platform tenant id is parsed once here so the
 	// service can exempt the platform owner (alongside the demo/codevertex slugs) from
 	// ever owning a subscription record.
