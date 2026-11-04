@@ -307,18 +307,12 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 	amount := decimal.NewFromFloat(plan.BasePrice).Mul(decimal.NewFromInt(int64(months)))
 
 	// One-time setup/installation fee: included in the checkout total only when the chosen
-	// period does NOT waive it and it has not been charged (or waived) before. An existing
-	// subscription's snapshot wins over the plan default so plan changes never re-charge it.
+	// period does NOT waive it, the tenant's switch is on and this is its first paid period, so
+	// a plan change never re-charges it.
 	existingSub, _ := s.client.TenantSubscription.Query().
 		Where(tenantsubscription.TenantIDEQ(in.TenantID)).
 		Only(ctx)
-	setupFee := plan.SetupFee
-	if existingSub != nil {
-		setupFee = 0
-		if existingSub.SetupFeeChargedAt == nil {
-			setupFee = existingSub.SetupFeeAmount
-		}
-	}
+	setupFee := s.checkoutSetupFee(ctx, in.TenantID, existingSub, plan)
 	setupFeeIncluded := setupFee > 0 && !CycleWaivesSetupFee(string(cycle))
 	if setupFeeIncluded {
 		amount = amount.Add(decimal.NewFromFloat(setupFee))

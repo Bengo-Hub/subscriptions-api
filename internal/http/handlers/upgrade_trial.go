@@ -302,6 +302,88 @@ func (h *SubscriptionHandler) AdminPutTenantUpgradeTrialPolicy(w http.ResponseWr
 	h.respondWithJSON(w, http.StatusOK, p)
 }
 
+// GetSetupFeeQuote godoc
+// @Summary Setup fee a checkout will charge
+// @Description The one-time setup fee a checkout for plan_code charges the calling tenant, before any
+// @Description billing period waiver: 0 once the tenant has paid for a period or the fee is off for it.
+// @Tags Subscriptions
+// @Produce json
+// @Security BearerAuth
+// @Param plan_code query string true "Plan to quote"
+// @Success 200 {object} subscriptions.SetupFeeQuote
+// @Failure 400 {object} map[string]string
+// @Router /subscription/setup-fee [get]
+func (h *SubscriptionHandler) GetSetupFeeQuote(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := callerTenantID(r)
+	if !ok {
+		h.respondWithError(w, http.StatusBadRequest, "tenant_id required")
+		return
+	}
+	quote, err := h.service.QuoteSetupFee(r.Context(), tenantID, r.URL.Query().Get("plan_code"))
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	h.respondWithJSON(w, http.StatusOK, quote)
+}
+
+// AdminGetTenantSetupFeePolicy godoc
+// @Summary Tenant setup fee switch (admin)
+// @Tags Platform
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Success 200 {object} subscriptions.SetupFeePolicy
+// @Router /admin/tenants/{tenant_id}/setup-fee/policy [get]
+func (h *SubscriptionHandler) AdminGetTenantSetupFeePolicy(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := pathTenantID(r)
+	if !ok {
+		h.respondWithError(w, http.StatusBadRequest, "invalid tenant_id")
+		return
+	}
+	p, err := h.service.SetupFeePolicyFor(r.Context(), tenantID)
+	if err != nil {
+		h.respondWithError(w, http.StatusInternalServerError, "failed to read setup fee policy")
+		return
+	}
+	h.respondWithJSON(w, http.StatusOK, p)
+}
+
+// AdminPutTenantSetupFeePolicy godoc
+// @Summary Set a tenant's setup fee switch (admin)
+// @Description enabled overrides the platform setting for this tenant; null (or absent) removes the
+// @Description override. It decides the first paid period only: the fee is never charged after that.
+// @Tags Platform
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param tenant_id path string true "Tenant UUID"
+// @Param body body object true "{enabled: bool|null}"
+// @Success 200 {object} subscriptions.SetupFeePolicy
+// @Failure 400 {object} map[string]string
+// @Router /admin/tenants/{tenant_id}/setup-fee/policy [put]
+func (h *SubscriptionHandler) AdminPutTenantSetupFeePolicy(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := pathTenantID(r)
+	if !ok {
+		h.respondWithError(w, http.StatusBadRequest, "invalid tenant_id")
+		return
+	}
+	var body struct {
+		Enabled *bool `json:"enabled"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		h.respondWithError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	p, err := h.service.SetTenantSetupFeePolicy(r.Context(), tenantID, body.Enabled)
+	if err != nil {
+		h.respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	h.log.Info("tenant setup fee switch changed", zap.String("tenant_id", tenantID.String()), zap.String("by", actingUserID(r)))
+	h.respondWithJSON(w, http.StatusOK, p)
+}
+
 // AdminStartUpgradeTrial godoc
 // @Summary Grant an upgrade trial (admin)
 // @Description Starts a trial of plan_code for the tenant, regardless of the policy switch or an

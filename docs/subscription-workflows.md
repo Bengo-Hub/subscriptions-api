@@ -225,6 +225,15 @@ period price is exactly `months × base_price` — no automatic discount.
 | `ANNUAL` | 12 | +12 months | **WAIVED** (≥ 6 months) |
 | `ONE_TIME` | — | No renewal (perpetual) | Per-plan (licence fee) |
 
+**Setup fee, once only (`internal/modules/subscriptions/setup_fee.go`):** the fee is charged
+on the tenant's first paid period and never again, so upgrades, downgrades, renewals and
+returning after a cancellation do not charge it. It applies only while the switch is on for the
+tenant: `subscriptions.setup_fee_enabled` in service config, a tenant row over the platform row,
+on when neither exists. The platform owner sets it per tenant on the tenant page
+(`PUT /api/v1/admin/tenants/{tenant_id}/setup-fee/policy`). Switching it on after the tenant has
+paid does not bill them. `GET /api/v1/subscription/setup-fee?plan_code=` returns what the
+checkout will charge, and the subscribe page shows that figure.
+
 **Setup-fee waiver (`internal/modules/subscriptions/billing_cycle.go`):** paying for
 `SetupFeeWaiverMonths` (6) or more months up front waives the one-time setup/installation
 fee entirely — it never appears on the invoice or checkout total. The waiver is stamped in

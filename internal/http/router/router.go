@@ -164,6 +164,7 @@ func New(
 				r.Post("/overage/disable", subscriptionHandler.DisableOverage)
 				// Upgrade trials: a higher tier for the configured days, then the upgrade on the
 				// next renewal date. DELETE ends the trial and keeps the paid plan.
+				r.Get("/setup-fee", subscriptionHandler.GetSetupFeeQuote)
 				r.Get("/upgrade-trial", subscriptionHandler.GetUpgradeTrial)
 				r.Post("/upgrade-trial", subscriptionHandler.StartUpgradeTrial)
 				r.Delete("/upgrade-trial", subscriptionHandler.EndUpgradeTrial)
@@ -355,6 +356,9 @@ func New(
 					r.Delete("/{tenant_id}/upgrade-trial", subscriptionHandler.AdminEndUpgradeTrial)
 					r.Post("/{tenant_id}/plan-change/apply", subscriptionHandler.AdminApplyPlanChange)
 					r.Delete("/{tenant_id}/plan-change", subscriptionHandler.AdminCancelPlanChange)
+					// One-time setup fee: per-tenant switch.
+					r.Get("/{tenant_id}/setup-fee/policy", subscriptionHandler.AdminGetTenantSetupFeePolicy)
+					r.Put("/{tenant_id}/setup-fee/policy", subscriptionHandler.AdminPutTenantSetupFeePolicy)
 				})
 
 				// Platform-wide upgrade trial switch and length.
