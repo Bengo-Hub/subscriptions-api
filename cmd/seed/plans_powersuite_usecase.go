@@ -84,7 +84,7 @@ func psCRMBlock(tier int) []string {
 			"unlimited_campaigns", "landing_pages", "email_sequences", "ai_chat_agent",
 			"lead_scoring", "funnel_builder", "automation_workflows",
 			"ticketing", "helpdesk", "sla_policies", "knowledge_base", "testimonials",
-			"webhooks", "deal_pipeline", "whatsapp_integration",
+			"webhooks", "deal_pipeline", "whatsapp_integration", "paid_ads_launch",
 		)
 	}
 	if tier >= 3 {

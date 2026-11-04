@@ -342,6 +342,9 @@ var featureCatalog = func() []catalogEntry {
 		feat("landing_pages", marketflow, "Marketing", "Landing Pages"),
 		feat("email_sequences", marketflow, "Marketing", "Email Drip Sequences"),
 		feat("funnel_builder", marketflow, "Marketing", "Marketing Funnel Builder"),
+		// Sprint 18: boosting an approved video on the client's own Meta ad account without the
+		// per-launch credit charge (ad money always goes from the client to Meta).
+		feat("paid_ads_launch", marketflow, "Marketing", "Paid Ads Launch (own Meta ad account)"),
 		feat("automation_workflows", marketflow, "Marketing", "Marketing Automation Workflows"),
 		feat("ai_chat_agent", marketflow, "Marketing", "AI Chat Agent (RAG-powered)"),
 		feat("whatsapp_integration", marketflow, "Marketing", "WhatsApp Business Integration"),

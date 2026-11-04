@@ -67,7 +67,7 @@ func powerSuiteFeatures(tier int) []string {
 			// MarketFlow CRM Growth
 			"contact_management", "lead_management", "unlimited_campaigns",
 			"landing_pages", "email_sequences", "ai_chat_agent",
-			"lead_scoring", "funnel_builder", "automation_workflows", "webhooks",
+			"lead_scoring", "funnel_builder", "automation_workflows", "webhooks", "paid_ads_launch",
 			"ticketing", "helpdesk", "sla_policies",
 			"knowledge_base", "testimonials", "shortlinks",
 			// ERP — HR/payroll for small teams
@@ -109,7 +109,7 @@ func powerSuiteFeatures(tier int) []string {
 			// MarketFlow CRM Professional (webhooks already included from logistics section)
 			"contact_management", "lead_management", "unlimited_campaigns",
 			"landing_pages", "email_sequences", "ai_chat_agent",
-			"lead_scoring", "funnel_builder", "automation_workflows",
+			"lead_scoring", "funnel_builder", "automation_workflows", "paid_ads_launch",
 			"ticketing", "helpdesk", "sla_policies",
 			"knowledge_base", "testimonials", "shortlinks",
 			"white_label", "dedicated_account_manager",
