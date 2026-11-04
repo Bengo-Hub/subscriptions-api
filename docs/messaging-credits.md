@@ -10,9 +10,9 @@ service whether a unit may be spent and report each spend. Nothing else keeps a 
 |---|---|---|---|
 | SMS | 100, 500, 1000, 5000 units at KES 1 each | none | KES 1 per SMS, billed on the next invoice |
 | WhatsApp | 100, 500, 1000, 5000 units at KES 1 each | Tier 1: KES 500 for 400 messages. Tier 2: KES 1000 for 800. Pro: KES 2000, unlimited | KES 1 per message, billed on the next invoice |
-| AI credits | 100 for KES 1000, 500 for KES 4000 | the plan's own monthly allowance (`ai_credits_monthly`) | not allowed, prepaid only |
+| AI credits | 100 for KES 1000, 500 for KES 4000 | MarketFlow plans only (`ai_credits_monthly`). No other subscription plan grants AI credits | not allowed, prepaid only |
 
-Bundle units never expire. A plan allowance resets at the start of each calendar month.
+Bundle units never expire. A plan allowance resets at the start of each calendar month. When a tenant's plan grants no allowance, the monthly refill clears any allowance left from an earlier plan; purchased bundles are not touched.
 
 The price list is public at `GET /api/v1/credits/catalog`. The source is `internal/modules/billing/credit_services.go`.
 Adding a credit product means adding one entry there.
@@ -233,12 +233,11 @@ renders, with a volume floor). It is about 2 to 5 credits at launch volumes.
 
 ### PowerSuite allowances
 
-* PowerSuite Gold granted `ai_credits_monthly: -1` (unlimited). That was safe for chat, but once the same credits buy
-  video it becomes an open-ended vendor cost. **The seed now sets 600 a month** (`cmd/seed/plans_powersuite_builders.go`,
-  approved 2026-10-22, guarded by `plans_powersuite_ai_credits_test.go`). The seed runs on every deploy, and the next
-  refill run sets the quota within the current month (unlimited tenants had no quota row this month). Tell Gold tenants
-  before the deploy, and check their recent AI usage so heavy chat users can buy a refill in time.
-* Basic (5) and Pro (100) stay as they are.
+* PowerSuite plans no longer grant AI credits (owner decision 2026-11-04). This replaces the earlier 5, 100 and 600 monthly
+  allowances. `cmd/seed/plans_powersuite_builders.go` carries no `ai_credits_monthly`, and
+  `plans_powersuite_ai_credits_test.go` guards it. ERP tiers build on these limits, so they grant none either.
+* The seed runs on every deploy and the next refill clears the old allowances. Bundles a tenant bought stay. Tell affected
+  tenants before the deploy.
 * The hourly refill would add the AI Studio plan's allowance to the base plan's allowance when a tenant has both.
 
 ### Changes when this is built

@@ -153,8 +153,15 @@ func (s *Service) refillOne(ctx context.Context, sub *ent.TenantSubscription, wi
 				target = tier.MonthlyUnit
 			}
 		case spec.PlanQuotaKey != "":
-			if limit := planLimit(sub, spec.PlanQuotaKey); limit > 0 {
+			limit := planLimit(sub, spec.PlanQuotaKey)
+			if limit > 0 {
 				target = limit
+			} else if limit == 0 {
+				// The plan grants no allowance (any more): clear what an earlier plan left behind,
+				// without writing an empty wallet for every tenant.
+				if bal, err := s.wallets.GetBalance(ctx, sub.TenantID, spec.QuotaTag); err == nil && bal.Balance > 0 {
+					target = 0
+				}
 			}
 		}
 		if target < 0 {

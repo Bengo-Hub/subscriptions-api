@@ -126,6 +126,8 @@ func powerSuiteFeatures(tier int) []string {
 // powerSuiteLimits is the single source of truth for the PowerSuite tier_limits at
 // tier N (1/2/3). Returns a fresh map each call. Tier 3 mirrors the recurring
 // Professional plan (all operational caps -1/unlimited; api_calls capped at 500K/mo).
+// AI credits are not a PowerSuite limit: only MarketFlow plans grant a monthly allowance, and any
+// tenant can buy credit bundles.
 func powerSuiteLimits(tier int) map[string]any {
 	switch tier {
 	case 1:
@@ -160,13 +162,12 @@ func powerSuiteLimits(tier int) map[string]any {
 			"max_payment_links":          20,
 			"max_currencies":             1,
 			// MarketFlow CRM
-			"max_contacts":       1000,
-			"max_leads":          500,
-			"max_campaigns":      5,
-			"max_sequences":      3,
-			"max_funnels":        2,
-			"ai_credits_monthly": 5,
-			"max_integrations":   2,
+			"max_contacts":     1000,
+			"max_leads":        500,
+			"max_campaigns":    5,
+			"max_sequences":    3,
+			"max_funnels":      2,
+			"max_integrations": 2,
 		}
 	case 2:
 		return map[string]any{
@@ -201,15 +202,14 @@ func powerSuiteLimits(tier int) map[string]any {
 			"max_currencies":             3,
 			"max_bulk_payout_rows":       500,
 			// MarketFlow CRM Growth
-			"max_contacts":       10000,
-			"max_leads":          5000,
-			"max_campaigns":      -1,
-			"max_sequences":      -1,
-			"max_funnels":        20,
-			"ai_credits_monthly": 100,
-			"max_integrations":   10,
-			"max_tickets":        -1,
-			"max_agents":         5,
+			"max_contacts":     10000,
+			"max_leads":        5000,
+			"max_campaigns":    -1,
+			"max_sequences":    -1,
+			"max_funnels":      20,
+			"max_integrations": 10,
+			"max_tickets":      -1,
+			"max_agents":       5,
 			// ERP (HR starter-level)
 			"max_employees":   50,
 			"max_departments": 5,
@@ -246,18 +246,15 @@ func powerSuiteLimits(tier int) map[string]any {
 			"max_payment_links":          -1,
 			"max_currencies":             -1,
 			"max_bulk_payout_rows":       -1,
-			// MarketFlow CRM — unlimited, except AI credits: the one ai_credits ledger also pays for
-			// video generation (MarketFlow Ads Autopilot), a real vendor cost per use, so Gold gets a
-			// monthly allowance of 600 instead of unlimited. More credits come from refill bundles.
-			"max_contacts":       -1,
-			"max_leads":          -1,
-			"max_campaigns":      -1,
-			"max_sequences":      -1,
-			"max_funnels":        -1,
-			"ai_credits_monthly": 600,
-			"max_integrations":   -1,
-			"max_tickets":        -1,
-			"max_agents":         -1,
+			// MarketFlow CRM — unlimited
+			"max_contacts":     -1,
+			"max_leads":        -1,
+			"max_campaigns":    -1,
+			"max_sequences":    -1,
+			"max_funnels":      -1,
+			"max_integrations": -1,
+			"max_tickets":      -1,
+			"max_agents":       -1,
 			// ERP — unlimited
 			"max_employees":   -1,
 			"max_departments": -1,
