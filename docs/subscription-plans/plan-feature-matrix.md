@@ -32,6 +32,27 @@ alongside ERP). Plan rows evolved IN PLACE from the POS product lines
 | Hospitality | `POWERSUITE_HOSP_` | 2,500 (5k) | 4,000 (10k) | 6,500 (20k) | 45k / 90k / 150k | 12k / 18k / 25k |
 | Retail (Duka) | `POWERSUITE_DUKA_` | 2,500 (5k) | 4,000 (10k) | 8,500 (20k) | 45k / 90k / 150k | 12k / 18k / 25k |
 
+**Services each PowerSuite tier opens (decision 2026-11-05):**
+
+| Tier | Services |
+|---|---|
+| 1 Basic | POS, Inventory, Books (basic) |
+| 2 Professional | Tier 1 plus Online ordering, Logistics, Marketflow |
+| 3 Gold | Tier 2 plus ERP, Projects |
+
+A service opens only through a feature code that belongs to it alone. A code several services list
+(`mpesa_integration`, `customer_management`, `basic_analytics`, the `basic_*_access` codes) carries the
+`platform` tag, which grants nothing (`mergeSharedCodes`, `resolveActiveServiceTags`).
+`TestPowerSuiteTierServices` works this table out from the real catalog.
+
+What tier 1 keeps running on purpose: POS saves customers as Marketflow contacts, because credit
+sales and receipts key on `crm_contact_id`, and the Marketflow app itself stays locked. Books keeps
+posting to the ledger.
+
+On an upgrade nothing is replayed, and none is needed: the storefront reads items live from
+inventory, POS has kept contacts current, logistics pulls outlets every 6 hours, and users appear when
+they first sign in.
+
 **Support-fee schedule revised 2026-09-11** (was 9k/19k/30k hosp, 9k/18k/30k duka+dawa) — capped
 at 25k/yr platform-wide across every PowerSuite family, per the same schedule now also seeded
 for Library (`SUPPORT_LIBRARY_{STARTER,GROWTH,PROFESSIONAL}`, `plans_library_support.go`,

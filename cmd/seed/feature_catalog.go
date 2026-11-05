@@ -43,7 +43,7 @@ func meteredLim(code, service, category, label, unit, nats string) catalogEntry 
 // by any service that integrates with the subscriptions-api, categorized per service.
 // Keep this in sync with the FEATURE_INFO/LIMIT_INFO maps in subscriptions-ui and
 // the RequireFeature()/CheckLimit() keys used by each service gate.
-var featureCatalog = func() []catalogEntry {
+var featureCatalog = mergeSharedCodes(func() []catalogEntry {
 	const (
 		ordering   = "ordering"
 		pos        = "pos"
@@ -143,9 +143,9 @@ var featureCatalog = func() []catalogEntry {
 		feat("route_optimization", ordering, "Ordering", "Route Optimization"),
 		feat("api_webhooks", ordering, "Ordering", "API & Outbound Webhook Events"),
 		feat("white_labeling", ordering, "Ordering", "White-Label Storefront"),
-		feat("basic_inventory_access", ordering, "Cross-Service Access", "Basic Inventory Access"),
-		feat("basic_logistics_access", ordering, "Cross-Service Access", "Basic Logistics Access"),
-		feat("basic_treasury_access", ordering, "Cross-Service Access", "Basic Treasury Access"),
+		feat("basic_inventory_access", platform, "Cross-Service Access", "Basic Inventory Access"),
+		feat("basic_logistics_access", platform, "Cross-Service Access", "Basic Logistics Access"),
+		feat("basic_treasury_access", platform, "Cross-Service Access", "Basic Treasury Access"),
 		lim("max_admins", ordering, "Limits", "Admins", ""),
 		lim("max_staff", ordering, "Limits", "Staff Members", ""),
 		lim("max_outlets", ordering, "Limits", "Outlets / Branches", ""),
@@ -415,7 +415,7 @@ var featureCatalog = func() []catalogEntry {
 		feat("expense_tracking", isp, "ISP", "Expense Tracking"),
 		feat("custom_domain", isp, "ISP", "Custom Domain"),
 		feat("white_label", isp, "ISP", "White-Label Captive Portal"),
-		feat("white_label_portal", isp, "ISP", "White-Label Customer Portal"),
+		feat("white_label_portal", projects, "Projects", "White-Label Customer Portal"),
 		feat("api_access", isp, "ISP", "API Access"),
 		feat("custom_integrations", isp, "ISP", "Custom Integrations"),
 		feat("priority_support", isp, "ISP", "Priority Support"),
@@ -490,7 +490,32 @@ var featureCatalog = func() []catalogEntry {
 		lim("max_library_branches", library, "Limits", "Library Branches", ""),
 	}
 	return entries
-}()
+}())
+
+// sharedServiceTag marks a code that belongs to no one service. It never grants service access
+// (subscriptions.resolveActiveServiceTags leaves it out).
+const sharedServiceTag = "platform"
+
+// mergeSharedCodes keeps one entry per code. A code several services list (mpesa_integration in both
+// treasury and ISP) is shared, so it is tagged sharedServiceTag. Each code is one row, so without this
+// the last listing won and granted its service to every plan holding the code: that is how every
+// PowerSuite tenant came to show ISP billing. A service is reached through codes only it lists.
+func mergeSharedCodes(entries []catalogEntry) []catalogEntry {
+	at := make(map[string]int, len(entries))
+	out := make([]catalogEntry, 0, len(entries))
+	for _, e := range entries {
+		i, seen := at[e.code]
+		if !seen {
+			at[e.code] = len(out)
+			out = append(out, e)
+			continue
+		}
+		if out[i].service != e.service {
+			out[i].service = sharedServiceTag
+		}
+	}
+	return out
+}
 
 // catalogCodeIndex is the set of canonical feature/limit codes in the catalog,
 // built once from featureCatalog. Used to validate plan-feature seeding.

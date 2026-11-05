@@ -217,6 +217,9 @@ func (s *Service) GetSubscriptionResult(ctx context.Context, tenantID uuid.UUID)
 	return result, nil
 }
 
+// sharedServiceTag is the catalog tag of a code several services use (cmd/seed mergeSharedCodes).
+const sharedServiceTag = "platform"
+
 // resolveActiveServiceTags returns the set of FeatureDefinition.service_tag values the tenant
 // currently has ANY entitlement in: the owning service_tag of every feature code in `features`
 // (batch-queried once), plus the main plan's own primary service_tag (covers a standalone plan
@@ -238,7 +241,8 @@ func (s *Service) resolveActiveServiceTags(ctx context.Context, features []strin
 			return nil, fmt.Errorf("query feature service tags: %w", err)
 		}
 		for _, t := range rows {
-			if t != "" {
+			// A shared code (analytics, branding, M-Pesa) belongs to no one service, so it opens none.
+			if t != "" && t != sharedServiceTag {
 				tags[t] = true
 			}
 		}

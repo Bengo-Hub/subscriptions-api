@@ -135,6 +135,32 @@ func psProjectsBlock(tier int) []string {
 	return base
 }
 
+// psSuiteOrderingBlock, psSuiteLogisticsBlock and psSuiteCRMBlock are what the PowerSuite plans
+// grant of those services: nothing at tier 1, which is POS, Inventory and basic Books only (decision
+// 2026-11-05). Their tags come from these blocks, so leaving them out is what locks the services, and
+// every service gate and event consumer then refuses the tenant until it upgrades. Tier 1 keeps only
+// the cross-cutting analytics and notification codes that belong to no one service.
+func psSuiteOrderingBlock(tier int) []string {
+	if tier < 2 {
+		return []string{"sms_notifications", "push_notifications", "basic_analytics"}
+	}
+	return psOrderingBlock(tier)
+}
+
+func psSuiteLogisticsBlock(tier int) []string {
+	if tier < 2 {
+		return nil
+	}
+	return psLogisticsBlock(tier)
+}
+
+func psSuiteCRMBlock(tier int) []string {
+	if tier < 2 {
+		return nil
+	}
+	return psCRMBlock(tier)
+}
+
 // psSuiteERPBlock and psSuiteProjectsBlock are what the PowerSuite plans (hospitality, retail,
 // pharmacy) grant: ERP and Projects open only at tier 3 (decision 2026-10-20). Tier 1 and 2 are
 // the shop floor and the books; HR, payroll and project modules start at tier 3, so a tier 2
@@ -203,7 +229,7 @@ func psInventoryCore() []string {
 // hospSuiteFeatures — Hospitality family (hotels, restaurants, bars, cafes).
 // Never grants lots & batches / expiry tracking / expiry alerts (excluded at every tier).
 func hospSuiteFeatures(tier int) []string {
-	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psSuiteERPBlock(tier), psSuiteProjectsBlock(tier), psTreasuryBlock(tier, false))
+	f := unionFeatures(psPOSCore(), psInventoryCore(), psSuiteOrderingBlock(tier), psSuiteLogisticsBlock(tier), psSuiteCRMBlock(tier), psSuiteERPBlock(tier), psSuiteProjectsBlock(tier), psTreasuryBlock(tier, false))
 	f = append(f, "table_management") // Floor & Service from tier 1
 	if tier >= 2 {
 		f = append(f,
@@ -228,7 +254,7 @@ func hospSuiteFeatures(tier int) []string {
 // Never grants lots & batches / expiry tracking / expiry alerts or the hotel stack.
 // Warranties is a RETAIL-ONLY module, tier 2+.
 func dukaSuiteFeatures(tier int) []string {
-	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psSuiteERPBlock(tier), psSuiteProjectsBlock(tier), psTreasuryBlock(tier, true))
+	f := unionFeatures(psPOSCore(), psInventoryCore(), psSuiteOrderingBlock(tier), psSuiteLogisticsBlock(tier), psSuiteCRMBlock(tier), psSuiteERPBlock(tier), psSuiteProjectsBlock(tier), psTreasuryBlock(tier, true))
 	f = append(f, "barcode_scanning")
 	if tier >= 2 {
 		f = append(f,
@@ -250,7 +276,7 @@ func dukaSuiteFeatures(tier int) []string {
 // Pharmacy clinical modules (prescriptions, patients, claims) unlock at tier 2 per the spec
 // (tier 1 "Pharmacy → no access"); stock take + stock alerts unlock at tier 3.
 func dawaSuiteFeatures(tier int) []string {
-	f := unionFeatures(psPOSCore(), psInventoryCore(), psOrderingBlock(tier), psLogisticsBlock(tier), psCRMBlock(tier), psSuiteERPBlock(tier), psSuiteProjectsBlock(tier), psTreasuryBlock(tier, true))
+	f := unionFeatures(psPOSCore(), psInventoryCore(), psSuiteOrderingBlock(tier), psSuiteLogisticsBlock(tier), psSuiteCRMBlock(tier), psSuiteERPBlock(tier), psSuiteProjectsBlock(tier), psTreasuryBlock(tier, true))
 	f = append(f, "lots_batches", "batch_expiry_tracking", "expiry_alerts")
 	if tier >= 2 {
 		f = append(f,
@@ -269,11 +295,31 @@ func dawaSuiteFeatures(tier int) []string {
 	return unionFeatures(f)
 }
 
+// suiteServicesText names the services a tier opens, for the plan description.
+func suiteServicesText(tier int) string {
+	switch {
+	case tier < 2:
+		return "POS, inventory and basic books"
+	case tier < 3:
+		return "POS, inventory, books, online ordering, logistics and CRM"
+	}
+	return "POS, inventory, books, online ordering, logistics, CRM, ERP and projects"
+}
+
 // useCaseSuiteLimits — powerSuiteLimits(tier) overlaid with family-specific POS caps.
 // Retail/pharmacy have no tables (or rooms); hospitality Gold adds unlimited rooms +
 // conference events.
 func useCaseSuiteLimits(family string, tier int) map[string]any {
 	base := powerSuiteLimits(tier)
+	if tier == 1 {
+		// Tier 1 has no logistics or CRM, so it carries no limits for them.
+		for _, k := range []string{
+			"max_riders", "live_tracking_requests_per_month", "routing_requests_per_month", "overage_rider_price_per_month",
+			"max_contacts", "max_leads", "max_campaigns", "max_sequences", "max_funnels",
+		} {
+			delete(base, k)
+		}
+	}
 	switch family {
 	case "hosp":
 		switch tier {
@@ -358,8 +404,7 @@ func seedUseCasePowerSuitePlans(ctx context.Context, tx *ent.Tx) error {
 			id := uuid.NewSHA1(uuid.NameSpaceOID, []byte(fmt.Sprintf("pos:%s:%s", fam.key, legacyTierNamespace[t])))
 			planCode := fmt.Sprintf("POWERSUITE_%s_%s", fam.code, useCaseTierCodes[t])
 			name := fmt.Sprintf("PowerSuite %s — %s", fam.label, useCaseTierNames[t])
-			desc := fmt.Sprintf("PowerSuite %s tier %d: POS, inventory, treasury, ordering, logistics, CRM and ERP for %s businesses.",
-				fam.label, tier, fam.label)
+			desc := fmt.Sprintf("PowerSuite %s tier %d: %s for %s businesses.", fam.label, tier, suiteServicesText(tier), fam.label)
 			feats := fam.features(tier)
 			limits := useCaseSuiteLimits(fam.key, tier)
 
