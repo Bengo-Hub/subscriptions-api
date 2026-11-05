@@ -102,8 +102,17 @@ Paying it settles that invoice only: the payment consumer recognises its ids and
 subscription a second time. Cancelling the change voids the plan-change invoice through treasury's
 S2S void route, unless money has already been paid on it (then it is kept and logged for a refund
 or credit). A change to a cheaper plan after the renewal invoice went out leaves the invoice as it
-is. Custom-priced tenants (`custom_base_price`) are billed their custom price on any plan, so their
-difference is zero.
+is.
+
+A custom price (`custom_base_price`) applies only to the plan it was set on. A scheduled change bills
+the new plan's list price, so the difference on a plan-change invoice is the new list price less the
+custom price, and every path that moves `plan_id` clears the custom price. A platform admin sets a
+new one for the new plan if one was agreed (user decision, 2026-11-05).
+
+A payment that renews early does not move a scheduled change. The period moves on, and the change
+still takes effect on its own `effective_at`. Everything that shows or charges the next bill reads
+`BillingPlanFor`: the invoice preview, `nextAmount` on `/billing`, the standing order quote and a
+checkout that renews the current plan. The plan shown on `/billing` is `PlanIDInForce`.
 
 ## Jobs
 

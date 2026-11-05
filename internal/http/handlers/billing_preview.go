@@ -78,8 +78,14 @@ func (h *BillingHandler) InvoicePreview(w http.ResponseWriter, r *http.Request) 
 	preview := invoicePreviewResponse{Currency: "KES"}
 
 	if sub.Edges.Plan != nil {
-		preview.BasePlanPriceKes = subscriptions.EffectivePrice(sub, sub.Edges.Plan)
-		preview.Currency = sub.Edges.Plan.Currency
+		// The plan the renewal invoice will bill, so a scheduled change shows in the next bill.
+		next, nerr := subscriptions.BillingPlanFor(ctx, h.client, sub)
+		if nerr != nil {
+			h.log.Warn("invoice preview: billing plan not found", zap.Error(nerr))
+			next = sub.Edges.Plan
+		}
+		preview.BasePlanPriceKes = subscriptions.EffectivePrice(sub, next)
+		preview.Currency = next.Currency
 	}
 
 	// Overage charges (pending)

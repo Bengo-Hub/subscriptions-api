@@ -494,14 +494,17 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 	if existing != nil {
 		// Update existing subscription. Always (re)set billing_cycle to the resolved cycle so
 		// switching a tenant onto a ONE_TIME plan corrects a previously-stored recurring cycle.
-		updated, err := h.client.TenantSubscription.UpdateOneID(existing.ID).
+		upd := h.client.TenantSubscription.UpdateOneID(existing.ID).
 			SetPlanID(plan.ID).
 			SetStatus(status).
 			SetBillingCycle(cycle).
 			SetCurrentPeriodStart(now).
 			SetCurrentPeriodEnd(periodEnd).
-			SetNillableTrialEndsAt(trialEndsPtr).
-			Save(ctx)
+			SetNillableTrialEndsAt(trialEndsPtr)
+		if existing.PlanID != plan.ID {
+			upd.ClearCustomBasePrice().ClearCustomPriceReason()
+		}
+		updated, err := upd.Save(ctx)
 		if err != nil {
 			h.log.Error("failed to update tenant subscription", zap.Error(err))
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update subscription"})
@@ -1320,6 +1323,10 @@ func (h *PlatformHandler) UpdateSubscription(w http.ResponseWriter, r *http.Requ
 			return
 		}
 		upd = upd.SetPlanID(plan.ID)
+		// An agreed price belongs to the plan it was set on; this request can set a new one below.
+		if plan.ID != sub.PlanID {
+			upd = upd.ClearCustomBasePrice().ClearCustomPriceReason()
+		}
 	}
 
 	if body.CustomBasePrice != nil || body.ClearCustomPrice {

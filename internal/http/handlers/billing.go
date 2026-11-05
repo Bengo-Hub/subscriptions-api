@@ -103,11 +103,27 @@ func (h *BillingHandler) GetBilling(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if sub.Edges.Plan != nil {
+		// The name shown is the plan the tenant is on right now (a due scheduled change counts before
+		// the hourly job moves plan_id); the next amount is what the renewal invoice will bill.
 		billing["planCode"] = sub.Edges.Plan.PlanCode
 		billing["planName"] = sub.Edges.Plan.Name
+		if forceID := subscriptions.PlanIDInForce(sub, time.Now().UTC()); forceID != sub.PlanID {
+			if force, ferr := h.client.SubscriptionPlan.Get(ctx, forceID); ferr == nil {
+				billing["planCode"] = force.PlanCode
+				billing["planName"] = force.Name
+			} else {
+				h.log.Warn("billing: plan in force not found", zap.Error(ferr))
+			}
+		}
 		effectivePrice := subscriptions.EffectivePrice(sub, sub.Edges.Plan)
+		nextAmount := effectivePrice
+		if next, nerr := subscriptions.BillingPlanFor(ctx, h.client, sub); nerr == nil {
+			nextAmount = subscriptions.EffectivePrice(sub, next)
+		} else {
+			h.log.Warn("billing: billing plan not found", zap.Error(nerr))
+		}
 		billing["amount"] = effectivePrice
-		billing["nextAmount"] = effectivePrice // alias for UI compatibility
+		billing["nextAmount"] = nextAmount
 		billing["currency"] = sub.Edges.Plan.Currency
 		billing["planType"] = string(sub.Edges.Plan.PlanType)
 		// Resolve billing scenario so the UI can hide renewal/auto-renew for

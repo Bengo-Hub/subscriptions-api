@@ -91,7 +91,7 @@ func seedBundles(ctx context.Context, tx *ent.Tx) error {
 			},
 			tiers: []schema.BundleTier{
 				{PlanCode: "POWERSUITE_DUKA_BASIC", MonthlyPrice: 2500, YearlyPrice: 30000},
-				{PlanCode: "POWERSUITE_DUKA_PRO", MonthlyPrice: 4500, YearlyPrice: 54000},
+				{PlanCode: "POWERSUITE_DUKA_PRO", MonthlyPrice: 4000, YearlyPrice: 48000},
 				{PlanCode: "POWERSUITE_DUKA_GOLD", MonthlyPrice: 8500, YearlyPrice: 102000},
 			},
 			sortOrder: 3,

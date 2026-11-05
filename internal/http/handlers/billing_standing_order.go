@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -86,6 +87,7 @@ func (h *BillingHandler) RegisterStandingOrder(w http.ResponseWriter, r *http.Re
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "subscription not found"})
 		return
 	}
+	h.useBillingPlan(r.Context(), sub)
 	terms, termsErr := standingOrderTermsFor(sub)
 	if termsErr != "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": termsErr})
@@ -167,6 +169,20 @@ type standingOrderTerms struct {
 // standingOrderPayee is the registered business the customer authorises to debit them.
 const standingOrderPayee = "Codevertex Africa Limited"
 
+// useBillingPlan points sub at the plan its renewals will bill, so a standing order registered while
+// a plan change is scheduled debits the new price from its first run.
+func (h *BillingHandler) useBillingPlan(ctx context.Context, sub *ent.TenantSubscription) {
+	if sub == nil {
+		return
+	}
+	next, err := subscriptions.BillingPlanFor(ctx, h.client, sub)
+	if err != nil {
+		h.log.Warn("standing order: billing plan not found", zap.Error(err))
+		return
+	}
+	sub.Edges.Plan = next
+}
+
 // standingOrderTermsFor derives the terms from the subscription; the string is a customer-facing
 // reason when a standing order is not possible.
 func standingOrderTermsFor(sub *ent.TenantSubscription) (standingOrderTerms, string) {
@@ -231,6 +247,7 @@ func (h *BillingHandler) GetStandingOrderQuote(w http.ResponseWriter, r *http.Re
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "subscription not found"})
 		return
 	}
+	h.useBillingPlan(r.Context(), sub)
 	terms, reason := standingOrderTermsFor(sub)
 	if reason != "" {
 		writeJSON(w, http.StatusOK, map[string]any{"available": false, "reason": reason})

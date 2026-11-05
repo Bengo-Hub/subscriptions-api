@@ -327,7 +327,7 @@ var useCaseFamilies = []useCaseFamily{
 	{
 		key: "duka", code: "DUKA", label: "Retail (Duka)", useCase: "retail",
 		features:  dukaSuiteFeatures,
-		monthly:   [3]float64{2500, 4500, 8500},
+		monthly:   [3]float64{2500, 4000, 8500},
 		setupFees: [3]float64{5000, 10000, 20000},
 		oneTime:   [3]float64{45000, 90000, 150000},
 		support:   [3]float64{12000, 18000, 25000},

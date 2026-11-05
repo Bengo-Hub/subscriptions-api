@@ -40,7 +40,7 @@ CRM - crm contacts and basic access
 
 
 Retail Power suite plans(inventory, treasury, pos, ordering, erp, crm, logistics)
-Power suite Professional tier 2(4500/mo), Setup Fee KES 10,000 · Buy outright(one-time) 90,000 · Annual support: 18,000
+Power suite Professional tier 2(4000/mo), Setup Fee KES 10,000 · Buy outright(one-time) 90,000 · Annual support: 18,000
 Inventory tier 2 features
 - Catalog -> all catalog side bar items and bulk upload or import support, recipes/bom not applicable
 - Warehouse -> all warehouse modules except Lots and batches

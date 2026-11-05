@@ -232,7 +232,7 @@ func (s *Service) applyScheduledChange(ctx context.Context, sub *ent.TenantSubsc
 	}
 	before := BillingPlanIDFor(sub)
 	if err := s.updateLocked(ctx, sub, func(u *ent.TenantSubscriptionUpdateOne) {
-		u.SetPlanID(newPlan.ID).SetMetadata(meta)
+		u.SetPlanID(newPlan.ID).SetMetadata(meta).ClearCustomBasePrice().ClearCustomPriceReason()
 	}, func(tx *ent.Tx) {
 		s.emitPlanChanged(ctx, tx, sub, oldPlan, newPlan)
 	}); err != nil {

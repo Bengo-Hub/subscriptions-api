@@ -30,7 +30,7 @@ alongside ERP). Plan rows evolved IN PLACE from the POS product lines
 | Family | Code prefix | T1 Basic /mo (setup) | T2 Professional /mo (setup) | T3 Gold /mo (setup) | Buy-outright T1/T2/T3 (+tier setup fee) | Annual support T1/T2/T3 |
 |---|---|---|---|---|---|---|
 | Hospitality | `POWERSUITE_HOSP_` | 2,500 (5k) | 4,000 (10k) | 6,500 (20k) | 45k / 90k / 150k | 12k / 18k / 25k |
-| Retail (Duka) | `POWERSUITE_DUKA_` | 2,500 (5k) | 4,500 (10k) | 8,500 (20k) | 45k / 90k / 150k | 12k / 18k / 25k |
+| Retail (Duka) | `POWERSUITE_DUKA_` | 2,500 (5k) | 4,000 (10k) | 8,500 (20k) | 45k / 90k / 150k | 12k / 18k / 25k |
 
 **Support-fee schedule revised 2026-09-11** (was 9k/19k/30k hosp, 9k/18k/30k duka+dawa) — capped
 at 25k/yr platform-wide across every PowerSuite family, per the same schedule now also seeded

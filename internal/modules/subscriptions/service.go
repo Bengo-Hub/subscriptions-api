@@ -304,14 +304,25 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 	if months <= 0 {
 		months = 1
 	}
-	amount := decimal.NewFromFloat(plan.BasePrice).Mul(decimal.NewFromInt(int64(months)))
+
+	existingSub, _ := s.client.TenantSubscription.Query().
+		Where(tenantsubscription.TenantIDEQ(in.TenantID)).
+		Only(ctx)
+	// Renewing the current plan pays what its renewal invoice would bill: an agreed price, or the
+	// scheduled plan when it takes effect by then. List price would under-charge either one.
+	unitPrice := plan.BasePrice
+	if existingSub != nil && existingSub.PlanID == plan.ID {
+		billing, berr := BillingPlanFor(ctx, s.client, existingSub)
+		if berr != nil {
+			return nil, berr
+		}
+		unitPrice = EffectivePrice(existingSub, billing)
+	}
+	amount := decimal.NewFromFloat(unitPrice).Mul(decimal.NewFromInt(int64(months)))
 
 	// One-time setup/installation fee: included in the checkout total only when the chosen
 	// period does NOT waive it, the tenant's switch is on and this is its first paid period, so
 	// a plan change never re-charges it.
-	existingSub, _ := s.client.TenantSubscription.Query().
-		Where(tenantsubscription.TenantIDEQ(in.TenantID)).
-		Only(ctx)
 	setupFee := s.checkoutSetupFee(ctx, in.TenantID, existingSub, plan)
 	setupFeeIncluded := setupFee > 0 && !CycleWaivesSetupFee(string(cycle))
 	if setupFeeIncluded {
@@ -728,6 +739,9 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 	}()
 
 	update := tx.TenantSubscription.UpdateOneID(sub.ID).SetPlanID(newPlan.ID)
+	if newPlan.ID != sub.PlanID {
+		update.ClearCustomBasePrice().ClearCustomPriceReason()
+	}
 
 	// Optional billing-period switch alongside the plan change (effective next renewal).
 	// A >= 6-month period waives the still-uncharged one-time setup fee (audit in metadata).
@@ -980,6 +994,9 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 		ClearCancelledAt().
 		ClearCancelReason().
 		ClearTrialEndsAt()
+	if planID != sub.PlanID {
+		update.ClearCustomBasePrice().ClearCustomPriceReason()
+	}
 	if waiveSetupFee {
 		update.SetSetupFeeAmount(0)
 	} else if setupFeePaid && sub.SetupFeeChargedAt == nil {
@@ -1616,14 +1633,17 @@ func (s *Service) activateFreePlan(ctx context.Context, in InitiateSubscriptionI
 	}
 
 	if existing != nil {
-		_, err = tx.TenantSubscription.UpdateOneID(existing.ID).
+		upd := tx.TenantSubscription.UpdateOneID(existing.ID).
 			SetPlanID(plan.ID).
 			SetStatus(tenantsubscription.StatusACTIVE).
 			SetCurrentPeriodStart(now).
 			SetCurrentPeriodEnd(periodEnd).
 			ClearCancelledAt().
-			ClearCancelReason().
-			Save(ctx)
+			ClearCancelReason()
+		if existing.PlanID != plan.ID {
+			upd.ClearCustomBasePrice().ClearCustomPriceReason()
+		}
+		_, err = upd.Save(ctx)
 	} else {
 		_, err = tx.TenantSubscription.Create().
 			SetTenantID(in.TenantID).
@@ -1727,8 +1747,11 @@ func (s *Service) SetAllowOverage(ctx context.Context, tenantID uuid.UUID, enabl
 // price for, without creating a new plan row. Every recurring-billing call site (renewal,
 // invoicing, dunning retries, admin revenue listings, billing previews) must read through this
 // instead of plan.BasePrice directly — see the ent schema doc on custom_base_price.
+//
+// The override was agreed for the plan the tenant is on, so it never prices another plan: a
+// scheduled upgrade bills the new plan's list price, and every path that moves plan_id clears it.
 func EffectivePrice(sub *ent.TenantSubscription, plan *ent.SubscriptionPlan) float64 {
-	if sub != nil && sub.CustomBasePrice != nil {
+	if sub != nil && sub.CustomBasePrice != nil && (plan == nil || plan.ID == sub.PlanID) {
 		return *sub.CustomBasePrice
 	}
 	if plan == nil {
