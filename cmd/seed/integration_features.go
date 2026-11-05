@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/planfeature"
@@ -30,6 +31,28 @@ var serviceIntegrationFeatures = map[string][]string{
 	"erp":         {"basic_treasury_access", "basic_inventory_access"},
 }
 
+// paystackFeature is what treasury checks before taking a Paystack payment.
+const paystackFeature = "paystack_integration"
+
+// isPowerSuiteTier1 matches a tier 1 PowerSuite plan, monthly or one-time.
+func isPowerSuiteTier1(planCode string) bool {
+	return strings.HasPrefix(planCode, "POWERSUITE_") && strings.Contains(planCode, "_BASIC")
+}
+
+// planIntegrationFeatures lists the codes a plan gets beyond its own feature list: its service's
+// basic integration scope, and Paystack on every plan except tier 1 PowerSuite (decision 2026-11-05).
+// Bundle and platform-wide plans have no service tag, so they get Paystack alone.
+func planIntegrationFeatures(planCode string, serviceTag *string) []string {
+	var extras []string
+	if serviceTag != nil {
+		extras = append(extras, serviceIntegrationFeatures[*serviceTag]...)
+	}
+	if !isPowerSuiteTier1(planCode) {
+		extras = append(extras, paystackFeature)
+	}
+	return extras
+}
+
 // injectIntegrationFeatures runs after all plans are seeded and ensures every plan carries
 // the basic integration-scope features for its service tag. It is additive + idempotent: an
 // integration feature already attached to the plan is skipped, and bundle/platform plans
@@ -42,11 +65,8 @@ func injectIntegrationFeatures(ctx context.Context, tx *ent.Tx) error {
 	}
 	injected := 0
 	for _, p := range plans {
-		if p.ServiceTag == nil {
-			continue // bundles / platform-wide plans
-		}
-		extras, ok := serviceIntegrationFeatures[*p.ServiceTag]
-		if !ok || len(extras) == 0 {
+		extras := planIntegrationFeatures(p.PlanCode, p.ServiceTag)
+		if len(extras) == 0 {
 			continue
 		}
 

@@ -88,6 +88,27 @@ func TestPowerSuiteTier1DropsPaidModules(t *testing.T) {
 	}
 }
 
+// Treasury refuses Paystack without the code, so every plan keeps it except tier 1 PowerSuite, and
+// holding it opens no service.
+func TestPaystackOnEveryPlanExceptPowerSuiteTier1(t *testing.T) {
+	pos, library := "pos", "library"
+	for _, code := range []string{"POWERSUITE_DUKA_BASIC", "POWERSUITE_HOSP_BASIC_ONE_TIME", "POWERSUITE_DAWA_BASIC"} {
+		if contains(planIntegrationFeatures(code, &pos), paystackFeature) {
+			t.Errorf("%s must not get Paystack", code)
+		}
+	}
+	if !contains(planIntegrationFeatures("POWERSUITE_DUKA_PRO", &pos), paystackFeature) ||
+		!contains(planIntegrationFeatures("LIBRARY_STARTER", &library), paystackFeature) ||
+		!contains(planIntegrationFeatures("BUNDLE_X", nil), paystackFeature) {
+		t.Error("other plans must keep Paystack")
+	}
+	for _, e := range featureCatalog {
+		if e.code == paystackFeature && e.service != sharedServiceTag {
+			t.Errorf("%s is tagged %s; it would open that service on every plan", e.code, e.service)
+		}
+	}
+}
+
 // One entry per code, and a code two services list grants neither.
 func TestCatalogHasOneEntryPerCode(t *testing.T) {
 	seen := map[string]bool{}
