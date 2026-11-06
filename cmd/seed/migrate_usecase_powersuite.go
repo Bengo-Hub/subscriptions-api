@@ -118,7 +118,7 @@ func migrateUseCasePowerSuite(ctx context.Context, tx *ent.Tx) error {
 				return ""
 			}
 			return fmt.Sprintf("POWERSUITE_%s_%s", familyForTenant(tenantID), seg)
-		case strings.HasPrefix(base, "ORDERING_") || strings.HasPrefix(base, "INVENTORY_") || strings.HasPrefix(base, "TREASURY_") ||
+		case strings.HasPrefix(base, "ORDERING_") || strings.HasPrefix(base, "INVENTORY_") ||
 			strings.HasPrefix(base, "LOGISTICS_") || strings.HasPrefix(base, "PROJECTS_") ||
 			(strings.HasPrefix(base, "MARKETFLOW_") && !strings.HasPrefix(base, "MARKETFLOW_AI_CREDITS_")):
 			// Standalone single-module plans: no real tenant runs ordering/inventory/treasury
@@ -128,7 +128,7 @@ func migrateUseCasePowerSuite(ctx context.Context, tx *ent.Tx) error {
 			// consumable one-time top-up packs (no STARTER/GROWTH/PROFESSIONAL tier suffix), not
 			// a tier plan — they're relocated to plans_addons.go and must survive this migration,
 			// not be swept up by the MARKETFLOW_ prefix match.
-			seg := tierSeg[stripAnyPrefix(base, "ORDERING_", "INVENTORY_", "TREASURY_", "LOGISTICS_", "PROJECTS_", "MARKETFLOW_")]
+			seg := tierSeg[stripAnyPrefix(base, "ORDERING_", "INVENTORY_", "LOGISTICS_", "PROJECTS_", "MARKETFLOW_")]
 			if seg == "" {
 				return ""
 			}
@@ -173,7 +173,8 @@ func migrateUseCasePowerSuite(ctx context.Context, tx *ent.Tx) error {
 			// covers their full catalog. POS has no equivalent — already fully retired above.
 			strings.HasPrefix(code, "ORDERING_"),
 			strings.HasPrefix(code, "INVENTORY_"),
-			strings.HasPrefix(code, "TREASURY_"),
+			// TREASURY_* is not here: treasury came back as a standalone product on 2026-11-06
+			// (plans_treasury.go) for tenants that take treasury alone, such as Hadia and Maskani.
 			// Logistics/MarketFlow/Projects standalone families (2026-09-11): folded into
 			// PowerSuite's psLogisticsBlock/psCRMBlock and ERP's psProjectsBlock respectively.
 			// MARKETFLOW_AI_CREDITS_* is deliberately excluded — those are consumable one-time

@@ -136,6 +136,12 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 		return fmt.Errorf("seed maskani plans: %w", err)
 	}
 
+	// 2.1e Standalone treasury: TREASURY_{STARTER,GROWTH,PROFESSIONAL} for tenants that take
+	// treasury alone (Hadia, a Maskani estate that bills only) — see plans_treasury.go.
+	if err := seedTreasuryPlans(ctx, tx); err != nil {
+		return fmt.Errorf("seed treasury plans: %w", err)
+	}
+
 	// 2.5 Seed TruLoad org-level plans (Starter, Growth, Professional + License)
 	if err := seedTruLoadOrgPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed truload org plans: %w", err)
