@@ -121,7 +121,7 @@ unlimited, no tables/rooms keys.
 | `POS_{HOSP,DUKA,DAWA}_LICENSE`¹ (tier-11) | family `GOLD_ONE_TIME` |
 | legacy flat `ERP_ONE_TIME` (150k) | `ERP_GROWTH_ONE_TIME` (same price) |
 | every remaining `*_YEARLY` row platform-wide | same code minus `_YEARLY` (sub keeps ANNUAL cycle); `ISP_*_YEARLY` → `ISP_BILLING_STARTER` |
-| `ORDERING_{STARTER,GROWTH,PROFESSIONAL}`, `INVENTORY_{STARTER,GROWTH,PROFESSIONAL}` (+`INVENTORY_ONE_TIME`), `TREASURY_{STARTER,GROWTH,PROFESSIONAL}` (2026-09-11) | same-tier family row by tenant `use_case`; `INVENTORY_ONE_TIME` → family `GOLD_ONE_TIME` (no ORDERING/TREASURY one-time equivalent existed). Confirmed no real tenant runs ordering/inventory/treasury standalone without the others in practice, and every feature/limit these plans granted already exists in the PowerSuite cross-service blocks above — removed from `cmd/seed` entirely (`plans_ordering.go`/`plans_inventory.go`/`plans_treasury.go` deleted). POS has no standalone equivalent — already fully retired in the original 2026-07-16 pass. |
+| `ORDERING_{STARTER,GROWTH,PROFESSIONAL}`, `INVENTORY_{STARTER,GROWTH,PROFESSIONAL}` (+`INVENTORY_ONE_TIME`), and until 2026-11-06 `TREASURY_{STARTER,GROWTH,PROFESSIONAL}` (2026-09-11; treasury is a standalone product again, see the treasury section below, and is no longer in this set) | same-tier family row by tenant `use_case`; `INVENTORY_ONE_TIME` → family `GOLD_ONE_TIME` (no ORDERING/TREASURY one-time equivalent existed). Confirmed no real tenant runs ordering/inventory/treasury standalone without the others in practice, and every feature/limit these plans granted already exists in the PowerSuite cross-service blocks above — removed from `cmd/seed` entirely (`plans_ordering.go`/`plans_inventory.go`/`plans_treasury.go` deleted). POS has no standalone equivalent — already fully retired in the original 2026-07-16 pass. |
 | `LOGISTICS_{STARTER,GROWTH,PROFESSIONAL}`, `MARKETFLOW_{STARTER,GROWTH,PROFESSIONAL}`, `PROJECTS_{STARTER,GROWTH,PROFESSIONAL}` (2026-09-11) | same-tier family row by tenant `use_case`. Logistics was a pure pre-existing duplicate of `psLogisticsBlock` (zero feature/limit gap). MarketFlow's 4 uncovered codes (`profile_pages`, `webhooks`, `deal_pipeline`, `whatsapp_integration`) were added to `psCRMBlock` first so nothing was lost. Projects had zero prior overlap — folded into ERP's remit via the new `psProjectsBlock` (T2+ gate, same as ERP itself) in both PowerSuite and standalone ERP's `erpFeatures`. `plans_logistics.go`/`plans_marketflow.go`/`plans_projects.go` deleted; MarketFlow's 2 AI-credit one-time top-up packs (`MARKETFLOW_AI_CREDITS_100/500`, consumable purchases not tier features, referenced nowhere else in the codebase) survive, relocated to `plans_addons.go`'s `seedAICreditsAddonPlans` — `isDoomed`/`successorCode` explicitly exclude the `MARKETFLOW_AI_CREDITS_` prefix so they're never swept into this migration. |
 
 ¹ The `DAWA` family itself was retired 2026-08-29 (see the callout at the top of this doc) —
@@ -157,6 +157,32 @@ tier 3 treasury set from Growth). Limits are `erpLimits(tier)` plus `max_units`.
 - No plan setup fee: implementation is quoted per project. Annual prepayment (one month free) is
   handled at invoicing, not as a separate plan.
 - `plans_maskani_test.go` checks catalog codes, the tier superset rule and the SRDD limits.
+
+## Treasury on its own (added 2026-11-06)
+
+`cmd/seed/plans_treasury.go`, service tag `treasury`, monthly, no use case (every tenant sees
+them). For a tenant that needs payments, invoicing and the ledger but none of POS, inventory,
+ordering or ERP, such as Hadia (gift registry escrow) or a property platform that bills through
+treasury. SSO and notifications come with every subscription and are never sold separately.
+Every feature is a catalog code owned by treasury or the platform, never another product's, so
+the token's `active_service_tags` open treasury only (`plans_treasury_test.go` checks this).
+
+| Plan | KES / month | Users | Wallets | Adds |
+|---|---|---|---|---|
+| `TREASURY_STARTER` | 4,000 | 3 | 3 | M-Pesa and card collection, payment links, quotations, invoices and credit notes, customer and vendor ledgers, AR and AP, double-entry ledger, tax codes, KRA eTIMS, treasury approvals, smart tax advisor |
+| `TREASURY_GROWTH` | 8,000 | 10 | Unlimited | Escrow wallets, bulk and scheduled payouts (1,000 rows a run), payment and journal vouchers, full reconciliation, audit trail, cash forecasting, BI reports, treasury budgets (`treasury_budgets`) |
+| `TREASURY_PROFESSIONAL` | 15,000 | 25 | Unlimited | Multiple currencies (5), equity and royalty payouts, API access, webhooks, custom integrations |
+
+- 14-day free trial like every family. A longer try-out agreed with one client (Hadia's 60 days)
+  is set on that tenant's subscription (`trial_ends_at`), not on the plan.
+- Treasury budgets open with ERP `budgeting` or `treasury_budgets` (treasury-api
+  `BudgetFeatures`, treasury-ui `BUDGET_FEATURES`); a treasury plan cannot carry `budgeting`,
+  which is an ERP code and would open ERP.
+- `max_transactions_per_month` is metered on `pos.transaction.created`, which a treasury-only
+  tenant never emits, so on these plans it is informational. A treasury payment meter is an open
+  item.
+- treasury-api reads a limit of 0 as unlimited, so a tier never sets 0 to mean none; Starter
+  omits `max_bulk_payout_rows` and lacks `bulk_payouts`.
 
 ## Kept as-is (per spec notes)
 
