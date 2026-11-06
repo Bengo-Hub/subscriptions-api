@@ -80,6 +80,10 @@ func New(
 		r.Get("/plans", planHandler.ListPlans)
 		r.Get("/plans/{id}", planHandler.GetPlan)
 		r.Get("/plans/code/{code}", planHandler.GetPlanByCode)
+		// Feature names and units for public pricing pages (labels only, no plan mappings).
+		if featureCatalogHandler != nil {
+			r.Get("/catalog/features", featureCatalogHandler.ListPublicCatalog)
+		}
 		// Current subscription Terms & Conditions (shown + accepted in the subscribe flow)
 		r.Get("/terms", subscriptionHandler.GetTerms)
 

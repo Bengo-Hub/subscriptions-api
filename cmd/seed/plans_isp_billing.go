@@ -61,10 +61,10 @@ func seedISPBillingPlans(ctx context.Context, tx *ent.Tx) error {
 	const (
 		planCode = "ISP_BILLING_STARTER"
 		planName = "ISP Billing"
-		planDesc = "Pay-as-you-grow for ISP providers (hotspot + PPPoE). KES 500/month base; " +
-			"+3% of hotspot revenue once monthly sales exceed KES 10,000; +KES 35 per active " +
-			"PPPoE subscriber/month (always). Unlimited routers, users, customers & vouchers. " +
-			"14-day free trial. SMS/WhatsApp via prepaid credits."
+		// The usage charges live in tier_limits (billingParams above) and pricing pages print
+		// them from there, so the description names what the plan covers, not what it costs.
+		planDesc = "Hotspot and PPPoE billing for internet providers, with unlimited routers, " +
+			"users, customers and vouchers. SMS and WhatsApp messages use prepaid credits."
 	)
 
 	existing, err := tx.SubscriptionPlan.Get(ctx, planID)

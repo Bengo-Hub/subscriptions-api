@@ -243,7 +243,8 @@ All routes under `/api/v1` (plus health at root `/healthz` and `/readyz`):
 | **Plans (PUBLIC — no auth)** | | | |
 | GET | `/api/v1/plans` | **No** | List all active plans |
 | GET | `/api/v1/plans/{id}` | **No** | Get plan by ID |
-| GET | `/api/v1/plans/code/{code}` | **No** | Get plan by plan_code |
+| GET | `/api/v1/plans/code/{code}` | **No** | Get plan by plan_code (case sensitive) |
+| GET | `/api/v1/catalog/features` | **No** | Feature and limit names for pricing pages: label, category, unit. No event subjects or plan mappings |
 | GET | `/api/v1/service-charges/plans` | **No** | List service charge plans |
 | GET | `/api/v1/service-charges/plans/{code}` | **No** | Get service charge plan by code |
 | **Tenant Subscription (JWT or API key required)** | | | |
@@ -320,5 +321,5 @@ All routes under `/api/v1` (plus health at root `/healthz` and `/readyz`):
 2. **Atlas over Ent auto-migrate** — Schema changes require explicit versioned migration files. This prevents accidental destructive migrations in production.
 3. **JWT-baked subscription claims** — Subscription status, features, and limits are embedded in the JWT at issuance. Services read from JWT claims (no runtime calls to subscriptions-api for feature gates), eliminating latency and a dependency.
 4. **Outbox pattern** — Guarantees at-least-once event delivery without distributed transactions. Both directional events (`subscription.upgraded/downgraded`) and a consistent `tenant.subscription.updated` event are emitted on plan changes.
-5. **Public plan catalog** — `/plans`, `/plans/{id}`, `/plans/code/{code}` require no authentication. Pricing pages, onboarding flows, and unauthenticated quote tools can call these freely.
+5. **Public plan catalog** — `/plans`, `/plans/{id}`, `/plans/code/{code}` and `/catalog/features` require no authentication. `/catalog/features` leaves out the Cross-Service Access category and is cached for 5 minutes; the full catalog with plan mappings stays at the signed-in `/features/catalog`. Pricing pages, onboarding flows, and unauthenticated quote tools can call these freely.
 6. **Idempotent seeder** — `cmd/seed/main.go` can be re-run safely; uses upsert logic. 85 plans across 10 service tags are seeded and confirmed live.

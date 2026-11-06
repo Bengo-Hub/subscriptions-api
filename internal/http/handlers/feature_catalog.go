@@ -318,6 +318,60 @@ func (h *FeatureCatalogHandler) ListCatalog(w http.ResponseWriter, r *http.Reque
 	})
 }
 
+// publicFeatureDTO is the catalog as a pricing page needs it: names, grouping and units only.
+// Event subjects, default limits and plan mappings stay behind sign-in.
+type publicFeatureDTO struct {
+	FeatureCode string `json:"featureCode"`
+	ServiceTag  string `json:"serviceTag"`
+	Category    string `json:"category"`
+	Label       string `json:"label"`
+	Description string `json:"description,omitempty"`
+	Kind        string `json:"kind"`
+	Unit        string `json:"unit,omitempty"`
+	SortOrder   int    `json:"sortOrder"`
+}
+
+// internalFeatureCategory holds gateway-access codes that are not something a buyer picks.
+const internalFeatureCategory = "Cross-Service Access"
+
+// ListPublicCatalog serves GET /api/v1/catalog/features without sign-in, so public pricing
+// pages can name the features in each plan. Optional ?service= narrows it to one service tag.
+func (h *FeatureCatalogHandler) ListPublicCatalog(w http.ResponseWriter, r *http.Request) {
+	q := h.orm.FeatureDefinition.Query().
+		Where(featuredefinition.IsActive(true), featuredefinition.CategoryNEQ(internalFeatureCategory))
+	if svc := r.URL.Query().Get("service"); svc != "" {
+		q = q.Where(featuredefinition.ServiceTagEQ(svc))
+	}
+	defs, err := q.
+		Order(
+			ent.Asc(featuredefinition.FieldServiceTag),
+			ent.Asc(featuredefinition.FieldSortOrder),
+			ent.Asc(featuredefinition.FieldLabel),
+		).
+		All(r.Context())
+	if err != nil {
+		h.log.Error("list public feature catalog", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to list feature catalog"})
+		return
+	}
+	items := make([]publicFeatureDTO, len(defs))
+	for i, d := range defs {
+		items[i] = publicFeatureDTO{
+			FeatureCode: d.FeatureCode,
+			ServiceTag:  d.ServiceTag,
+			Category:    d.Category,
+			Label:       d.Label,
+			Description: d.Description,
+			Kind:        string(d.Kind),
+			Unit:        d.Unit,
+			SortOrder:   d.SortOrder,
+		}
+	}
+	// The catalog changes only when the platform edits it; let browsers and the CDN reuse it.
+	w.Header().Set("Cache-Control", "public, max-age=300")
+	writeJSON(w, http.StatusOK, map[string]any{"features": items, "count": len(items)})
+}
+
 type upsertFeatureDefinitionRequest struct {
 	FeatureCode   string `json:"featureCode"`
 	ServiceTag    string `json:"serviceTag"`

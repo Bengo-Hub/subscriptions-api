@@ -377,7 +377,8 @@ req.Header.Set("X-API-Key", os.Getenv("INTERNAL_SERVICE_KEY"))
 |--------|------|-------------|
 | GET | `/api/v1/plans` | List all active plans (all service tags) |
 | GET | `/api/v1/plans/{id}` | Get plan by UUID |
-| GET | `/api/v1/plans/code/{code}` | Get plan by plan_code |
+| GET | `/api/v1/plans/code/{code}` | Get plan by plan_code (case sensitive) |
+| GET | `/api/v1/catalog/features` | Public feature names for pricing pages (used by accounts.codevertexafrica.com/pricing) |
 | GET | `/api/v1/service-charges/plans` | List service charge plans |
 | GET | `/api/v1/service-charges/plans/{code}` | Get service charge plan by code |
 
