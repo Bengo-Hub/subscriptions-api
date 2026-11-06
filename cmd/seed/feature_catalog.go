@@ -86,8 +86,11 @@ var featureCatalog = mergeSharedCodes(func() []catalogEntry {
 		feat("etims_integration", treasury, "Accounting", "KRA eTIMS Integration"),
 		// Planning (13-week cash forecast, rolling forecast, scenarios) and the BI decision
 		// reports (budget vs actual, cost-center/project P&L, runway, trends, working capital,
-		// tax calendar). Treasury budgets themselves gate on the ERP "budgeting" code.
+		// tax calendar). Treasury budgets gate on the ERP "budgeting" code or treasury_budgets.
 		feat("financial_planning", treasury, "Accounting", "Financial Planning & Cash Forecasting"),
+		// Treasury budgets on a treasury-only plan. ERP plans open the same screens with the ERP
+		// "budgeting" code; a treasury plan cannot carry that code, or the token would open ERP.
+		feat("treasury_budgets", treasury, "Accounting", "Budgets (Treasury)"),
 		feat("bi_reports", treasury, "Accounting", "Business Intelligence Reports"),
 		// Standalone external eTIMS API product (ETIMS_API_BASIC/GROWTH/SCALE plans, service_tag
 		// "etims_api") -- distinct from etims_integration above (bundled feature onboarded tenants

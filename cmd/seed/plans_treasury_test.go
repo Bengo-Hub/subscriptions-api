@@ -45,3 +45,26 @@ func TestTreasuryPlansSurviveTheRetirementMigration(t *testing.T) {
 		t.Fatal("migrateUseCasePowerSuite still deletes TREASURY_* plans")
 	}
 }
+
+// A treasury-only plan must not carry another product's feature: subscriptions-api adds every
+// feature's service tag to the token's active_service_tags, so one ERP code would open ERP.
+func TestTreasuryPlansCarryNoOtherProduct(t *testing.T) {
+	tags := map[string]map[string]bool{}
+	for _, e := range featureCatalog {
+		if tags[e.code] == nil {
+			tags[e.code] = map[string]bool{}
+		}
+		tags[e.code][e.service] = true
+	}
+	for _, tier := range treasuryTiers {
+		for _, f := range treasuryPlanFeatures(tier.tier) {
+			owners := tags[canonicalFeatureCode(f)]
+			if !owners["treasury"] && !owners["platform"] && !owners[sharedServiceTag] {
+				t.Errorf("%s: %q belongs to %v, not treasury or the platform", tier.code, f, owners)
+			}
+		}
+	}
+	if !slices.Contains(treasuryPlanFeatures(2), "treasury_budgets") {
+		t.Error("TREASURY_GROWTH must include treasury_budgets")
+	}
+}

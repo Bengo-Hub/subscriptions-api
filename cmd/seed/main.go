@@ -137,7 +137,7 @@ func runSeed(ctx context.Context, client *ent.Client, cfg *config.Config) (err e
 	}
 
 	// 2.1e Standalone treasury: TREASURY_{STARTER,GROWTH,PROFESSIONAL} for tenants that take
-	// treasury alone (Hadia, a Maskani estate that bills only) — see plans_treasury.go.
+	// treasury alone (Hadia, a Maskani estate that bills only). See plans_treasury.go.
 	if err := seedTreasuryPlans(ctx, tx); err != nil {
 		return fmt.Errorf("seed treasury plans: %w", err)
 	}

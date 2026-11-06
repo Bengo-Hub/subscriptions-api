@@ -30,7 +30,7 @@ func treasuryPlanFeatures(tier int) []string {
 	// treasury alone is of no use.
 	f := unionFeatures(psTreasuryBlock(2, true), []string{"mpesa_integration", "paystack_integration"})
 	if tier >= 2 {
-		f = unionFeatures(f, psTreasuryBlock(3, true), []string{"bulk_payouts", "payout_schedules"})
+		f = unionFeatures(f, psTreasuryBlock(3, true), []string{"bulk_payouts", "payout_schedules", "treasury_budgets"})
 	}
 	if tier >= 3 {
 		f = unionFeatures(f, []string{"multi_currency", "equity_payouts", "api_access", "webhooks", "custom_integrations"})
@@ -38,13 +38,16 @@ func treasuryPlanFeatures(tier int) []string {
 	return f
 }
 
-// treasuryPlanLimits: -1 is unlimited. Growth and Professional do not cap wallets or payment
-// links, since an escrow tenant opens one wallet per beneficiary (one per registry on Hadia).
+// treasuryPlanLimits: -1 is unlimited (treasury-api reads 0 as unlimited too, so a limit is never
+// set to 0 to mean none; a tier without a feature simply lacks the feature). Growth and
+// Professional do not cap wallets or payment links, since an escrow tenant opens one wallet per
+// beneficiary (one per registry on Hadia). max_transactions_per_month is metered on
+// pos.transaction.created, which a treasury-only tenant never emits, so it is informational here.
 func treasuryPlanLimits(tier int) map[string]any {
 	switch tier {
 	case 1:
 		return map[string]any{"max_users": 3, "max_wallets": 3, "max_payment_links": 50, "max_currencies": 1,
-			"max_bulk_payout_rows": 0, "max_transactions_per_month": 2000}
+			"max_transactions_per_month": 2000}
 	case 2:
 		return map[string]any{"max_users": 10, "max_wallets": -1, "max_payment_links": -1, "max_currencies": 1,
 			"max_bulk_payout_rows": 1000, "max_transactions_per_month": -1}
