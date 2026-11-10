@@ -312,6 +312,16 @@ maxRiders := claims.SubscriptionLimits["max_riders"]
 
 ---
 
+### MarketFlow CRM (November 2026)
+
+**Integration type**: REST API (S2S, outbound)
+
+When a subscriber sets up a card (`SetupPaymentMethod`), subscriptions-api upserts the tenant admin as a contact in marketflow-api. The contact is filed under the platform tenant (`PLATFORM_TENANT_ID`, equal to the platform's tenant id in auth), because subscribers are the platform's customers and not contacts inside their own CRM. It sends a first and last name (the optional `billing_name`, else the email's local part) and the email.
+
+**Config**: `MARKETFLOW_API_URL` (default `https://marketflowapi.codevertexafrica.com`), `PLATFORM_TENANT_ID` and `INTERNAL_SERVICE_KEY`. A CRM failure never blocks card setup.
+
+---
+
 ### Notifications Service
 
 **Integration type**: NATS events (subscriptions-api → notifications-api)
