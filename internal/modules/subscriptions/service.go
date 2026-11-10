@@ -108,6 +108,17 @@ type RenewInput struct {
 	// payment.succeeded event). When it matches the subscription's pending_intent_id
 	// metadata, the billing period/plan chosen at checkout is applied atomically.
 	IntentID string
+	// Payment is the payment behind this renewal, so the renewal confirmation can say what was
+	// paid (nil for a renewal with no payment, such as a manual or free one).
+	Payment *RenewalPayment
+}
+
+// RenewalPayment is what the tenant paid for a renewal, as treasury reported it.
+type RenewalPayment struct {
+	Amount    string
+	Currency  string
+	Method    string
+	Reference string
 }
 
 // InitiateSubscriptionInput defines the payload for starting a subscription checkout.
@@ -976,7 +987,6 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 		}
 	}()
 
-
 	update := tx.TenantSubscription.UpdateOneID(sub.ID).
 		SetPlanID(planID).
 		SetStatus(tenantsubscription.StatusACTIVE).
@@ -1041,6 +1051,17 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 		"notification": map[string]any{
 			"target": "tenant_admin",
 		},
+	}
+	if pay := in.Payment; pay != nil {
+		// The renewal confirmation is also the payment confirmation (notifications-api
+		// subscription_renewed), so it carries what was paid.
+		renewedPayload["amount_paid"] = pay.Amount
+		renewedPayload["currency"] = pay.Currency
+		renewedPayload["payment_method"] = pay.Method
+		renewedPayload["payment_reference"] = pay.Reference
+	}
+	if in.IntentID != "" {
+		renewedPayload["intent_id"] = in.IntentID
 	}
 	if p, perr := tx.SubscriptionPlan.Get(ctx, sub.PlanID); perr == nil {
 		renewedPayload["plan_code"] = p.PlanCode

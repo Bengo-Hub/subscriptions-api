@@ -34,30 +34,36 @@ type treasuryPaymentEvent struct {
 	Timestamp time.Time `json:"timestamp"`
 	EventType string    `json:"event_type"`
 	Payload   struct {
-		IntentID         string      `json:"intent_id"`
-		TenantID         string      `json:"tenant_id"`
-		ReferenceID      string      `json:"reference_id"`
-		ReferenceType    string      `json:"reference_type"`
-		Status           string      `json:"status"`
-		PlanCode         string      `json:"plan_code"`
-		Amount           json.Number `json:"amount"`
-		PaystackAuthCode string      `json:"paystack_auth_code"`
-		CardLast4        string      `json:"card_last4"`
-		CardType         string      `json:"card_type"`
-		CardExpMonth     string      `json:"card_exp_month"`
-		CardExpYear      string      `json:"card_exp_year"`
+		IntentID          string      `json:"intent_id"`
+		TenantID          string      `json:"tenant_id"`
+		ReferenceID       string      `json:"reference_id"`
+		ReferenceType     string      `json:"reference_type"`
+		Status            string      `json:"status"`
+		PlanCode          string      `json:"plan_code"`
+		Amount            json.Number `json:"amount"`
+		PaystackAuthCode  string      `json:"paystack_auth_code"`
+		Currency          string      `json:"currency"`
+		PaymentMethod     string      `json:"payment_method"`
+		ProviderReference string      `json:"provider_reference"`
+		CardLast4         string      `json:"card_last4"`
+		CardType          string      `json:"card_type"`
+		CardExpMonth      string      `json:"card_exp_month"`
+		CardExpYear       string      `json:"card_exp_year"`
 	} `json:"payload"`
 	// Also accept flat structure (some publishers embed payload at top-level)
-	TenantID         string      `json:"tenant_id"`
-	ReferenceID      string      `json:"reference_id"`
-	ReferenceType    string      `json:"reference_type"`
-	PlanCode         string      `json:"plan_code"`
-	Amount           json.Number `json:"amount"`
-	PaystackAuthCode string      `json:"paystack_auth_code"`
-	CardLast4        string      `json:"card_last4"`
-	CardType         string      `json:"card_type"`
-	CardExpMonth     string      `json:"card_exp_month"`
-	CardExpYear      string      `json:"card_exp_year"`
+	TenantID          string      `json:"tenant_id"`
+	ReferenceID       string      `json:"reference_id"`
+	ReferenceType     string      `json:"reference_type"`
+	PlanCode          string      `json:"plan_code"`
+	Amount            json.Number `json:"amount"`
+	PaystackAuthCode  string      `json:"paystack_auth_code"`
+	Currency          string      `json:"currency"`
+	PaymentMethod     string      `json:"payment_method"`
+	ProviderReference string      `json:"provider_reference"`
+	CardLast4         string      `json:"card_last4"`
+	CardType          string      `json:"card_type"`
+	CardExpMonth      string      `json:"card_exp_month"`
+	CardExpYear       string      `json:"card_exp_year"`
 }
 
 // treasuryPaymentConsumerName keys processed_events rows for this consumer.
@@ -338,6 +344,7 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 			TenantID: tenantID,
 			PlanCode: planCode,
 			IntentID: ev.Payload.IntentID,
+			Payment:  paymentOf(&ev),
 		}); err != nil {
 			c.log.Error("failed to renew subscription on payment.succeeded", zap.String("tenant_id", tenantIDStr), zap.Error(err))
 			return err
@@ -492,4 +499,30 @@ func (c *TreasuryPaymentConsumer) saveCardAuthorization(ctx context.Context, ten
 		SetMetadata(meta).
 		Save(ctx)
 	return err
+}
+
+// paymentOf is the payment that renewed the subscription, as the renewal confirmation shows it:
+// the amount, currency, method and the provider's receipt (the M-Pesa code), from either payload
+// shape treasury publishes.
+func paymentOf(ev *treasuryPaymentEvent) *subscriptions.RenewalPayment {
+	amount := ev.Payload.Amount.String()
+	if amount == "" {
+		amount = ev.Amount.String()
+	}
+	pick := func(a, b string) string {
+		if a != "" {
+			return a
+		}
+		return b
+	}
+	p := &subscriptions.RenewalPayment{
+		Amount:    amount,
+		Currency:  pick(ev.Payload.Currency, ev.Currency),
+		Method:    pick(ev.Payload.PaymentMethod, ev.PaymentMethod),
+		Reference: pick(ev.Payload.ProviderReference, ev.ProviderReference),
+	}
+	if p.Amount == "" && p.Reference == "" {
+		return nil
+	}
+	return p
 }
