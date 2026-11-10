@@ -29,7 +29,7 @@ type BillingHandler struct {
 	log              *zap.Logger
 	client           *ent.Client
 	treasuryClient   *serviceclient.Client
-	treasuryAPIKey   string
+	serviceKey       string // shared S2S key sent as X-API-Key to treasury and marketflow
 	marketflowURL    string
 	platformTenantID string // issuer tenant for subscription invoices (owns the invoice doc in treasury)
 	treasuryUIBase   string // public treasury-ui base, for invoice pay links
@@ -48,7 +48,7 @@ func NewBillingHandler(log *zap.Logger, client *ent.Client, treasuryClient *serv
 		log:              log.Named("billing.handler"),
 		client:           client,
 		treasuryClient:   treasuryClient,
-		treasuryAPIKey:   treasuryAPIKey,
+		serviceKey:       treasuryAPIKey,
 		marketflowURL:    marketflowURL,
 		platformTenantID: platformTenantID,
 	}
@@ -414,8 +414,8 @@ func (h *BillingHandler) fetchSubscriptionInvoice(ctx context.Context, invoiceID
 		return authoritativeInvoice{}, false
 	}
 	headers := map[string]string{}
-	if h.treasuryAPIKey != "" {
-		headers["X-API-Key"] = h.treasuryAPIKey
+	if h.serviceKey != "" {
+		headers["X-API-Key"] = h.serviceKey
 	}
 	resp, err := h.treasuryClient.Get(ctx, fmt.Sprintf("/api/v1/s2s/%s/invoices/%s", h.platformTenantID, invoiceID), headers)
 	if err != nil || !resp.IsSuccess() {
@@ -489,8 +489,8 @@ func (h *BillingHandler) ConfirmPaymentMethod(w http.ResponseWriter, r *http.Req
 	}
 
 	headers := map[string]string{}
-	if h.treasuryAPIKey != "" {
-		headers["X-API-Key"] = h.treasuryAPIKey
+	if h.serviceKey != "" {
+		headers["X-API-Key"] = h.serviceKey
 	}
 
 	// Fetch the intent from treasury to extract the auth code saved during verify.
@@ -593,6 +593,7 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 	// Read optional billing_email from request body (takes highest priority).
 	var body struct {
 		BillingEmail string `json:"billing_email"`
+		BillingName  string `json:"billing_name"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
 
@@ -615,8 +616,15 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 	// 2. billing_email stored in subscription metadata
 	// 3. JWT claims email
 	customerEmail := body.BillingEmail
+	// The admin's name, if the frontend or the subscription metadata carries one.
+	billingName := strings.TrimSpace(body.BillingName)
 
 	if sub != nil {
+		if billingName == "" && sub.Metadata != nil {
+			if bn, ok := sub.Metadata["billing_name"].(string); ok {
+				billingName = strings.TrimSpace(bn)
+			}
+		}
 		if sub.Edges.Plan != nil {
 			currency = sub.Edges.Plan.Currency
 			planCode = sub.Edges.Plan.PlanCode
@@ -637,15 +645,16 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 	}
 
 	headers := map[string]string{}
-	if h.treasuryAPIKey != "" {
-		headers["X-API-Key"] = h.treasuryAPIKey
+	if h.serviceKey != "" {
+		headers["X-API-Key"] = h.serviceKey
 	}
 
-	// Upsert CRM contact for this tenant admin so the card-setup intent is linked.
-	// Non-fatal: if marketflow is unavailable the intent is still created without a CRM link.
+	// File the tenant admin as a customer contact in the platform CRM so the card-setup
+	// intent is linked. Non-fatal: if marketflow is unavailable the intent is still created
+	// without a CRM link.
 	var crmContactID string
 	if h.marketflowURL != "" && customerEmail != "" && !strings.HasSuffix(customerEmail, "@subscriptions.internal") {
-		crmContactID = h.upsertCRMContactByEmail(r.Context(), tenantIDStr, customerEmail)
+		crmContactID = h.upsertCRMContactByEmail(r.Context(), customerEmail, billingName)
 	}
 
 	// Create a pending card-tokenisation intent via treasury S2S.
@@ -706,15 +715,31 @@ func (h *BillingHandler) SetupPaymentMethod(w http.ResponseWriter, r *http.Reque
 	})
 }
 
+// splitContactName splits a full name into first and last name. With no name it falls back
+// to the part of the email before the @ so the contact always has a first name.
+func splitContactName(fullName, email string) (string, string) {
+	fields := strings.Fields(fullName)
+	if len(fields) == 0 {
+		local, _, _ := strings.Cut(email, "@")
+		return local, ""
+	}
+	return fields[0], strings.Join(fields[1:], " ")
+}
+
 // upsertCRMContactByEmail calls marketflow S2S to create-or-return a contact by email.
-// Returns the contact UUID string on success; returns "" on any error (non-fatal).
-func (h *BillingHandler) upsertCRMContactByEmail(ctx context.Context, tenantID, email string) string {
-	if h.marketflowURL == "" || tenantID == "" || email == "" {
+// The subscriber is filed under the platform tenant, because the subscriber is the platform
+// owner's customer, not a contact of the subscribing tenant. Returns the contact UUID string
+// on success; returns "" on any error (non-fatal).
+func (h *BillingHandler) upsertCRMContactByEmail(ctx context.Context, email, fullName string) string {
+	if h.marketflowURL == "" || h.platformTenantID == "" || email == "" {
 		return ""
 	}
+	firstName, lastName := splitContactName(fullName, email)
 	body, _ := json.Marshal(map[string]any{
-		"tenant_id": tenantID,
-		"email":     email,
+		"tenant_id":  h.platformTenantID,
+		"email":      email,
+		"first_name": firstName,
+		"last_name":  lastName,
 	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		h.marketflowURL+"/api/v1/internal/contacts/upsert",
@@ -725,8 +750,8 @@ func (h *BillingHandler) upsertCRMContactByEmail(ctx context.Context, tenantID, 
 		return ""
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if h.treasuryAPIKey != "" {
-		req.Header.Set("X-API-Key", h.treasuryAPIKey)
+	if h.serviceKey != "" {
+		req.Header.Set("X-API-Key", h.serviceKey)
 	}
 	resp, err := s2sHTTPClient.Do(req)
 	if err != nil {

@@ -335,8 +335,8 @@ func requestUserID(r *http.Request) string {
 // s2sHeaders carries the internal service key on treasury S2S calls.
 func (h *BillingHandler) s2sHeaders() map[string]string {
 	headers := map[string]string{}
-	if h.treasuryAPIKey != "" {
-		headers["X-API-Key"] = h.treasuryAPIKey
+	if h.serviceKey != "" {
+		headers["X-API-Key"] = h.serviceKey
 	}
 	return headers
 }
