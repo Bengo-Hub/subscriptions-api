@@ -362,6 +362,14 @@ var featureCatalog = mergeSharedCodes(func() []catalogEntry {
 		feat("knowledge_base", marketflow, "Support", "Knowledge Base"),
 		feat("white_label", marketflow, "Support", "White Label"),
 		feat("dedicated_account_manager", marketflow, "Support", "Dedicated Account Manager"),
+		// AI Studio outputs (2026-11-11): the codes marketflow-ai's registry checks before it
+		// quotes a Creative Plan; without them a tenant on a plan could make no AI ad at all.
+		feat("ai_static_ads", marketflow, "AI Studio", "AI Poster and Static Ads"),
+		feat("ai_video_template", marketflow, "AI Studio", "AI Template Video Ads"),
+		feat("ai_video_presenter", marketflow, "AI Studio", "AI Presenter Videos"),
+		feat("ai_video_presenter_premium", marketflow, "AI Studio", "Premium AI Presenter Videos"),
+		feat("ai_video_cinematic", marketflow, "AI Studio", "Cinematic AI Videos"),
+		feat("ai_video_cinematic_premium", marketflow, "AI Studio", "Premium Cinematic AI Videos"),
 		lim("max_contacts", marketflow, "Limits", "CRM Contacts", ""),
 		lim("max_leads", marketflow, "Limits", "CRM Leads", ""),
 		lim("max_campaigns", marketflow, "Limits", "Campaigns", ""),

@@ -90,6 +90,16 @@ func psCRMBlock(tier int) []string {
 	if tier >= 3 {
 		base = append(base, "white_label", "dedicated_account_manager")
 	}
+	// AI Studio outputs (2026-11-11): PowerSuite tenants were refused every AI ad quote because no
+	// plan carried these codes. Basic: posters and template videos; Pro: presenter and cinematic;
+	// Gold: the premium tiers too (the same ladder as the standalone MarketFlow plans).
+	base = append(base, "ai_static_ads", "ai_video_template")
+	if tier >= 2 {
+		base = append(base, "ai_video_presenter", "ai_video_cinematic")
+	}
+	if tier >= 3 {
+		base = append(base, "ai_video_presenter_premium", "ai_video_cinematic_premium")
+	}
 	return base
 }
 

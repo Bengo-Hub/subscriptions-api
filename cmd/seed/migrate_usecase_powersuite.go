@@ -175,13 +175,14 @@ func migrateUseCasePowerSuite(ctx context.Context, tx *ent.Tx) error {
 			strings.HasPrefix(code, "INVENTORY_"),
 			// TREASURY_* is not here: treasury came back as a standalone product on 2026-11-06
 			// (plans_treasury.go) for tenants that take treasury alone, such as Hadia and Maskani.
-			// Logistics/MarketFlow/Projects standalone families (2026-09-11): folded into
-			// PowerSuite's psLogisticsBlock/psCRMBlock and ERP's psProjectsBlock respectively.
-			// MARKETFLOW_AI_CREDITS_* is deliberately excluded — those are consumable one-time
-			// top-up packs (relocated to plans_addons.go), not a retired tier plan.
+			// Logistics/Projects standalone families (2026-09-11): folded into PowerSuite's
+			// psLogisticsBlock and ERP's psProjectsBlock respectively.
+			// MARKETFLOW_* is not here: MarketFlow came back as a standalone product on 2026-11-11
+			// (plans_marketflow.go) for businesses that take MarketFlow alone, such as Forever
+			// Business Owners; only the old pre-2026-09-11 codes are still retired.
 			strings.HasPrefix(code, "LOGISTICS_"),
 			strings.HasPrefix(code, "PROJECTS_"),
-			strings.HasPrefix(code, "MARKETFLOW_") && !strings.HasPrefix(code, "MARKETFLOW_AI_CREDITS_"):
+			retiredMarketflowCodes[code]:
 			return true
 		}
 		return false
