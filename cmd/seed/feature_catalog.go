@@ -379,6 +379,11 @@ var featureCatalog = mergeSharedCodes(func() []catalogEntry {
 		lim("max_tickets", marketflow, "Limits", "Support Tickets", ""),
 		lim("max_agents", marketflow, "Limits", "Support Agents", ""),
 		meteredLim("ai_credits_monthly", marketflow, "Limits", "AI Chat Credits", "/ month", ""),
+		// Free chat turns a day before a chat turn costs credits (marketflow-ai chatallowance).
+		lim("chat_turns_daily", marketflow, "Limits", "Free Chat Turns", "/ day"),
+		// Pro and up: the business's own domain for its MarketFlow page and funnels (domains are
+		// managed centrally in SSO).
+		feat("marketflow_custom_domain", marketflow, "Marketing", "Custom Domain for Pages and Funnels"),
 
 		// ─── TruLoad (Weighbridge) ────────────────────────────────────────────
 		feat("commercial_weighing", truload, "Weighbridge", "Commercial Weighing"),

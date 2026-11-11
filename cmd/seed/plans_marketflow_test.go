@@ -8,13 +8,13 @@ import (
 )
 
 // Five standalone MarketFlow tiers (owner, 2026-11-11): every feature and limit is in the catalog,
-// the AI Studio outputs widen by tier, and the monthly AI credits rise with the price.
+// the AI Studio outputs widen by tier, no plan includes AI credits, and the free chat turns rise.
 func TestMarketflowPlans(t *testing.T) {
 	wantPrices := map[string]float64{"MARKETFLOW_STARTER": 0, "MARKETFLOW_LITE": 1500, "MARKETFLOW_GROWTH": 3500, "MARKETFLOW_PRO": 8500, "MARKETFLOW_BUSINESS": 15000}
 	if len(marketflowTiers) != len(wantPrices) {
 		t.Fatalf("want %d tiers, got %d", len(wantPrices), len(marketflowTiers))
 	}
-	prevCredits := -1
+	prevChat := -1
 	for _, tier := range marketflowTiers {
 		if p, ok := wantPrices[tier.code]; !ok || tier.monthly != p {
 			t.Fatalf("%s: price %.0f, want %.0f", tier.code, tier.monthly, p)
@@ -31,12 +31,23 @@ func TestMarketflowPlans(t *testing.T) {
 				t.Fatalf("%s: limit %q is not in the catalog", tier.code, k)
 			}
 		}
-		credits := limits["ai_credits_monthly"].(int)
-		if credits <= prevCredits {
-			t.Fatalf("%s: AI credits %d must rise with the tier", tier.code, credits)
+		if _, ok := limits["ai_credits_monthly"]; ok {
+			t.Fatalf("%s: no plan includes AI credits (owner, 2026-11-11)", tier.code)
 		}
-		prevCredits = credits
-		if !slices.Contains(feats, "ai_static_ads") || !slices.Contains(feats, "profile_pages") {
+		chat := limits["chat_turns_daily"].(int)
+		if chat <= prevChat {
+			t.Fatalf("%s: free chat turns %d must rise with the tier", tier.code, chat)
+		}
+		prevChat = chat
+		for k, v := range limits {
+			if v.(int) == 0 {
+				t.Fatalf("%s: limit %s is 0, which several services read as unlimited", tier.code, k)
+			}
+		}
+		if got, want := slices.Contains(feats, "marketflow_custom_domain"), tier.tier >= 4; got != want {
+			t.Fatalf("%s: custom domain included=%v, want %v", tier.code, got, want)
+		}
+		if !slices.Contains(feats, "ai_static_ads") || !slices.Contains(feats, "profile_pages") || (tier.tier == 1 && slices.Contains(feats, "basic_campaigns")) {
 			t.Fatalf("%s: posters and the profile page are in every tier", tier.code)
 		}
 		if got, want := slices.Contains(feats, "ai_video_presenter"), tier.tier >= 2; got != want {
