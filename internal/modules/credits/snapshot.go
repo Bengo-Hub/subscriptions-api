@@ -51,7 +51,7 @@ func Catalog() []CatalogEntry {
 		if spec.ProductCode == "" && spec.PlanQuotaKey == "" {
 			continue
 		}
-		out = append(out, CatalogEntry{Service: spec.Code, Label: spec.Label, UnitPriceKES: spec.UnitPriceKES, Bundles: spec.Bundles, Tiers: spec.Tiers})
+		out = append(out, CatalogEntry{Service: spec.Code, Label: spec.Label, UnitPriceKES: spec.UnitPriceKES, Bundles: spec.OfferedBundles(), Tiers: spec.Tiers})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Service < out[j].Service })
 	return out
@@ -84,7 +84,7 @@ func (s *Service) Snapshot(ctx context.Context, tenantID uuid.UUID, spec billing
 	}
 	snap := ServiceSnapshot{
 		Service: spec.Code, Label: spec.Label, Exempt: cov.Exempt, Covered: cov.Covered, Reason: cov.Reason,
-		Unlimited: cov.Unlimited, UnitPriceKES: spec.UnitPriceKES, Bundles: spec.Bundles, Tiers: spec.Tiers,
+		Unlimited: cov.Unlimited, UnitPriceKES: spec.UnitPriceKES, Bundles: spec.OfferedBundles(), Tiers: spec.Tiers,
 	}
 	if bal, err := s.wallets.GetBalance(ctx, tenantID, spec.BundleTag); err == nil {
 		snap.BundleBalance = bal.Balance
