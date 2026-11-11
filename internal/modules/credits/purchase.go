@@ -3,6 +3,7 @@ package credits
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -42,6 +43,18 @@ type PurchaseOffer struct {
 	Units    int64
 	PriceKES float64
 	Label    string
+	// Retired offers are granted for payments already made but never sold again.
+	Retired bool
+}
+
+// withVAT is the amount to charge for a price at a VAT percentage (0: none), and the VAT in it,
+// both rounded to the cent.
+func withVAT(price, ratePct float64) (total, vat float64) {
+	if ratePct <= 0 {
+		return price, 0
+	}
+	vat = math.Round(price*ratePct) / 100
+	return math.Round((price+vat)*100) / 100, vat
 }
 
 // ResolveOffer prices a purchase from the registry. Prices never come from the client.
@@ -56,7 +69,7 @@ func ResolveOffer(service string, kind PurchaseKind, code string) (PurchaseOffer
 		if !ok {
 			return PurchaseOffer{}, fmt.Errorf("unknown %s bundle %q", spec.Label, code)
 		}
-		return PurchaseOffer{Service: spec, Kind: kind, Code: code, Units: b.Units, PriceKES: b.PriceKES,
+		return PurchaseOffer{Service: spec, Kind: kind, Code: code, Units: b.Units, PriceKES: b.PriceKES, Retired: b.Retired,
 			Label: fmt.Sprintf("%s bundle: %d units", spec.Label, b.Units)}, nil
 	case KindTier:
 		t, ok := spec.Tier(code)
@@ -95,12 +108,23 @@ func (s *Service) InitiatePurchase(ctx context.Context, in PurchaseInput) (map[s
 	if cov.Sub == nil {
 		return nil, fmt.Errorf("an active subscription is required")
 	}
+	if offer.Retired {
+		return nil, fmt.Errorf("this bundle is no longer sold; choose another")
+	}
+	// VAT on top only when the platform charges it (treasury: VAT active and eTIMS activated).
+	rate := 0.0
+	if s.vatRate != nil {
+		rate = s.vatRate(ctx)
+	}
+	total, vat := withVAT(offer.PriceKES, rate)
+	meta := offer.IntentMetadata(in.TenantID)
+	meta["net_kes"], meta["vat_rate"], meta["vat_kes"] = offer.PriceKES, rate, vat
 	req := map[string]any{
-		"amount": offer.PriceKES, "currency": "KES", "payment_method": "pending",
+		"amount": total, "currency": "KES", "payment_method": "pending",
 		"reference_id":   subscriptions.NewPurchaseReference("CRED", in.TenantID, offer.Service.Code),
 		"reference_type": RefTypeCreditPurchase, "source_service": "subscriptions",
 		"description": offer.Label, "callback_url": in.ReturnURL,
-		"metadata": offer.IntentMetadata(in.TenantID),
+		"metadata": meta,
 	}
 	return s.subs.CreatePaymentIntent(ctx, in.TenantID, req)
 }

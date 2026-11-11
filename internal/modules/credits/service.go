@@ -45,6 +45,9 @@ type Service struct {
 	orm     *ent.Client
 	wallets *billing.TokenWalletService
 	subs    *subscriptions.Service
+	// vatRate is the VAT percentage to add on a purchase (billing.InvoiceService.PlatformVATRate);
+	// nil adds none.
+	vatRate func(ctx context.Context) float64
 
 	capMu    sync.RWMutex
 	capValue float64
@@ -297,4 +300,10 @@ func (s *Service) Check(ctx context.Context, tenantID uuid.UUID, service string,
 		}
 	}
 	return Decision{Allowed: true}, nil
+}
+
+// WithVAT adds VAT on top of purchases at the rate the platform charges (0 when it charges none).
+func (s *Service) WithVAT(rate func(ctx context.Context) float64) *Service {
+	s.vatRate = rate
+	return s
 }

@@ -330,7 +330,9 @@ func New(ctx context.Context) (*App, error) {
 	tokenWalletHandler := handlers.NewTokenWalletHandler(log, ormClient, sqlDB, subscriptionSvc)
 
 	// One credits engine for SMS, WhatsApp and AI credits: entitlement, bundles, tiers, overage.
-	creditsSvc := credits.New(log, ormClient, billing.NewTokenWalletService(log, ormClient, sqlDB), subscriptionSvc)
+	creditsSvc := credits.New(log, ormClient, billing.NewTokenWalletService(log, ormClient, sqlDB), subscriptionSvc).
+		// VAT on credit purchases only when the platform charges it (treasury tax profile).
+		WithVAT(invoiceSvc.PlatformVATRate)
 	subscriptionSvc.SetAddonResolver(credits.AddonResolver())
 	subscriptionSvc.SetUIBaseURL(cfg.Services.SubscriptionsUI)
 	billing.SetBuyCreditsBase(cfg.Services.SubscriptionsUI)

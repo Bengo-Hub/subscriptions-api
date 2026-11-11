@@ -178,6 +178,9 @@ func (s *Service) SetAutoTopup(ctx context.Context, tenantID uuid.UUID, service 
 		return AutoTopup{}, fmt.Errorf("%w: choose a threshold between 1 and %d units", ErrAutoTopup, MaxAutoTopupThreshold)
 	}
 	bundle, ok := spec.Bundle(in.BundleCode)
+	if !ok || bundle.Retired { // a retired bundle is not offered for new top-ups
+		ok = false
+	}
 	if !ok {
 		return AutoTopup{}, fmt.Errorf("%w: unknown bundle %q", ErrAutoTopup, in.BundleCode)
 	}
@@ -327,9 +330,16 @@ func (s *Service) autoTopupOne(ctx context.Context, ps *ent.ProductSubscription,
 		Label: fmt.Sprintf("%s bundle: %d units (auto top-up)", spec.Label, bundle.Units)}
 	meta := offer.IntentMetadata(sub.TenantID)
 	meta["auto_topup"], meta["collection"] = true, "saved_card"
+	// The same VAT rule as a manual purchase (platform VAT active and eTIMS activated).
+	rate := 0.0
+	if s.vatRate != nil {
+		rate = s.vatRate(ctx)
+	}
+	total, vat := withVAT(offer.PriceKES, rate)
+	meta["net_kes"], meta["vat_rate"], meta["vat_kes"] = offer.PriceKES, rate, vat
 	email, _ := sub.Metadata["billing_email"].(string)
 	req := map[string]any{
-		"amount": offer.PriceKES, "currency": "KES", "payment_method": "pending",
+		"amount": total, "currency": "KES", "payment_method": "pending",
 		"reference_id":   fmt.Sprintf("AUTOTOP-%s-%s-%s", strings.ToUpper(sub.TenantID.String()[:8]), spec.Code, day),
 		"reference_type": RefTypeCreditPurchase, "source_service": "subscriptions",
 		"description": offer.Label, "customer_email": email, "metadata": meta,

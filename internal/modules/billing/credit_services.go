@@ -49,6 +49,9 @@ type CreditBundle struct {
 	Code     string  `json:"code"`
 	Units    int64   `json:"units"`
 	PriceKES float64 `json:"price_kes"`
+	// Retired bundles are no longer sold but still resolve, so a payment started before they were
+	// retired is still granted.
+	Retired bool `json:"-"`
 }
 
 // CreditTier is a recurring subscription that grants Quota units per month. Quota -1 is unlimited.
@@ -118,8 +121,15 @@ var creditServices = map[string]MeteredService{
 		Code: ServiceAI, BundleTag: ServiceAI, QuotaTag: "ai_credits_quota",
 		PlanQuotaKey: "ai_credits_monthly",
 		Bundles: []CreditBundle{
-			{Code: "bundle_100", Units: 100, PriceKES: 1000},
-			{Code: "bundle_500", Units: 500, PriceKES: 4000},
+			// Owner, 2026-11-11 (.claude/plans/marketflow-ai-studio-bundle-pricing-2026-11-11.md): four
+			// bundles for every budget, a 60% down to 51% media margin. No plan includes AI credits.
+			{Code: "bundle_60", Units: 60, PriceKES: 750},
+			{Code: "bundle_150", Units: 150, PriceKES: 1750},
+			{Code: "bundle_400", Units: 400, PriceKES: 4400},
+			{Code: "bundle_1000", Units: 1000, PriceKES: 10000},
+			// Retired 2026-11-11: still resolve for payments already started.
+			{Code: "bundle_100", Units: 100, PriceKES: 1000, Retired: true},
+			{Code: "bundle_500", Units: 500, PriceKES: 4000, Retired: true},
 		},
 		Label: "AI credits", Unit: "credits",
 	},
@@ -146,6 +156,17 @@ func MeteredServiceCodes() []string {
 	out := make([]string, 0, len(creditServices))
 	for k := range creditServices {
 		out = append(out, k)
+	}
+	return out
+}
+
+// OfferedBundles are the bundles on sale (retired ones left out).
+func (s MeteredService) OfferedBundles() []CreditBundle {
+	out := make([]CreditBundle, 0, len(s.Bundles))
+	for _, b := range s.Bundles {
+		if !b.Retired {
+			out = append(out, b)
+		}
 	}
 	return out
 }
