@@ -483,6 +483,7 @@ req.Header.Set("X-API-Key", os.Getenv("INTERNAL_SERVICE_KEY"))
 
 - All subscription data scoped by `tenant_id`
 - `X-Tenant-ID` header extracted by httpware middleware and matched against JWT claims
+- httpware v0.19.1 `TenantV2` runs in report-only mode: a header or URL tenant that differs from the caller's token is logged as `tenant mismatch (report-only)` and the request continues with the token's tenant. Once the logs show no legitimate caller is affected, `ReportOnly` is removed and such requests get 403
 - Platform Owner (slug `codevertex`) can access any tenant's data via admin routes
 
 ---

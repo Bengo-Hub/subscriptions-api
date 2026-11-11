@@ -127,12 +127,28 @@ func New(
 					if !found {
 						return "", "", false, false
 					}
-					// Slug-based platform owner check
-					isPO := claims.GetTenantSlug() == "codevertex"
-					return claims.TenantID, claims.GetTenantSlug(), isPO, true
+					// Platform owner only from the signed claim: any member of the platform's own
+					// tenant used to count, which let them choose another tenant.
+					return claims.TenantID, claims.GetTenantSlug(), claims.IsPlatformOwner, true
 				},
 				URLParamFunc: chi.URLParam,
 				Required:     false,
+				// Report-only until the logs show no legitimate caller is refused, then remove
+				// ReportOnly so a tenant that differs from the token's gets a 403.
+				ReportOnly: true,
+				OnMismatch: func(r *http.Request, source, supplied, claimed string) {
+					fields := []zap.Field{
+						zap.String("source", source),
+						zap.String("supplied", supplied),
+						zap.String("claimed", claimed),
+						zap.String("method", r.Method),
+						zap.String("path", r.URL.Path),
+					}
+					if c, ok := authclient.ClaimsFromContext(r.Context()); ok && c != nil {
+						fields = append(fields, zap.String("subject", c.Subject))
+					}
+					log.Warn("tenant mismatch (report-only)", fields...)
+				},
 			}))
 
 			// JIT tenant sync: ensure tenant exists in local DB when slug is in context (avoids "tenant not found" after SSO)
