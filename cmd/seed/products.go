@@ -171,7 +171,7 @@ func seedProducts(ctx context.Context, tx *ent.Tx) error {
 			id:           uuid.MustParse("10000000-0000-0000-0000-000000000034"),
 			code:         "whatsapp_messaging",
 			name:         "WhatsApp Messaging",
-			description:  "Send WhatsApp messages from every app. Tier 1 is KES 500 a month for 400 messages, Tier 2 is KES 1000 for 800, Pro is KES 2000 unlimited. Messages beyond your plan and bundles are billed at KES 1 each.",
+			description:  "Send WhatsApp messages from every app with prepaid credits, 1 credit per message, bought separately for each kind of message: promotions and broadcasts, order, payment and account updates, login and verification codes, and replies to customers. Buying any of them turns WhatsApp on. Prices are on the billing page.",
 			category:     product.CategoryAddOn,
 			monthlyPrice: 0,
 			yearlyPrice:  0,

@@ -42,12 +42,12 @@ type creditSpendRequest struct {
 
 // Consume godoc
 // @Summary Spend credit units for one send (S2S)
-// @Description Spends units in order: plan allowance, bundle balance, then KES 1 overage up to the platform cap. Idempotent per key. Answers 200 with allowed=false and a reason when refused, so callers can tell a refusal from a failure (5xx) and never send free on a failure.
+// @Description Spends units in order: a live legacy allowance, the bundle balance, then overage (SMS, or WhatsApp while a legacy tier runs) up to the platform cap. A WhatsApp send names its category service and spends only that wallet. Idempotent per key. Answers 200 with allowed=false and a reason when refused, so callers can tell a refusal from a failure (5xx) and never send free on a failure.
 // @Tags Credits
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param service path string true "sms, whatsapp or ai_credits"
+// @Param service path string true "sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)"
 // @Param request body creditSpendRequest true "Spend request"
 // @Success 200 {object} map[string]any
 // @Router /s2s/credits/{service}/consume [post]
@@ -91,7 +91,7 @@ type creditRefundRequest struct {
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
-// @Param service path string true "sms, whatsapp or ai_credits"
+// @Param service path string true "sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)"
 // @Param request body creditRefundRequest true "Refund request"
 // @Success 200 {object} map[string]any
 // @Router /s2s/credits/{service}/refund [post]
@@ -130,7 +130,7 @@ func (h *CreditsHandler) tenant(w http.ResponseWriter, r *http.Request) (uuid.UU
 
 // Catalog godoc
 // @Summary Price list for SMS, WhatsApp and AI credits
-// @Description Bundle sizes, monthly plans and the per-message price. Public, no tenant state.
+// @Description Bundle sizes and the per-message price of each service. WhatsApp is four category services, each with a plain name and explanation. Public, no tenant state.
 // @Tags Credits
 // @Produce json
 // @Success 200 {object} map[string]any
@@ -166,7 +166,7 @@ func (h *CreditsHandler) List(w http.ResponseWriter, r *http.Request) {
 // @Tags Credits
 // @Produce json
 // @Security BearerAuth
-// @Param service path string true "sms, whatsapp or ai_credits"
+// @Param service path string true "sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)"
 // @Param limit query int false "Default 50, max 200"
 // @Param offset query int false "Rows to skip"
 // @Success 200 {object} map[string]any
@@ -205,7 +205,7 @@ type creditPurchaseRequest struct {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param service path string true "sms, whatsapp or ai_credits"
+// @Param service path string true "sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)"
 // @Param request body creditPurchaseRequest true "Purchase request"
 // @Success 200 {object} map[string]any
 // @Router /credits/{service}/purchase [post]
@@ -243,7 +243,7 @@ type creditAdminGrantRequest struct {
 // @Produce json
 // @Security BearerAuth
 // @Param tenant_id path string true "Tenant UUID"
-// @Param service path string true "sms, whatsapp or ai_credits"
+// @Param service path string true "sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)"
 // @Param request body creditAdminGrantRequest true "Grant request"
 // @Success 200 {object} map[string]any
 // @Router /admin/tenants/{tenant_id}/credits/{service}/grant [post]
@@ -271,7 +271,7 @@ func (h *CreditsHandler) AdminGrant(w http.ResponseWriter, r *http.Request) {
 // @Tags Credits
 // @Produce json
 // @Security ApiKeyAuth
-// @Param service path string true "sms, whatsapp or ai_credits"
+// @Param service path string true "sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)"
 // @Param tenant_id query string true "Tenant UUID"
 // @Param units query int true "Units the send would use"
 // @Param platform_scope query bool false "Platform-owned send, never billed"
@@ -340,7 +340,7 @@ type creditAutoRenewRequest struct {
 
 // SetAutoRenew godoc
 // @Summary Turn monthly plan renewal on or off
-// @Description Turning it off keeps the plan until the end of the paid period and stops it appearing on the next invoice.
+// @Description Turning it off keeps the plan until the end of the paid period and stops it appearing on the next invoice. The WhatsApp tiers are retired: they can be switched off but never back on.
 // @Tags Credits
 // @Accept json
 // @Produce json
@@ -378,7 +378,7 @@ type creditAutoTopupRequest struct {
 // @Tags Credits
 // @Produce json
 // @Security BearerAuth
-// @Param service path string true "sms or whatsapp"
+// @Param service path string true "sms or a WhatsApp category service (whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service)"
 // @Success 200 {object} credits.AutoTopup
 // @Router /credits/{service}/auto-topup [get]
 func (h *CreditsHandler) GetAutoTopup(w http.ResponseWriter, r *http.Request) {
@@ -401,7 +401,7 @@ func (h *CreditsHandler) GetAutoTopup(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param service path string true "sms or whatsapp"
+// @Param service path string true "sms or a WhatsApp category service (whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service)"
 // @Param request body creditAutoTopupRequest true "Auto top-up setting"
 // @Success 200 {object} credits.AutoTopup
 // @Router /credits/{service}/auto-topup [put]

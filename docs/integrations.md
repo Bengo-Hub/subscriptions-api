@@ -218,7 +218,7 @@ Content-Type: application/json
 - `completed` → sets subscription `ACTIVE`, updates `current_period_start/end`, publishes `subscription.activated`, invalidates feature cache.
 - `failed` → sets subscription `SUSPENDED`, publishes `subscription.payment_required`, invalidates feature cache.
 
-**Add-on purchases**: SMS, WhatsApp and AI credit bundles and plans are bought through `POST /api/v1/credits/{service}/purchase`
+**Add-on purchases**: SMS, WhatsApp (one service per message category) and AI credit bundles are bought through `POST /api/v1/credits/{service}/purchase`
 (`reference_type: "credit_purchase"`, see [messaging-credits.md](messaging-credits.md)). The older plan-feature add-on
 endpoints (`/api/v1/addons`) were removed on 2026-10-19: they took payment but never switched anything on.
 

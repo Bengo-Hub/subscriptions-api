@@ -154,25 +154,36 @@ func TestServiceMustBeActivatedAndFirstBundleActivatesIt(t *testing.T) {
 	}
 }
 
-func TestSMSOverageBilledAtOneShillingAndPausesAtCap(t *testing.T) {
+// Owner, 2026-11-12: SMS is credits only. A send that does not fit the bundle is refused whole,
+// nothing is billed as overage, and buying credits lets sending continue.
+func TestSMSIsCreditsOnlyWithNoOverage(t *testing.T) {
 	f := newFixture(t, map[string]any{})
 	f.grant(t, "sms", KindBundle, "bundle_100", "g1", 1)
 
 	d := f.spend(t, "sms", 110, "big")
-	if !d.Allowed || d.FromBundle != 100 || d.Overage != 10 || d.OverageKES != 10 {
-		t.Fatalf("overage split: %+v", d)
+	if d.Allowed || d.Reason != billing.ReasonInsufficient || d.Overage != 0 {
+		t.Fatalf("110 SMS on 100 credits is refused, never overage: %+v", d)
 	}
-	// Default cap is KES 500: 490 more KES of overage fits, one more KES does not.
-	if d := f.spend(t, "sms", 490, "fill"); !d.Allowed {
-		t.Fatalf("up to the cap: %+v", d)
+	if f.bal(t, "sms") != 100 {
+		t.Fatalf("a refused send spends nothing: %d", f.bal(t, "sms"))
 	}
-	if d := f.spend(t, "sms", 1, "past"); d.Allowed || d.Reason != billing.ReasonOverageCap {
-		t.Fatalf("past the cap: %+v", d)
+	var overage int
+	_ = f.db.QueryRow(`SELECT count(*) FROM overage_charges WHERE metric_type = 'messaging_sms'`).Scan(&overage)
+	if overage != 0 {
+		t.Fatalf("no SMS overage is recorded: %d rows", overage)
 	}
-	// Buying a bundle does not clear unpaid overage, but units are spent first so sending resumes.
+	if d := f.spend(t, "sms", 100, "fits"); !d.Allowed || d.FromBundle != 100 {
+		t.Fatalf("exactly the bundle: %+v", d)
+	}
+	if d := f.spend(t, "sms", 1, "empty"); d.Allowed || d.Reason != billing.ReasonInsufficient {
+		t.Fatalf("out of credits: %+v", d)
+	}
 	f.grant(t, "sms", KindBundle, "bundle_500", "g2", 1)
 	if d := f.spend(t, "sms", 5, "resume"); !d.Allowed || d.FromBundle != 5 {
 		t.Fatalf("sending resumes from the new bundle: %+v", d)
+	}
+	if spec, _ := billing.LookupMeteredService("sms"); spec.AllowsOverage() {
+		t.Fatal("the SMS registry entry must not allow overage")
 	}
 }
 
@@ -346,11 +357,8 @@ func TestCheckMirrorsConsumeWithoutRecording(t *testing.T) {
 	if d := chk("sms", 100); !d.Allowed {
 		t.Fatalf("exactly the bundle: %+v", d)
 	}
-	if d := chk("sms", 400); !d.Allowed {
-		t.Fatalf("300 KES of overage is under the cap: %+v", d)
-	}
-	if d := chk("sms", 700); d.Allowed || d.Reason != billing.ReasonOverageCap {
-		t.Fatalf("600 KES of overage is over the cap: %+v", d)
+	if d := chk("sms", 101); d.Allowed || d.Reason != billing.ReasonInsufficient {
+		t.Fatalf("SMS is credits only, one past the bundle is refused: %+v", d)
 	}
 	if f.bal(t, "sms") != 100 {
 		t.Fatalf("check must not spend: %d", f.bal(t, "sms"))
@@ -404,20 +412,20 @@ func TestImportLegacyIsAdditiveIdempotentAndKeepsUsage(t *testing.T) {
 
 func TestCatalogListsPublicPrices(t *testing.T) {
 	cat := Catalog()
-	var sms, wa *CatalogEntry
+	var sms, promo *CatalogEntry
 	for i := range cat {
 		switch cat[i].Service {
 		case "sms":
 			sms = &cat[i]
-		case "whatsapp":
-			wa = &cat[i]
+		case billing.ServiceWhatsAppMarketing:
+			promo = &cat[i]
 		}
 	}
-	if sms == nil || wa == nil || len(sms.Bundles) != 4 || len(wa.Tiers) != 3 {
+	if sms == nil || promo == nil || len(sms.Bundles) != 4 || len(promo.Tiers) != 0 {
 		t.Fatalf("catalog %+v", cat)
 	}
-	if sms.UnitPriceKES != 1 || wa.UnitPriceKES != 1 {
-		t.Fatalf("messages cost KES 1 each: %v %v", sms.UnitPriceKES, wa.UnitPriceKES)
+	if sms.UnitPriceKES != 1 || promo.UnitPriceKES != 4 {
+		t.Fatalf("SMS KES 1, WhatsApp promotions KES 4: %v %v", sms.UnitPriceKES, promo.UnitPriceKES)
 	}
 	for _, e := range cat {
 		if e.Service == "etims_api" {

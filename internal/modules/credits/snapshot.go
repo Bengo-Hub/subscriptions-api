@@ -13,8 +13,13 @@ import (
 
 // ServiceSnapshot is the tenant-facing state of one credit service.
 type ServiceSnapshot struct {
-	Service       string                 `json:"service"`
-	Label         string                 `json:"label"`
+	Service string `json:"service"`
+	Label   string `json:"label"`
+	// Group, Name, MetaCategory and Explainer describe a WhatsApp category in plain words.
+	Group         string                 `json:"group,omitempty"`
+	Name          string                 `json:"name,omitempty"`
+	MetaCategory  string                 `json:"meta_category,omitempty"`
+	Explainer     string                 `json:"explainer,omitempty"`
 	Exempt        bool                   `json:"exempt"`
 	Covered       bool                   `json:"covered"`
 	Reason        string                 `json:"reason,omitempty"`
@@ -22,6 +27,7 @@ type ServiceSnapshot struct {
 	QuotaBalance  int64                  `json:"quota_balance"`
 	Unlimited     bool                   `json:"unlimited"`
 	TierCode      string                 `json:"tier_code,omitempty"`
+	TierName      string                 `json:"tier_name,omitempty"`
 	TierPeriodEnd *time.Time             `json:"tier_period_end,omitempty"`
 	AutoRenew     bool                   `json:"auto_renew"`
 	OverageKES    float64                `json:"overage_pending_kes"`
@@ -38,12 +44,17 @@ type ServiceSnapshot struct {
 type CatalogEntry struct {
 	Service      string                 `json:"service"`
 	Label        string                 `json:"label"`
+	Group        string                 `json:"group,omitempty"`
+	Name         string                 `json:"name,omitempty"`
+	MetaCategory string                 `json:"meta_category,omitempty"`
+	Explainer    string                 `json:"explainer,omitempty"`
 	UnitPriceKES float64                `json:"unit_price_kes"`
 	Bundles      []billing.CreditBundle `json:"bundles"`
 	Tiers        []billing.CreditTier   `json:"tiers"`
 }
 
-// Catalog returns what can be bought, with no tenant state, for pricing pages and docs.
+// Catalog returns what can be bought, with no tenant state, for pricing pages and docs. Retired
+// tiers and bundles are left out.
 func Catalog() []CatalogEntry {
 	var out []CatalogEntry
 	for _, code := range billing.MeteredServiceCodes() {
@@ -51,7 +62,10 @@ func Catalog() []CatalogEntry {
 		if spec.ProductCode == "" && spec.PlanQuotaKey == "" {
 			continue
 		}
-		out = append(out, CatalogEntry{Service: spec.Code, Label: spec.Label, UnitPriceKES: spec.UnitPriceKES, Bundles: spec.OfferedBundles(), Tiers: spec.Tiers})
+		out = append(out, CatalogEntry{
+			Service: spec.Code, Label: spec.Label, Group: spec.Group, Name: spec.Name, MetaCategory: spec.MetaCategory,
+			Explainer: spec.Explainer, UnitPriceKES: spec.UnitPriceKES, Bundles: spec.OfferedBundles(), Tiers: spec.OfferedTiers(),
+		})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Service < out[j].Service })
 	return out
@@ -83,8 +97,9 @@ func (s *Service) Snapshot(ctx context.Context, tenantID uuid.UUID, spec billing
 		return ServiceSnapshot{}, err
 	}
 	snap := ServiceSnapshot{
-		Service: spec.Code, Label: spec.Label, Exempt: cov.Exempt, Covered: cov.Covered, Reason: cov.Reason,
-		Unlimited: cov.Unlimited, UnitPriceKES: spec.UnitPriceKES, Bundles: spec.OfferedBundles(), Tiers: spec.Tiers,
+		Service: spec.Code, Label: spec.Label, Group: spec.Group, Name: spec.Name, MetaCategory: spec.MetaCategory,
+		Explainer: spec.Explainer, Exempt: cov.Exempt, Covered: cov.Covered, Reason: cov.Reason,
+		Unlimited: cov.Unlimited, UnitPriceKES: spec.UnitPriceKES, Bundles: spec.OfferedBundles(), Tiers: spec.OfferedTiers(),
 	}
 	if bal, err := s.wallets.GetBalance(ctx, tenantID, spec.BundleTag); err == nil {
 		snap.BundleBalance = bal.Balance
@@ -96,7 +111,7 @@ func (s *Service) Snapshot(ctx context.Context, tenantID uuid.UUID, spec billing
 	}
 	if cov.Product != nil {
 		if tier, live := liveTier(spec, cov.Product, time.Now()); live {
-			snap.TierCode = tier.Code
+			snap.TierCode, snap.TierName = tier.Code, tier.Name
 		}
 		if end, _ := cov.Product.Metadata[MetaTierPeriodEnd].(string); end != "" {
 			if t, err := time.Parse(time.RFC3339, end); err == nil {
@@ -104,8 +119,11 @@ func (s *Service) Snapshot(ctx context.Context, tenantID uuid.UUID, spec billing
 			}
 		}
 		snap.AutoRenew, _ = cov.Product.Metadata[MetaTierAutoRenew].(bool)
+		if len(spec.OfferedTiers()) == 0 {
+			snap.AutoRenew = false // a retired tier never renews, whatever the old setting says
+		}
 		if len(spec.Bundles) > 0 {
-			at := readAutoTopup(cov.Product.Metadata)
+			at := readAutoTopup(cov.Product.Metadata, autoTopupKey(spec))
 			snap.AutoTopup = &at
 		}
 	}

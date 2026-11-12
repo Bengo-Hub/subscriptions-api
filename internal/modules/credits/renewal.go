@@ -2,6 +2,7 @@ package credits
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -19,7 +20,8 @@ import (
 // RenewTiers extends every auto-renewing tier of the tenant after a subscription invoice was
 // paid. The invoice carried one line per tier for the whole billing period, so each tier is
 // extended by that many months. A tier already granted by this same payment (a checkout add-on)
-// is skipped, and each grant is keyed by payment and tier, so redeliveries change nothing.
+// is skipped, and each grant is keyed by payment and tier, so redeliveries change nothing. Retired
+// tiers (WhatsApp, since 2026-11-12) are never renewed: they run to the end of the paid period.
 func (s *Service) RenewTiers(ctx context.Context, tenantID uuid.UUID, paymentID string) error {
 	sub, err := s.subs.SubscriptionByTenant(ctx, tenantID)
 	if err != nil {
@@ -29,11 +31,13 @@ func (s *Service) RenewTiers(ctx context.Context, tenantID uuid.UUID, paymentID 
 	if months <= 0 {
 		months = 1
 	}
+	seen := map[string]bool{}
 	for _, code := range billing.MeteredServiceCodes() {
 		spec, _ := billing.LookupMeteredService(code)
-		if len(spec.Tiers) == 0 || spec.ProductCode == "" {
+		if len(spec.OfferedTiers()) == 0 || spec.ProductCode == "" || seen[spec.ProductCode] {
 			continue
 		}
+		seen[spec.ProductCode] = true
 		ps, err := s.orm.ProductSubscription.Query().
 			Where(
 				productsubscription.TenantSubscriptionIDEQ(sub.ID),
@@ -51,7 +55,7 @@ func (s *Service) RenewTiers(ctx context.Context, tenantID uuid.UUID, paymentID 
 		}
 		tierCode, _ := ps.Metadata[MetaTierCode].(string)
 		tier, ok := spec.Tier(tierCode)
-		if !ok {
+		if !ok || tier.Retired {
 			continue
 		}
 		if last, _ := ps.Metadata["last_grant_key"].(string); strings.HasPrefix(last, "intent:"+paymentID) {
@@ -72,6 +76,9 @@ func (s *Service) SetTierAutoRenew(ctx context.Context, tenantID uuid.UUID, serv
 	spec, ok := billing.LookupMeteredService(service)
 	if !ok || len(spec.Tiers) == 0 {
 		return fmt.Errorf("%q has no recurring plan", service)
+	}
+	if on && len(spec.OfferedTiers()) == 0 {
+		return errors.New("this monthly plan is no longer sold and cannot renew; it runs to the end of its paid period, then buy credits instead")
 	}
 	sub, err := s.subs.SubscriptionByTenant(ctx, tenantID)
 	if err != nil {
@@ -131,11 +138,14 @@ func (s *Service) RefillAllowances(ctx context.Context, now time.Time) (int, err
 
 func (s *Service) refillOne(ctx context.Context, sub *ent.TenantSubscription, window string, now time.Time) (int, error) {
 	n := 0
+	// The WhatsApp categories share one allowance wallet: it is set once.
+	seen := map[string]bool{}
 	for _, code := range billing.MeteredServiceCodes() {
 		spec, _ := billing.LookupMeteredService(code)
-		if spec.QuotaTag == "" {
+		if spec.QuotaTag == "" || seen[spec.QuotaTag] {
 			continue
 		}
+		seen[spec.QuotaTag] = true
 		target := int64(-1)
 		switch {
 		case len(spec.Tiers) > 0:
@@ -167,7 +177,11 @@ func (s *Service) refillOne(ctx context.Context, sub *ent.TenantSubscription, wi
 		if target < 0 {
 			continue
 		}
-		ok, err := s.wallets.SetQuota(ctx, sub.TenantID, spec.QuotaTag, target, "w:"+window, spec.Label+" monthly allowance")
+		label := spec.Label
+		if spec.Group == billing.GroupWhatsApp {
+			label = "WhatsApp" // the allowance is shared by every category
+		}
+		ok, err := s.wallets.SetQuota(ctx, sub.TenantID, spec.QuotaTag, target, "w:"+window, label+" monthly allowance")
 		if err != nil {
 			return n, err
 		}

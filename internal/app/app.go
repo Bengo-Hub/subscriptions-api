@@ -136,6 +136,9 @@ func New(ctx context.Context) (*App, error) {
 		if err := migrate.DropLegacyIndexes(ctx, sqlDB); err != nil {
 			return nil, fmt.Errorf("drop legacy indexes: %w", err)
 		}
+		if err := migrate.MoveWhatsAppToCategories(ctx, sqlDB); err != nil {
+			return nil, fmt.Errorf("whatsapp category move: %w", err)
+		}
 		log.Info("versioned migrations completed - run 'go run cmd/seed/main.go' to seed initial data (idempotent)")
 	}
 

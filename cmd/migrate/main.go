@@ -78,6 +78,9 @@ func main() {
 	if migrateErr == nil {
 		migrateErr = migrate.DropLegacyIndexes(ctx, db)
 	}
+	if migrateErr == nil {
+		migrateErr = migrate.MoveWhatsAppToCategories(ctx, db)
+	}
 	unlock()
 	if migrateErr != nil {
 		log.Fatalf("run migrations: %v", migrateErr)

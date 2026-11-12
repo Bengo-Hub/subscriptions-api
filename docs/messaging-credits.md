@@ -6,23 +6,55 @@ service whether a unit may be spent and report each spend. Nothing else keeps a 
 
 ## What tenants can buy
 
-| Service | Bundles | Monthly plans | Beyond plan and bundles |
+| Service | Bundles | Monthly plans | Beyond bundles |
 |---|---|---|---|
-| SMS | 100, 500, 1000, 5000 units at KES 1 each | none | KES 1 per SMS, billed on the next invoice |
-| WhatsApp | 100, 500, 1000, 5000 units at KES 1 each | Tier 1: KES 500 for 400 messages. Tier 2: KES 1000 for 800. Pro: KES 2000, unlimited | KES 1 per message, billed on the next invoice |
-| AI credits | 100 for KES 1000, 500 for KES 4000 | MarketFlow plans only (`ai_credits_monthly`). No other subscription plan grants AI credits | not allowed, prepaid only |
+| SMS (`sms`) | 100, 500, 1000, 5000 units at KES 1 each | none | not allowed, prepaid only (since 2026-11-12) |
+| WhatsApp promotions and broadcasts (`whatsapp_marketing`) | 100, 500, 1000, 5000 credits at KES 4 each | none | not allowed, prepaid only |
+| WhatsApp order, payment and account updates (`whatsapp_utility`) | 100, 500, 1000, 5000 credits at KES 1 each | none | not allowed, prepaid only |
+| WhatsApp login and verification codes (`whatsapp_authentication`) | 100, 500, 1000, 5000 credits at KES 1 each | none | not allowed, prepaid only |
+| WhatsApp replies to customers (`whatsapp_service`) | 100, 500, 1000, 5000 credits at KES 1 each | none | not allowed, prepaid only |
+| AI credits | 60, 150, 400, 1000 credits | MarketFlow plans only (`ai_credits_monthly`). No other subscription plan grants AI credits | not allowed, prepaid only |
 
-Bundle units never expire. A plan allowance resets at the start of each calendar month. When a tenant's plan grants no allowance, the monthly refill clears any allowance left from an earlier plan; purchased bundles are not touched.
+Bundle units never expire. No plan includes SMS or WhatsApp messages: both are credits only.
 
-The price list is public at `GET /api/v1/credits/catalog`. The source is `internal/modules/billing/credit_services.go`.
+### WhatsApp categories (since 2026-11-12)
+
+WhatsApp is sold as four wallets, one per Meta pricing category. 1 credit pays for 1 message to 1 recipient, and a
+send spends only from its own category's wallet. The lowest price is KES 1 a message, replies included. Tenants see
+the plain names, never Meta's category words alone:
+
+| Plain name | Meta category | What falls in it |
+|---|---|---|
+| Promotions and broadcasts | MARKETING | holiday and occasion greetings, offers, broadcast announcements |
+| Order, payment and account updates | UTILITY | order and delivery updates, receipts, invoices, payment reminders, bookings, account notices |
+| Login and verification codes | AUTHENTICATION | one-time sign-in and password reset codes |
+| Replies to customers | SERVICE | free-form replies inside Meta's 24 hour window, such as inbox replies |
+
+Names, explanations, prices and bundle sizes live in `internal/modules/billing/whatsapp_categories.json`. Buying any
+category activates the one `whatsapp_messaging` row. notifications-api decides the category of each send from the
+Meta template it uses (`internal/whatsapp/templatesync/templates.json`); a send with no template is a reply.
+Test messages from the provider Test button are never charged.
+
+The old single `whatsapp` code is an alias of `whatsapp_utility`, so payments started for an old WhatsApp bundle
+still settle (as utility credits) and older callers keep working. Migration
+`20261112090000_whatsapp_category_credits.sql` moved every legacy `whatsapp` balance: hadia's 100 units became 90
+utility and 10 reply credits, every other tenant's balance became utility credits 1:1, with one ledger row per moved
+amount on each side.
+
+The WhatsApp monthly tiers (Tier 1, Tier 2, Pro) are retired. They are no longer sold, renewed or invoiced. A tenant
+whose tier was paid keeps its allowance, shared by every category, until the paid period ends, then uses credits only.
+
+The price list is public at `GET /api/v1/credits/catalog`. The registry is `internal/modules/billing/credit_services.go`.
 Adding a credit product means adding one entry there.
 
 ## How a send is paid for
 
-1. The allowance of the current plan period.
+1. The allowance of the current period (AI credits from a MarketFlow plan, or a retired WhatsApp tier still inside
+   its paid period).
 2. The bundle balance.
-3. Overage at KES 1 per unit, only for services that allow it and only while the tenant has a live plan or
-   bundle activation. Overage accrues in one open `overage_charges` row per subscription and is added to the
+3. Overage, only while a retired WhatsApp tier is still live, at the category's price. SMS is credits only since
+   2026-11-12: a send that does not fit is refused (`insufficient_credits`, shown as "buy SMS credits"); auto top-up,
+   where switched on, buys more before the balance runs out. SMS overage already invoiced stays on its invoice. Overage accrues in one open `overage_charges` row per subscription and is added to the
    next subscription invoice. Sends pause when unpaid overage reaches the platform cap
    (`messaging.overage_cap_kes` in `service_configs`, default KES 500). Paying the invoice or buying a bundle
    lets sending continue.
@@ -41,8 +73,9 @@ The ledger is the existing `api_token_wallets` and `api_token_transactions` pair
 
 | service_tag | Holds |
 |---|---|
-| `sms`, `whatsapp`, `ai_credits` | purchased bundle units |
-| `whatsapp_quota`, `ai_credits_quota` | the recurring allowance of the current period |
+| `sms`, `whatsapp_marketing`, `whatsapp_utility`, `whatsapp_authentication`, `whatsapp_service`, `ai_credits` | purchased bundle units |
+| `whatsapp_quota`, `ai_credits_quota` | the recurring allowance of the current period (`whatsapp_quota` only while a retired tier runs) |
+| `whatsapp` | the retired single WhatsApp wallet, emptied by the 2026-11-12 migration |
 | `etims_api` | API tokens (prepaid only) |
 
 Every movement runs in one database transaction with the wallet rows locked in tag order. A movement can carry
@@ -65,10 +98,11 @@ Service to service, with the internal service key:
 
 Tenant facing:
 
-* `GET /api/v1/credits` balances, plan, owed overage and what can be bought.
+* `GET /api/v1/credits` balances, a live legacy tier, owed overage and what can be bought. WhatsApp categories carry
+  `group`, `name`, `meta_category` and `explainer`.
 * `GET /api/v1/credits/{service}/transactions` bundle history.
-* `POST /api/v1/credits/{service}/purchase` creates a Treasury intent for a bundle or plan.
-* `POST /api/v1/credits/{service}/auto-renew` turns plan renewal on or off.
+* `POST /api/v1/credits/{service}/purchase` creates a Treasury intent for a bundle.
+* `POST /api/v1/credits/{service}/auto-renew` turns renewal off (a retired tier cannot be turned back on).
 
 Platform owner:
 
@@ -114,8 +148,8 @@ Reasons a spend is refused: `no_subscription`, `service_not_activated`, `insuffi
 * With a plan: `POST /subscription/initiate` accepts `addons` (`service`, `kind`, `code`). The prices are added to the
   one payment, the selection is kept in the subscription metadata (`pending_credit_addons`) beside the pending
   intent, and it is granted when that intent pays. A free plan or a trial cannot carry add-ons.
-* Recurring plans: the subscription invoice carries one line per tier the tenant keeps on auto renew, priced for every
-  month of the billing period. Paying the invoice extends the tier by those months.
+* Recurring plans: none are on sale. The invoice renewal line and the renewal grant skip retired tiers, so a WhatsApp
+  tier bought before 2026-11-12 simply ends with its paid period.
 * Platform owner grants are adjustments with a reason, never top-ups, so revenue reports stay clean.
 
 ## Auto top-up
@@ -123,14 +157,15 @@ Reasons a spend is refused: `no_subscription`, `service_not_activated`, `insuffi
 A tenant can have a bundle bought automatically with the saved card when the bundle balance falls below a number the tenant
 chooses (`PUT /api/v1/credits/{service}/auto-topup`, read with `GET`, also shown as `auto_topup` in `GET /api/v1/credits`). The
 tenant picks the bundle and a monthly spend limit (default KES 5,000, at most KES 100,000, at least one bundle). It needs the
-service activated and a saved card.
+service activated and a saved card. Each WhatsApp category has its own setting (activation metadata `auto_topup` for
+utility, which inherited the old WhatsApp setting, and `auto_topup_<service>` for the others).
 
 Safety rules, all tested:
 
 * At most one attempt per service per day. The Treasury reference carries the day (`AUTOTOP-<tenant>-<service>-<yyyymmdd>`),
   so even a replayed attempt cannot charge twice, and the attempt is recorded before the card is charged.
-* The monthly limit counts what was charged; a month change resets it. At the limit nothing is bought and extra messages fall
-  back to KES 1 overage on the invoice.
+* The monthly limit counts what was charged; a month change resets it. At the limit nothing is bought: SMS and WhatsApp sends
+  stop once the credits run out.
 * A declined card or a refusal switches the setting off, records the reason and sends the tenant admin an email and a WhatsApp
   message (`credits_auto_topup_failed`, WhatsApp template `credits_auto_topup_failed_v1_btn`). Nothing is counted as spent.
 * A Treasury server error means the outcome is unknown: it is not retried the same day, not counted, and the setting stays on.
@@ -142,8 +177,8 @@ the tenant still gets the email.
 
 ## Background work
 
-`jobs.StartCreditsJob` runs hourly. It sets each recurring allowance to the current month's value (live tier units,
-zero for a lapsed tier, the plan's `ai_credits_monthly`). Each reset is keyed by month, so any number of runs on any
+`jobs.StartCreditsJob` runs hourly. It sets each recurring allowance to the current month's value (a live retired
+tier's units, zero once it lapses, the plan's `ai_credits_monthly`). The shared `whatsapp_quota` is set once per run. Each reset is keyed by month, so any number of runs on any
 number of replicas change nothing after the first.
 
 The daily overage job sums usage events in SQL and no longer applies to SMS or WhatsApp. Those run on the ledger.

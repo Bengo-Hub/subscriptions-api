@@ -93,7 +93,7 @@ func monthStart(now time.Time) time.Time {
 func adminSpec(code string) (billing.MeteredService, error) {
 	spec, ok := billing.LookupMeteredService(code)
 	if !ok || (spec.ProductCode == "" && spec.PlanQuotaKey == "") {
-		return billing.MeteredService{}, fmt.Errorf("%w: service must be one of sms, whatsapp, ai_credits", ErrInvalidAdminQuery)
+		return billing.MeteredService{}, fmt.Errorf("%w: service must be one of sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service, ai_credits", ErrInvalidAdminQuery)
 	}
 	return spec, nil
 }

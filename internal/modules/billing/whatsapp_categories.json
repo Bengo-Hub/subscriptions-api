@@ -1,0 +1,35 @@
+{
+  "_comment": "WhatsApp credits, one wallet per Meta pricing category (owner decision 2026-11-12). 1 credit = 1 message. A send spends only from its own category. Prices are KES per message and never below 1. Changing a price or a bundle size here is a release; units already bought are kept.",
+  "product_code": "whatsapp_messaging",
+  "bundle_sizes": [100, 500, 1000, 5000],
+  "categories": [
+    {
+      "code": "whatsapp_marketing",
+      "meta_category": "MARKETING",
+      "name": "Promotions and broadcasts",
+      "explainer": "Messages you send to many customers at once to promote your business: holiday and occasion greetings, offers and broadcast announcements.",
+      "unit_price_kes": 4
+    },
+    {
+      "code": "whatsapp_utility",
+      "meta_category": "UTILITY",
+      "name": "Order, payment and account updates",
+      "explainer": "Messages about something a customer did or asked for: order confirmations and delivery updates, receipts, invoices, payment reminders, bookings and account notices.",
+      "unit_price_kes": 1
+    },
+    {
+      "code": "whatsapp_authentication",
+      "meta_category": "AUTHENTICATION",
+      "name": "Login and verification codes",
+      "explainer": "One-time codes that let a person sign in, confirm their phone number or reset a password.",
+      "unit_price_kes": 1
+    },
+    {
+      "code": "whatsapp_service",
+      "meta_category": "SERVICE",
+      "name": "Replies to customers",
+      "explainer": "Messages you or your assistant type in reply to a customer who wrote to you in the last 24 hours, such as answers sent from the WhatsApp inbox.",
+      "unit_price_kes": 1
+    }
+  ]
+}

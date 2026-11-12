@@ -28,7 +28,8 @@ import (
 //   - a declined or refused card switches it off and tells the tenant admin,
 //   - a charge whose outcome is unknown is never retried the same day.
 //
-// Settings live in the service's activation row metadata under "auto_topup".
+// Settings live in the service's activation row metadata under "auto_topup". The four WhatsApp
+// categories share one activation row, so each keeps its own key (autoTopupKey).
 
 const (
 	metaAutoTopup = "auto_topup"
@@ -67,8 +68,19 @@ type AutoTopupInput struct {
 	MonthlyLimitKES *float64
 }
 
-func readAutoTopup(meta map[string]any) AutoTopup {
-	raw, _ := meta[metaAutoTopup].(map[string]any)
+// autoTopupKey is the activation metadata key holding a service's setting. A service alone on its
+// activation row uses "auto_topup". WhatsApp categories share the row: utility keeps "auto_topup"
+// because it inherited the old single WhatsApp wallet (and with it the old setting), the others
+// use "auto_topup_<service>".
+func autoTopupKey(spec billing.MeteredService) string {
+	if spec.Group == "" || spec.Code == billing.ServiceWhatsAppUtility {
+		return metaAutoTopup
+	}
+	return metaAutoTopup + "_" + spec.Code
+}
+
+func readAutoTopup(meta map[string]any, key string) AutoTopup {
+	raw, _ := meta[key].(map[string]any)
 	if raw == nil {
 		return AutoTopup{}
 	}
@@ -113,13 +125,13 @@ func (a AutoTopup) toMeta() map[string]any {
 	return m
 }
 
-// withAutoTopup returns a copy of meta with the setting replaced.
-func withAutoTopup(meta map[string]any, a AutoTopup) map[string]any {
+// withAutoTopup returns a copy of meta with the setting under key replaced.
+func withAutoTopup(meta map[string]any, key string, a AutoTopup) map[string]any {
 	out := make(map[string]any, len(meta)+1)
 	for k, v := range meta {
 		out[k] = v
 	}
-	out[metaAutoTopup] = a.toMeta()
+	out[key] = a.toMeta()
 	return out
 }
 
@@ -142,7 +154,7 @@ func (s *Service) GetAutoTopup(ctx context.Context, tenantID uuid.UUID, service 
 	if cov.Product == nil {
 		return AutoTopup{}, nil
 	}
-	return readAutoTopup(cov.Product.Metadata), nil
+	return readAutoTopup(cov.Product.Metadata, autoTopupKey(spec)), nil
 }
 
 // SetAutoTopup validates and stores the tenant's setting. Switching it on needs the service
@@ -164,14 +176,15 @@ func (s *Service) SetAutoTopup(ctx context.Context, tenantID uuid.UUID, service 
 		return AutoTopup{}, fmt.Errorf("%w: an active subscription is required", ErrAutoTopup)
 	}
 	if cov.Product == nil {
-		return AutoTopup{}, fmt.Errorf("%w: buy a %s bundle or plan first", ErrAutoTopup, spec.Label)
+		return AutoTopup{}, fmt.Errorf("%w: buy a %s bundle first", ErrAutoTopup, spec.Label)
 	}
-	cur := readAutoTopup(cov.Product.Metadata)
+	key := autoTopupKey(spec)
+	cur := readAutoTopup(cov.Product.Metadata, key)
 
 	if !in.Enabled {
 		cur.Enabled = false
 		cur.DisabledReason = "turned off by the tenant"
-		return cur, s.saveAutoTopup(ctx, cov.Product, cur)
+		return cur, s.saveAutoTopup(ctx, cov.Product, key, cur)
 	}
 
 	if in.Threshold < 1 || in.Threshold > MaxAutoTopupThreshold {
@@ -199,12 +212,18 @@ func (s *Service) SetAutoTopup(ctx context.Context, tenantID uuid.UUID, service 
 	}
 
 	cur.Enabled, cur.Threshold, cur.BundleCode, cur.MonthlyLimitKES, cur.DisabledReason = true, in.Threshold, bundle.Code, limit, ""
-	return cur, s.saveAutoTopup(ctx, cov.Product, cur)
+	return cur, s.saveAutoTopup(ctx, cov.Product, key, cur)
 }
 
-func (s *Service) saveAutoTopup(ctx context.Context, ps *ent.ProductSubscription, a AutoTopup) error {
-	_, err := s.orm.ProductSubscription.UpdateOneID(ps.ID).SetMetadata(withAutoTopup(ps.Metadata, a)).Save(ctx)
-	return err
+// saveAutoTopup stores the setting under key and keeps ps.Metadata in step, so a later save for
+// another service on the same row (the WhatsApp categories) does not overwrite this one.
+func (s *Service) saveAutoTopup(ctx context.Context, ps *ent.ProductSubscription, key string, a AutoTopup) error {
+	meta := withAutoTopup(ps.Metadata, key, a)
+	if _, err := s.orm.ProductSubscription.UpdateOneID(ps.ID).SetMetadata(meta).Save(ctx); err != nil {
+		return err
+	}
+	ps.Metadata = meta
+	return nil
 }
 
 // AutoTopupResult counts what one run did, for logs and tests.
@@ -216,15 +235,28 @@ type AutoTopupResult struct {
 // any number of replicas and any number of times a day: see the guarantees at the top of the file.
 func (s *Service) RunAutoTopups(ctx context.Context, now time.Time) (AutoTopupResult, error) {
 	var res AutoTopupResult
+	// Every service that can be topped up, grouped by its activation product. Several services can
+	// share one row (the WhatsApp categories), each with its own setting key.
+	byProduct := map[string][]billing.MeteredService{}
 	codes := []string{}
+	keys := map[string]bool{}
 	for _, code := range billing.MeteredServiceCodes() {
 		spec, _ := billing.LookupMeteredService(code)
-		if spec.ProductCode != "" && len(spec.Bundles) > 0 {
+		if spec.ProductCode == "" || len(spec.Bundles) == 0 {
+			continue
+		}
+		if len(byProduct[spec.ProductCode]) == 0 {
 			codes = append(codes, spec.ProductCode)
 		}
+		byProduct[spec.ProductCode] = append(byProduct[spec.ProductCode], spec)
+		keys[autoTopupKey(spec)] = true
 	}
 	enabled := predicate.ProductSubscription(func(sel *entsql.Selector) {
-		sel.Where(sqljson.ValueEQ(productsubscription.FieldMetadata, true, sqljson.Path(metaAutoTopup, "enabled")))
+		var ors []*entsql.Predicate
+		for key := range keys {
+			ors = append(ors, sqljson.ValueEQ(productsubscription.FieldMetadata, true, sqljson.Path(key, "enabled")))
+		}
+		sel.Where(entsql.Or(ors...))
 	})
 	last := uuid.Nil
 	const page = 200
@@ -247,27 +279,34 @@ func (s *Service) RunAutoTopups(ctx context.Context, now time.Time) (AutoTopupRe
 		}
 		for _, ps := range rows {
 			last = ps.ID
-			res.Checked++
-			outcome, err := s.autoTopupOne(ctx, ps, now)
-			if err != nil {
-				s.log.Warn("auto top-up failed to run", zap.String("product_subscription", ps.ID.String()), zap.Error(err))
-				res.Skipped++
-				continue
-			}
-			switch outcome {
-			case "charged":
-				res.Charged++
-			case "failed":
-				res.Failed++
-			default:
-				res.Skipped++
+			for _, spec := range byProduct[ps.ProductCode] {
+				if !readAutoTopup(ps.Metadata, autoTopupKey(spec)).Enabled {
+					continue
+				}
+				res.Checked++
+				outcome, err := s.autoTopupOne(ctx, ps, spec, now)
+				if err != nil {
+					s.log.Warn("auto top-up failed to run", zap.String("product_subscription", ps.ID.String()),
+						zap.String("service", spec.Code), zap.Error(err))
+					res.Skipped++
+					continue
+				}
+				switch outcome {
+				case "charged":
+					res.Charged++
+				case "failed":
+					res.Failed++
+				default:
+					res.Skipped++
+				}
 			}
 		}
 	}
 }
 
-func (s *Service) autoTopupOne(ctx context.Context, ps *ent.ProductSubscription, now time.Time) (string, error) {
-	cfg := readAutoTopup(ps.Metadata)
+func (s *Service) autoTopupOne(ctx context.Context, ps *ent.ProductSubscription, spec billing.MeteredService, now time.Time) (string, error) {
+	key := autoTopupKey(spec)
+	cfg := readAutoTopup(ps.Metadata, key)
 	if !cfg.Enabled || cfg.Threshold < 1 {
 		return "skipped", nil
 	}
@@ -281,17 +320,6 @@ func (s *Service) autoTopupOne(ctx context.Context, ps *ent.ProductSubscription,
 	if s.subs.IsExemptTenant(ctx, sub.TenantID) {
 		return "skipped", nil
 	}
-	var spec billing.MeteredService
-	for _, code := range billing.MeteredServiceCodes() {
-		c, _ := billing.LookupMeteredService(code)
-		if c.ProductCode == ps.ProductCode {
-			spec = c
-			break
-		}
-	}
-	if spec.Code == "" {
-		return "skipped", nil
-	}
 	bal, err := s.wallets.GetBalance(ctx, sub.TenantID, spec.BundleTag)
 	if err != nil {
 		return "", err
@@ -301,7 +329,7 @@ func (s *Service) autoTopupOne(ctx context.Context, ps *ent.ProductSubscription,
 	}
 	bundle, ok := spec.Bundle(cfg.BundleCode)
 	if !ok {
-		return s.failAutoTopup(ctx, ps, sub, spec, cfg, fmt.Sprintf("the chosen bundle %q no longer exists", cfg.BundleCode), 0, 0)
+		return s.failAutoTopup(ctx, ps, sub, spec, key, cfg, fmt.Sprintf("the chosen bundle %q no longer exists", cfg.BundleCode), 0, 0)
 	}
 
 	day := now.UTC().Format("20060102")
@@ -313,17 +341,17 @@ func (s *Service) autoTopupOne(ctx context.Context, ps *ent.ProductSubscription,
 		return "skipped", nil // one attempt per service per day
 	}
 	if cfg.SpentKES+bundle.PriceKES > cfg.MonthlyLimitKES {
-		return "skipped", nil // monthly limit reached; extra messages fall back to KES 1 overage
+		return "skipped", nil // monthly limit reached: nothing more is bought this month
 	}
 	authCode := savedCardOf(sub)
 	if authCode == "" {
-		return s.failAutoTopup(ctx, ps, sub, spec, cfg, "there is no saved card on the account", bundle.Units, bundle.PriceKES)
+		return s.failAutoTopup(ctx, ps, sub, spec, key, cfg, "there is no saved card on the account", bundle.Units, bundle.PriceKES)
 	}
 
 	// Record the attempt BEFORE charging: if anything below is interrupted the next run, same day,
 	// stands down instead of risking a second charge.
 	cfg.LastAttemptDay = day
-	if err := s.saveAutoTopup(ctx, ps, cfg); err != nil {
+	if err := s.saveAutoTopup(ctx, ps, key, cfg); err != nil {
 		return "", err
 	}
 	offer := PurchaseOffer{Service: spec, Kind: KindBundle, Code: bundle.Code, Units: bundle.Units, PriceKES: bundle.PriceKES,
@@ -351,14 +379,14 @@ func (s *Service) autoTopupOne(ctx context.Context, ps *ent.ProductSubscription,
 		return "", err
 	}
 	if charge.Failure != "" || charge.Status == "failed" {
-		return s.failAutoTopup(ctx, ps, sub, spec, cfg, charge.Failure, bundle.Units, bundle.PriceKES)
+		return s.failAutoTopup(ctx, ps, sub, spec, key, cfg, charge.Failure, bundle.Units, bundle.PriceKES)
 	}
 	// Accepted (succeeded or pending). The payment event grants the units; the spend is counted now
 	// so the limit holds even while the payment is still settling.
 	t := now.UTC()
 	cfg.SpentKES += bundle.PriceKES
 	cfg.LastChargeAt = &t
-	if err := s.saveAutoTopup(ctx, ps, cfg); err != nil {
+	if err := s.saveAutoTopup(ctx, ps, key, cfg); err != nil {
 		return "", err
 	}
 	s.log.Info("auto top-up charged", zap.String("tenant_id", sub.TenantID.String()), zap.String("service", spec.Code),
@@ -368,7 +396,7 @@ func (s *Service) autoTopupOne(ctx context.Context, ps *ent.ProductSubscription,
 
 // failAutoTopup switches the setting off and queues the notification, in one transaction.
 func (s *Service) failAutoTopup(ctx context.Context, ps *ent.ProductSubscription, sub *ent.TenantSubscription, spec billing.MeteredService,
-	cfg AutoTopup, reason string, units int64, price float64) (string, error) {
+	key string, cfg AutoTopup, reason string, units int64, price float64) (string, error) {
 	if reason == "" {
 		reason = "the card was declined"
 	}
@@ -377,7 +405,8 @@ func (s *Service) failAutoTopup(ctx context.Context, ps *ent.ProductSubscription
 	if err != nil {
 		return "", err
 	}
-	if _, err := tx.ProductSubscription.UpdateOneID(ps.ID).SetMetadata(withAutoTopup(ps.Metadata, cfg)).Save(ctx); err != nil {
+	meta := withAutoTopup(ps.Metadata, key, cfg)
+	if _, err := tx.ProductSubscription.UpdateOneID(ps.ID).SetMetadata(meta).Save(ctx); err != nil {
 		_ = tx.Rollback()
 		return "", err
 	}
@@ -389,6 +418,7 @@ func (s *Service) failAutoTopup(ctx context.Context, ps *ent.ProductSubscription
 	if err := tx.Commit(); err != nil {
 		return "", err
 	}
+	ps.Metadata = meta
 	s.log.Warn("auto top-up switched off", zap.String("tenant_id", sub.TenantID.String()), zap.String("service", spec.Code), zap.String("reason", reason))
 	return "failed", nil
 }

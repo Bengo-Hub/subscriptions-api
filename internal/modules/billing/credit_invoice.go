@@ -9,19 +9,23 @@ import (
 )
 
 // tierRenewalLines returns one invoice line per recurring credit tier the tenant keeps on
-// auto-renew (WhatsApp), priced for every month of the billing period so the tier is paid in the
-// same invoice as the plan. The matching grant happens when that invoice is paid.
+// auto-renew, priced for every month of the billing period so the tier is paid in the same invoice
+// as the plan. The matching grant happens when that invoice is paid. Retired tiers (the WhatsApp
+// tiers, since 2026-11-12) are never renewed: they run to the end of their period.
 func tierRenewalLines(ctx context.Context, orm *ent.Client, sub *ent.TenantSubscription, months int, vatRate float64) ([]map[string]any, float64, error) {
 	if months <= 0 {
 		months = 1
 	}
 	var lines []map[string]any
 	var taxable float64
+	seen := map[string]bool{}
 	for _, code := range MeteredServiceCodes() {
 		spec, _ := LookupMeteredService(code)
-		if len(spec.Tiers) == 0 || spec.ProductCode == "" {
+		if len(spec.OfferedTiers()) == 0 || spec.ProductCode == "" || seen[spec.ProductCode] {
 			continue
 		}
+		// Services sharing one activation row bill its tier once.
+		seen[spec.ProductCode] = true
 		ps, err := orm.ProductSubscription.Query().
 			Where(
 				productsubscription.TenantSubscriptionIDEQ(sub.ID),
@@ -39,7 +43,7 @@ func tierRenewalLines(ctx context.Context, orm *ent.Client, sub *ent.TenantSubsc
 		}
 		tierCode, _ := ps.Metadata[MetaTierCode].(string)
 		tier, ok := spec.Tier(tierCode)
-		if !ok {
+		if !ok || tier.Retired {
 			continue
 		}
 		lines = append(lines, map[string]any{

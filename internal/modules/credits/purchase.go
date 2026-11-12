@@ -76,10 +76,19 @@ func ResolveOffer(service string, kind PurchaseKind, code string) (PurchaseOffer
 		if !ok {
 			return PurchaseOffer{}, fmt.Errorf("unknown %s tier %q", spec.Label, code)
 		}
-		return PurchaseOffer{Service: spec, Kind: kind, Code: code, Units: t.MonthlyUnit, PriceKES: t.PriceKES,
-			Label: fmt.Sprintf("%s %s monthly plan", spec.Label, t.Name)}, nil
+		return PurchaseOffer{Service: spec, Kind: kind, Code: code, Units: t.MonthlyUnit, PriceKES: t.PriceKES, Retired: t.Retired,
+			Label: fmt.Sprintf("%s %s monthly plan", tierFamilyLabel(spec), t.Name)}, nil
 	}
 	return PurchaseOffer{}, fmt.Errorf("unknown purchase kind %q", kind)
+}
+
+// tierFamilyLabel names a tier by its product, not one category: a WhatsApp tier's allowance is
+// shared by every WhatsApp category.
+func tierFamilyLabel(spec billing.MeteredService) string {
+	if spec.Group == billing.GroupWhatsApp {
+		return "WhatsApp"
+	}
+	return spec.Label
 }
 
 // IntentMetadata is stored on the Treasury intent and read back on payment.
@@ -109,6 +118,9 @@ func (s *Service) InitiatePurchase(ctx context.Context, in PurchaseInput) (map[s
 		return nil, fmt.Errorf("an active subscription is required")
 	}
 	if offer.Retired {
+		if offer.Kind == KindTier {
+			return nil, fmt.Errorf("monthly plans are no longer sold; buy credits instead")
+		}
 		return nil, fmt.Errorf("this bundle is no longer sold; choose another")
 	}
 	// VAT on top only when the platform charges it (treasury: VAT active and eTIMS activated).
@@ -271,6 +283,9 @@ func AddonResolver() subscriptions.AddonResolver {
 		offer, err := ResolveOffer(sel.Service, PurchaseKind(sel.Kind), sel.Code)
 		if err != nil {
 			return subscriptions.AddonOffer{}, err
+		}
+		if offer.Retired {
+			return subscriptions.AddonOffer{}, fmt.Errorf("%s is no longer sold", offer.Label)
 		}
 		return subscriptions.AddonOffer{PriceKES: offer.PriceKES, Label: offer.Label, Recurring: offer.Kind == KindTier}, nil
 	}

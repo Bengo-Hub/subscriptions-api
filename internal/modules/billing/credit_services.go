@@ -1,9 +1,15 @@
 package billing
 
+import (
+	"fmt"
+	"sort"
+)
+
 // This file is the single registry of prepaid credit services. Every product that sells units
 // (SMS, WhatsApp messages, AI credits, external API tokens) is one MeteredService entry here and
 // all of them run through the same ledger in token_wallet.go. Adding a credit product means
-// registering a spec, never writing a second wallet.
+// registering a spec, never writing a second wallet. WhatsApp is four category services built from
+// whatsapp_categories.json (see whatsapp_categories.go).
 //
 // Wallet layout per tenant and service:
 //   - BundleTag wallet: purchased units. They never expire.
@@ -33,7 +39,8 @@ type MeteredService struct {
 	// Bundles are the purchasable top-up sizes (units). Price is units times UnitPriceKES unless
 	// a bundle sets its own PriceKES.
 	Bundles []CreditBundle
-	// Tiers are recurring monthly subscriptions that grant a quota (WhatsApp).
+	// Tiers are recurring monthly subscriptions that grant a quota. Only the retired WhatsApp tiers
+	// remain; they resolve for tenants inside a paid period and are never sold or renewed.
 	Tiers []CreditTier
 	// PlanQuotaKey is a tier_limits key on the tenant's base plan that grants a free monthly
 	// allowance (AI credits), reset every period. Empty when the plan grants none.
@@ -42,6 +49,14 @@ type MeteredService struct {
 	Label string
 	// Unit names what one unit is (credits, tokens, messages), for balance alerts.
 	Unit string
+	// Group ties several services sold together (the WhatsApp categories); empty for the rest.
+	Group string
+	// Name is the plain category name a tenant reads, e.g. "Promotions and broadcasts".
+	Name string
+	// MetaCategory is the Meta pricing category the service pays for (WhatsApp only).
+	MetaCategory string
+	// Explainer tells a tenant in plain words which messages fall in the service.
+	Explainer string
 }
 
 // CreditBundle is a purchasable pack of units.
@@ -60,64 +75,65 @@ type CreditTier struct {
 	Name        string  `json:"name"`
 	PriceKES    float64 `json:"price_kes"`
 	MonthlyUnit int64   `json:"monthly_units"`
+	// Retired tiers are never sold or renewed but still resolve, so a tenant keeps a tier it paid
+	// for until the period ends and a payment started before the retirement still grants.
+	Retired bool `json:"-"`
 }
 
 // Service codes and wallet tags. The tags are stored in api_token_wallets.service_tag.
 const (
-	ServiceETIMS    = "etims_api"
-	ServiceSMS      = "sms"
+	ServiceETIMS = "etims_api"
+	ServiceSMS   = "sms"
+	ServiceAI    = "ai_credits"
+	// ServiceWhatsApp is the retired single WhatsApp service. It is an alias of
+	// ServiceWhatsAppUtility so payments, sends and refunds still naming it keep working, and its
+	// old wallet was moved into the category wallets by a data migration.
 	ServiceWhatsApp = "whatsapp"
-	ServiceAI       = "ai_credits"
 )
 
-// MessagingOverageUnitKES is the price of one SMS or WhatsApp message beyond quota and bundles.
+// MessagingOverageUnitKES is the price of one SMS beyond bundles, and the lowest price of any message.
 const MessagingOverageUnitKES = 1.0
 
-func messagingBundles() []CreditBundle {
-	sizes := []int64{100, 500, 1000, 5000}
-	out := make([]CreditBundle, 0, len(sizes))
-	for _, n := range sizes {
-		out = append(out, CreditBundle{Code: bundleCode(n), Units: n, PriceKES: float64(n) * MessagingOverageUnitKES})
+// smsBundleSizes are the SMS top-up sizes, at MessagingOverageUnitKES a unit.
+var smsBundleSizes = []int64{100, 500, 1000, 5000}
+
+func smsBundles() []CreditBundle {
+	out := make([]CreditBundle, 0, len(smsBundleSizes))
+	for _, n := range smsBundleSizes {
+		out = append(out, CreditBundle{Code: fmt.Sprintf("bundle_%d", n), Units: n, PriceKES: float64(n) * MessagingOverageUnitKES})
 	}
 	return out
 }
 
-func bundleCode(units int64) string {
-	switch units {
-	case 100:
-		return "bundle_100"
-	case 500:
-		return "bundle_500"
-	case 1000:
-		return "bundle_1000"
-	case 5000:
-		return "bundle_5000"
-	}
-	return ""
+// legacyServiceAliases map retired service codes to the service that now holds their units.
+var legacyServiceAliases = map[string]string{
+	ServiceWhatsApp: ServiceWhatsAppUtility,
 }
 
 // creditServices is the registry, keyed by Code.
-var creditServices = map[string]MeteredService{
-	ServiceETIMS: {
-		Code: ServiceETIMS, BundleTag: ServiceETIMS, Label: "eTIMS API tokens", Unit: "tokens",
-	},
-	ServiceSMS: {
-		Code: ServiceSMS, BundleTag: ServiceSMS, ProductCode: "sms_messaging",
-		OverageMetric: "messaging_sms", UnitPriceKES: MessagingOverageUnitKES,
-		Bundles: messagingBundles(), Label: "SMS", Unit: "messages",
-	},
-	ServiceWhatsApp: {
-		Code: ServiceWhatsApp, BundleTag: ServiceWhatsApp, QuotaTag: "whatsapp_quota", ProductCode: "whatsapp_messaging",
-		OverageMetric: "messaging_whatsapp", UnitPriceKES: MessagingOverageUnitKES,
-		Bundles: messagingBundles(),
-		Tiers: []CreditTier{
-			{Code: "tier_1", Name: "Tier 1", PriceKES: 500, MonthlyUnit: 400},
-			{Code: "tier_2", Name: "Tier 2", PriceKES: 1000, MonthlyUnit: 800},
-			{Code: "pro", Name: "Pro", PriceKES: 2000, MonthlyUnit: -1},
+var creditServices = buildCreditServices()
+
+func buildCreditServices() map[string]MeteredService {
+	out := map[string]MeteredService{
+		ServiceETIMS: {
+			Code: ServiceETIMS, BundleTag: ServiceETIMS, Label: "eTIMS API tokens", Unit: "tokens",
 		},
-		Label: "WhatsApp", Unit: "messages",
-	},
-	ServiceAI: {
+		// SMS is credits only (owner, 2026-11-12): no overage metric, so a send that does not fit
+		// the bundle is refused. SMS overage already on an invoice stays there.
+		ServiceSMS: {
+			Code: ServiceSMS, BundleTag: ServiceSMS, ProductCode: "sms_messaging",
+			UnitPriceKES: MessagingOverageUnitKES, Bundles: smsBundles(), Label: "SMS", Unit: "messages",
+		},
+		ServiceAI: aiCreditsService(),
+	}
+	for code, spec := range whatsAppServices(whatsAppConfig) {
+		out[code] = spec
+	}
+	return out
+}
+
+func aiCreditsService() MeteredService {
+	return MeteredService{
 		Code: ServiceAI, BundleTag: ServiceAI, QuotaTag: "ai_credits_quota",
 		PlanQuotaKey: "ai_credits_monthly",
 		Bundles: []CreditBundle{
@@ -132,30 +148,53 @@ var creditServices = map[string]MeteredService{
 			{Code: "bundle_500", Units: 500, PriceKES: 4000, Retired: true},
 		},
 		Label: "AI credits", Unit: "credits",
-	},
+	}
 }
 
-// LookupMeteredService returns the spec for a service code.
+// LookupMeteredService returns the spec for a service code. A retired code resolves to the
+// service that now holds its units (whatsapp is utility credits).
 func LookupMeteredService(code string) (MeteredService, bool) {
+	if alias, ok := legacyServiceAliases[code]; ok {
+		code = alias
+	}
 	s, ok := creditServices[code]
 	return s, ok
 }
 
-// serviceByQuotaTag finds the service whose allowance wallet is quotaTag.
+// serviceByQuotaTag finds the service whose allowance wallet is quotaTag. The WhatsApp
+// categories share one allowance wallet; utility, which inherited the old WhatsApp wallet, is
+// returned for it so the answer does not depend on map order.
 func serviceByQuotaTag(quotaTag string) (MeteredService, bool) {
-	for _, s := range creditServices {
-		if s.QuotaTag != "" && s.QuotaTag == quotaTag {
+	if quotaTag == whatsAppQuotaTag {
+		if s, ok := creditServices[ServiceWhatsAppUtility]; ok {
+			return s, true
+		}
+	}
+	for _, code := range MeteredServiceCodes() {
+		if s := creditServices[code]; s.QuotaTag != "" && s.QuotaTag == quotaTag {
 			return s, true
 		}
 	}
 	return MeteredService{}, false
 }
 
-// MeteredServiceCodes lists the registered codes.
+// MeteredServiceCodes lists the registered codes, sorted. Retired aliases are not listed.
 func MeteredServiceCodes() []string {
 	out := make([]string, 0, len(creditServices))
 	for k := range creditServices {
 		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// OfferedTiers are the tiers on sale (retired ones left out).
+func (s MeteredService) OfferedTiers() []CreditTier {
+	out := make([]CreditTier, 0, len(s.Tiers))
+	for _, t := range s.Tiers {
+		if !t.Retired {
+			out = append(out, t)
+		}
 	}
 	return out
 }

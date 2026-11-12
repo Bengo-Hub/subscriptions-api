@@ -87,8 +87,20 @@
 ### 1b. Credits (SMS, WhatsApp, AI credits, API tokens)
 
 One prepaid ledger and price list for every unit the platform sells, with SMS and WhatsApp sends gated on an active
-subscription. Bundles, WhatsApp monthly plans, KES 1 overage billed on the next invoice with a pause cap, checkout
-add-ons and the monthly allowance refill are described in [messaging-credits.md](messaging-credits.md).
+subscription. Bundles, WhatsApp credits sold per message category (monthly plans retired 2026-11-12), SMS credits only
+(no overage since 2026-11-12), checkout add-ons and the monthly allowance refill are described in
+[messaging-credits.md](messaging-credits.md).
+
+**Follow-ups from the WhatsApp category credits change (2026-11-12):**
+- The notifications credit guide sorts a tenant's messages by the delivery log's notification id (manifest file names
+  plus a few fixed ids), not the Meta template actually sent; billing itself uses the template.
+- While a retired WhatsApp tier is live, the admin overview counts units used from the shared `whatsapp_quota` under
+  each of the four categories.
+- A WhatsApp send charged under the old `whatsapp` code before the deploy and retried after it under another category
+  can be charged twice (rare; refunds by hand).
+- Regenerate the Swagger docs (`docs.go`) in subscriptions-api and notifications-api.
+- A refund of an SMS send charged as overage before the change cannot reverse that overage row (SMS has no overage
+  metric any more); handle any such case by hand.
 
 **Entities Used**: `api_token_wallets`, `api_token_transactions` (ledger, keyed by `service_tag`), `overage_charges`,
 `product_subscriptions` (service activation and tier period), `service_configs` (`messaging.overage_cap_kes`)

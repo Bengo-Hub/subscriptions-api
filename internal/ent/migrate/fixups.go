@@ -19,6 +19,31 @@ var legacyIndexes = []string{
 	"supportfeecycle_due_date",
 }
 
+// whatsAppCategoryMoveFile moves legacy "whatsapp" bundle balances into the per-category wallets
+// (owner, 2026-11-12). Schema.Create with WithDir inspects and diffs the live schema; it never
+// executes the versioned .sql files, so a data move written only as a .sql file would not reach
+// production. MoveWhatsAppToCategories runs this file itself.
+const whatsAppCategoryMoveFile = "migrations/20261112090000_whatsapp_category_credits.sql"
+
+// MoveWhatsAppToCategories runs the WhatsApp category balance move in one transaction. Idempotent:
+// an emptied legacy wallet is skipped and every ledger row has its own key, so running it on every
+// migrate is safe. Run it after Schema.Create, under the migration advisory lock.
+func MoveWhatsAppToCategories(ctx context.Context, db *sql.DB) error {
+	stmt, err := migrations.ReadFile(whatsAppCategoryMoveFile)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", whatsAppCategoryMoveFile, err)
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("whatsapp category move: begin: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, string(stmt)); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("whatsapp category move: %w", err)
+	}
+	return tx.Commit()
+}
+
 // DropLegacyIndexes drops indexes that no longer exist in the ent schema. Run it after
 // Schema.Create, on the same connection that holds the migration advisory lock.
 func DropLegacyIndexes(ctx context.Context, db *sql.DB) error {

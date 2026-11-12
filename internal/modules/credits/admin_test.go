@@ -137,9 +137,10 @@ func TestFinishTenantRow(t *testing.T) {
 		{"pro is unlimited while live", wa, raw(0, 0, "pro", future, "true"), 500, false, true, true, 0, true},
 		{"pro lapsed is not unlimited", wa, raw(0, 0, "pro", past, ""), 500, false, false, false, 0, false},
 		{"unknown tier code ignored", wa, raw(0, 5, "legacy", future, ""), 500, false, false, false, 0, false},
-		{"one unit short of cap still sends", sms, raw(498, 0, "", "", ""), 500, false, false, false, 0, false},
-		{"at cap boundary pauses", sms, raw(500, 0, "", "", ""), 500, true, false, false, 0, false},
-		{"cap zero is uncapped", sms, raw(9999, 0, "", "", ""), 0, false, false, false, 0, false},
+		{"one unit short of cap still sends", wa, raw(498, 0, "", "", ""), 500, false, false, false, 0, false},
+		{"at cap boundary pauses", wa, raw(500, 0, "", "", ""), 500, true, false, false, 0, false},
+		{"cap zero is uncapped", wa, raw(9999, 0, "", "", ""), 0, false, false, false, 0, false},
+		{"sms is credits only and never capped", sms, raw(9999, 0, "", "", ""), 500, false, false, false, 0, false},
 		{"prepaid only service is never capped", ai, raw(9999, 40, "", "", ""), 500, false, false, false, 40, false},
 	}
 	for _, tt := range tests {
@@ -162,7 +163,10 @@ func TestAdminListOverviewAndSettings(t *testing.T) {
 	ctx := context.Background()
 	f.grant(t, "sms", KindBundle, "bundle_100", "g1", 1)
 	f.grant(t, "whatsapp", KindTier, "tier_1", "t1", 1)
-	f.spend(t, "sms", 130, "big") // 100 from the bundle, 30 overage
+	if d := f.spend(t, "sms", 130, "big"); d.Allowed {
+		t.Fatalf("SMS is credits only: 130 on a 100 bundle is refused: %+v", d)
+	}
+	f.spend(t, "sms", 100, "all") // the whole bundle
 	f.spend(t, "whatsapp", 50, "w1")
 
 	// A tenant that never touched messaging must not appear.
@@ -197,8 +201,8 @@ func TestAdminListOverviewAndSettings(t *testing.T) {
 	if alpha == nil || platform == nil {
 		t.Fatalf("missing rows: %+v", page.Data)
 	}
-	if alpha.Status != AdminStatusActive || alpha.BundleBalance != 0 || alpha.OverageKES != 30 ||
-		alpha.UnitsUsedMonth != 130 || alpha.PlanName != "Duka Basic" || alpha.PlanStatus != "ACTIVE" || alpha.LastActivityAt == nil {
+	if alpha.Status != AdminStatusActive || alpha.BundleBalance != 0 || alpha.OverageKES != 0 ||
+		alpha.UnitsUsedMonth != 100 || alpha.PlanName != "Duka Basic" || alpha.PlanStatus != "ACTIVE" || alpha.LastActivityAt == nil {
 		t.Fatalf("alpha row: %+v", alpha)
 	}
 	if platform.Status != AdminStatusExempt || !platform.Exempt {
@@ -225,24 +229,36 @@ func TestAdminListOverviewAndSettings(t *testing.T) {
 		t.Fatalf("whatsapp row: %+v", r)
 	}
 
-	// Push alpha to the cap and see it flagged.
-	f.spend(t, "sms", 470, "fill")
-	if p, _ := f.svc.ListTenants(ctx, AdminListParams{Service: "sms", Status: "capped"}); p.Total != 1 || !p.Data[0].Capped {
+	// Overage now only exists while a retired WhatsApp tier runs: push alpha to the cap there.
+	// 350 allowance left, then 500 KES of overage at KES 1 reaches the default 500 cap.
+	if d := f.spend(t, "whatsapp", 850, "fill"); !d.Allowed || d.Overage != 500 {
+		t.Fatalf("fill to the cap: %+v", d)
+	}
+	if p, _ := f.svc.ListTenants(ctx, AdminListParams{Service: "whatsapp", Status: "capped"}); p.Total != 1 || !p.Data[0].Capped {
 		t.Fatalf("capped filter: %+v", p)
+	}
+	if p, _ := f.svc.ListTenants(ctx, AdminListParams{Service: "sms", Status: "capped"}); p.Total != 0 {
+		t.Fatalf("SMS has no overage, nobody is capped: %+v", p)
 	}
 
 	ov, err := f.svc.Overview(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var smsOv AdminServiceOverview
+	var smsOv, waOv AdminServiceOverview
 	for _, s := range ov.Services {
-		if s.Service == "sms" {
+		switch s.Service {
+		case "sms":
 			smsOv = s
+		case billing.ServiceWhatsAppUtility:
+			waOv = s
 		}
 	}
-	if smsOv.UnitsConsumedMonth != 600 || smsOv.OverageAccruedKES != 500 || smsOv.OverageOutstanding != 500 || smsOv.TenantsAtCap != 1 {
+	if smsOv.UnitsConsumedMonth != 100 || smsOv.AllowsOverage || smsOv.OverageAccruedKES != 0 || smsOv.TenantsAtCap != 0 {
 		t.Fatalf("sms overview: %+v", smsOv)
+	}
+	if waOv.UnitsConsumedMonth != 900 || waOv.OverageAccruedKES != 500 || waOv.OverageOutstanding != 500 || waOv.TenantsAtCap != 1 {
+		t.Fatalf("whatsapp overview: %+v", waOv)
 	}
 
 	// Settings round trip busts the cache so the new cap applies at once.
@@ -253,7 +269,7 @@ func TestAdminListOverviewAndSettings(t *testing.T) {
 	if err != nil || st.OverageCapKES != 1000 || st.UpdatedAt == nil {
 		t.Fatalf("settings: %+v %v", st, err)
 	}
-	if d := f.spend(t, "sms", 1, "after-raise"); !d.Allowed {
+	if d := f.spend(t, "whatsapp", 1, "after-raise"); !d.Allowed {
 		t.Fatalf("raised cap should allow more: %+v", d)
 	}
 	if _, err := f.svc.SetOverageCap(ctx, -5); err == nil {

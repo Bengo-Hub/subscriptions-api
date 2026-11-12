@@ -111,9 +111,16 @@ func (f *ledgerFixture) credit(t *testing.T, tag string, units int64) {
 	}
 }
 
-func sms() MeteredService { s, _ := LookupMeteredService(ServiceSMS); return s }
+// sms is the SMS spec with an overage metric added: SMS itself is credits only since 2026-11-12,
+// but these tests exercise the ledger's generic overage mechanics, which a live retired WhatsApp
+// tier still uses.
+func sms() MeteredService {
+	s, _ := LookupMeteredService(ServiceSMS)
+	s.OverageMetric = "messaging_sms"
+	return s
+}
 
-func wa() MeteredService { s, _ := LookupMeteredService(ServiceWhatsApp); return s }
+func wa() MeteredService { s, _ := LookupMeteredService(ServiceWhatsAppUtility); return s }
 
 func TestPrepaidOnlyServiceRefusesWhenEmptyAndNeverGoesNegative(t *testing.T) {
 	f := newLedgerFixture(t)
@@ -224,14 +231,14 @@ func TestWhatsAppSpendsQuotaBeforeBundleAndUnlimitedTier(t *testing.T) {
 	if _, err := f.svc.SetQuota(ctx, f.tenantID, "whatsapp_quota", 5, "window-1", "reset"); err != nil {
 		t.Fatal(err)
 	}
-	f.credit(t, ServiceWhatsApp, 10)
+	f.credit(t, ServiceWhatsAppUtility, 10)
 
 	r, err := f.svc.Consume(ctx, ConsumeRequest{TenantID: f.tenantID, Service: wa(), Units: 8, Key: "w1", AllowOverage: true, SubscriptionID: f.subID})
 	if err != nil || r.FromQuota != 5 || r.FromBundle != 3 || r.Overage != 0 {
 		t.Fatalf("quota must be spent first: %+v %v", r, err)
 	}
-	if f.balance(t, "whatsapp_quota") != 0 || f.balance(t, ServiceWhatsApp) != 7 {
-		t.Fatalf("balances quota=%d bundle=%d", f.balance(t, "whatsapp_quota"), f.balance(t, ServiceWhatsApp))
+	if f.balance(t, "whatsapp_quota") != 0 || f.balance(t, ServiceWhatsAppUtility) != 7 {
+		t.Fatalf("balances quota=%d bundle=%d", f.balance(t, "whatsapp_quota"), f.balance(t, ServiceWhatsAppUtility))
 	}
 
 	// Unlimited tier: spend is recorded, nothing is reduced, never overage.
@@ -239,8 +246,8 @@ func TestWhatsAppSpendsQuotaBeforeBundleAndUnlimitedTier(t *testing.T) {
 	if err != nil || u.FromQuota != 1000 || u.FromBundle != 0 || u.Overage != 0 {
 		t.Fatalf("unlimited: %+v %v", u, err)
 	}
-	if f.balance(t, ServiceWhatsApp) != 7 {
-		t.Fatalf("unlimited spend touched the bundle: %d", f.balance(t, ServiceWhatsApp))
+	if f.balance(t, ServiceWhatsAppUtility) != 7 {
+		t.Fatalf("unlimited spend touched the bundle: %d", f.balance(t, ServiceWhatsAppUtility))
 	}
 }
 
@@ -270,7 +277,7 @@ func TestRefundConsumeRestoresEveryLegOnce(t *testing.T) {
 	if _, err := f.svc.SetQuota(ctx, f.tenantID, "whatsapp_quota", 2, "w", "reset"); err != nil {
 		t.Fatal(err)
 	}
-	f.credit(t, ServiceWhatsApp, 3)
+	f.credit(t, ServiceWhatsAppUtility, 3)
 	r, err := f.svc.Consume(ctx, ConsumeRequest{TenantID: f.tenantID, Service: wa(), Units: 8, Key: "send-1", AllowOverage: true, SubscriptionID: f.subID})
 	if err != nil || r.FromQuota != 2 || r.FromBundle != 3 || r.Overage != 3 {
 		t.Fatalf("setup consume: %+v %v", r, err)
@@ -278,8 +285,8 @@ func TestRefundConsumeRestoresEveryLegOnce(t *testing.T) {
 	if _, err := f.svc.RefundConsume(ctx, f.tenantID, wa(), f.subID, "send-1", "refund-1"); err != nil {
 		t.Fatal(err)
 	}
-	if f.balance(t, "whatsapp_quota") != 2 || f.balance(t, ServiceWhatsApp) != 3 {
-		t.Fatalf("legs not restored quota=%d bundle=%d", f.balance(t, "whatsapp_quota"), f.balance(t, ServiceWhatsApp))
+	if f.balance(t, "whatsapp_quota") != 2 || f.balance(t, ServiceWhatsAppUtility) != 3 {
+		t.Fatalf("legs not restored quota=%d bundle=%d", f.balance(t, "whatsapp_quota"), f.balance(t, ServiceWhatsAppUtility))
 	}
 	if u, _ := f.pendingOverage(t, "messaging_whatsapp"); u != 0 {
 		t.Fatalf("overage not reversed: %v", u)
@@ -288,8 +295,8 @@ func TestRefundConsumeRestoresEveryLegOnce(t *testing.T) {
 	if err != nil || !again.Replayed {
 		t.Fatalf("second refund must replay: %+v %v", again, err)
 	}
-	if f.balance(t, ServiceWhatsApp) != 3 {
-		t.Fatalf("refund applied twice: %d", f.balance(t, ServiceWhatsApp))
+	if f.balance(t, ServiceWhatsAppUtility) != 3 {
+		t.Fatalf("refund applied twice: %d", f.balance(t, ServiceWhatsAppUtility))
 	}
 	// A refund for a spend that never happened changes nothing.
 	none, err := f.svc.RefundConsume(ctx, f.tenantID, wa(), f.subID, "never", "refund-2")
