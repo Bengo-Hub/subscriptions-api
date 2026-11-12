@@ -826,13 +826,21 @@ func (s *Service) CancelSubscription(ctx context.Context, in CancelInput) (*Subs
 		return nil, fmt.Errorf("cancel subscription: %w", err)
 	}
 
-	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, "cancelled", map[string]any{
+	// The cancellation email names the plan and the date access ends.
+	cancelled := map[string]any{
 		"tenant_id": sub.TenantID.String(),
 		"reason":    in.Reason,
 		"notification": map[string]any{
 			"target": "tenant_admin",
 		},
-	})
+	}
+	if p, perr := tx.SubscriptionPlan.Get(ctx, sub.PlanID); perr == nil {
+		cancelled["plan_code"], cancelled["plan_name"] = p.PlanCode, p.Name
+	}
+	if !sub.CurrentPeriodEnd.IsZero() {
+		cancelled["access_until"] = sub.CurrentPeriodEnd.Format("02 Jan 2006")
+	}
+	s.writeOutboxEvent(ctx, tx, sub.TenantID, "subscription", sub.ID, "cancelled", cancelled)
 
 	// Cascade-suspend the tenant's email licenses in the same transaction —
 	// per plan Part 3E's bounded-context design, this belongs here (where the

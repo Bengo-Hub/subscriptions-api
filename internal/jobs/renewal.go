@@ -158,10 +158,6 @@ func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, 
 			event, payload := "grace_started", graceEventPayload(sub, gu, now)
 			if isTrial {
 				event = "trial_ended"
-				if sub.Edges.Plan != nil {
-					payload["plan_code"] = sub.Edges.Plan.PlanCode
-					payload["plan_name"] = sub.Edges.Plan.Name
-				}
 			}
 			svc.WriteOutboxEventPublic(ctx, tx, sub.TenantID, "subscription", sub.ID, event, payload)
 			if err := tx.Commit(); err != nil {
@@ -194,13 +190,12 @@ func expireSubscriptions(ctx context.Context, log *zap.Logger, orm *ent.Client, 
 			log.Error("expiry job: failed to expire subscription", zap.String("sub_id", sub.ID.String()), zap.Error(err))
 			continue
 		}
-		svc.WriteOutboxEventPublic(ctx, tx, updated.TenantID, "subscription", updated.ID, "expired", map[string]any{
-			"tenant_id": updated.TenantID.String(),
-			"status":    "EXPIRED",
-			"notification": map[string]any{
-				"target": "tenant_admin",
-			},
-		})
+		// The access-blocked email names the plan and carries the unpaid invoice and pay link, the
+		// same details the grace reminders carried.
+		expired := graceEventPayload(sub, graceUntil, now)
+		expired["status"] = "EXPIRED"
+		expired["blocked_on"] = graceUntil.Format("02 Jan 2006")
+		svc.WriteOutboxEventPublic(ctx, tx, updated.TenantID, "subscription", updated.ID, "expired", expired)
 		if err := tx.Commit(); err != nil {
 			log.Error("expiry job: commit failed", zap.String("sub_id", sub.ID.String()), zap.Error(err))
 			continue

@@ -192,9 +192,11 @@ TRIAL subscription
 ACTIVE subscription approaching current_period_end
   │
   ▼
-[expiry.go: expireSubscriptions()] ── runs every hour ──▶
-  │  Marks ACTIVE subs past period_end as EXPIRED
-  │  Publishes outbox event: subscription.expired
+[renewal.go: expiry job] ── runs every hour ──▶
+  │  An ACTIVE or TRIAL sub past period_end enters grace (grace_until, 7 days):
+  │    outbox grace_started (trial_ended for a trial), then daily grace_reminder (grace.go)
+  │  Grace elapsed unpaid: marks it EXPIRED, outbox subscription.expired (access blocked email)
+  │  See section 21 for what each event carries
   │
   ▼
 [renewal.go: initiateRenewals()] ── runs every hour (offset 30m) ──▶
@@ -968,3 +970,25 @@ tenant override). Upgrades made before the current period ends, including the on
 take effect on the next renewal date and that renewal is billed at the new price; the end of an
 upgrade trial has no grace. The full rules, configuration, billing, jobs, events and endpoints are
 in [upgrade-trials.md](upgrade-trials.md).
+
+## 21. Billing emails name the plan, and blocking and dormancy are emailed (2026-11-12)
+
+On 12 November 2026 a tenant's grace email read "Your subscription for has reached the end of its
+billing period" with an empty Plan line. The `grace_started` and `grace_reminder` events carried no
+plan (only `trial_ended` added one), and notifications-api read only `plan_code`. Three other
+events reached notifications-api with no email mapping at all, so tenants were never told.
+
+What each lifecycle event now carries and which email it sends:
+
+| Event | Payload added | Email (notifications-api) |
+|-------|---------------|---------------------------|
+| `grace_started`, `grace_reminder`, `trial_ended` | `plan_code`, `plan_name` (the reminder job now loads the plan) | `subscription/grace_reminder` |
+| `expired` | plan, invoice number, amount, pay link, `blocked_on` | `subscription/subscription_expired` (new: access blocked) |
+| `cancelled` | `plan_code`, `plan_name`, `access_until` (current period end) | `subscription/subscription_cancelled` |
+| `created` | already sent `plan_name`; the email now uses it before the code | `subscription/subscription_created` |
+| `payment_required` | unchanged | `subscription/account_notice` (new) |
+| `dormancy.warning`, `dormancy.suspended` | unchanged; the email uses the event's `notification.message` | `subscription/account_notice` (new); a suspension links to support@codevertexafrica.com |
+
+`renewal_initiated` stays internal: the `renewed` email that follows a payment is the confirmation.
+The grace and cancellation templates also hide the plan line when an event has no plan, so a
+missing field can no longer leave a broken sentence.

@@ -75,8 +75,16 @@ func graceEventPayload(sub *ent.TenantSubscription, graceUntil, now time.Time) m
 	if total > 0 {
 		amount = fmt.Sprintf("%s %.2f", currency, total)
 	}
+	// The plan must be loaded (WithPlan) by the caller: the email names it in the heading and the
+	// summary box, and an empty plan reads as "Your subscription for has reached...".
+	planCode, planName := "", ""
+	if p := sub.Edges.Plan; p != nil {
+		planCode, planName = p.PlanCode, p.Name
+	}
 	return map[string]any{
 		"tenant_id":      sub.TenantID.String(),
+		"plan_code":      planCode,
+		"plan_name":      planName,
 		"days_remaining": daysRemaining(now, graceUntil),
 		"grace_ends_at":  graceUntil.Format("02 Jan 2006"),
 		"amount":         amount,
@@ -129,6 +137,7 @@ func sendGraceReminders(ctx context.Context, log *zap.Logger, orm *ent.Client, s
 	subs, err := orm.TenantSubscription.Query().
 		Where(lapsedPaidOrTrial(now), hasGraceUntil()).
 		WithTenant().
+		WithPlan().
 		All(ctx)
 	if err != nil {
 		log.Error("grace reminder: query failed", zap.Error(err))
