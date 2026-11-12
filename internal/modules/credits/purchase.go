@@ -198,6 +198,11 @@ func (s *Service) ensureActivated(ctx context.Context, tenantID uuid.UUID, spec 
 	if err != nil {
 		return fmt.Errorf("product %s: %w", spec.ProductCode, err)
 	}
+	// A subscription with no product rows yet gets its plan defaults first, so this add-on is
+	// never its only row (hadia, 2026-11-12: a lone whatsapp_messaging row made treasury read off).
+	if err := s.subs.EnsureDefaultProducts(ctx, sub.ID); err != nil {
+		return err
+	}
 	existing, err := s.orm.ProductSubscription.Query().
 		Where(productsubscription.TenantSubscriptionIDEQ(sub.ID), productsubscription.ProductCodeEQ(spec.ProductCode)).
 		Only(ctx)

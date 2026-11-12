@@ -52,6 +52,10 @@ func main() {
 		log.Fatalf("seed data: %v", err)
 	}
 
+	// Safety net for pre-migration tenants: zero product rows read as "everything active"
+	// downstream until a first add-on row flips that (hadia, 2026-11-12).
+	backfillZeroProductRows(ctx, client)
+
 	log.Println("database seed completed successfully")
 }
 

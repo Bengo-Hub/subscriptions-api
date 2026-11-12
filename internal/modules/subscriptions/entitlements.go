@@ -299,7 +299,8 @@ func (s *Service) activeServiceTags(ctx context.Context, sub *ent.TenantSubscrip
 // billing/token_wallet.go), deliberately keyed by service_tag rather than Product.code: the
 // wallet itself is generalized by service_tag, and a tenant whose MAIN plan IS a
 // service-tag-scoped plan (e.g. ETIMS_API_BASIC) never gets a matching ProductSubscription row
-// of its own — only DefaultActivatedProducts and admin-assigned overlays (e.g.
+// for that service tag (no "etims-api" product row maps to it) — only the plan default products
+// (PlanDefaultProductCodes) and admin-assigned overlays (e.g.
 // ETIMS_API_BUNDLED) do — so ActiveProducts/product_code would false-negative a legitimately
 // subscribed standalone tenant. activeServiceTags already covers both enrollment paths (main
 // plan + overlay), so it's reused here rather than introducing a second resolution mechanism.

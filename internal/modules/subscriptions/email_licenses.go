@@ -148,6 +148,13 @@ func (s *Service) FulfillEmailLicensePurchase(ctx context.Context, tenantID uuid
 		return nil, fmt.Errorf("begin tx: %w", err)
 	}
 
+	// A subscription with no product rows yet first gets its plan defaults, so email-hosting is
+	// never its only row (see EnsurePlanDefaultProducts).
+	if _, err := EnsurePlanDefaultProducts(ctx, tx.Client(), tenantSub.ID); err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+
 	prodSub, err := tx.ProductSubscription.Query().
 		Where(productsubscription.TenantSubscriptionID(tenantSub.ID), productsubscription.ProductCode("email-hosting")).
 		Only(ctx)

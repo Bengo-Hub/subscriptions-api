@@ -632,9 +632,9 @@ func (s *Service) CreateSubscription(ctx context.Context, in CreateInput) (*Subs
 		return nil, fmt.Errorf("create subscription: %w", err)
 	}
 
-	// Every brand-new subscription auto-activates the default app set (POS, Inventory,
-	// Treasury, Subscriptions, Auth/SSO) — no tenant action needed. See DefaultActivatedProducts.
-	if err = activateDefaultProductsTx(ctx, tx, sub.ID, now); err != nil {
+	// Every brand-new subscription auto-activates the products its plan covers (plus auth and
+	// subscription), no tenant action needed. See PlanDefaultProductCodes.
+	if _, err = insertPlanDefaultProducts(ctx, tx.Client(), sub.ID, plan.ID, now); err != nil {
 		return nil, err
 	}
 
@@ -1227,6 +1227,12 @@ func (s *Service) AssignProductPlan(ctx context.Context, tenantID uuid.UUID, pro
 		}
 	}()
 
+	// A subscription with no product rows yet first gets its plan defaults, so this row is never
+	// its only one (see EnsurePlanDefaultProducts).
+	if _, err = EnsurePlanDefaultProducts(ctx, tx.Client(), sub.ID); err != nil {
+		return err
+	}
+
 	existing, qerr := tx.ProductSubscription.Query().
 		Where(
 			productsubscription.TenantSubscriptionIDEQ(sub.ID),
@@ -1661,6 +1667,7 @@ func (s *Service) activateFreePlan(ctx context.Context, in InitiateSubscriptionI
 		return nil, fmt.Errorf("query existing subscription: %w", err)
 	}
 
+	var saved *ent.TenantSubscription
 	if existing != nil {
 		upd := tx.TenantSubscription.UpdateOneID(existing.ID).
 			SetPlanID(plan.ID).
@@ -1672,9 +1679,9 @@ func (s *Service) activateFreePlan(ctx context.Context, in InitiateSubscriptionI
 		if existing.PlanID != plan.ID {
 			upd.ClearCustomBasePrice().ClearCustomPriceReason()
 		}
-		_, err = upd.Save(ctx)
+		saved, err = upd.Save(ctx)
 	} else {
-		_, err = tx.TenantSubscription.Create().
+		saved, err = tx.TenantSubscription.Create().
 			SetTenantID(in.TenantID).
 			SetPlanID(plan.ID).
 			SetStatus(tenantsubscription.StatusACTIVE).
@@ -1684,6 +1691,9 @@ func (s *Service) activateFreePlan(ctx context.Context, in InitiateSubscriptionI
 	}
 	if err != nil {
 		return nil, fmt.Errorf("provision free subscription: %w", err)
+	}
+	if _, err = EnsurePlanDefaultProducts(ctx, tx.Client(), saved.ID); err != nil {
+		return nil, err
 	}
 
 	s.writeOutboxEvent(ctx, tx, in.TenantID, "subscription", in.TenantID, "activated", map[string]any{

@@ -126,10 +126,10 @@ func (s *Service) MaybeProvisionUseCaseFamily(ctx context.Context, tenantID uuid
 
 	// Reuses the exact same code path (transaction + tenant.subscription.updated outbox event +
 	// cache invalidation via the caller) the platform-admin AssignProductToTenant endpoint uses —
-	// "pos" is the product_code every tenant already has an active ProductSubscription row for
-	// (see product_activation.go's DefaultActivatedProducts), so this always UPDATEs that existing
-	// row's override_plan_id rather than inserting a second "pos" row (product_code is unique per
-	// tenant_subscription).
+	// "pos" is a default product of every PowerSuite plan (its service_tag, see
+	// PlanDefaultProductCodes), so this UPDATEs that existing row's override_plan_id rather than
+	// inserting a second "pos" row (product_code is unique per tenant_subscription); when the row
+	// is missing AssignProductPlan creates it.
 	if err := s.AssignProductPlan(ctx, tenantID, "pos", targetCode); err != nil {
 		return fmt.Errorf("assign %s overlay for tenant %s: %w", targetCode, tenantID, err)
 	}

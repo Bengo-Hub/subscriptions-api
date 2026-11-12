@@ -530,6 +530,15 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 		sub = created
 	}
 
+	// A subscription with no product rows (new here, or a pre-migration one) gets its plan
+	// defaults. Exempt tenants are left alone: their plan only classifies them.
+	if ts, ok := sub.(*ent.TenantSubscription); ok && !isExempt {
+		if _, err := subscriptions.EnsurePlanDefaultProducts(ctx, h.client, ts.ID); err != nil {
+			h.log.Warn("assign plan: failed to activate plan default products",
+				zap.String("tenant_id", tenantID.String()), zap.Error(err))
+		}
+	}
+
 	if h.featureHandler != nil {
 		h.featureHandler.InvalidateCache(ctx, tenantID)
 	}

@@ -680,6 +680,8 @@ ORDERING-PROFESSIONAL-MONTHLY — 12,500 KES/mo, 30 riders, unlimited orders/mon
 - `service_charge_plan_id` (FK → `service_charge_plans`) — optional; when set, the product uses commission-based billing
 - `override_plan_id` (FK → `subscription_plans`) — optional; when set, the product uses a different tier than the tenant's main plan
 
+Product activation: at signup I activate auth, subscription and notifications plus the products the plan covers (its service tag, its metadata product and the service tags of its features), so a treasury-only tenant gets no pos or inventory row; any later product row on a subscription that has none first adds those defaults, and the seed backfills active or trial subscriptions left with zero rows.
+
 This enables scenarios like:
 - Tenant A on STARTER plan for ordering, but PROFESSIONAL for logistics
 - Tenant B using 5% service charge for ordering (no flat subscription)

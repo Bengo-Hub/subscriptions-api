@@ -2,65 +2,254 @@ package subscriptions
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bengobox/subscription-service/internal/ent"
 	"github.com/bengobox/subscription-service/internal/ent/featuredefinition"
+	"github.com/bengobox/subscription-service/internal/ent/planfeature"
 	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
+	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
-// DefaultActivatedProducts are auto-activated (status=active, no tenant action needed) the
-// moment a tenant gets its first TenantSubscription — every tenant is assumed to need identity,
-// point-of-sale, stock, and money-movement from day one, plus the ability to manage its own
-// subscription. Deliberately NOT the same as Product.category (existing seed data has "pos" as
-// an add_on and "treasury"/"inventory" as product-category rows for billing-line purposes
-// unrelated to this default-vs-opt-in distinction) — an explicit list here is safer than
-// repurposing that field and risking an unrelated billing-line side effect. Everything else
-// (ordering, logistics, marketflow, erp, truload, ...) requires explicit self-activation via
-// ActivateMyProduct.
-var DefaultActivatedProducts = []string{"auth", "pos", "inventory", "treasury", "subscription"}
+// CorePlatformProducts are activated for every tenant subscription whatever its plan: identity
+// (auth/SSO), managing its own subscription, and notifications (every tenant sends email, SMS and
+// WhatsApp through notifications-api). Every other default product comes from the plan itself
+// (PlanDefaultProductCodes), so a treasury-only tenant never gets pos/inventory rows.
+var CorePlatformProducts = []string{"auth", "subscription", "notifications"}
 
-// activateDefaultProductsTx creates active ProductSubscription rows for every code in
-// DefaultActivatedProducts, within the caller's transaction, for a brand-new subscription.
-// Idempotent by construction (only ever called once, right after the TenantSubscription itself
-// is created) — no existing-row check needed, unlike AssignProductPlan which can be called
-// repeatedly against an existing subscription.
-func activateDefaultProductsTx(ctx context.Context, tx *ent.Tx, tenantSubscriptionID uuid.UUID, now time.Time) error {
-	// product_id is a required, unique FK on ProductSubscription — resolve every default
-	// product's row up front (one query, not N) rather than per-code.
-	rows, err := tx.Product.Query().Where(product.CodeIn(DefaultActivatedProducts...)).All(ctx)
+// planMetaProductKey is the subscription_plans.metadata key naming the product a standalone plan
+// sells (e.g. {"product":"treasury"} on TREASURY_*).
+const planMetaProductKey = "product"
+
+// basicAccessService returns <svc> for a "basic_<svc>_access" integration grant. Those codes are
+// catalogued under the shared "platform" tag, yet the plan carrying one uses that service through
+// its integration paths (a PowerSuite plan takes payments through treasury and stock through
+// inventory), so the service's product row belongs to the plan's defaults too.
+func basicAccessService(featureCode string) (string, bool) {
+	if !strings.HasPrefix(featureCode, "basic_") || !strings.HasSuffix(featureCode, "_access") {
+		return "", false
+	}
+	svc := strings.TrimSuffix(strings.TrimPrefix(featureCode, "basic_"), "_access")
+	return svc, svc != ""
+}
+
+// planDefaultProducts resolves the products a subscription on planID starts with, in a stable
+// order: CorePlatformProducts first, then the plan's own service_tag, its metadata product, its
+// basic_*_access integration services, and the distinct service_tag of every included feature.
+// The shared "platform" tag and tags with no row in the products table are skipped. client may be
+// a transactional client (tx.Client()).
+func planDefaultProducts(ctx context.Context, client *ent.Client, planID uuid.UUID) ([]*ent.Product, error) {
+	plan, err := client.SubscriptionPlan.Query().
+		Where(subscriptionplan.IDEQ(planID)).
+		WithFeatures(func(q *ent.PlanFeatureQuery) {
+			q.Where(planfeature.IsIncludedEQ(true))
+		}).
+		Only(ctx)
 	if err != nil {
-		return fmt.Errorf("resolve default products: %w", err)
-	}
-	idByCode := make(map[string]uuid.UUID, len(rows))
-	for _, p := range rows {
-		idByCode[p.Code] = p.ID
+		return nil, fmt.Errorf("load plan %s: %w", planID, err)
 	}
 
-	for _, code := range DefaultActivatedProducts {
-		productID, ok := idByCode[code]
-		if !ok {
-			// A default product code with no matching `products` row is a seed-data gap, not a
-			// tenant-specific failure — skip it (log, don't fail the whole signup over it) rather
-			// than block every new tenant subscription because one product row is missing.
-			continue
+	wanted := make([]string, 0, 8)
+	seen := map[string]bool{}
+	add := func(code string) {
+		code = strings.TrimSpace(code)
+		if code == "" || code == sharedServiceTag || seen[code] {
+			return
 		}
-		if err := tx.ProductSubscription.Create().
+		seen[code] = true
+		wanted = append(wanted, code)
+	}
+	for _, c := range CorePlatformProducts {
+		add(c)
+	}
+	if plan.ServiceTag != nil {
+		add(*plan.ServiceTag)
+	}
+	if p, ok := plan.Metadata[planMetaProductKey].(string); ok {
+		add(p)
+	}
+	featureCodes := planFeatureCodes(plan)
+	for _, fc := range featureCodes {
+		if svc, ok := basicAccessService(fc); ok {
+			add(svc)
+		}
+	}
+	if len(featureCodes) > 0 {
+		tags, err := client.FeatureDefinition.Query().
+			Where(featuredefinition.FeatureCodeIn(featureCodes...)).
+			Select(featuredefinition.FieldServiceTag).
+			Strings(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("query feature service tags: %w", err)
+		}
+		for _, t := range tags {
+			add(t)
+		}
+	}
+
+	rows, err := client.Product.Query().Where(product.CodeIn(wanted...)).All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("resolve default products: %w", err)
+	}
+	byCode := make(map[string]*ent.Product, len(rows))
+	for _, p := range rows {
+		byCode[p.Code] = p
+	}
+	out := make([]*ent.Product, 0, len(rows))
+	for _, code := range wanted {
+		if p, ok := byCode[code]; ok {
+			out = append(out, p)
+		}
+	}
+	return out, nil
+}
+
+// PlanDefaultProductCodes is the product codes a subscription on planID is activated with: the
+// core platform products plus every product the plan's features belong to (see
+// planDefaultProducts). Signup, the zero-row guard and the backfill all use this one rule.
+func PlanDefaultProductCodes(ctx context.Context, client *ent.Client, planID uuid.UUID) ([]string, error) {
+	prods, err := planDefaultProducts(ctx, client, planID)
+	if err != nil {
+		return nil, err
+	}
+	codes := make([]string, 0, len(prods))
+	for _, p := range prods {
+		codes = append(codes, p.Code)
+	}
+	return codes, nil
+}
+
+// insertPlanDefaultProducts creates an active product row for each of the plan's default products,
+// skipping any the subscription already has (ON CONFLICT DO NOTHING on the unique
+// (tenant_subscription_id, product_code) index, so a concurrent insert cannot fail the caller's
+// transaction). Returns how many rows it inserted.
+func insertPlanDefaultProducts(ctx context.Context, client *ent.Client, tenantSubscriptionID, planID uuid.UUID, now time.Time) (int, error) {
+	prods, err := planDefaultProducts(ctx, client, planID)
+	if err != nil {
+		return 0, err
+	}
+	inserted := 0
+	for _, p := range prods {
+		err := client.ProductSubscription.Create().
 			SetTenantSubscriptionID(tenantSubscriptionID).
-			SetProductID(productID).
-			SetProductCode(code).
+			SetProductID(p.ID).
+			SetProductCode(p.Code).
 			SetStatus(productsubscription.StatusActive).
 			SetActivatedAt(now).
-			Exec(ctx); err != nil {
-			return fmt.Errorf("activate default product %s: %w", code, err)
+			OnConflictColumns(productsubscription.FieldTenantSubscriptionID, productsubscription.FieldProductCode).
+			DoNothing().
+			Exec(ctx)
+		switch {
+		case err == nil:
+			inserted++
+		case errors.Is(err, sql.ErrNoRows):
+			// The row already exists: ent reports a DO NOTHING conflict as no returned id.
+		default:
+			return inserted, fmt.Errorf("activate default product %s: %w", p.Code, err)
 		}
 	}
+	return inserted, nil
+}
+
+// EnsurePlanDefaultProducts gives a tenant subscription that has NO product rows yet its
+// plan-derived defaults, and does nothing once it has any. Every path that adds a product row to an
+// existing subscription calls it first: a pre-migration tenant with zero rows reads as "all
+// products active" downstream (treasury-api fails open on an empty list), so its first row must
+// never be a lone add-on such as whatsapp_messaging that suddenly makes treasury read as
+// deactivated (hadia, 2026-11-12). Idempotent. Pass tx.Client() to run inside a transaction.
+func EnsurePlanDefaultProducts(ctx context.Context, client *ent.Client, tenantSubscriptionID uuid.UUID) (int, error) {
+	n, err := client.ProductSubscription.Query().
+		Where(productsubscription.TenantSubscriptionIDEQ(tenantSubscriptionID)).
+		Count(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("count product subscriptions: %w", err)
+	}
+	if n > 0 {
+		return 0, nil
+	}
+	sub, err := client.TenantSubscription.Get(ctx, tenantSubscriptionID)
+	if err != nil {
+		return 0, fmt.Errorf("load tenant subscription %s: %w", tenantSubscriptionID, err)
+	}
+	return insertPlanDefaultProducts(ctx, client, sub.ID, sub.PlanID, time.Now().UTC())
+}
+
+// EnsureDefaultProducts is EnsurePlanDefaultProducts on the service's own client, for callers in
+// other packages (credits) that hold a *Service.
+func (s *Service) EnsureDefaultProducts(ctx context.Context, tenantSubscriptionID uuid.UUID) error {
+	n, err := EnsurePlanDefaultProducts(ctx, s.client, tenantSubscriptionID)
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		s.log.Info("activated plan default products on a subscription that had none",
+			zap.String("tenant_subscription_id", tenantSubscriptionID.String()), zap.Int("inserted", n))
+	}
 	return nil
+}
+
+// ZeroRowBackfillResult reports one BackfillZeroProductSubscriptions run.
+type ZeroRowBackfillResult struct {
+	Subscriptions int // ACTIVE/TRIAL subscriptions found with zero product rows
+	Filled        int // of those, how many now have their defaults
+	RowsInserted  int
+	Failed        int
+}
+
+// BackfillZeroProductSubscriptions gives every ACTIVE or TRIAL tenant subscription (a subscription
+// in its grace window is still ACTIVE) that has zero product rows its plan-derived defaults, one
+// transaction per subscription so one bad plan cannot block the rest. Idempotent: a second run
+// finds nothing to do. Wired into cmd/seed, which runs on every deploy.
+func BackfillZeroProductSubscriptions(ctx context.Context, client *ent.Client, log *zap.Logger) (ZeroRowBackfillResult, error) {
+	var res ZeroRowBackfillResult
+	subs, err := client.TenantSubscription.Query().
+		Where(
+			tenantsubscription.StatusIn(tenantsubscription.StatusACTIVE, tenantsubscription.StatusTRIAL),
+			tenantsubscription.Not(tenantsubscription.HasProductSubscriptions()),
+		).
+		All(ctx)
+	if err != nil {
+		return res, fmt.Errorf("query zero-row subscriptions: %w", err)
+	}
+	res.Subscriptions = len(subs)
+	for _, sub := range subs {
+		n, err := backfillOne(ctx, client, sub)
+		if err != nil {
+			res.Failed++
+			log.Warn("zero-row product backfill failed",
+				zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
+			continue
+		}
+		res.Filled++
+		res.RowsInserted += n
+		log.Info("zero-row product backfill",
+			zap.String("tenant_id", sub.TenantID.String()), zap.Int("inserted", n))
+	}
+	log.Info("zero-row product backfill done",
+		zap.Int("subscriptions", res.Subscriptions), zap.Int("filled", res.Filled),
+		zap.Int("rows_inserted", res.RowsInserted), zap.Int("failed", res.Failed))
+	return res, nil
+}
+
+func backfillOne(ctx context.Context, client *ent.Client, sub *ent.TenantSubscription) (int, error) {
+	tx, err := client.Tx(ctx)
+	if err != nil {
+		return 0, err
+	}
+	n, err := EnsurePlanDefaultProducts(ctx, tx.Client(), sub.ID)
+	if err != nil {
+		_ = tx.Rollback()
+		return 0, err
+	}
+	return n, tx.Commit()
 }
 
 // EntitlementCheck is the result of checking whether a tenant may self-activate a product.
