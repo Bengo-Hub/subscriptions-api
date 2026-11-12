@@ -216,6 +216,36 @@ func (s *Syncer) SyncTenant(ctx context.Context, slug string) (uuid.UUID, error)
 
 	now := time.Now()
 
+	// Same UUID already here under another slug: auth renamed the tenant. The slug upsert below
+	// would hit the primary key instead, so update the row by id and move it onto the new slug
+	// (auth owns both), unless another local row already holds that slug.
+	if byID, idErr := s.client.Tenant.Get(ctx, realID); idErr == nil {
+		update := byID.Update().
+			SetName(remote.Name).
+			SetStatus(remote.Status).
+			SetSyncStatus("synced").
+			SetLastSyncAt(now)
+		if remote.UseCase != "" {
+			update = update.SetUseCase(remote.UseCase)
+		}
+		if newSlug := strings.TrimSpace(remote.Slug); newSlug != "" && newSlug != byID.Slug {
+			clash, clashErr := s.client.Tenant.Query().Where(enttenant.SlugEQ(newSlug), enttenant.IDNEQ(realID)).Exist(ctx)
+			if clashErr == nil && !clash {
+				update = update.SetSlug(newSlug)
+				log.Printf("  [tenant-sync] slug for %s renamed %s -> %s", realID, byID.Slug, newSlug)
+			} else {
+				log.Printf("  [tenant-sync] slug for %s left as %s: %s is held by another local row (err=%v)", realID, byID.Slug, newSlug, clashErr)
+			}
+		}
+		if _, updErr := update.Save(ctx); updErr != nil {
+			return uuid.Nil, fmt.Errorf("tenant.Syncer: update tenant: %w", updErr)
+		}
+		log.Printf("  [tenant-sync] updated %s (UUID %s) from auth-api", slug, realID)
+		return realID, nil
+	} else if !ent.IsNotFound(idErr) {
+		return uuid.Nil, fmt.Errorf("tenant.Syncer: query existing: %w", idErr)
+	}
+
 	// Use Ent Upsert with explicit conflict target (required by PostgreSQL 15+)
 	err = s.client.Tenant.Create().
 		SetID(realID).

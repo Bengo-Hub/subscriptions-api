@@ -71,7 +71,12 @@ func TestPowerSuiteTiersAreSupersets(t *testing.T) {
 func TestPowerSuiteTier1DropsPaidModules(t *testing.T) {
 	for _, fam := range useCaseFamilies {
 		feats := fam.features(1)
-		for _, code := range []string{"online_ordering", "loyalty_program", "paystack_integration", "rider_management", "contact_management", "basic_logistics_access"} {
+		// bulk_import stays paid; credit notes, approvals and recurring invoices stay tier 2+
+		// even though invoices themselves open at tier 1 (owner decision 2026-11-12).
+		for _, code := range []string{
+			"online_ordering", "loyalty_program", "paystack_integration", "rider_management", "contact_management", "basic_logistics_access",
+			"bulk_import", "credit_notes", "treasury_approvals", "recurring_invoices",
+		} {
 			if contains(feats, code) {
 				t.Errorf("%s tier 1 must not include %s", fam.key, code)
 			}
@@ -84,6 +89,43 @@ func TestPowerSuiteTier1DropsPaidModules(t *testing.T) {
 		}
 		if _, ok := limits["inventory_max_sku"]; !ok {
 			t.Errorf("%s tier 1 lost its product limit", fam.key)
+		}
+	}
+}
+
+// Basic was blocking core work (owner decision 2026-11-12): every family's tier 1 now invoices,
+// counts stock and takes M-Pesa on the PayHero platform rail, and so does every tier above it.
+func TestPowerSuiteTier1GrantsCoreWork(t *testing.T) {
+	core := []string{"invoice_generation", "stock_take", "mpesa_integration", "mpesa_pos"}
+	for _, fam := range useCaseFamilies {
+		for tier := 1; tier <= 3; tier++ {
+			feats := fam.features(tier)
+			for _, code := range core {
+				if !contains(feats, code) {
+					t.Errorf("%s tier %d must include %s", fam.key, tier, code)
+				}
+			}
+		}
+	}
+	// Credit notes and approvals still open at tier 2.
+	for _, fam := range useCaseFamilies {
+		feats := fam.features(2)
+		for _, code := range []string{"credit_notes", "treasury_approvals"} {
+			if !contains(feats, code) {
+				t.Errorf("%s tier 2 must include %s", fam.key, code)
+			}
+		}
+	}
+	// The new tier 1 codes are shared or treasury/inventory codes, so they open no new service.
+	tags := map[string]string{}
+	for _, e := range featureCatalog {
+		tags[e.code] = e.service
+	}
+	for _, code := range []string{"invoice_generation", "mpesa_integration", "stock_take"} {
+		switch tags[code] {
+		case sharedServiceTag, "treasury", "inventory":
+		default:
+			t.Errorf("%s is tagged %q; tier 1 would open that service", code, tags[code])
 		}
 	}
 }

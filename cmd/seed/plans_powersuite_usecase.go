@@ -193,22 +193,25 @@ func psSuiteProjectsBlock(tier int) []string {
 // psTreasuryBlock — Treasury coverage per tier.
 //
 // Tier 1: Transactions + Customers + Quotations + Purchases & Bills + core Tax & Compliance
-// (tax codes/periods/rates) + eTIMS (KRA compliance is a legal requirement — never tier-gated).
-// NO Accounting module (ledger/vouchers/reconciliation), NO invoices/credit notes, NO approvals,
-// NO smart tax & compliance card. vendorAtT1 grants Suppliers & Vendors from tier 1
-// (retail + pharmacy specs list it; hospitality gets it at tier 2 with "All").
+// (tax codes/periods/rates) + eTIMS (KRA compliance is a legal requirement — never tier-gated)
+// + invoices (invoice_generation) + the PayHero platform M-Pesa rail (mpesa_integration), both
+// granted at tier 1 by owner decision 2026-11-12 because Basic could not invoice or take M-Pesa
+// through the books. NO Accounting module (ledger/vouchers/reconciliation), NO credit notes,
+// NO approvals, NO recurring invoices, NO smart tax & compliance card. vendorAtT1 grants
+// Suppliers & Vendors from tier 1 (retail + pharmacy specs list it; hospitality gets it at
+// tier 2 with "All").
 func psTreasuryBlock(tier int, vendorAtT1 bool) []string {
 	base := []string{
 		"wallet_management", "payment_collection", "payment_links", "transaction_reports",
 		"customer_management", "quotations", "ar_tracking", "ap_tracking",
-		"tax_codes", "etims_integration",
+		"tax_codes", "etims_integration", "invoice_generation", "mpesa_integration",
 	}
 	if vendorAtT1 {
 		base = append(base, "vendor_management")
 	}
 	if tier >= 2 {
 		base = append(base,
-			"invoice_generation", "credit_notes", "vendor_management",
+			"credit_notes", "vendor_management",
 			"ledger_posting", "treasury_approvals", "smart_tax_compliance",
 		)
 	}
@@ -230,10 +233,11 @@ func psPOSCore() []string {
 }
 
 // psInventoryCore — inventory essentials at tier 1 for every family: catalog + stock +
-// procurement basics (PO/GRN + suppliers) + basic reports + transfers. Per the specs tier 1
-// has NO bulk import, NO stock take and NO stock alerts.
+// procurement basics (PO/GRN + suppliers) + basic reports + transfers + stock take (granted at
+// tier 1 in every family by owner decision 2026-11-12; it was tier 2, tier 3 for pharmacy).
+// Tier 1 still has NO bulk import and NO stock alerts.
 func psInventoryCore() []string {
-	return []string{"stock_tracking", "purchase_orders", "supplier_portal", "basic_reports", "stock_transfers"}
+	return []string{"stock_tracking", "purchase_orders", "supplier_portal", "basic_reports", "stock_transfers", "stock_take"}
 }
 
 // hospSuiteFeatures — Hospitality family (hotels, restaurants, bars, cafes).
@@ -245,7 +249,7 @@ func hospSuiteFeatures(tier int) []string {
 		f = append(f,
 			"multi_cashier", "facility_booking", "storefront_banner",
 			"kds", "happy_hour", // Display Board / Hotel Happy Hour — moved to tier 2 2026-09-06 to match the published Professional-tier pricing copy (was granted at tier 1, contradicting the price sheet)
-			"bulk_import", "stock_take", "requisitions", "manufacturing", "fixed_assets",
+			"bulk_import", "requisitions", "manufacturing", "fixed_assets",
 			"multi_warehouse", "inventory_multiple_images",
 			"report_stock_reconciliation", "report_food_cost_variance",
 			"low_stock_alerts", "stock_alerts",
@@ -269,7 +273,7 @@ func dukaSuiteFeatures(tier int) []string {
 	if tier >= 2 {
 		f = append(f,
 			"multi_cashier", "layaway", "commissions", "storefront_banner",
-			"bulk_import", "stock_take", "requisitions", "manufacturing", "fixed_assets",
+			"bulk_import", "requisitions", "manufacturing", "fixed_assets",
 			"multi_warehouse", "inventory_multiple_images", "warranties",
 			"report_stock_reconciliation", "report_food_cost_variance",
 			"low_stock_alerts", "stock_alerts",
@@ -284,7 +288,8 @@ func dukaSuiteFeatures(tier int) []string {
 // dawaSuiteFeatures — Pharmacy family (chemists, pharmacies, dispensaries, agrovets).
 // Lots & batches + expiry tracking + expiry alerts are core at EVERY tier (dispensing safety).
 // Pharmacy clinical modules (prescriptions, patients, claims) unlock at tier 2 per the spec
-// (tier 1 "Pharmacy → no access"); stock take + stock alerts unlock at tier 3.
+// (tier 1 "Pharmacy → no access"); stock alerts unlock at tier 3. Stock take comes from
+// psInventoryCore at every tier.
 func dawaSuiteFeatures(tier int) []string {
 	f := unionFeatures(psPOSCore(), psInventoryCore(), psSuiteOrderingBlock(tier), psSuiteLogisticsBlock(tier), psSuiteCRMBlock(tier), psSuiteERPBlock(tier), psSuiteProjectsBlock(tier), psTreasuryBlock(tier, true))
 	f = append(f, "lots_batches", "batch_expiry_tracking", "expiry_alerts")
@@ -298,7 +303,7 @@ func dawaSuiteFeatures(tier int) []string {
 	if tier >= 3 {
 		f = append(f,
 			"label_printing",
-			"stock_take", "rfqs", "procurement_contracts", "manufacturing", "fixed_assets",
+			"rfqs", "procurement_contracts", "manufacturing", "fixed_assets",
 			"low_stock_alerts", "stock_alerts", "report_stock_reconciliation",
 		)
 	}
@@ -355,9 +360,9 @@ func useCaseSuiteLimits(family string, tier int) map[string]any {
 
 // useCaseFamilies drives the recurring, one-time and support seeds (single source of truth).
 type useCaseFamily struct {
-	key       string // deterministic-id namespace segment (hosp/duka/dawa)
-	code      string // plan-code segment (HOSP/DUKA/DAWA)
-	label     string
+	key   string // deterministic-id namespace segment (hosp/duka/dawa)
+	code  string // plan-code segment (HOSP/DUKA/DAWA)
+	label string
 	// useCase matches auth-api's tenant.use_case values (usecase.KnownUseCases) — lets
 	// subscriptions-api's ListPlans/SubscriptionPlan.use_case filter a tenant down to
 	// ONLY its own family, since all three families otherwise share service_tag="pos".

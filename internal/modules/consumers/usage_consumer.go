@@ -28,15 +28,6 @@ type usageEventMapping struct {
 	delta float64
 	// roleMetrics maps role strings to metric overrides for auth.user.created events
 	roleMetrics map[string]string
-	// extraMetrics are additional metrics the same event counts once each (deduplicated per
-	// order like the main metric). pos.sale.finalized is both a transaction and an order:
-	// orders are counted on completion so drafts, open tabs and failed attempts never use
-	// up the order allowance.
-	extraMetrics []string
-	// skipExtraForSources lists payload "source" values whose extra metrics are skipped
-	// because another subject already counts them (an online order's POS record completes
-	// as a POS sale, but ordering.order.created already counted the order).
-	skipExtraForSources []string
 	// amountField, when set, makes the recorded usage value the numeric amount carried
 	// in that payload field (instead of the unit delta). Used for revenue-style metering
 	// such as ISP hotspot sales (metric value = KES amount, summed over the period).
@@ -53,11 +44,13 @@ var usageSubjectMappings = map[string]usageEventMapping{
 	"ordering.webhook.dispatched": {metric: "webhooks", service: "ordering"},
 
 	// ── POS ───────────────────────────────────────────────────────────────────
-	"pos.transaction.created": {metric: "transactions", service: "pos"},
-	"pos.sale.finalized": {
-		metric: "transactions", service: "pos",
-		extraMetrics: []string{"orders"}, skipExtraForSources: []string{"online_ordering"},
-	},
+	// A completed POS sale is one transaction and nothing else. It is not an order:
+	// "orders" (max_orders_per_month) meters online ordering only, on ordering.order.created.
+	// pos.sale.finalized is the single transactions source and is deduplicated per order_id,
+	// so a sale is counted once even when pos-api republishes it. pos.transaction.created
+	// was dropped: pos-api never published it, and a second transactions subject would
+	// have counted the same sale twice the day anything did.
+	"pos.sale.finalized":          {metric: "transactions", service: "pos"},
 	"pos.device.registered":       {metric: "devices", service: "pos"},
 	"pos.table.created":           {metric: "tables", service: "pos"},
 	"pos.table.deleted":           {metric: "tables", service: "pos", delta: -1},
@@ -126,9 +119,7 @@ type usageEventPayload struct {
 	// subjects a source-side republish bug can resend with a brand-new NATS/outbox event id
 	// for the SAME underlying order (see the dedup-by-business-key note on idempotencyKeys
 	// below). Absent on every other subject, where it is simply never consulted.
-	OrderID string `json:"order_id"`
-	// Source is the POS order's source on pos.sale.finalized ("online_ordering", "pos", ...).
-	Source  string             `json:"source"`
+	OrderID string             `json:"order_id"`
 	Payload *usageEventPayload `json:"payload"`
 }
 
@@ -230,9 +221,6 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 	if payload.OrderID == "" && payload.Payload != nil {
 		payload.OrderID = payload.Payload.OrderID
 	}
-	if payload.Source == "" && payload.Payload != nil {
-		payload.Source = payload.Payload.Source
-	}
 
 	tenantID, err := uuid.Parse(payload.TenantID)
 	if err != nil {
@@ -293,14 +281,9 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 		delta = amt
 	}
 
-	if payload.OrderID != "" && !containsFold(m.skipExtraForSources, payload.Source) {
-		metrics = append(metrics, m.extraMetrics...)
-	}
-
 	// Each metric of an order-carrying event is deduplicated by its own (tenant, metric,
 	// order_id) business key, checked and marked per metric: a source-side republish mints a
-	// fresh event id for the same order, and a partial failure (one metric recorded, the next
-	// failing and redelivered) must not count the recorded one twice.
+	// fresh event id for the same order, so the same sale or order is never counted twice.
 	for _, metric := range metrics {
 		var bizKey uuid.UUID
 		if c.idem != nil && payload.OrderID != "" {
@@ -327,15 +310,6 @@ func (c *UsageConsumer) handle(ctx context.Context, msg *nats.Msg, m usageEventM
 		}
 	}
 	return nil
-}
-
-func containsFold(list []string, v string) bool {
-	for _, s := range list {
-		if strings.EqualFold(s, v) {
-			return true
-		}
-	}
-	return false
 }
 
 // businessIdempotencyNamespace is an arbitrary, fixed namespace for deriving deterministic

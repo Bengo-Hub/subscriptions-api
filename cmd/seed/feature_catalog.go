@@ -128,7 +128,7 @@ var featureCatalog = mergeSharedCodes(func() []catalogEntry {
 		lim("max_payment_links", treasury, "Limits", "Payment Links", ""),
 		lim("max_currencies", treasury, "Limits", "Currencies", ""),
 		lim("max_bulk_payout_rows", treasury, "Limits", "Bulk Payout Rows", ""),
-		meteredLim("max_transactions_per_month", treasury, "Limits", "Payment Transactions", "/ month", "pos.transaction.created"),
+		meteredLim("max_transactions_per_month", treasury, "Limits", "Payment Transactions", "/ month", "pos.sale.finalized"),
 
 		// ─── Ordering ─────────────────────────────────────────────────────────
 		feat("online_ordering", ordering, "Ordering", "Online Ordering Storefront"),

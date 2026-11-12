@@ -42,7 +42,7 @@ func treasuryPlanFeatures(tier int) []string {
 // set to 0 to mean none; a tier without a feature simply lacks the feature). Growth and
 // Professional do not cap wallets or payment links, since an escrow tenant opens one wallet per
 // beneficiary (one per registry on Hadia). max_transactions_per_month is metered on
-// pos.transaction.created, which a treasury-only tenant never emits, so it is informational here.
+// pos.sale.finalized, which a treasury-only tenant never emits, so it is informational here.
 func treasuryPlanLimits(tier int) map[string]any {
 	switch tier {
 	case 1:

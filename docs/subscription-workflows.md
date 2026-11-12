@@ -332,7 +332,7 @@ At next renewal cycle:
   │
   │ e.g.: ordering.order.created { tenant_id, order_id, ... }
   │       auth.user.created       { tenant_id, roles: ["rider"] }
-  │       pos.transaction.created { tenant_id, ... }
+  │       pos.sale.finalized      { tenant_id, order_id, ... }
   ▼
 [NATS JetStream]
   │
@@ -343,7 +343,7 @@ At next renewal cycle:
   ├─ Maps subject → metric_type (usageSubjectMappings)
   │   "ordering.order.created"      → metric: "orders"
   │   "auth.user.created" + rider   → metric: "riders"
-  │   "pos.transaction.created"     → metric: "transactions"
+  │   "pos.sale.finalized"          → metric: "transactions"
   │   "logistics.delivery.created"  → metric: "deliveries"
   │   ... (22 total subjects)
   │
@@ -366,7 +366,7 @@ At next renewal cycle:
 |---|---|---|
 | `ordering.order.created` | orders | ordering |
 | `cafe.order.created` | orders | cafe |
-| `pos.transaction.created` | transactions | pos |
+| `pos.sale.finalized` | transactions | pos |
 | `pos.device.registered` | devices | pos |
 | `pos.table.created` | tables | pos |
 | `inventory.product.created` | products | inventory |
@@ -383,6 +383,8 @@ At next renewal cycle:
 **SMS, WhatsApp and push**: SMS and WhatsApp are not metered by usage events. Each send is charged against
 the credits ledger (bundles, plan allowance, KES 1 overage) through the S2S consume call, see
 [messaging-credits.md](messaging-credits.md). Push is free and not metered.
+
+**POS sales versus orders** (2026-11-12): I count a finalized POS sale once, as a transaction only, so `max_orders_per_month` now meters online ordering alone; I dropped `pos.transaction.created`, which pos-api never published and which would have counted each sale twice.
 
 **Metrics without a NATS subject**: external eTIMS calls are charged by treasury-api's API-key
 middleware before the sale is transmitted (token pre-flight through `SpendTokens`), not reported
