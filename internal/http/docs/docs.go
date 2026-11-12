@@ -990,7 +990,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "sms, whatsapp or ai_credits",
+                        "description": "sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)",
                         "name": "service",
                         "in": "path",
                         "required": true
@@ -1419,6 +1419,92 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenants/{tenant_id}/setup-fee/policy": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Tenant setup fee switch (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.SetupFeePolicy"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "enabled overrides the platform setting for this tenant; null (or absent) removes the\noverride. It decides the first paid period only: the fee is never charged after that.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Platform"
+                ],
+                "summary": "Set a tenant's setup fee switch (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant UUID",
+                        "name": "tenant_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "{enabled: bool|null}",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.SetupFeePolicy"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -2034,7 +2120,7 @@ const docTemplate = `{
         },
         "/credits/catalog": {
             "get": {
-                "description": "Bundle sizes, monthly plans and the per-message price. Public, no tenant state.",
+                "description": "Bundle sizes and the per-message price of each service. WhatsApp is four category services, each with a plain name and explanation. Public, no tenant state.",
                 "produces": [
                     "application/json"
                 ],
@@ -2060,7 +2146,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Turning it off keeps the plan until the end of the paid period and stops it appearing on the next invoice.",
+                "description": "Turning it off keeps the plan until the end of the paid period and stops it appearing on the next invoice. The WhatsApp tiers are retired: they can be switched off but never back on.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2117,7 +2203,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "sms or whatsapp",
+                        "description": "sms or a WhatsApp category service (whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service)",
                         "name": "service",
                         "in": "path",
                         "required": true
@@ -2152,7 +2238,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "sms or whatsapp",
+                        "description": "sms or a WhatsApp category service (whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service)",
                         "name": "service",
                         "in": "path",
                         "required": true
@@ -2198,7 +2284,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "sms, whatsapp or ai_credits",
+                        "description": "sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)",
                         "name": "service",
                         "in": "path",
                         "required": true
@@ -2241,7 +2327,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "sms, whatsapp or ai_credits",
+                        "description": "sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)",
                         "name": "service",
                         "in": "path",
                         "required": true
@@ -2757,7 +2843,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "sms, whatsapp or ai_credits",
+                        "description": "sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)",
                         "name": "service",
                         "in": "path",
                         "required": true
@@ -2801,7 +2887,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Spends units in order: plan allowance, bundle balance, then KES 1 overage up to the platform cap. Idempotent per key. Answers 200 with allowed=false and a reason when refused, so callers can tell a refusal from a failure (5xx) and never send free on a failure.",
+                "description": "Spends units in order: a live legacy allowance, the bundle balance, then overage (SMS, or WhatsApp while a legacy tier runs) up to the platform cap. A WhatsApp send names its category service and spends only that wallet. Idempotent per key. Answers 200 with allowed=false and a reason when refused, so callers can tell a refusal from a failure (5xx) and never send free on a failure.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2815,7 +2901,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "sms, whatsapp or ai_credits",
+                        "description": "sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)",
                         "name": "service",
                         "in": "path",
                         "required": true
@@ -2862,7 +2948,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "sms, whatsapp or ai_credits",
+                        "description": "sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication, whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)",
                         "name": "service",
                         "in": "path",
                         "required": true
@@ -3543,6 +3629,49 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/setup-fee": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "The one-time setup fee a checkout for plan_code charges the calling tenant, before any\nbilling period waiver: 0 once the tenant has paid for a period or the fee is off for it.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Setup fee a checkout will charge",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Plan to quote",
+                        "name": "plan_code",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/subscriptions.SetupFeeQuote"
                         }
                     },
                     "400": {
@@ -5237,6 +5366,34 @@ const docTemplate = `{
                 },
                 "source": {
                     "type": "string"
+                }
+            }
+        },
+        "subscriptions.SetupFeePolicy": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "platform": {
+                    "type": "boolean"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "tenant": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "subscriptions.SetupFeeQuote": {
+            "type": "object",
+            "properties": {
+                "has_subscription": {
+                    "type": "boolean"
+                },
+                "setup_fee": {
+                    "type": "number"
                 }
             }
         },

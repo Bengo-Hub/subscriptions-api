@@ -559,6 +559,24 @@ definitions:
       source:
         type: string
     type: object
+  subscriptions.SetupFeePolicy:
+    properties:
+      enabled:
+        type: boolean
+      platform:
+        type: boolean
+      source:
+        type: string
+      tenant:
+        type: boolean
+    type: object
+  subscriptions.SetupFeeQuote:
+    properties:
+      has_subscription:
+        type: boolean
+      setup_fee:
+        type: number
+    type: object
   subscriptions.SubscriptionResult:
     properties:
       access_status:
@@ -1471,7 +1489,8 @@ paths:
         name: tenant_id
         required: true
         type: string
-      - description: sms, whatsapp or ai_credits
+      - description: sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication,
+          whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)
         in: path
         name: service
         required: true
@@ -1765,6 +1784,62 @@ paths:
             additionalProperties: true
             type: object
       summary: Confirm deletion of a dormant tenant's data (platform owner)
+      tags:
+      - Platform
+  /admin/tenants/{tenant_id}/setup-fee/policy:
+    get:
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.SetupFeePolicy'
+      security:
+      - BearerAuth: []
+      summary: Tenant setup fee switch (admin)
+      tags:
+      - Platform
+    put:
+      consumes:
+      - application/json
+      description: |-
+        enabled overrides the platform setting for this tenant; null (or absent) removes the
+        override. It decides the first paid period only: the fee is never charged after that.
+      parameters:
+      - description: Tenant UUID
+        in: path
+        name: tenant_id
+        required: true
+        type: string
+      - description: '{enabled: bool|null}'
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.SetupFeePolicy'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Set a tenant's setup fee switch (admin)
       tags:
       - Platform
   /admin/tenants/{tenant_id}/subscription:
@@ -2172,8 +2247,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Turning it off keeps the plan until the end of the paid period
-        and stops it appearing on the next invoice.
+      description: 'Turning it off keeps the plan until the end of the paid period
+        and stops it appearing on the next invoice. The WhatsApp tiers are retired:
+        they can be switched off but never back on.'
       parameters:
       - description: whatsapp
         in: path
@@ -2202,7 +2278,8 @@ paths:
   /credits/{service}/auto-topup:
     get:
       parameters:
-      - description: sms or whatsapp
+      - description: sms or a WhatsApp category service (whatsapp_marketing, whatsapp_utility,
+          whatsapp_authentication, whatsapp_service)
         in: path
         name: service
         required: true
@@ -2227,7 +2304,8 @@ paths:
         above the monthly limit (default KES 5000). A declined card switches it off
         and notifies the tenant admin.
       parameters:
-      - description: sms or whatsapp
+      - description: sms or a WhatsApp category service (whatsapp_marketing, whatsapp_utility,
+          whatsapp_authentication, whatsapp_service)
         in: path
         name: service
         required: true
@@ -2257,7 +2335,8 @@ paths:
       description: Creates a Treasury payment intent. Units or the plan are granted
         once payment succeeds. Prices come from the registry, never from the request.
       parameters:
-      - description: sms, whatsapp or ai_credits
+      - description: sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication,
+          whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)
         in: path
         name: service
         required: true
@@ -2284,7 +2363,8 @@ paths:
   /credits/{service}/transactions:
     get:
       parameters:
-      - description: sms, whatsapp or ai_credits
+      - description: sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication,
+          whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)
         in: path
         name: service
         required: true
@@ -2312,7 +2392,8 @@ paths:
       - Credits
   /credits/catalog:
     get:
-      description: Bundle sizes, monthly plans and the per-message price. Public,
+      description: Bundle sizes and the per-message price of each service. WhatsApp
+        is four category services, each with a plain name and explanation. Public,
         no tenant state.
       produces:
       - application/json
@@ -2616,7 +2697,8 @@ paths:
   /s2s/credits/{service}/check:
     get:
       parameters:
-      - description: sms, whatsapp or ai_credits
+      - description: sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication,
+          whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)
         in: path
         name: service
         required: true
@@ -2652,12 +2734,15 @@ paths:
     post:
       consumes:
       - application/json
-      description: 'Spends units in order: plan allowance, bundle balance, then KES
-        1 overage up to the platform cap. Idempotent per key. Answers 200 with allowed=false
-        and a reason when refused, so callers can tell a refusal from a failure (5xx)
-        and never send free on a failure.'
+      description: 'Spends units in order: a live legacy allowance, the bundle balance,
+        then overage (SMS, or WhatsApp while a legacy tier runs) up to the platform
+        cap. A WhatsApp send names its category service and spends only that wallet.
+        Idempotent per key. Answers 200 with allowed=false and a reason when refused,
+        so callers can tell a refusal from a failure (5xx) and never send free on
+        a failure.'
       parameters:
-      - description: sms, whatsapp or ai_credits
+      - description: sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication,
+          whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)
         in: path
         name: service
         required: true
@@ -2688,7 +2773,8 @@ paths:
       description: Restores the units and overage taken under consume_key, for example
         when the provider rejected the message. Idempotent per refund_key.
       parameters:
-      - description: sms, whatsapp or ai_credits
+      - description: sms, whatsapp_marketing, whatsapp_utility, whatsapp_authentication,
+          whatsapp_service or ai_credits (whatsapp is an alias of whatsapp_utility)
         in: path
         name: service
         required: true
@@ -3165,6 +3251,35 @@ paths:
       security:
       - BearerAuth: []
       summary: Update subscription settings
+      tags:
+      - Subscriptions
+  /subscription/setup-fee:
+    get:
+      description: |-
+        The one-time setup fee a checkout for plan_code charges the calling tenant, before any
+        billing period waiver: 0 once the tenant has paid for a period or the fee is off for it.
+      parameters:
+      - description: Plan to quote
+        in: query
+        name: plan_code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscriptions.SetupFeeQuote'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Setup fee a checkout will charge
       tags:
       - Subscriptions
   /subscription/standing-order:
