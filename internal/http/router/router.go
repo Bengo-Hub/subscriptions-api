@@ -239,6 +239,7 @@ func New(
 			// Tenant credits: SMS, WhatsApp and AI credit balances, history and purchases.
 			if creditsHandler != nil {
 				r.Get("/credits", creditsHandler.List)
+				r.Get("/credits/referrals", creditsHandler.Referrals)
 				r.Get("/credits/{service}/transactions", creditsHandler.Transactions)
 				r.Post("/credits/{service}/purchase", creditsHandler.Purchase)
 				r.Post("/credits/{service}/auto-renew", creditsHandler.SetAutoRenew)

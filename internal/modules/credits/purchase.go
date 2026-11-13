@@ -107,7 +107,7 @@ func (s *Service) InitiatePurchase(ctx context.Context, in PurchaseInput) (map[s
 	if err != nil {
 		return nil, err
 	}
-	if s.subs.IsExemptTenant(ctx, in.TenantID) {
+	if s.subs.IsExemptTenant(ctx, in.TenantID) && (!aiService(offer.Service) || s.subs.IsPlatformTenant(ctx, in.TenantID)) {
 		return nil, fmt.Errorf("tenant is exempt from subscriptions and needs no purchase")
 	}
 	cov, err := s.Coverage(ctx, in.TenantID, offer.Service)

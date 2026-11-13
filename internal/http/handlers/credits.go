@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	httpware "github.com/Bengo-Hub/httpware"
 	"encoding/json"
 	"errors"
+	httpware "github.com/Bengo-Hub/httpware"
 	"net/http"
 	"strconv"
 
@@ -538,4 +538,26 @@ func (h *CreditsHandler) AdminPutSettings(w http.ResponseWriter, r *http.Request
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// Referrals godoc
+// @Summary Gift a friend: the tenant's invite link code, terms, progress and invited businesses
+// @Description Each side gets the reward once, when the invited business makes its first payment; an inviter is rewarded for at most invite_cap businesses. credit_value_kes is one credit's price in the smallest bundle.
+// @Tags Credits
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]any
+// @Router /credits/referrals [get]
+func (h *CreditsHandler) Referrals(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := h.tenant(w, r)
+	if !ok {
+		return
+	}
+	sum, err := h.svc.ReferralSummary(r.Context(), tenantID)
+	if err != nil {
+		h.log.Error("referral summary failed", zap.String("tenant_id", tenantID.String()), zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load invitations"})
+		return
+	}
+	writeJSON(w, http.StatusOK, sum)
 }

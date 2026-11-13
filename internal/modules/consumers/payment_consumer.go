@@ -254,6 +254,7 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 			c.log.Error("failed to fulfil credit purchase", zap.String("tenant_id", tenantIDStr), zap.Error(ferr))
 			return ferr
 		}
+		c.grantReferralReward(ctx, tenantID)
 		c.markProcessed(ctx, eventID)
 		return nil
 	}
@@ -390,9 +391,34 @@ func (c *TreasuryPaymentConsumer) handle(ctx context.Context, msg *nats.Msg) err
 			}
 		}
 	}
+	c.grantReferralReward(ctx, tenantID)
 
 	c.markProcessed(ctx, eventID)
 	return nil
+}
+
+// grantReferralReward pays the gift a friend AI credits (credits.GrantReferralReward) when this
+// paying tenant was invited by another tenant. It runs on a plan payment and on an AI credit
+// purchase, and does nothing after the first time (each side is keyed per friend). A failure is
+// logged and never fails the payment: the next payment tries again.
+func (c *TreasuryPaymentConsumer) grantReferralReward(ctx context.Context, tenantID uuid.UUID) {
+	if c.credits == nil || c.orm == nil {
+		return
+	}
+	sub, err := c.orm.TenantSubscription.Query().Where(tenantsubscription.TenantIDEQ(tenantID)).Only(ctx)
+	if err != nil || sub.ReferredBy == nil {
+		return
+	}
+	got, err := c.credits.GrantReferralReward(ctx, *sub.ReferredBy, tenantID)
+	switch {
+	case err != nil:
+		c.log.Warn("gift a friend reward not paid", zap.String("tenant_id", tenantID.String()), zap.Error(err))
+	case got.Capped:
+		c.log.Info("gift a friend: the inviter has had the most rewards allowed", zap.String("inviter", sub.ReferredBy.String()))
+	case got.Inviter > 0 || got.Friend > 0:
+		c.log.Info("gift a friend reward paid", zap.String("tenant_id", tenantID.String()),
+			zap.String("inviter", sub.ReferredBy.String()), zap.Int64("inviter_credits", got.Inviter), zap.Int64("friend_credits", got.Friend))
+	}
 }
 
 // creditRefNamespace seeds the deterministic UUIDv5 derived as a last-resort credit

@@ -568,7 +568,16 @@ type CreditRequest struct {
 	RefType     string
 	Description string
 	UnitCostKES *float64
+	// CapKeyLike and CapCount bound how many credits of one kind a wallet may ever get: when
+	// CapCount > 0, the credit is refused with ErrCreditCapReached once the wallet holds
+	// CapCount rows whose idempotency key matches the SQL LIKE pattern CapKeyLike. The count
+	// runs under the wallet's row lock, so two credits at once cannot pass the cap.
+	CapKeyLike string
+	CapCount   int
 }
+
+// ErrCreditCapReached is a capped credit (CreditRequest.CapCount) the wallet already had in full.
+var ErrCreditCapReached = errors.New("credit cap reached")
 
 // Credit adds units. With a key it applies at most once; applied reports whether this call wrote.
 func (s *TokenWalletService) Credit(ctx context.Context, req CreditRequest) (newBalance int64, applied bool, err error) {
@@ -597,6 +606,16 @@ func (s *TokenWalletService) Credit(ctx context.Context, req CreditRequest) (new
 		}
 		if n > 0 {
 			return w.balance, false, nil
+		}
+	}
+	if req.CapCount > 0 && req.CapKeyLike != "" {
+		var n int
+		if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM api_token_transactions WHERE wallet_id = $1 AND idempotency_key LIKE $2`,
+			w.id, req.CapKeyLike).Scan(&n); err != nil {
+			return 0, false, fmt.Errorf("credit cap lookup: %w", err)
+		}
+		if n >= req.CapCount {
+			return w.balance, false, ErrCreditCapReached
 		}
 	}
 	lifetime := req.Action == ledgerTopup || req.Action == ledgerGrant
@@ -670,4 +689,28 @@ func (s *TokenWalletService) SetQuota(ctx context.Context, tenantID uuid.UUID, q
 		return false, fmt.Errorf("commit quota tx: %w", err)
 	}
 	return true, nil
+}
+
+// CreditKeysLike returns the idempotency keys of a tenant's wallet rows that match the SQL LIKE
+// pattern, as a set (for a read model such as which invited businesses were rewarded).
+func (s *TokenWalletService) CreditKeysLike(ctx context.Context, tenantID uuid.UUID, serviceTag, like string) (map[string]bool, error) {
+	if err := s.requireDB(); err != nil {
+		return nil, err
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT t.idempotency_key FROM api_token_transactions t
+		JOIN api_token_wallets w ON w.id = t.wallet_id
+		WHERE w.tenant_id = $1 AND w.service_tag = $2 AND t.idempotency_key LIKE $3`, tenantID, serviceTag, like)
+	if err != nil {
+		return nil, fmt.Errorf("wallet keys: %w", err)
+	}
+	defer rows.Close()
+	out := map[string]bool{}
+	for rows.Next() {
+		var k string
+		if err := rows.Scan(&k); err != nil {
+			return nil, err
+		}
+		out[k] = true
+	}
+	return out, rows.Err()
 }

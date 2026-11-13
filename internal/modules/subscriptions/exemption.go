@@ -56,6 +56,24 @@ func (s *Service) IsExemptTenant(ctx context.Context, tenantID uuid.UUID) bool {
 	return t.SubscriptionExempt || exemptSlugs[t.Slug]
 }
 
+// platformOwnerSlug is the platform owner's own tenant among exemptSlugs.
+const platformOwnerSlug = "codevertex"
+
+// IsPlatformTenant reports whether the tenant is the platform owner's own tenant (not the demo
+// sandbox and not a per-tenant exemption). Paid AI work is free only for this tenant (owner,
+// 2026-11-12): the demo password is public, so the demo sandbox pays for AI like anyone.
+// Fail closed (false) on a lookup error.
+func (s *Service) IsPlatformTenant(ctx context.Context, tenantID uuid.UUID) bool {
+	if s.platformTenantID != uuid.Nil && tenantID == s.platformTenantID {
+		return true
+	}
+	t, err := s.client.Tenant.Query().Where(enttenant.IDEQ(tenantID)).Only(ctx)
+	if err != nil {
+		return false
+	}
+	return t.Slug == platformOwnerSlug
+}
+
 // SetTenantExemption flips a tenant's explicit subscription-exemption flag. Platform-admin only
 // (the caller enforces authz). Returns the new value.
 //

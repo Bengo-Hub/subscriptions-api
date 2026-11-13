@@ -80,9 +80,17 @@ type Coverage struct {
 	Product *ent.ProductSubscription
 }
 
+// aiService reports whether the spend is AI credits. Paid AI work is free only for the platform
+// owner's own tenant (owner, 2026-11-12); the demo sandbox and per-tenant exemptions still
+// bypass the other services' billing, but pay for AI like anyone, since the demo password is
+// public and AI work costs real money.
+func aiService(spec billing.MeteredService) bool {
+	return spec.Code == billing.ServiceAI || spec.BundleTag == billing.ServiceAI
+}
+
 // Coverage resolves the entitlement of tenantID to the service.
 func (s *Service) Coverage(ctx context.Context, tenantID uuid.UUID, spec billing.MeteredService) (Coverage, error) {
-	if s.subs.IsExemptTenant(ctx, tenantID) {
+	if s.subs.IsExemptTenant(ctx, tenantID) && (!aiService(spec) || s.subs.IsPlatformTenant(ctx, tenantID)) {
 		return Coverage{Exempt: true, Covered: true}, nil
 	}
 	sub, err := s.subs.SubscriptionByTenant(ctx, tenantID)
