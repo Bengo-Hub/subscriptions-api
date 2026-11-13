@@ -166,6 +166,58 @@ definitions:
           that month.
         type: integer
     type: object
+  credits.WhatsAppUsage:
+    properties:
+      currency:
+        type: string
+      from:
+        type: string
+      tenants:
+        items:
+          $ref: '#/definitions/credits.WhatsAppUsageTenant'
+        type: array
+      to:
+        type: string
+    type: object
+  credits.WhatsAppUsageCategory:
+    properties:
+      consumed_value_kes:
+        description: |-
+          ConsumedValueKES prices the bundle credits spent at today's unit price plus the overage
+          charged, an estimate of the revenue those messages earned.
+        type: number
+      kes_paid:
+        type: number
+      meta_category:
+        type: string
+      overage_kes:
+        type: number
+      service:
+        type: string
+      unit_price_kes:
+        type: number
+      units_bought:
+        description: UnitsBought are credits bought (top-ups) in the range, KESPaid
+          what they cost.
+        type: integer
+      units_consumed:
+        description: UnitsConsumed are credits spent in the range net of refunds,
+          overage included.
+        type: integer
+    type: object
+  credits.WhatsAppUsageTenant:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/credits.WhatsAppUsageCategory'
+        type: array
+      name:
+        type: string
+      slug:
+        type: string
+      tenant_id:
+        type: string
+    type: object
   handlers.checkUsageRequest:
     properties:
       metric_type:
@@ -2406,6 +2458,25 @@ paths:
       summary: Price list for SMS, WhatsApp and AI credits
       tags:
       - Credits
+  /credits/referrals:
+    get:
+      description: Each side gets the reward once, when the invited business makes
+        its first payment; an inviter is rewarded for at most invite_cap businesses.
+        credit_value_kes is one credit's price in the smallest bundle.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 'Gift a friend: the tenant''s invite link code, terms, progress and
+        invited businesses'
+      tags:
+      - Credits
   /features:
     get:
       description: Returns the full set of features and limits for the tenant's current
@@ -2821,6 +2892,48 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Move legacy notifications balances into the credits ledger (S2S)
+      tags:
+      - Credits
+  /s2s/credits/whatsapp-usage:
+    get:
+      description: 'For notifications-api''s platform cost report: per tenant and
+        WhatsApp credit wallet, credits bought and the KES paid for them, credits
+        spent net of refunds, overage KES and an estimate of the revenue the spent
+        credits earned, for whole UTC days from and to (inclusive, at most 366 days).
+        The retired tiers'' shared allowance is its own line (whatsapp_quota).'
+      parameters:
+      - description: First day, YYYY-MM-DD (UTC)
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: Last day, YYYY-MM-DD (UTC)
+        in: query
+        name: to
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/credits.WhatsAppUsage'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: WhatsApp credits bought and spent per tenant and category (S2S)
       tags:
       - Credits
   /service-charges/plans:

@@ -2137,6 +2137,32 @@
                 }
             }
         },
+        "/credits/referrals": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Each side gets the reward once, when the invited business makes its first payment; an inviter is rewarded for at most invite_cap businesses. credit_value_kes is one credit's price in the smallest bundle.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Gift a friend: the tenant's invite link code, terms, progress and invited businesses",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/credits/{service}/auto-renew": {
             "post": {
                 "security": [
@@ -2819,6 +2845,65 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/s2s/credits/whatsapp-usage": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "For notifications-api's platform cost report: per tenant and WhatsApp credit wallet, credits bought and the KES paid for them, credits spent net of refunds, overage KES and an estimate of the revenue the spent credits earned, for whole UTC days from and to (inclusive, at most 366 days). The retired tiers' shared allowance is its own line (whatsapp_quota).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "WhatsApp credits bought and spent per tenant and category (S2S)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "First day, YYYY-MM-DD (UTC)",
+                        "name": "from",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Last day, YYYY-MM-DD (UTC)",
+                        "name": "to",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/credits.WhatsAppUsage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -4779,6 +4864,78 @@
                 "whatsapp_used": {
                     "description": "WhatsAppUsed is how many messages the tenant already used in that month.",
                     "type": "integer"
+                }
+            }
+        },
+        "credits.WhatsAppUsage": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "type": "string"
+                },
+                "from": {
+                    "type": "string"
+                },
+                "tenants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/credits.WhatsAppUsageTenant"
+                    }
+                },
+                "to": {
+                    "type": "string"
+                }
+            }
+        },
+        "credits.WhatsAppUsageCategory": {
+            "type": "object",
+            "properties": {
+                "consumed_value_kes": {
+                    "description": "ConsumedValueKES prices the bundle credits spent at today's unit price plus the overage\ncharged, an estimate of the revenue those messages earned.",
+                    "type": "number"
+                },
+                "kes_paid": {
+                    "type": "number"
+                },
+                "meta_category": {
+                    "type": "string"
+                },
+                "overage_kes": {
+                    "type": "number"
+                },
+                "service": {
+                    "type": "string"
+                },
+                "unit_price_kes": {
+                    "type": "number"
+                },
+                "units_bought": {
+                    "description": "UnitsBought are credits bought (top-ups) in the range, KESPaid what they cost.",
+                    "type": "integer"
+                },
+                "units_consumed": {
+                    "description": "UnitsConsumed are credits spent in the range net of refunds, overage included.",
+                    "type": "integer"
+                }
+            }
+        },
+        "credits.WhatsAppUsageTenant": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/credits.WhatsAppUsageCategory"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "tenant_id": {
+                    "type": "string"
                 }
             }
         },
