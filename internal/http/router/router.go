@@ -133,9 +133,8 @@ func New(
 				},
 				URLParamFunc: chi.URLParam,
 				Required:     false,
-				// Report-only until the logs show no legitimate caller is refused, then remove
-				// ReportOnly so a tenant that differs from the token's gets a 403.
-				ReportOnly: true,
+				// Enforced since 2026-11-13: a tenant that differs from the token's gets a 403.
+				// The report-only run logged no mismatch, so no legitimate caller is refused.
 				OnMismatch: func(r *http.Request, source, supplied, claimed string) {
 					fields := []zap.Field{
 						zap.String("source", source),
@@ -147,7 +146,7 @@ func New(
 					if c, ok := authclient.ClaimsFromContext(r.Context()); ok && c != nil {
 						fields = append(fields, zap.String("subject", c.Subject))
 					}
-					log.Warn("tenant mismatch (report-only)", fields...)
+					log.Warn("tenant mismatch refused", fields...)
 				},
 			}))
 

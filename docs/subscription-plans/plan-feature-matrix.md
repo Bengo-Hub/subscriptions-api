@@ -249,7 +249,7 @@ all superseded rows migrated + hard-deleted, exit 0.
    to the HOSP family. Needs a pricing decision (docs say "lower prices" without figures).
 3. Backlog from subscriptions-audit.md §5: schedule `CalculateDailyOverages` (daily worker),
    wire per-service usage reporting to /usage/report, remaining capacity limits
-   (pos max_devices/max_cashiers…, ordering, inventory max_products/max_suppliers),
+   (pos max_devices/max_cashiers…, ordering, inventory inventory_max_sku (SKUs)/max_suppliers),
    discount-rule format mismatch (UI `ANNUAL_DISCOUNT`+value vs API `YEARLY`+percentage).
 
 ## Add-ons (platform-grant only, 2026-09-06)

@@ -31,6 +31,7 @@ var limitKeyCandidates = map[string]string{
 	"admins":            "max_admins",
 	"staff":             "max_staff",
 	"products":          "inventory_max_sku",
+	"skus":              "inventory_max_sku", // same limit, the name the UI and inventory-api use
 	"warehouses":        "inventory_max_warehouses",
 	"rooms":             "max_rooms",
 	"conference_events": "max_conference_events",

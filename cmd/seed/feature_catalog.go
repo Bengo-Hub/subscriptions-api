@@ -241,9 +241,8 @@ var featureCatalog = mergeSharedCodes(func() []catalogEntry {
 		feat("batch_period_pricing", inventory, "Pricing", "Stock-Age / Batch Markdown Pricing (add-on)"),
 		lim("inventory_max_images_per_item", inventory, "Limits", "Images per Product", ""),
 		lim("max_warehouses", inventory, "Limits", "Warehouses", ""),
-		lim("max_products", inventory, "Limits", "Products", ""),
 		lim("max_suppliers", inventory, "Limits", "Suppliers", ""),
-		meteredLim("inventory_max_sku", inventory, "Limits", "Products (SKUs)", "", "inventory.product.created"),
+		meteredLim("inventory_max_sku", inventory, "Limits", "SKUs", "", "inventory.product.created"),
 		meteredLim("inventory_max_warehouses", inventory, "Limits", "Warehouses (metered)", "", "inventory.warehouse.created"),
 
 		// ─── Logistics ────────────────────────────────────────────────────────

@@ -231,7 +231,7 @@ var metricDisplayMap = map[string]metricMeta{
 	"outlets":         {name: "Outlets", unit: "outlets"},
 	"api_calls":       {name: "API Calls", unit: "calls"},
 	"users":           {name: "Users", unit: "users"},
-	"products":        {name: "Products", unit: "products"},
+	"products":        {name: "SKUs", unit: "skus"}, // inventory_max_sku: each item or variant is one SKU
 	"reports":         {name: "Reports", unit: "reports"},
 	"drivers":         {name: "Drivers", unit: "drivers"},
 	"vehicles":        {name: "Vehicles", unit: "vehicles"},
