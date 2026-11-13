@@ -101,6 +101,8 @@ func New(
 			r.Post("/s2s/credits/{service}/consume", creditsHandler.Consume)
 			r.Post("/s2s/credits/{service}/refund", creditsHandler.Refund)
 			r.Post("/s2s/credits/import", creditsHandler.Import)
+			// Platform WhatsApp cost report (notifications-api), service key only.
+			r.Get("/s2s/credits/whatsapp-usage", creditsHandler.WhatsAppUsage)
 		}
 
 		// S2S webhook routes (API key auth handled inside handler)

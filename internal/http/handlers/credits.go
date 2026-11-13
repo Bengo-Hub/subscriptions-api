@@ -297,6 +297,37 @@ func (h *CreditsHandler) Check(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, dec)
 }
 
+// WhatsAppUsage godoc
+// @Summary WhatsApp credits bought and spent per tenant and category (S2S)
+// @Description For notifications-api's platform cost report: per tenant and WhatsApp credit wallet, credits bought and the KES paid for them, credits spent net of refunds, overage KES and an estimate of the revenue the spent credits earned, for whole UTC days from and to (inclusive, at most 366 days). The retired tiers' shared allowance is its own line (whatsapp_quota).
+// @Tags Credits
+// @Produce json
+// @Security ApiKeyAuth
+// @Param from query string true "First day, YYYY-MM-DD (UTC)"
+// @Param to query string true "Last day, YYYY-MM-DD (UTC)"
+// @Success 200 {object} credits.WhatsAppUsage
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /s2s/credits/whatsapp-usage [get]
+func (h *CreditsHandler) WhatsAppUsage(w http.ResponseWriter, r *http.Request) {
+	if !h.isService(r) {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "service key required"})
+		return
+	}
+	rng, err := credits.ParseWhatsAppUsageRange(r.URL.Query().Get("from"), r.URL.Query().Get("to"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	out, err := h.svc.WhatsAppUsage(r.Context(), rng)
+	if err != nil {
+		h.log.Error("whatsapp usage failed", zap.Error(err))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load WhatsApp usage"})
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
 type creditImportRequest struct {
 	DryRun bool                   `json:"dry_run"`
 	Items  []credits.LegacyWallet `json:"items"`
