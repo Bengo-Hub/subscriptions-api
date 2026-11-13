@@ -537,6 +537,14 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 			h.log.Warn("assign plan: failed to activate plan default products",
 				zap.String("tenant_id", tenantID.String()), zap.Error(err))
 		}
+		// A move onto another plan also adds the new plan's products to a subscription that
+		// already had rows; existing rows (deactivated ones too) stay as they are.
+		if existing != nil && existing.PlanID != plan.ID {
+			if _, err := subscriptions.EnsureMissingPlanDefaultProducts(ctx, h.client, ts.ID); err != nil {
+				h.log.Warn("assign plan: failed to activate the new plan's products",
+					zap.String("tenant_id", tenantID.String()), zap.Error(err))
+			}
+		}
 	}
 
 	if h.featureHandler != nil {
@@ -1364,6 +1372,13 @@ func (h *PlatformHandler) UpdateSubscription(w http.ResponseWriter, r *http.Requ
 		h.log.Error("failed to update subscription", zap.Error(err))
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update subscription"})
 		return
+	}
+
+	// A plan moved by the platform admin adds the new plan's products; existing rows stay as they are.
+	if updated.PlanID != sub.PlanID {
+		if _, perr := subscriptions.EnsureMissingPlanDefaultProducts(ctx, h.client, updated.ID); perr != nil {
+			h.log.Warn("admin subscription edit: plan products not activated", zap.String("subscription_id", id.String()), zap.Error(perr))
+		}
 	}
 
 	if h.featureHandler != nil {

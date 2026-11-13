@@ -252,6 +252,147 @@ func backfillOne(ctx context.Context, client *ent.Client, sub *ent.TenantSubscri
 	return n, tx.Commit()
 }
 
+// grantsPlanProducts reports whether a subscription in this status should carry its plan's
+// default products: ACTIVE (a grace window is still ACTIVE) and TRIAL.
+func grantsPlanProducts(st tenantsubscription.Status) bool {
+	return st == tenantsubscription.StatusACTIVE || st == tenantsubscription.StatusTRIAL
+}
+
+// MissingPlanDefaultProductCodes returns, in PlanDefaultProductCodes order, the plan-derived
+// default products the subscription has NO row for at all. A row in any status counts as present,
+// so a product the tenant deactivated is never reported (or re-created) here.
+func MissingPlanDefaultProductCodes(ctx context.Context, client *ent.Client, tenantSubscriptionID, planID uuid.UUID) ([]string, error) {
+	want, err := PlanDefaultProductCodes(ctx, client, planID)
+	if err != nil {
+		return nil, err
+	}
+	have, err := client.ProductSubscription.Query().
+		Where(productsubscription.TenantSubscriptionIDEQ(tenantSubscriptionID)).
+		Select(productsubscription.FieldProductCode).
+		Strings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("query product codes: %w", err)
+	}
+	present := make(map[string]bool, len(have))
+	for _, c := range have {
+		present[c] = true
+	}
+	missing := make([]string, 0, len(want))
+	for _, c := range want {
+		if !present[c] {
+			missing = append(missing, c)
+		}
+	}
+	return missing, nil
+}
+
+// EnsureMissingPlanDefaultProducts gives an ACTIVE or TRIAL subscription a row for every
+// plan-derived default product it has no row for, whether or not it already has other rows. It
+// only inserts (insertPlanDefaultProducts, ON CONFLICT DO NOTHING): an existing row of any status
+// is left as it is, so a product the tenant deactivated stays deactivated and nothing is ever
+// removed. Plan changes call it with the subscription already on its new plan, so the new plan's
+// products appear (mccl, on a library plan, had pos/inventory/treasury rows but no library row).
+// Other statuses are skipped. Idempotent; pass tx.Client() to run inside a transaction.
+func EnsureMissingPlanDefaultProducts(ctx context.Context, client *ent.Client, tenantSubscriptionID uuid.UUID) (int, error) {
+	sub, err := client.TenantSubscription.Get(ctx, tenantSubscriptionID)
+	if err != nil {
+		return 0, fmt.Errorf("load tenant subscription %s: %w", tenantSubscriptionID, err)
+	}
+	if !grantsPlanProducts(sub.Status) {
+		return 0, nil
+	}
+	return insertPlanDefaultProducts(ctx, client, sub.ID, sub.PlanID, time.Now().UTC())
+}
+
+// MissingPlanDefaults is one subscription the missing-defaults backfill found short of rows.
+type MissingPlanDefaults struct {
+	TenantID       uuid.UUID
+	TenantSlug     string
+	SubscriptionID uuid.UUID
+	PlanCode       string
+	Codes          []string // plan-derived codes with no row, which the run inserts (or would)
+}
+
+// MissingDefaultsBackfillResult reports one BackfillMissingPlanDefaultProducts run.
+type MissingDefaultsBackfillResult struct {
+	Applied       bool // false: dry run, nothing written
+	Subscriptions int  // ACTIVE/TRIAL subscriptions checked
+	Missing       []MissingPlanDefaults
+	RowsInserted  int
+	Failed        int
+}
+
+// BackfillMissingPlanDefaultProducts finds every ACTIVE or TRIAL subscription missing a row for
+// one of its plan-derived default products (BackfillZeroProductSubscriptions covers only
+// subscriptions with zero rows). With apply false it is a dry run: it logs, per tenant, the codes
+// it would insert and writes nothing. With apply true it inserts them through
+// EnsureMissingPlanDefaultProducts, one transaction per subscription. Existing rows are never
+// changed or removed.
+func BackfillMissingPlanDefaultProducts(ctx context.Context, client *ent.Client, log *zap.Logger, apply bool) (MissingDefaultsBackfillResult, error) {
+	res := MissingDefaultsBackfillResult{Applied: apply}
+	subs, err := client.TenantSubscription.Query().
+		Where(tenantsubscription.StatusIn(tenantsubscription.StatusACTIVE, tenantsubscription.StatusTRIAL)).
+		WithTenant().
+		WithPlan().
+		All(ctx)
+	if err != nil {
+		return res, fmt.Errorf("query active subscriptions: %w", err)
+	}
+	res.Subscriptions = len(subs)
+	for _, sub := range subs {
+		codes, err := MissingPlanDefaultProductCodes(ctx, client, sub.ID, sub.PlanID)
+		if err != nil {
+			res.Failed++
+			log.Warn("missing plan products check failed", zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
+			continue
+		}
+		if len(codes) == 0 {
+			continue
+		}
+		m := MissingPlanDefaults{TenantID: sub.TenantID, SubscriptionID: sub.ID, Codes: codes}
+		if sub.Edges.Tenant != nil {
+			m.TenantSlug = sub.Edges.Tenant.Slug
+		}
+		if sub.Edges.Plan != nil {
+			m.PlanCode = sub.Edges.Plan.PlanCode
+		}
+		res.Missing = append(res.Missing, m)
+		fields := []zap.Field{
+			zap.String("tenant_id", m.TenantID.String()), zap.String("tenant_slug", m.TenantSlug),
+			zap.String("plan_code", m.PlanCode), zap.Strings("codes", codes),
+		}
+		if !apply {
+			log.Info("missing plan products (dry run, nothing inserted)", fields...)
+			continue
+		}
+		n, err := ensureMissingOne(ctx, client, sub.ID)
+		if err != nil {
+			res.Failed++
+			log.Warn("missing plan products insert failed", append(fields, zap.Error(err))...)
+			continue
+		}
+		res.RowsInserted += n
+		log.Info("missing plan products inserted", append(fields, zap.Int("inserted", n))...)
+	}
+	log.Info("missing plan products backfill done", zap.Bool("applied", apply),
+		zap.Int("subscriptions", res.Subscriptions), zap.Int("missing", len(res.Missing)),
+		zap.Int("rows_inserted", res.RowsInserted), zap.Int("failed", res.Failed))
+	return res, nil
+}
+
+func ensureMissingOne(ctx context.Context, client *ent.Client, subID uuid.UUID) (int, error) {
+	tx, err := client.Tx(ctx)
+	if err != nil {
+		return 0, err
+	}
+	n, err := EnsureMissingPlanDefaultProducts(ctx, tx.Client(), subID)
+	if err != nil {
+		_ = tx.Rollback()
+		return 0, err
+	}
+	return n, tx.Commit()
+}
+
 // EntitlementCheck is the result of checking whether a tenant may self-activate a product.
 type EntitlementCheck struct {
 	Entitled bool `json:"entitled"`

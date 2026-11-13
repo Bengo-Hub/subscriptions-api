@@ -682,6 +682,8 @@ ORDERING-PROFESSIONAL-MONTHLY — 12,500 KES/mo, 30 riders, unlimited orders/mon
 
 Product activation: at signup I activate auth, subscription and notifications plus the products the plan covers (its service tag, its metadata product and the service tags of its features), so a treasury-only tenant gets no pos or inventory row; any later product row on a subscription that has none first adds those defaults, and the seed backfills active or trial subscriptions left with zero rows.
 
+Missing plan products: when a subscription moves to another plan (a tenant or platform plan change, an applied scheduled change, a renewal that switches plan, or an admin edit) I insert a row for every product of the new plan that has no row yet, and I never touch a row that exists, so a product a tenant deactivated stays deactivated and nothing is removed. The seed also lists active or trial subscriptions that have rows but lack some of their plan's products (mccl had pos, inventory and treasury but no library row); on every deploy it only logs the codes per tenant, and it inserts them only when I run the seed with `-apply-missing-plan-products` or `SEED_APPLY_MISSING_PLAN_PRODUCTS=true`.
+
 This enables scenarios like:
 - Tenant A on STARTER plan for ordering, but PROFESSIONAL for logistics
 - Tenant B using 5% service charge for ordering (no flat subscription)

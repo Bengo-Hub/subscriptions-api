@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"flag"
 	"fmt"
 	"log"
 	"time"
@@ -19,6 +20,7 @@ import (
 )
 
 func main() {
+	flag.Parse()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
@@ -55,6 +57,9 @@ func main() {
 	// Safety net for pre-migration tenants: zero product rows read as "everything active"
 	// downstream until a first add-on row flips that (hadia, 2026-11-12).
 	backfillZeroProductRows(ctx, client)
+	// Subscriptions that have rows but lack some of their plan's products (mccl had no library
+	// row). A dry run that only logs unless the owner switches the insert on.
+	backfillMissingPlanProducts(ctx, client)
 
 	log.Println("database seed completed successfully")
 }

@@ -234,6 +234,12 @@ func (s *Service) applyScheduledChange(ctx context.Context, sub *ent.TenantSubsc
 	if err := s.updateLocked(ctx, sub, func(u *ent.TenantSubscriptionUpdateOne) {
 		u.SetPlanID(newPlan.ID).SetMetadata(meta).ClearCustomBasePrice().ClearCustomPriceReason()
 	}, func(tx *ent.Tx) {
+		// The new plan's products get rows; existing rows (deactivated ones too) stay as they are.
+		// A database error here aborts the transaction, so the commit fails and the move is retried.
+		if _, perr := EnsureMissingPlanDefaultProducts(ctx, tx.Client(), sub.ID); perr != nil {
+			s.log.Warn("scheduled plan change: plan products not activated",
+				zap.String("tenant_id", sub.TenantID.String()), zap.Error(perr))
+		}
 		s.emitPlanChanged(ctx, tx, sub, oldPlan, newPlan)
 	}); err != nil {
 		return err

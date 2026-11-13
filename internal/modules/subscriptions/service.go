@@ -771,6 +771,10 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 		return nil, fmt.Errorf("update subscription plan: %w", err)
 	}
 	if newPlan.ID != oldPlan.ID {
+		// The new plan's products get rows; existing rows (deactivated ones too) stay as they are.
+		if _, err = EnsureMissingPlanDefaultProducts(ctx, tx.Client(), sub.ID); err != nil {
+			return nil, fmt.Errorf("activate plan products: %w", err)
+		}
 		s.emitPlanChanged(ctx, tx, updated, oldPlan, newPlan)
 	}
 
@@ -1051,6 +1055,12 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 	}
 	prevPlanID := sub.PlanID
 	sub = renewed
+	if sub.PlanID != prevPlanID {
+		// A renewal that moved the plan adds the new plan's products, as ChangePlan does.
+		if _, err = EnsureMissingPlanDefaultProducts(ctx, tx.Client(), sub.ID); err != nil {
+			return nil, fmt.Errorf("activate plan products: %w", err)
+		}
+	}
 
 	renewedPayload := map[string]any{
 		"tenant_id":     sub.TenantID.String(),

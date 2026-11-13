@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/bengobox/subscription-service/internal/ent"
+	"github.com/bengobox/subscription-service/internal/ent/product"
 	"github.com/bengobox/subscription-service/internal/ent/productsubscription"
 )
 
@@ -274,6 +275,192 @@ func TestBackfillZeroProductSubscriptions(t *testing.T) {
 	}
 	if res.Subscriptions != 0 || res.RowsInserted != 0 {
 		t.Fatalf("second backfill must be a no-op: %+v", res)
+	}
+}
+
+// addProductRow gives a subscription one product row in the given status, as an existing tenant
+// would have it.
+func addProductRow(t *testing.T, client *ent.Client, subID uuid.UUID, code string, status productsubscription.Status) {
+	t.Helper()
+	ctx := context.Background()
+	p, err := client.Product.Query().Where(product.CodeEQ(code)).Only(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.ProductSubscription.Create().SetTenantSubscriptionID(subID).SetProductID(p.ID).
+		SetProductCode(code).SetStatus(status).SetActivatedAt(time.Now().UTC()).Save(ctx); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func productRowStatus(t *testing.T, client *ent.Client, subID uuid.UUID, code string) productsubscription.Status {
+	t.Helper()
+	row, err := client.ProductSubscription.Query().
+		Where(productsubscription.TenantSubscriptionIDEQ(subID), productsubscription.ProductCodeEQ(code)).
+		Only(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return row.Status
+}
+
+// libraryPlan is the mccl case: a library plan whose subscription already had pos, inventory and
+// treasury rows but no library row.
+func libraryPlan(t *testing.T, client *ent.Client) *ent.SubscriptionPlan {
+	t.Helper()
+	if _, err := client.Product.Create().SetCode("library").SetName("library").SetCategory("product").Save(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	return activationPlan(t, client, "LIBRARY_STANDARD", "library", map[string]any{"product": "library"}, "custom_branding")
+}
+
+// A subscription that already has rows gets only the plan codes it has no row for.
+func TestEnsureMissingAddsOnlyMissingPlanCodes(t *testing.T) {
+	_, client := newSupportTestService(t)
+	seedActivationCatalog(t, client)
+	plan := libraryPlan(t, client)
+	sub := activationSub(t, client, plan)
+	ctx := context.Background()
+	for _, c := range []string{"pos", "inventory", "treasury", "auth"} {
+		addProductRow(t, client, sub.ID, c, productsubscription.StatusActive)
+	}
+
+	missing, err := MissingPlanDefaultProductCodes(ctx, client, sub.ID, plan.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := sortedJoin(missing), "library,notifications,subscription"; got != want {
+		t.Fatalf("missing = %s, want %s", got, want)
+	}
+	n, err := EnsureMissingPlanDefaultProducts(ctx, client, sub.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 3 {
+		t.Fatalf("inserted %d rows, want 3", n)
+	}
+	want := "auth,inventory,library,notifications,pos,subscription,treasury"
+	if got := strings.Join(productRowCodes(t, client, sub.ID), ","); got != want {
+		t.Fatalf("rows = %s, want %s (existing rows kept, none removed)", got, want)
+	}
+	if n, err := EnsureMissingPlanDefaultProducts(ctx, client, sub.ID); err != nil || n != 0 {
+		t.Fatalf("second ensure: n=%d err=%v, want 0", n, err)
+	}
+}
+
+// A plan product the tenant deactivated counts as present: it stays deactivated.
+func TestEnsureMissingLeavesDeactivatedRow(t *testing.T) {
+	_, client := newSupportTestService(t)
+	seedActivationCatalog(t, client)
+	plan := treasuryOnlyPlan(t, client)
+	sub := activationSub(t, client, plan)
+	ctx := context.Background()
+	addProductRow(t, client, sub.ID, "auth", productsubscription.StatusActive)
+	addProductRow(t, client, sub.ID, "treasury", productsubscription.StatusInactive)
+
+	missing, err := MissingPlanDefaultProductCodes(ctx, client, sub.ID, plan.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := sortedJoin(missing), "notifications,subscription"; got != want {
+		t.Fatalf("missing = %s, want %s (a deactivated treasury row is present)", got, want)
+	}
+	if _, err := EnsureMissingPlanDefaultProducts(ctx, client, sub.ID); err != nil {
+		t.Fatal(err)
+	}
+	if st := productRowStatus(t, client, sub.ID, "treasury"); st != productsubscription.StatusInactive {
+		t.Fatalf("treasury status = %s, want inactive (never re-activated)", st)
+	}
+	if got := strings.Join(productRowCodes(t, client, sub.ID), ","); got != "auth,notifications,subscription,treasury" {
+		t.Fatalf("rows = %s", got)
+	}
+}
+
+// The dry run reports the codes per subscription and inserts nothing; the applied run inserts
+// them; cancelled subscriptions are never touched.
+func TestBackfillMissingPlanDefaultsDryRunThenApply(t *testing.T) {
+	_, client := newSupportTestService(t)
+	seedActivationCatalog(t, client)
+	plan := libraryPlan(t, client)
+	short := activationSub(t, client, plan)
+	cancelled := activationSub(t, client, plan)
+	ctx := context.Background()
+	for _, c := range []string{"pos", "inventory", "treasury"} {
+		addProductRow(t, client, short.ID, c, productsubscription.StatusActive)
+	}
+	addProductRow(t, client, cancelled.ID, "pos", productsubscription.StatusActive)
+	if _, err := client.TenantSubscription.UpdateOneID(cancelled.ID).SetStatus("CANCELLED").Save(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := BackfillMissingPlanDefaultProducts(ctx, client, zap.NewNop(), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Applied || res.RowsInserted != 0 || res.Failed != 0 || len(res.Missing) != 1 {
+		t.Fatalf("dry run = %+v", res)
+	}
+	m := res.Missing[0]
+	if m.SubscriptionID != short.ID || m.PlanCode != "LIBRARY_STANDARD" || m.TenantSlug == "" {
+		t.Fatalf("dry run entry = %+v", m)
+	}
+	if got, want := sortedJoin(m.Codes), "auth,library,notifications,subscription"; got != want {
+		t.Fatalf("dry run codes = %s, want %s", got, want)
+	}
+	if got := strings.Join(productRowCodes(t, client, short.ID), ","); got != "inventory,pos,treasury" {
+		t.Fatalf("dry run wrote rows: %s", got)
+	}
+
+	res, err = BackfillMissingPlanDefaultProducts(ctx, client, zap.NewNop(), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Applied || res.RowsInserted != 4 || res.Failed != 0 {
+		t.Fatalf("applied run = %+v", res)
+	}
+	if got := strings.Join(productRowCodes(t, client, short.ID), ","); got != "auth,inventory,library,notifications,pos,subscription,treasury" {
+		t.Fatalf("applied rows = %s", got)
+	}
+	if got := strings.Join(productRowCodes(t, client, cancelled.ID), ","); got != "pos" {
+		t.Fatalf("a cancelled subscription must not be touched: %s", got)
+	}
+
+	res, err = BackfillMissingPlanDefaultProducts(ctx, client, zap.NewNop(), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Missing) != 0 || res.RowsInserted != 0 {
+		t.Fatalf("second run must be a no-op: %+v", res)
+	}
+}
+
+// A plan change adds the new plan's products to a subscription that already has rows, and leaves
+// a deactivated row deactivated.
+func TestChangePlanAddsNewPlanProducts(t *testing.T) {
+	svc, client := newSupportTestService(t)
+	seedActivationCatalog(t, client)
+	from := treasuryOnlyPlan(t, client)
+	to := activationPlan(t, client, "POWERSUITE_DUKA_PRO", "pos", nil,
+		"pos_terminal", "stock_tracking", "basic_inventory_access", "basic_treasury_access")
+	sub := activationSub(t, client, from)
+	ctx := context.Background()
+	for _, c := range []string{"auth", "subscription", "notifications"} {
+		addProductRow(t, client, sub.ID, c, productsubscription.StatusActive)
+	}
+	addProductRow(t, client, sub.ID, "treasury", productsubscription.StatusInactive)
+
+	if _, err := svc.ChangePlan(ctx, ChangePlanInput{TenantID: sub.TenantID, NewPlanCode: to.PlanCode, ByPlatform: true}); err != nil {
+		t.Fatal(err)
+	}
+	want := "auth,inventory,notifications,pos,subscription,treasury"
+	if got := strings.Join(productRowCodes(t, client, sub.ID), ","); got != want {
+		t.Fatalf("rows after plan change = %s, want %s", got, want)
+	}
+	if st := productRowStatus(t, client, sub.ID, "treasury"); st != productsubscription.StatusInactive {
+		t.Fatalf("treasury status = %s, want inactive", st)
+	}
+	if st := productRowStatus(t, client, sub.ID, "pos"); st != productsubscription.StatusActive {
+		t.Fatalf("pos status = %s, want active", st)
 	}
 }
 
