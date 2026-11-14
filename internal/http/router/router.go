@@ -100,6 +100,8 @@ func New(
 			r.Get("/s2s/credits/{service}/check", creditsHandler.Check)
 			r.Post("/s2s/credits/{service}/consume", creditsHandler.Consume)
 			r.Post("/s2s/credits/{service}/refund", creditsHandler.Refund)
+			// A bundle bought by an M-Pesa prompt to a phone, after the person's tap (MarketFlow WhatsApp).
+			r.Post("/s2s/credits/{service}/purchase", creditsHandler.S2SPurchase)
 			r.Post("/s2s/credits/import", creditsHandler.Import)
 			// Platform WhatsApp cost report (notifications-api), service key only.
 			r.Get("/s2s/credits/whatsapp-usage", creditsHandler.WhatsAppUsage)

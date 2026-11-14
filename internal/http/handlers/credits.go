@@ -230,6 +230,52 @@ func (h *CreditsHandler) Purchase(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, intent)
 }
 
+type creditS2SPurchaseRequest struct {
+	TenantID  string `json:"tenant_id"`
+	Code      string `json:"code"`
+	Phone     string `json:"phone"`
+	Source    string `json:"source"`
+	SourceRef string `json:"source_ref,omitempty"`
+}
+
+// S2SPurchase godoc
+// @Summary Buy a credit bundle with an M-Pesa prompt to a phone (S2S)
+// @Description For a service acting on a person's explicit tap (MarketFlow's WhatsApp "Buy credits" button). Bundles only; the price comes from the registry; the intent is platform-billed (credit_purchase) and Treasury sends the M-Pesa prompt to the phone at once. Units are granted when Treasury reports the payment, exactly like a portal purchase. Never call it without the person's confirmation.
+// @Tags Credits
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param service path string true "ai_credits (or another credit service)"
+// @Param request body creditS2SPurchaseRequest true "Purchase request"
+// @Success 200 {object} map[string]any
+// @Router /s2s/credits/{service}/purchase [post]
+func (h *CreditsHandler) S2SPurchase(w http.ResponseWriter, r *http.Request) {
+	if !h.isService(r) {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "service key required"})
+		return
+	}
+	var req creditS2SPurchaseRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<10)).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	tenantID, err := uuid.Parse(req.TenantID)
+	phone, phoneOK := credits.NormalizeKenyanPhone(req.Phone)
+	if err != nil || req.Code == "" || !phoneOK || req.Source == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "tenant_id, code, source and a Kenyan mobile phone are required"})
+		return
+	}
+	intent, err := h.svc.InitiatePurchase(r.Context(), credits.PurchaseInput{
+		TenantID: tenantID, Service: chi.URLParam(r, "service"), Kind: credits.KindBundle, Code: req.Code,
+		Phone: phone, Source: req.Source, SourceRef: req.SourceRef,
+	})
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, intent)
+}
+
 type creditAdminGrantRequest struct {
 	Units  int64  `json:"units"`
 	Reason string `json:"reason"`
