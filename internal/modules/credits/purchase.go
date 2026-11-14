@@ -33,7 +33,19 @@ type PurchaseInput struct {
 	Kind      PurchaseKind
 	Code      string // bundle code or tier code
 	ReturnURL string
+	// Phone, when set, makes the intent an M-Pesa payment that Treasury pushes (STK) to this
+	// number at once, instead of a "pending" intent the payer completes on the pay page. Only the
+	// service route sets it (MarketFlow's WhatsApp "Buy credits" button, Sprint 17), always after
+	// the person tapped to confirm.
+	Phone string
+	// Source and SourceRef are stored on the intent metadata so the caller can match the payment
+	// when Treasury reports it (for example "marketflow_whatsapp" and its own reference).
+	Source    string
+	SourceRef string
 }
+
+// PromptMethod is the payment method of an intent with a phone: Treasury sends the M-Pesa prompt.
+const PromptMethod = "mpesa"
 
 // PurchaseOffer is the priced result of resolving a purchase.
 type PurchaseOffer struct {
@@ -131,6 +143,18 @@ func (s *Service) InitiatePurchase(ctx context.Context, in PurchaseInput) (map[s
 	total, vat := withVAT(offer.PriceKES, rate)
 	meta := offer.IntentMetadata(in.TenantID)
 	meta["net_kes"], meta["vat_rate"], meta["vat_kes"] = offer.PriceKES, rate, vat
+	if in.Source != "" {
+		meta["purchase_source"] = in.Source
+	}
+	if in.SourceRef != "" {
+		meta["purchase_source_ref"] = in.SourceRef
+	}
+	return s.subs.CreatePaymentIntent(ctx, in.TenantID, purchaseIntentRequest(in, offer, total, meta))
+}
+
+// purchaseIntentRequest is the Treasury intent for a purchase: "pending" (the payer chooses how
+// to pay on the pay page), or an M-Pesa prompt to in.Phone when one is given.
+func purchaseIntentRequest(in PurchaseInput, offer PurchaseOffer, total float64, meta map[string]any) map[string]any {
 	req := map[string]any{
 		"amount": total, "currency": "KES", "payment_method": "pending",
 		"reference_id":   subscriptions.NewPurchaseReference("CRED", in.TenantID, offer.Service.Code),
@@ -138,7 +162,38 @@ func (s *Service) InitiatePurchase(ctx context.Context, in PurchaseInput) (map[s
 		"description": offer.Label, "callback_url": in.ReturnURL,
 		"metadata": meta,
 	}
-	return s.subs.CreatePaymentIntent(ctx, in.TenantID, req)
+	if in.Phone != "" {
+		req["payment_method"] = PromptMethod
+		req["phone_number"] = in.Phone
+	}
+	return req
+}
+
+// NormalizeKenyanPhone returns a Kenyan mobile number as 2547XXXXXXXX or 2541XXXXXXXX (Treasury's
+// STK format), accepting +254..., 254... and 07.../01...; ok is false for anything else.
+func NormalizeKenyanPhone(raw string) (string, bool) {
+	digits := make([]byte, 0, len(raw))
+	for i := 0; i < len(raw); i++ {
+		c := raw[i]
+		switch {
+		case c >= '0' && c <= '9':
+			digits = append(digits, c)
+		case c == '+' && i == 0, c == ' ', c == '-':
+		default:
+			return "", false
+		}
+	}
+	d := string(digits)
+	switch {
+	case len(d) == 10 && d[0] == '0':
+		d = "254" + d[1:]
+	case len(d) == 9 && (d[0] == '7' || d[0] == '1'):
+		d = "254" + d
+	}
+	if len(d) != 12 || d[:3] != "254" || (d[3] != '7' && d[3] != '1') {
+		return "", false
+	}
+	return d, true
 }
 
 // FulfilIntent grants what a settled intent bought. Safe to call twice for the same intent. Only a
