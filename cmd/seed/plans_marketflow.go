@@ -68,8 +68,20 @@ func marketflowPlanFeatures(tier int) []string {
 	if tier >= 4 {
 		f = unionFeatures(f, []string{"marketflow_custom_domain"})
 	}
+	// Autopilot (owner, 2026-11-14): the agents from Lite up (how many is max_autopilot_agents);
+	// auto-publish after a veto window from Pro up. Below Pro every draft waits for approval.
+	if tier >= 2 {
+		f = unionFeatures(f, []string{"marketflow_autopilot"})
+	}
+	if tier >= 4 {
+		f = unionFeatures(f, []string{"autopilot_auto_publish"})
+	}
 	return f
 }
+
+// marketflowAutopilotAgents is max_autopilot_agents per tier (owner, 2026-11-14): Lite 1,
+// Growth 3, Pro 10, Business unlimited (-1). Starter has no Autopilot, so it gets no key.
+var marketflowAutopilotAgents = map[int]int{2: 1, 3: 3, 4: 10, 5: -1}
 
 // marketflowPlanLimits: -1 is unlimited. No plan includes AI credits (owner, 2026-11-11): every
 // AI query is paid from credits the business buys (billing/credit_services.go bundles).
@@ -88,10 +100,16 @@ func marketflowPlanLimits(tier int) map[string]any {
 	if !ok {
 		r = rows[5]
 	}
-	return map[string]any{
+	limits := map[string]any{
 		"max_contacts": r[0], "max_leads": r[1], "max_campaigns": r[2], "max_sequences": r[3],
 		"max_funnels": r[4], "max_integrations": r[5], "chat_turns_daily": r[6],
 	}
+	if n, ok := marketflowAutopilotAgents[tier]; ok {
+		limits["max_autopilot_agents"] = n
+	} else if tier > 5 {
+		limits["max_autopilot_agents"] = marketflowAutopilotAgents[5]
+	}
+	return limits
 }
 
 type marketflowTier struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -168,7 +169,46 @@ func psSuiteCRMBlock(tier int) []string {
 	if tier < 2 {
 		return nil
 	}
-	return psCRMBlock(tier)
+	return unionFeatures(psCRMBlock(tier), psAutopilotFeatures(tier))
+}
+
+// psMarketflowTier maps a PowerSuite tier that carries the CRM block to the standalone MarketFlow
+// tier it matches (owner, 2026-11-14), for the Autopilot features and limit. Professional (tier 2)
+// gets psCRMBlock(2) with presenter and cinematic videos but no premium videos or custom domain,
+// which is MarketFlow Growth. Gold (tier 3) gets psCRMBlock(3) with white label, the premium videos
+// and unlimited CRM limits, which is MarketFlow Business. Basic (tier 1) has no CRM, so no Autopilot.
+// It lives here and not in psCRMBlock because the standalone MarketFlow plans build on psCRMBlock
+// with their own Autopilot ladder.
+var psMarketflowTier = map[int]int{2: 3, 3: 5}
+
+// psAutopilotFeatures is what a PowerSuite tier gets of Autopilot: the features of its matching
+// MarketFlow tier (marketflow_autopilot, and autopilot_auto_publish from MarketFlow Pro up).
+// No AI credits come with it: PowerSuite plans never include AI credits (owner, 2026-11-14).
+func psAutopilotFeatures(tier int) []string {
+	mf, ok := psMarketflowTier[tier]
+	if !ok {
+		return nil
+	}
+	var f []string
+	for _, code := range []string{"marketflow_autopilot", "autopilot_auto_publish"} {
+		if slices.Contains(marketflowPlanFeatures(mf), code) {
+			f = append(f, code)
+		}
+	}
+	return f
+}
+
+// psAutopilotLimits is max_autopilot_agents of the matching MarketFlow tier (none below tier 2).
+func psAutopilotLimits(tier int) map[string]any {
+	mf, ok := psMarketflowTier[tier]
+	if !ok {
+		return nil
+	}
+	n, ok := marketflowAutopilotAgents[mf]
+	if !ok {
+		return nil
+	}
+	return map[string]any{"max_autopilot_agents": n}
 }
 
 // psSuiteERPBlock and psSuiteProjectsBlock are what the PowerSuite plans (hospitality, retail,
@@ -335,6 +375,8 @@ func useCaseSuiteLimits(family string, tier int) map[string]any {
 			delete(base, k)
 		}
 	}
+	// Autopilot agents of the matching MarketFlow tier (psMarketflowTier); no AI credits.
+	base = mergeLimits(base, psAutopilotLimits(tier))
 	switch family {
 	case "hosp":
 		switch tier {

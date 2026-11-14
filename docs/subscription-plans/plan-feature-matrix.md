@@ -302,6 +302,41 @@ subscriptions-ui fix also plugged a stale gap from the DAWA→AFYA_CHEMIST migra
 — `hospital` was never a key in that page's `USECASE_GROUPS` map at all, so a hospital-service
 tenant fell through to "show every group" instead of just its own `AFYA_*` plans.
 
+## MarketFlow standalone plans: Autopilot (seeded, 2026-11-14)
+
+My decision of 2026-11-14 puts Autopilot on the five standalone `MARKETFLOW_*` plans seeded by
+`cmd/seed/plans_marketflow.go` (Starter, Lite, Growth, Pro, Business, back since 2026-11-11). It replaces the
+Autopilot rows of the proposed AI Studio tables below.
+
+| Code | Kind | Starter | Lite | Growth | Pro | Business |
+|---|---|---|---|---|---|---|
+| `marketflow_autopilot` (Autopilot agents) | feature | | yes | yes | yes | yes |
+| `autopilot_auto_publish` (publish after the veto window) | feature | | | | yes | yes |
+| `max_autopilot_agents` | limit (`tier_limits_json`) | no key | 1 | 3 | 10 | -1 (unlimited) |
+
+* All three are in the feature catalog (`cmd/seed/feature_catalog.go`) with `service_tag: marketflow`, category
+  AI Studio (the limit sits under Limits) and a description. The limit follows the MarketFlow convention: the
+  value lives in the plan's `tier_limits_json`, -1 is unlimited, and no `default_limit` is set.
+* marketflow-api reads `autopilot_auto_publish` strictly (fail closed, no demo bypass) through
+  `custom_agents.AutoPublishFeature`, together with the tenant's acceptance of the Autopilot terms. Below Pro every
+  Autopilot draft waits for approval.
+* Production gets the rows on the next pod start: `scripts/entrypoint.sh` runs `subscription-seed` after the
+  migrator, and the seed upserts the catalog by `feature_code` and rewrites each MarketFlow plan's features and
+  limits, so a rerun changes nothing.
+* PowerSuite plans that carry the CRM block get the Autopilot of the MarketFlow tier they match
+  (`psMarketflowTier` and `psAutopilotFeatures` in `cmd/seed/plans_powersuite_usecase.go`). The same applies to their
+  `SUPPORT_*` rows, which reuse the same features and limits:
+
+| PowerSuite tier | Matches | Why | `marketflow_autopilot` | `autopilot_auto_publish` | `max_autopilot_agents` |
+|---|---|---|---|---|---|
+| Basic (tier 1) | none | no CRM block at tier 1 | | | no key |
+| Professional (tier 2) | MarketFlow Growth | `psCRMBlock(2)` with presenter and cinematic videos, no premium videos, no custom domain | yes | | 3 |
+| Gold (tier 3) | MarketFlow Business | `psCRMBlock(3)` with white label, premium videos and unlimited CRM limits | yes | yes | -1 (unlimited) |
+
+  The limit is added in `useCaseSuiteLimits`, not `powerSuiteLimits`, so ERP plans (which reuse
+  `powerSuiteLimits` but carry no CRM block) get no Autopilot limit. PowerSuite plans still include no AI credits:
+  Autopilot runs on credits the business buys.
+
 ## MarketFlow AI Studio plans (proposed, not seeded, 2026-10-22)
 
 Status: **proposed, not seeded.** Design source: `.claude/plans/marketflow-ads-autopilot-2026-10-22.md`
