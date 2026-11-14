@@ -79,6 +79,46 @@ func TestMarketflowPlans(t *testing.T) {
 	}
 }
 
+// Autopilot (owner, 2026-11-14): the agents from Lite up with max_autopilot_agents 1, 3, 10 and
+// unlimited; auto-publish (the veto window) on Pro and Business only.
+func TestMarketflowAutopilotTiers(t *testing.T) {
+	type want struct {
+		autopilot, autoPublish bool
+		agents                 any // nil means no key
+	}
+	wants := map[string]want{
+		"MARKETFLOW_STARTER":  {false, false, nil},
+		"MARKETFLOW_LITE":     {true, false, 1},
+		"MARKETFLOW_GROWTH":   {true, false, 3},
+		"MARKETFLOW_PRO":      {true, true, 10},
+		"MARKETFLOW_BUSINESS": {true, true, -1},
+	}
+	for _, tier := range marketflowTiers {
+		w, ok := wants[tier.code]
+		if !ok {
+			t.Fatalf("%s: no Autopilot expectation", tier.code)
+		}
+		feats := marketflowPlanFeatures(tier.tier)
+		if got := slices.Contains(feats, "marketflow_autopilot"); got != w.autopilot {
+			t.Errorf("%s: marketflow_autopilot=%v, want %v", tier.code, got, w.autopilot)
+		}
+		if got := slices.Contains(feats, "autopilot_auto_publish"); got != w.autoPublish {
+			t.Errorf("%s: autopilot_auto_publish=%v, want %v", tier.code, got, w.autoPublish)
+		}
+		if got := marketflowPlanLimits(tier.tier)["max_autopilot_agents"]; got != w.agents {
+			t.Errorf("%s: max_autopilot_agents=%v, want %v", tier.code, got, w.agents)
+		}
+	}
+	for _, code := range []string{"marketflow_autopilot", "autopilot_auto_publish"} {
+		if !isInCatalog(code) {
+			t.Errorf("%s is not in the catalog", code)
+		}
+	}
+	if tag, ok := limitServiceTag("max_autopilot_agents"); !ok || tag != "marketflow" {
+		t.Errorf("max_autopilot_agents: tag %q in catalog=%v, want a marketflow limit", tag, ok)
+	}
+}
+
 func TestMarketflowPlansSurviveTheRetirementMigration(t *testing.T) {
 	src, err := os.ReadFile("migrate_usecase_powersuite.go")
 	if err != nil {

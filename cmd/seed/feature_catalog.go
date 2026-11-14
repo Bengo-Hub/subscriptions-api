@@ -20,6 +20,16 @@ type catalogEntry struct {
 	unit       string
 	nats       string
 	defaultLim *int
+
+	// description, when set, is written to feature_definitions.description. Empty leaves the
+	// stored value alone, so entries without one never wipe a description set elsewhere.
+	description string
+}
+
+// described returns the entry with a description for feature_definitions.description.
+func (e catalogEntry) described(d string) catalogEntry {
+	e.description = d
+	return e
 }
 
 func feat(code, service, category, label string) catalogEntry {
@@ -41,8 +51,9 @@ func meteredLim(code, service, category, label, unit, nats string) catalogEntry 
 
 // featureCatalog is the single source of truth for every feature & limit exposed
 // by any service that integrates with the subscriptions-api, categorized per service.
-// Keep this in sync with the FEATURE_INFO/LIMIT_INFO maps in subscriptions-ui and
-// the RequireFeature()/CheckLimit() keys used by each service gate.
+// subscriptions-ui reads labels and descriptions from this catalog (GET feature catalog), so it
+// needs no map of its own. Keep the codes in sync with the RequireFeature()/CheckLimit() keys
+// used by each service gate.
 var featureCatalog = mergeSharedCodes(func() []catalogEntry {
 	const (
 		ordering   = "ordering"
@@ -383,6 +394,15 @@ var featureCatalog = mergeSharedCodes(func() []catalogEntry {
 		// Pro and up: the business's own domain for its MarketFlow page and funnels (domains are
 		// managed centrally in SSO).
 		feat("marketflow_custom_domain", marketflow, "Marketing", "Custom Domain for Pages and Funnels"),
+		// Autopilot (owner, 2026-11-14): agents that draft ads on a schedule inside the limits the
+		// owner sets. Lite and up get the agents; Pro and Business may also auto-publish after a
+		// veto window (marketflow-api custom_agents.AutoPublishFeature, read strictly).
+		feat("marketflow_autopilot", marketflow, "AI Studio", "Autopilot Agents").
+			described("Agents that draft ads on a schedule for the offerings you choose, inside the budget and credit limits you set. Each draft waits for your approval."),
+		feat("autopilot_auto_publish", marketflow, "AI Studio", "Autopilot Auto-Publish").
+			described("Autopilot publishes a draft on its own after a veto window (4 hours by default) unless you stop it. Needs the Autopilot terms accepted."),
+		lim("max_autopilot_agents", marketflow, "Limits", "Autopilot Agents", "").
+			described("How many Autopilot agents the business can run at once. -1 is unlimited."),
 
 		// ─── TruLoad (Weighbridge) ────────────────────────────────────────────
 		feat("commercial_weighing", truload, "Weighbridge", "Commercial Weighing"),
@@ -621,6 +641,9 @@ func seedFeatureCatalog(ctx context.Context, tx *ent.Tx) error {
 			} else {
 				upd = upd.ClearDefaultLimit()
 			}
+			if e.description != "" {
+				upd = upd.SetDescription(e.description)
+			}
 			if _, serr := upd.Save(ctx); serr != nil {
 				return fmt.Errorf("update feature definition %s: %w", e.code, serr)
 			}
@@ -639,6 +662,9 @@ func seedFeatureCatalog(ctx context.Context, tx *ent.Tx) error {
 				SetIsActive(true)
 			if e.defaultLim != nil {
 				cr = cr.SetDefaultLimit(*e.defaultLim)
+			}
+			if e.description != "" {
+				cr = cr.SetDescription(e.description)
 			}
 			if _, serr := cr.Save(ctx); serr != nil {
 				return fmt.Errorf("create feature definition %s: %w", e.code, serr)
