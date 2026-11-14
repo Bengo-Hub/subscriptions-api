@@ -60,6 +60,9 @@ func main() {
 	// Subscriptions that have rows but lack some of their plan's products (mccl had no library
 	// row). A dry run that only logs unless the owner switches the insert on.
 	backfillMissingPlanProducts(ctx, client)
+	// Included AI credits left on plans that grant none (audit 2026-11-14). A dry run that only
+	// logs unless the owner switches the write on (-apply-clear-included-ai).
+	clearIncludedAIAllowances(ctx, client, db)
 
 	log.Println("database seed completed successfully")
 }

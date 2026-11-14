@@ -21,10 +21,44 @@ import (
 // had no plan at all and was refused by marketflow-api's RequireServiceAccess("marketflow").
 //
 // Five tiers so every budget has a way in (owner, 2026-11-11): a free Starter, then KES 1,500,
-// 3,500 (the existing marketflow product price), 8,500 and 15,000 a month. No plan includes AI
-// credits: every AI query is paid from credit bundles the business buys (billing/credit_services.go);
-// a plan sets the free chat turns a day (chat_turns_daily) and what the business can do. Not tied to a use case, so every
-// tenant sees them; auth-api's fbo use case trials on MARKETFLOW_STARTER.
+// 3,500 (the existing marketflow product price), 8,500 and 15,000 a month. Paid tiers include a
+// monthly AI credit allowance (ai_credits_monthly, owner 2026-11-14, replacing the 2026-11-11 "no
+// plan includes AI credits"); more AI work is paid from bundles (billing/credit_services.go). A
+// plan also sets the free chat turns a day (chat_turns_daily). Only MarketFlow plans include AI
+// credits: PowerSuite plans never do. Not tied to a use case, so every tenant sees them; auth-api's
+// fbo use case trials on MARKETFLOW_STARTER.
+
+// Included AI credits a month per MarketFlow tier, set on 2026-11-15 from the owner's chosen
+// option (Lite 50, Growth 150, Pro 400, Business 1,000); margin reasoning in
+// .claude/plans/billing-ai-credits-plan-audit-2026-11-14.md. Rule used: at the worst
+// case of about KES 5 of provider cost per credit (marketflow-ai registry), a fully used allowance
+// costs at most 35% of the plan price net of the 3% payment fee, and the plan price per included
+// credit (about KES 15) stays above the dearest bundle price (KES 12.5), so a plan is never a
+// cheaper way to buy credits. Starter is free, so it carries no allowance (0 = the key is left
+// out, never written as 0, which several services read as unlimited).
+const (
+	mfAICreditsStarter  = 0
+	mfAICreditsLite     = 50
+	mfAICreditsGrowth   = 150
+	mfAICreditsPro      = 400
+	mfAICreditsBusiness = 1000
+)
+
+// marketflowAICredits is the included AI credits a month for a tier (0: none).
+func marketflowAICredits(tier int) int {
+	switch tier {
+	case 1:
+		return mfAICreditsStarter
+	case 2:
+		return mfAICreditsLite
+	case 3:
+		return mfAICreditsGrowth
+	case 4:
+		return mfAICreditsPro
+	default:
+		return mfAICreditsBusiness
+	}
+}
 
 // marketflowAIFeatures are the AI Studio outputs a tier may make (the codes marketflow-ai's
 // registry checks before quoting a Creative Plan). Credits are charged per output on top.
@@ -71,8 +105,8 @@ func marketflowPlanFeatures(tier int) []string {
 	return f
 }
 
-// marketflowPlanLimits: -1 is unlimited. No plan includes AI credits (owner, 2026-11-11): every
-// AI query is paid from credits the business buys (billing/credit_services.go bundles).
+// marketflowPlanLimits: -1 is unlimited. ai_credits_monthly is the included AI credit allowance
+// (marketflowAICredits, refilled each month by the credits job; left out on the free tier).
 // chat_turns_daily is the free chat allowance a day before chat turns cost credits (marketflow-ai
 // chatallowance reads it); the free tier gets the fewest.
 func marketflowPlanLimits(tier int) map[string]any {
@@ -88,10 +122,14 @@ func marketflowPlanLimits(tier int) map[string]any {
 	if !ok {
 		r = rows[5]
 	}
-	return map[string]any{
+	limits := map[string]any{
 		"max_contacts": r[0], "max_leads": r[1], "max_campaigns": r[2], "max_sequences": r[3],
 		"max_funnels": r[4], "max_integrations": r[5], "chat_turns_daily": r[6],
 	}
+	if n := marketflowAICredits(tier); n > 0 {
+		limits["ai_credits_monthly"] = n
+	}
+	return limits
 }
 
 type marketflowTier struct {
@@ -106,13 +144,13 @@ var marketflowTiers = []marketflowTier{
 	{code: "MARKETFLOW_STARTER", label: "MarketFlow Starter", tier: 1, monthly: 0,
 		desc: "Free: your public profile page, contacts and leads, branded short links and AI poster and template video ads, with 10 free chat turns a day. AI work uses credits you buy."},
 	{code: "MARKETFLOW_LITE", label: "MarketFlow Lite", tier: 2, monthly: 1500,
-		desc: "Adds campaigns, funnels and landing pages, the AI chat assistant on your page and WhatsApp, follow-up sequences, testimonials, Meta ad boosts and AI presenter videos, with 30 free chat turns a day. AI work uses credits you buy."},
+		desc: fmt.Sprintf("Adds campaigns, funnels and landing pages, the AI chat assistant on your page and WhatsApp, follow-up sequences, testimonials, Meta ad boosts and AI presenter videos, with %d AI credits a month and 30 free chat turns a day. Buy more credits any time.", mfAICreditsLite)},
 	{code: "MARKETFLOW_GROWTH", label: "MarketFlow Growth", tier: 3, monthly: 3500,
-		desc: "The full marketing team: lead scoring, deal pipeline, automations, helpdesk, webhooks and cinematic videos, with 60 free chat turns a day. AI work uses credits you buy."},
+		desc: fmt.Sprintf("The full marketing team: lead scoring, deal pipeline, automations, helpdesk, webhooks and cinematic videos, with %d AI credits a month and 60 free chat turns a day. Buy more credits any time.", mfAICreditsGrowth)},
 	{code: "MARKETFLOW_PRO", label: "MarketFlow Pro", tier: 4, monthly: 8500,
-		desc: "Unlimited campaigns and sequences, premium presenter and cinematic videos, your own domain for your page and funnels, more leads and integrations, with 120 free chat turns a day. AI work uses credits you buy."},
+		desc: fmt.Sprintf("Unlimited campaigns and sequences, premium presenter and cinematic videos, your own domain for your page and funnels, more leads and integrations, with %d AI credits a month and 120 free chat turns a day. Buy more credits any time.", mfAICreditsPro)},
 	{code: "MARKETFLOW_BUSINESS", label: "MarketFlow Business", tier: 5, monthly: 15000,
-		desc: "For agencies and businesses with several brands: no limits, white label, your own domain and a dedicated account manager, with 300 free chat turns a day. AI work uses credits you buy."},
+		desc: fmt.Sprintf("For agencies and businesses with several brands: no limits, white label, your own domain and a dedicated account manager, with %d AI credits a month and 300 free chat turns a day. Buy more credits any time.", mfAICreditsBusiness)},
 }
 
 // seedMarketflowPlans upserts the five monthly standalone MarketFlow plans.

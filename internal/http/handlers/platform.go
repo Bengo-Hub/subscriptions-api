@@ -537,12 +537,15 @@ func (h *PlatformHandler) AssignPlanToTenant(w http.ResponseWriter, r *http.Requ
 			h.log.Warn("assign plan: failed to activate plan default products",
 				zap.String("tenant_id", tenantID.String()), zap.Error(err))
 		}
-		// A move onto another plan also adds the new plan's products to a subscription that
-		// already had rows; existing rows (deactivated ones too) stay as they are.
+		// A move onto another plan syncs the product rows: the new plan's products are added and
+		// the old plan's products it does not include are switched off (overlays and add-ons kept).
 		if existing != nil && existing.PlanID != plan.ID {
-			if _, err := subscriptions.EnsureMissingPlanDefaultProducts(ctx, h.client, ts.ID); err != nil {
-				h.log.Warn("assign plan: failed to activate the new plan's products",
+			if _, _, err := subscriptions.SyncPlanProducts(ctx, h.client, ts.ID, existing.PlanID); err != nil {
+				h.log.Warn("assign plan: plan products not synced",
 					zap.String("tenant_id", tenantID.String()), zap.Error(err))
+			}
+			if h.subSvc != nil {
+				h.subSvc.NotifyPlanApplied(ctx, ts, existing.PlanID)
 			}
 		}
 	}
@@ -1374,10 +1377,13 @@ func (h *PlatformHandler) UpdateSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// A plan moved by the platform admin adds the new plan's products; existing rows stay as they are.
+	// A plan moved by the platform admin syncs the product rows and the included allowance.
 	if updated.PlanID != sub.PlanID {
-		if _, perr := subscriptions.EnsureMissingPlanDefaultProducts(ctx, h.client, updated.ID); perr != nil {
-			h.log.Warn("admin subscription edit: plan products not activated", zap.String("subscription_id", id.String()), zap.Error(perr))
+		if _, _, perr := subscriptions.SyncPlanProducts(ctx, h.client, updated.ID, sub.PlanID); perr != nil {
+			h.log.Warn("admin subscription edit: plan products not synced", zap.String("subscription_id", id.String()), zap.Error(perr))
+		}
+		if h.subSvc != nil {
+			h.subSvc.NotifyPlanApplied(ctx, updated, sub.PlanID)
 		}
 	}
 

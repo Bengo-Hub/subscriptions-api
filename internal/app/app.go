@@ -346,6 +346,23 @@ func New(ctx context.Context) (*App, error) {
 			log.Warn("plan change: open renewal invoice not reconciled", zap.String("tenant_id", tenantID.String()), zap.Error(err))
 		}
 	})
+	// Included credits follow the plan in force (owner, 2026-11-14): an upgrade tops the
+	// allowance up now, a downgrade lowers it when it takes effect.
+	subscriptionSvc.SetPlanAppliedHook(func(ctx context.Context, sub *ent.TenantSubscription, from, to *ent.SubscriptionPlan) {
+		if err := creditsSvc.SyncPlanAllowance(ctx, sub, from, to); err != nil {
+			log.Warn("plan change: included allowance not moved", zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
+		}
+	})
+	// An upgrade applied at once bills the rest of the period at the difference.
+	subscriptionSvc.SetUpgradeInvoicer(func(ctx context.Context, sub *ent.TenantSubscription, from, to *ent.SubscriptionPlan, charge subscriptions.ProratedCharge) {
+		go func() {
+			ictx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+			if err := invoiceSvc.InvoiceProratedUpgrade(ictx, sub.TenantID, from, to, charge); err != nil {
+				log.Warn("upgrade: prorated invoice not raised", zap.String("tenant_id", sub.TenantID.String()), zap.Error(err))
+			}
+		}()
+	})
 	creditsHandler := handlers.NewCreditsHandler(log, creditsSvc, cfg.Security.APIKey)
 
 	// Feature catalog handler (platform-wide feature/limit registry for the plan builder)

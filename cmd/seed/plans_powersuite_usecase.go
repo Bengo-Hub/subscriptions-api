@@ -324,6 +324,22 @@ func suiteServicesText(tier int) string {
 // useCaseSuiteLimits — powerSuiteLimits(tier) overlaid with family-specific POS caps.
 // Retail/pharmacy have no tables (or rooms); hospitality Gold adds unlimited rooms +
 // conference events.
+// powerSuiteChatTurnsDaily is the free MarketFlow chat turns a day a PowerSuite tier includes
+// (owner, 2026-11-14): Pro matches MarketFlow Growth, Gold matches MarketFlow Business, and Basic,
+// which has no CRM block, gets none (0: the key is left out; marketflow-ai then gives a tenant on
+// a plan no free turns). PowerSuite never includes AI credits (ai_credits_monthly): those are
+// bought, like SMS and WhatsApp credits.
+func powerSuiteChatTurnsDaily(tier int) int {
+	switch {
+	case tier <= 1:
+		return 0
+	case tier == 2:
+		return marketflowPlanLimits(3)["chat_turns_daily"].(int)
+	default:
+		return marketflowPlanLimits(5)["chat_turns_daily"].(int)
+	}
+}
+
 func useCaseSuiteLimits(family string, tier int) map[string]any {
 	base := powerSuiteLimits(tier)
 	if tier == 1 {
@@ -334,6 +350,9 @@ func useCaseSuiteLimits(family string, tier int) map[string]any {
 		} {
 			delete(base, k)
 		}
+	}
+	if turns := powerSuiteChatTurnsDaily(tier); turns > 0 {
+		base["chat_turns_daily"] = turns
 	}
 	switch family {
 	case "hosp":

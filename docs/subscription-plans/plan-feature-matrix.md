@@ -315,6 +315,12 @@ capabilities (generation, publishing, paid ads launch, Autopilot agents). It is 
 PowerSuite, because FBOs, course sellers and service businesses need marketing without buying a POS suite. The CRM
 features stay in the PowerSuite blocks above and are not duplicated here.
 
+**Current state (2026-11-14):** this Studio family was never built. The live MarketFlow plans are the five
+`MARKETFLOW_*` tiers in `cmd/seed/plans_marketflow.go`. Paid tiers include `ai_credits_monthly` (Lite 100,
+Growth 230, Pro 560, Business 1,000, TO CONFIRM; Starter none; none during a paid trial). PowerSuite never
+includes AI credits; its Pro and Gold tiers include `chat_turns_daily` 60 and 300, Basic none. The table below is
+the older proposal, kept for history.
+
 Plan codes: `MARKETFLOW_STUDIO_STARTER`, `MARKETFLOW_STUDIO_GROWTH`, `MARKETFLOW_STUDIO_PRO` on the existing
 `marketflow` product (`service_tag: marketflow`, no `use_case`, so it matches any tenant). Each row carries
 `ai_credits_monthly`, and the hourly credits refill adds it to the base plan's allowance.

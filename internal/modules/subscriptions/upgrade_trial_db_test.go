@@ -194,34 +194,76 @@ func TestUpgradeTrialEndedEarly(t *testing.T) {
 	}
 }
 
-// A tenant's own upgrade waits for the renewal date; a downgrade applies at once; the platform
-// owner's change applies at once.
-func TestChangePlanSchedulesTenantUpgrades(t *testing.T) {
+// Owner, 2026-11-14: a tenant's upgrade applies now and the rest of the period is billed at the
+// difference; a tenant's downgrade waits for the renewal date; the platform owner's change applies
+// at once either way.
+func TestChangePlanUpgradesNowDowngradesAtRenewal(t *testing.T) {
 	f := newTrialFixture(t)
 	ctx := context.Background()
+	var applied []string
+	var charged []ProratedCharge
+	f.svc.SetPlanAppliedHook(func(_ context.Context, _ *ent.TenantSubscription, from, to *ent.SubscriptionPlan) {
+		applied = append(applied, from.PlanCode+">"+to.PlanCode)
+	})
+	f.svc.SetUpgradeInvoicer(func(_ context.Context, _ *ent.TenantSubscription, _, _ *ent.SubscriptionPlan, c ProratedCharge) {
+		charged = append(charged, c)
+	})
 
 	res, err := f.svc.ChangePlan(ctx, ChangePlanInput{TenantID: f.tenant, NewPlanCode: f.pro.PlanCode})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.PlanCode != f.basic.PlanCode || res.ScheduledChange == nil || res.ScheduledChange.PlanCode != f.pro.PlanCode {
-		t.Fatalf("tenant upgrade not scheduled: %+v", res)
+	if res.PlanCode != f.pro.PlanCode || f.sub(t).PlanID != f.pro.ID || res.ScheduledChange != nil {
+		t.Fatalf("tenant upgrade not applied now: %+v", res)
 	}
-	if f.sub(t).PlanID != f.basic.ID {
-		t.Fatal("tenant upgrade applied before the renewal date")
+	if len(applied) != 1 || applied[0] != f.basic.PlanCode+">"+f.pro.PlanCode {
+		t.Fatalf("plan-applied hook: %v", applied)
+	}
+	// 3,000 a month more for the 20 days left of a 30-day period: about 2,000.
+	if len(charged) != 1 || charged[0].NetAmount < 1990 || charged[0].NetAmount > 2010 {
+		t.Fatalf("prorated charge: %+v", charged)
+	}
+
+	res, err = f.svc.ChangePlan(ctx, ChangePlanInput{TenantID: f.tenant, NewPlanCode: f.basic.PlanCode})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.sub(t).PlanID != f.pro.ID || res.ScheduledChange == nil || res.ScheduledChange.PlanCode != f.basic.PlanCode ||
+		!res.ScheduledChange.EffectiveAt.Equal(f.periodEnd) {
+		t.Fatalf("tenant downgrade not scheduled for the renewal date: %+v", res)
+	}
+	if len(applied) != 1 || len(charged) != 1 {
+		t.Fatalf("a scheduled downgrade must not apply or charge yet: %v %v", applied, charged)
 	}
 	if _, err := f.svc.CancelScheduledPlanChange(ctx, f.tenant); err != nil {
 		t.Fatal(err)
 	}
 
-	res, err = f.svc.ChangePlan(ctx, ChangePlanInput{TenantID: f.tenant, NewPlanCode: f.pro.PlanCode, ByPlatform: true})
-	if err != nil || res.PlanCode != f.pro.PlanCode || f.sub(t).PlanID != f.pro.ID {
+	res, err = f.svc.ChangePlan(ctx, ChangePlanInput{TenantID: f.tenant, NewPlanCode: f.basic.PlanCode, ByPlatform: true})
+	if err != nil || res.PlanCode != f.basic.PlanCode || f.sub(t).PlanID != f.basic.ID {
 		t.Fatalf("platform change not immediate: %+v %v", res, err)
 	}
+	if len(charged) != 1 {
+		t.Fatalf("a platform change raises no proration invoice: %v", charged)
+	}
+}
 
-	res, err = f.svc.ChangePlan(ctx, ChangePlanInput{TenantID: f.tenant, NewPlanCode: f.basic.PlanCode})
-	if err != nil || f.sub(t).PlanID != f.basic.ID {
-		t.Fatalf("downgrade not immediate: %+v %v", res, err)
+// A trial has no paid time: a tenant's downgrade applies at once and nothing is charged.
+func TestChangePlanDuringTrialAppliesAtOnce(t *testing.T) {
+	f := newTrialFixture(t)
+	ctx := context.Background()
+	if _, err := f.client.TenantSubscription.UpdateOneID(f.sub(t).ID).SetPlanID(f.pro.ID).SetStatus("TRIAL").Save(ctx); err != nil {
+		t.Fatal(err)
+	}
+	charged := 0
+	f.svc.SetUpgradeInvoicer(func(context.Context, *ent.TenantSubscription, *ent.SubscriptionPlan, *ent.SubscriptionPlan, ProratedCharge) {
+		charged++
+	})
+	if _, err := f.svc.ChangePlan(ctx, ChangePlanInput{TenantID: f.tenant, NewPlanCode: f.basic.PlanCode}); err != nil {
+		t.Fatal(err)
+	}
+	if f.sub(t).PlanID != f.basic.ID || charged != 0 {
+		t.Fatalf("trial downgrade: plan %v charged %d", f.sub(t).PlanID, charged)
 	}
 }
 

@@ -133,7 +133,7 @@ func (s *Service) Coverage(ctx context.Context, tenantID uuid.UUID, spec billing
 			cov.Unlimited = tier.MonthlyUnit < 0
 		}
 	case spec.PlanQuotaKey != "":
-		limit := planLimit(sub, spec.PlanQuotaKey)
+		limit := allowanceLimit(sub, spec.PlanQuotaKey)
 		cov.QuotaLive = limit != 0
 		cov.Unlimited = limit < 0
 	default:
@@ -246,10 +246,25 @@ func (s *Service) overageCap(ctx context.Context) float64 {
 func (s *Service) OverageCap(ctx context.Context) float64 { return s.overageCap(ctx) }
 
 func planLimit(sub *ent.TenantSubscription, key string) int64 {
-	if sub.Edges.Plan == nil {
+	return limitOf(sub.Edges.Plan, key)
+}
+
+// allowanceLimit is the included monthly allowance the subscription's plan grants for key, or 0
+// while the subscription is a paid trial: included credits start with the first payment (owner,
+// 2026-11-14). Bought bundles are spendable during a trial as before.
+func allowanceLimit(sub *ent.TenantSubscription, key string) int64 {
+	if sub.Status == tenantsubscription.StatusTRIAL {
 		return 0
 	}
-	switch v := sub.Edges.Plan.TierLimitsJSON[key].(type) {
+	return planLimit(sub, key)
+}
+
+// limitOf reads a numeric tier limit from a plan (0 when the plan or the key is missing).
+func limitOf(plan *ent.SubscriptionPlan, key string) int64 {
+	if plan == nil {
+		return 0
+	}
+	switch v := plan.TierLimitsJSON[key].(type) {
 	case float64:
 		return int64(v)
 	case int:
@@ -280,23 +295,35 @@ func (s *Service) Check(ctx context.Context, tenantID uuid.UUID, service string,
 	if !cov.Covered {
 		return Decision{Reason: cov.Reason}, nil
 	}
-	if cov.Unlimited && cov.QuotaLive {
-		return Decision{Allowed: true}, nil
-	}
-	var have int64
+	// The answer carries the spendable balances (bundle_balance, quota_balance), so a caller can
+	// read the balance with units=0 (marketflow-ai's Balance). quota_balance is the live
+	// allowance only: a stale allowance the plan no longer grants reads 0, and an unlimited
+	// allowance reads -1.
+	var bundleBal, quotaBal int64
 	if bal, err := s.wallets.GetBalance(ctx, tenantID, spec.BundleTag); err == nil {
-		have += bal.Balance
+		bundleBal = bal.Balance
 	}
 	if cov.QuotaLive && spec.QuotaTag != "" {
-		if bal, err := s.wallets.GetBalance(ctx, tenantID, spec.QuotaTag); err == nil {
-			have += bal.Balance
+		if cov.Unlimited {
+			quotaBal = -1
+		} else if bal, err := s.wallets.GetBalance(ctx, tenantID, spec.QuotaTag); err == nil {
+			quotaBal = bal.Balance
 		}
 	}
+	decide := func(allowed bool, reason string) Decision {
+		d := Decision{Allowed: allowed, Reason: reason}
+		d.BundleBalance, d.QuotaBalance = bundleBal, quotaBal
+		return d
+	}
+	if cov.Unlimited && cov.QuotaLive {
+		return decide(true, ""), nil
+	}
+	have := bundleBal + quotaBal
 	if have >= units {
-		return Decision{Allowed: true}, nil
+		return decide(true, ""), nil
 	}
 	if !cov.OverageOK {
-		return Decision{Reason: billing.ReasonInsufficient}, nil
+		return decide(false, billing.ReasonInsufficient), nil
 	}
 	if limit := s.overageCap(ctx); limit > 0 {
 		pending, err := s.pendingOverageKES(ctx, tenantID, spec.OverageMetric)
@@ -304,10 +331,10 @@ func (s *Service) Check(ctx context.Context, tenantID uuid.UUID, service string,
 			return Decision{}, err
 		}
 		if pending+float64(units-have)*spec.UnitPriceKES > limit {
-			return Decision{Reason: billing.ReasonOverageCap}, nil
+			return decide(false, billing.ReasonOverageCap), nil
 		}
 	}
-	return Decision{Allowed: true}, nil
+	return decide(true, ""), nil
 }
 
 // WithVAT adds VAT on top of purchases at the rate the platform charges (0 when it charges none).

@@ -36,6 +36,12 @@ type Service struct {
 	// reissueRenewalInvoice voids and reissues an open renewal invoice whose plan changed
 	// (SetRenewalInvoiceReissuer).
 	reissueRenewalInvoice func(ctx context.Context, tenantID uuid.UUID)
+	// planApplied runs after a plan change took effect (SetPlanAppliedHook): the credits module
+	// moves the included allowance to the new plan.
+	planApplied func(ctx context.Context, sub *ent.TenantSubscription, from, to *ent.SubscriptionPlan)
+	// invoiceUpgrade bills the prorated rest of the current period after an upgrade applied at
+	// once (SetUpgradeInvoicer).
+	invoiceUpgrade func(ctx context.Context, sub *ent.TenantSubscription, from, to *ent.SubscriptionPlan, charge ProratedCharge)
 }
 
 // SetAddonResolver registers the credit add-on pricer used at checkout.
@@ -293,6 +299,17 @@ func (s *Service) InitiateSubscription(ctx context.Context, in InitiateSubscript
 	if plan.BasePrice == 0 {
 		if len(in.Addons) > 0 {
 			return nil, fmt.Errorf("add-ons cannot be bought with a free plan; buy them after activation")
+		}
+		// A move to a free plan is a downgrade: with paid time left it starts at the next renewal
+		// (owner, 2026-11-14), like any cheaper plan.
+		if existing, _ := s.client.TenantSubscription.Query().
+			Where(tenantsubscription.TenantIDEQ(in.TenantID)).Only(ctx); existing != nil && existing.PlanID != plan.ID {
+			if current, cerr := s.client.SubscriptionPlan.Get(ctx, existing.PlanID); cerr == nil && hasPaidTimeLeft(existing, current, time.Now().UTC()) {
+				if err := s.schedulePlanChange(ctx, existing, current, plan, existing.CurrentPeriodEnd, ChangeSourceTenant, ""); err != nil {
+					return nil, err
+				}
+				return &InitiateSubscriptionResult{IntentID: in.TenantID, Status: "scheduled", Amount: decimal.Zero, Currency: plan.Currency}, nil
+			}
 		}
 		return s.activateFreePlan(ctx, in, plan)
 	}
@@ -703,6 +720,10 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 		return nil, fmt.Errorf("the subscription is already on %s", newPlan.Name)
 	}
 
+	now := time.Now().UTC()
+	// An upgrade the tenant makes with paid time left applies now; the rest of the period is
+	// billed at the difference after the commit (see plan_switch.go).
+	var proration ProratedCharge
 	if !in.ByPlatform {
 		// Self-serve rules: hidden plans (eligibility-gated tiers) stay admin-only, and one-time
 		// licences are bought through checkout.
@@ -712,26 +733,31 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 		if oldPlan.BillingCycle == "ONE_TIME" || newPlan.BillingCycle == "ONE_TIME" {
 			return nil, fmt.Errorf("one-time licences are bought through checkout")
 		}
-		if newPlan.BasePrice > oldPlan.BasePrice {
-			if sub.CurrentPeriodEnd.Before(time.Now().UTC()) {
-				return nil, fmt.Errorf("pay the outstanding subscription invoice before upgrading")
-			}
-			if cycle != "" && cycle != sub.BillingCycle {
-				if _, err := s.UpdateBillingCycle(ctx, in.TenantID, string(cycle)); err != nil {
+		oldPrice, newPrice := EffectivePrice(sub, oldPlan), EffectivePrice(sub, newPlan)
+		if newPrice > oldPrice && sub.Status == tenantsubscription.StatusACTIVE && !sub.CurrentPeriodEnd.After(now) {
+			return nil, fmt.Errorf("pay the outstanding subscription invoice before upgrading")
+		}
+		if newPlan.ID != oldPlan.ID && hasPaidTimeLeft(sub, oldPlan, now) {
+			if newPrice < oldPrice {
+				// A cheaper plan starts at the next renewal (owner, 2026-11-14): the tenant keeps the
+				// plan it paid for until then.
+				if cycle != "" && cycle != sub.BillingCycle {
+					if _, err := s.UpdateBillingCycle(ctx, in.TenantID, string(cycle)); err != nil {
+						return nil, err
+					}
+					if sub, err = s.getSubscription(ctx, in.TenantID); err != nil {
+						return nil, err
+					}
+				}
+				if err := s.schedulePlanChange(ctx, sub, oldPlan, newPlan, sub.CurrentPeriodEnd, ChangeSourceTenant, in.RequestedBy); err != nil {
 					return nil, err
 				}
-				if sub, err = s.getSubscription(ctx, in.TenantID); err != nil {
-					return nil, err
-				}
+				return s.GetSubscriptionResult(ctx, in.TenantID)
 			}
-			if err := s.schedulePlanChange(ctx, sub, oldPlan, newPlan, sub.CurrentPeriodEnd, ChangeSourceTenant, in.RequestedBy); err != nil {
-				return nil, err
-			}
-			return s.GetSubscriptionResult(ctx, in.TenantID)
+			proration = ProratedUpgradeCharge(sub, oldPrice, newPrice, now)
 		}
 	}
 
-	now := time.Now().UTC()
 	metadata := cloneMetadata(sub.Metadata)
 	// The move replaces whatever was waiting: a scheduled change and any running trial.
 	delete(metadata, MetaScheduledPlanChange)
@@ -771,9 +797,10 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 		return nil, fmt.Errorf("update subscription plan: %w", err)
 	}
 	if newPlan.ID != oldPlan.ID {
-		// The new plan's products get rows; existing rows (deactivated ones too) stay as they are.
-		if _, err = EnsureMissingPlanDefaultProducts(ctx, tx.Client(), sub.ID); err != nil {
-			return nil, fmt.Errorf("activate plan products: %w", err)
+		// Product rows follow the plan: the new plan's products are added, the old plan's
+		// products it does not include are switched off (overlays and add-ons are kept).
+		if _, _, err = SyncPlanProducts(ctx, tx.Client(), sub.ID, oldPlan.ID); err != nil {
+			return nil, fmt.Errorf("sync plan products: %w", err)
 		}
 		s.emitPlanChanged(ctx, tx, updated, oldPlan, newPlan)
 	}
@@ -782,6 +809,14 @@ func (s *Service) ChangePlan(ctx context.Context, in ChangePlanInput) (*Subscrip
 		return nil, fmt.Errorf("commit: %w", err)
 	}
 	s.afterBillingPlanChange(sub.TenantID, BillingPlanIDFor(sub), BillingPlanIDFor(updated))
+	if newPlan.ID != oldPlan.ID {
+		if s.planApplied != nil {
+			s.planApplied(ctx, updated, oldPlan, newPlan)
+		}
+		if proration.NetAmount > 0 && s.invoiceUpgrade != nil {
+			s.invoiceUpgrade(ctx, updated, oldPlan, newPlan, proration)
+		}
+	}
 
 	return s.GetSubscriptionResult(ctx, in.TenantID)
 }
@@ -1056,9 +1091,9 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 	prevPlanID := sub.PlanID
 	sub = renewed
 	if sub.PlanID != prevPlanID {
-		// A renewal that moved the plan adds the new plan's products, as ChangePlan does.
-		if _, err = EnsureMissingPlanDefaultProducts(ctx, tx.Client(), sub.ID); err != nil {
-			return nil, fmt.Errorf("activate plan products: %w", err)
+		// A renewal that moved the plan syncs the product rows, as ChangePlan does.
+		if _, _, err = SyncPlanProducts(ctx, tx.Client(), sub.ID, prevPlanID); err != nil {
+			return nil, fmt.Errorf("sync plan products: %w", err)
 		}
 	}
 
@@ -1096,6 +1131,8 @@ func (s *Service) RenewSubscription(ctx context.Context, in RenewInput) (*Subscr
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit: %w", err)
 	}
+	// The included allowance follows a plan the renewal moved to.
+	s.NotifyPlanApplied(ctx, sub, prevPlanID)
 
 	plan, _ := s.client.SubscriptionPlan.Query().
 		Where(subscriptionplan.IDEQ(sub.PlanID)).
@@ -1705,6 +1742,13 @@ func (s *Service) activateFreePlan(ctx context.Context, in InitiateSubscriptionI
 	if _, err = EnsurePlanDefaultProducts(ctx, tx.Client(), saved.ID); err != nil {
 		return nil, err
 	}
+	prevPlanID := uuid.Nil
+	if existing != nil && existing.PlanID != plan.ID {
+		prevPlanID = existing.PlanID
+		if _, _, err = SyncPlanProducts(ctx, tx.Client(), saved.ID, prevPlanID); err != nil {
+			return nil, fmt.Errorf("sync plan products: %w", err)
+		}
+	}
 
 	s.writeOutboxEvent(ctx, tx, in.TenantID, "subscription", in.TenantID, "activated", map[string]any{
 		"tenant_id": in.TenantID.String(),
@@ -1716,6 +1760,9 @@ func (s *Service) activateFreePlan(ctx context.Context, in InitiateSubscriptionI
 
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("commit: %w", err)
+	}
+	if prevPlanID != uuid.Nil {
+		s.NotifyPlanApplied(ctx, saved, prevPlanID)
 	}
 
 	zero := decimal.Zero

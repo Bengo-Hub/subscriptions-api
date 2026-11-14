@@ -4,8 +4,9 @@ Updated 2026-10-27.
 
 A tenant on a paid plan can try a higher tier of the same product free for a set number of days.
 The platform owner turns this on for every tenant or for chosen tenants, and sets the length.
-Upgrades made before the current period ends, including the one that follows a trial, take effect on
-the next renewal date, and that renewal is billed at the new plan's price. There is no grace period
+The upgrade that follows a trial takes effect on the next renewal date, and that renewal is billed at
+the new plan's price. A direct upgrade applies at once with a prorated invoice, and a downgrade waits
+for the renewal date (owner, 2026-11-14; see the rules below). There is no grace period
 at the end of an upgrade trial: the tenant goes back to the plan it pays for until the renewal date.
 
 ## Rules
@@ -16,10 +17,12 @@ at the end of an upgrade trial: the tenant goes back to the plan it pays for unt
 | Trial ends | The trial plan stops applying. The paid plan applies until the scheduled renewal date. No grace, no invoice of its own. |
 | Renewal date passes | `plan_id` moves to the upgraded plan. The renewal invoice for that period already billed it. |
 | Tenant ends the trial early | The paid plan applies again and the scheduled upgrade is cancelled. |
-| Tenant upgrades without a trial while paid time remains | Scheduled for the next renewal date (`PUT /subscription/plan`). Nothing is due now. |
+| Tenant upgrades without a trial while paid time remains | Applies now (`PUT /subscription/plan`, owner 2026-11-14). The rest of the current period is billed at the price difference on a separate invoice (`billing.InvoiceProratedUpgrade`: monthly difference x months in the period x share of the period left, VAT on top when charged); paying it never renews. Included AI credits are topped up by the difference now. |
+| Tenant moves to a cheaper plan while paid time remains | Scheduled for the next renewal date (owner 2026-11-14), also when the cheaper plan is free (`POST /subscription/initiate` answers `scheduled`). Features, product rows and included credits change when it takes effect. |
 | Tenant pays early at checkout for another plan | The plan is scheduled for the start of the paid period (the old period end), not switched on payment. |
 | Tenant has no paid time left (expired, past due, no plan) | Checkout as before: pay, and the plan applies at once. |
-| Tenant moves to a plan costing the same or less | Applies at once (`PUT /subscription/plan`). |
+| Tenant moves to a plan costing the same, or any move during a trial, on a free plan or with no paid time left | Applies at once (`PUT /subscription/plan`). |
+| Any plan move that takes effect | Product rows follow the plan (`SyncPlanProducts`): the old plan's products the new plan lacks are switched off and marked, admin overlay plans and add-ons are kept, a move back switches them on again. |
 | Platform owner changes a plan, or presses "Apply now" | Applies at once. |
 | An admin moves `current_period_end` | A change due on the old renewal date moves to the new one. |
 | An admin assigns another plan | A trial or schedule made for the old plan becomes inert and the schedule job clears it. |
@@ -193,6 +196,8 @@ Errors refusing a trial come back as HTTP 409 `{error, reason}` with `reason` on
   that no longer exists and passes no T&C acceptance, so it never creates anything (signups go
   through `POST /subscription` instead), and `subscriptions.trial_days` is seeded but never read.
   Decide whether to remove the consumer or point it at a real plan.
-- Downgrades still apply at once with no credit for the unused part of the period.
+- Since 2026-11-14 a tenant's downgrade waits for the renewal date, so no credit for unused time is
+  needed. A platform owner's immediate downgrade still gives no credit.
+- A plan paid early at checkout still waits for the renewal date even when it is an upgrade.
 - An M-Pesa standing order keeps the amount it was registered with; after a scheduled upgrade the
   tenant has to register it again for the new amount.

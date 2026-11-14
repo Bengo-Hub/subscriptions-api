@@ -147,6 +147,7 @@ func (s *Service) refillOne(ctx context.Context, sub *ent.TenantSubscription, wi
 		}
 		seen[spec.QuotaTag] = true
 		target := int64(-1)
+		key := "w:" + window
 		switch {
 		case len(spec.Tiers) > 0:
 			ps, err := s.orm.ProductSubscription.Query().
@@ -163,7 +164,12 @@ func (s *Service) refillOne(ctx context.Context, sub *ent.TenantSubscription, wi
 				target = tier.MonthlyUnit
 			}
 		case spec.PlanQuotaKey != "":
-			limit := planLimit(sub, spec.PlanQuotaKey)
+			// A paid trial gets no included allowance (allowanceLimit). Its own key keeps the
+			// month's real grant free for the first payment later the same month.
+			limit := allowanceLimit(sub, spec.PlanQuotaKey)
+			if sub.Status == tenantsubscription.StatusTRIAL {
+				key += ":trial"
+			}
 			if limit > 0 {
 				target = limit
 			} else if limit == 0 {
@@ -181,7 +187,7 @@ func (s *Service) refillOne(ctx context.Context, sub *ent.TenantSubscription, wi
 		if spec.Group == billing.GroupWhatsApp {
 			label = "WhatsApp" // the allowance is shared by every category
 		}
-		ok, err := s.wallets.SetQuota(ctx, sub.TenantID, spec.QuotaTag, target, "w:"+window, label+" monthly allowance")
+		ok, err := s.wallets.SetQuota(ctx, sub.TenantID, spec.QuotaTag, target, key, label+" monthly allowance")
 		if err != nil {
 			return n, err
 		}

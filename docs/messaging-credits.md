@@ -13,7 +13,7 @@ service whether a unit may be spent and report each spend. Nothing else keeps a 
 | WhatsApp order, payment and account updates (`whatsapp_utility`) | 100, 500, 1000, 5000 credits at KES 1 each | none | not allowed, prepaid only |
 | WhatsApp login and verification codes (`whatsapp_authentication`) | 100, 500, 1000, 5000 credits at KES 1 each | none | not allowed, prepaid only |
 | WhatsApp replies to customers (`whatsapp_service`) | 100, 500, 1000, 5000 credits at KES 1 each | none | not allowed, prepaid only |
-| AI credits | 60, 150, 400, 1000 credits | MarketFlow plans only (`ai_credits_monthly`). No other subscription plan grants AI credits | not allowed, prepaid only |
+| AI credits | 60, 150, 400, 1000 credits | Paid MarketFlow plans only (`ai_credits_monthly`, from the first payment, none during a trial; follows the plan on a switch). No other subscription plan grants AI credits | not allowed, prepaid only |
 
 Bundle units never expire. No plan includes SMS or WhatsApp messages: both are credits only.
 

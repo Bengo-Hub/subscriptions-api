@@ -8,13 +8,14 @@ import (
 )
 
 // Five standalone MarketFlow tiers (owner, 2026-11-11): every feature and limit is in the catalog,
-// the AI Studio outputs widen by tier, no plan includes AI credits, and the free chat turns rise.
+// the AI Studio outputs widen by tier, paid tiers include rising AI credits, and the free chat
+// turns rise.
 func TestMarketflowPlans(t *testing.T) {
 	wantPrices := map[string]float64{"MARKETFLOW_STARTER": 0, "MARKETFLOW_LITE": 1500, "MARKETFLOW_GROWTH": 3500, "MARKETFLOW_PRO": 8500, "MARKETFLOW_BUSINESS": 15000}
 	if len(marketflowTiers) != len(wantPrices) {
 		t.Fatalf("want %d tiers, got %d", len(wantPrices), len(marketflowTiers))
 	}
-	prevChat := -1
+	prevChat, prevCredits := -1, 0
 	for _, tier := range marketflowTiers {
 		if p, ok := wantPrices[tier.code]; !ok || tier.monthly != p {
 			t.Fatalf("%s: price %.0f, want %.0f", tier.code, tier.monthly, p)
@@ -31,8 +32,27 @@ func TestMarketflowPlans(t *testing.T) {
 				t.Fatalf("%s: limit %q is not in the catalog", tier.code, k)
 			}
 		}
-		if _, ok := limits["ai_credits_monthly"]; ok {
-			t.Fatalf("%s: no plan includes AI credits (owner, 2026-11-11)", tier.code)
+		// Paid tiers include AI credits that rise with the tier; the free tier includes none
+		// (owner, 2026-11-14, replacing 2026-11-11).
+		credits, has := limits["ai_credits_monthly"]
+		if tier.monthly == 0 {
+			if has {
+				t.Fatalf("%s: the free tier includes no AI credits, got %v", tier.code, credits)
+			}
+		} else {
+			n, _ := credits.(int)
+			if !has || n <= prevCredits {
+				t.Fatalf("%s: ai_credits_monthly = %v, want a positive amount above the tier below (%d)", tier.code, credits, prevCredits)
+			}
+			// A plan is never a cheaper way to buy credits than the dearest bundle (KES 12.5).
+			if tier.monthly/float64(n) < 12.5 {
+				t.Fatalf("%s: KES %.2f a credit is below the bundle price", tier.code, tier.monthly/float64(n))
+			}
+			// Worst case about KES 5 provider cost a credit: at most 35% of the price net of 3% fees.
+			if float64(n)*5 > 0.35*0.97*tier.monthly {
+				t.Fatalf("%s: %d credits cost more than 35%% of the net price", tier.code, n)
+			}
+			prevCredits = n
 		}
 		chat := limits["chat_turns_daily"].(int)
 		if chat <= prevChat {
