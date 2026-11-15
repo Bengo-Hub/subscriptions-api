@@ -3012,6 +3012,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/s2s/credits/{service}/purchase": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "For a service acting on a person's explicit tap (MarketFlow's WhatsApp \"Buy credits\" button). Bundles only; the price comes from the registry; the intent is platform-billed (credit_purchase) and Treasury sends the M-Pesa prompt to the phone at once. Units are granted when Treasury reports the payment, exactly like a portal purchase. Never call it without the person's confirmation.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Buy a credit bundle with an M-Pesa prompt to a phone (S2S)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ai_credits (or another credit service)",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Purchase request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.creditS2SPurchaseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/s2s/credits/{service}/refund": {
             "post": {
                 "security": [
@@ -5034,6 +5081,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "refund_key": {
+                    "type": "string"
+                },
+                "tenant_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.creditS2SPurchaseRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "source_ref": {
                     "type": "string"
                 },
                 "tenant_id": {
