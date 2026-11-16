@@ -480,6 +480,8 @@ var featureCatalog = mergeSharedCodes(func() []catalogEntry {
 		feat("client_portal", projects, "Projects", "Client Portal"),
 		feat("expense_tracking", projects, "Projects", "Expense Tracking"),
 		feat("budget_tracking", projects, "Projects", "Budget Tracking"),
+		feat("workload_planning", projects, "Projects", "Workload Planning"),
+		feat("project_automation", projects, "Projects", "Status Rules and Automations"),
 		feat("basic_invoicing", projects, "Invoicing", "Basic Invoicing"),
 		feat("advanced_invoicing", projects, "Invoicing", "Advanced Invoicing"),
 		feat("recurring_invoices", projects, "Invoicing", "Recurring Invoices"),

@@ -141,7 +141,8 @@ func psProjectsBlock(tier int) []string {
 		"team_collaboration",
 	}
 	if tier >= 3 {
-		base = append(base, "milestone_billing", "gantt_chart", "budget_tracking", "white_label_portal")
+		base = append(base, "milestone_billing", "gantt_chart", "budget_tracking", "white_label_portal",
+			"workload_planning", "project_automation")
 	}
 	return base
 }

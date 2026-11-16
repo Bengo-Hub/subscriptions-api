@@ -193,4 +193,13 @@ func TestPowerSuiteErpAndProjectsStartAtTier3(t *testing.T) {
 	if !contains(erpFeatures(2), "project_management") {
 		t.Error("standalone ERP tier 2 keeps projects")
 	}
+	// Workload planning and automations are tier 3 Projects codes (decided 2026-11-16).
+	for _, code := range []string{"workload_planning", "project_automation"} {
+		if contains(psProjectsBlock(2), code) {
+			t.Errorf("projects tier 2 must not include %s", code)
+		}
+		if !contains(psProjectsBlock(3), code) {
+			t.Errorf("projects tier 3 must include %s", code)
+		}
+	}
 }

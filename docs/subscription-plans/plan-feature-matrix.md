@@ -81,7 +81,7 @@ intentionally NOT part of this schedule — a PowerSuite one-time tenant only ev
 | Logistics | rider_management, delivery_assignment, basic_dispatch, basic_logistics_access (delivery areas and quotes come with the ordering block's delivery_zones) | auto_dispatch (auto-assign and nearest rider), rider_shifts (shift schedule; going online is not gated), rider_payouts (earnings statements and payouts), driver_analytics, performance_reports | **live_tracking** (fleet map and WebSocket streams), **route_optimisation**, api_access, webhooks, custom_integrations |
 | CRM | contact_management, lead_management, basic_campaigns, shortlinks, **profile_pages** | unlimited_campaigns, landing_pages, email_sequences, ai_chat_agent, lead_scoring, funnel_builder, automation_workflows, ticketing, helpdesk, sla_policies, knowledge_base, testimonials, **webhooks, deal_pipeline, whatsapp_integration**, paid_ads_launch | white_label, dedicated_account_manager |
 | ERP | — (no access; ERP links show locked) | hr_management, leave_management, attendance, basic_reports (**no payroll/appraisals/recruitment/training**) | full ERP: payroll, appraisals, recruitment, training, basic_procurement, asset_management, budgeting, advanced_reports, multi_department, approval_workflows, custom_workflows, staff_fund_from_salary |
-| Projects | — (no access, same gate as ERP) | project_management, task_tracking, time_tracking, basic_invoicing, expense_tracking, advanced_invoicing, client_portal, recurring_invoices, team_collaboration | milestone_billing, gantt_chart, budget_tracking, white_label_portal |
+| Projects | — (no access, same gate as ERP) | project_management, task_tracking, time_tracking, basic_invoicing, expense_tracking, advanced_invoicing, client_portal, recurring_invoices, team_collaboration | milestone_billing, gantt_chart, budget_tracking, white_label_portal, workload_planning, project_automation |
 | Treasury | wallet_management, payment_collection, payment_links, transaction_reports, customer_management, **quotations**, ar_tracking, ap_tracking, tax_codes, etims_integration (never tier-gated — KRA legal), **invoice_generation, mpesa_integration** (T1 since 2026-11-12) | credit_notes, vendor_management, ledger_posting, treasury_approvals, smart_tax_compliance | vouchers, reconciliation, basic_reconciliation, audit_trail, financial_planning, bi_reports |
 | POS core | pos_terminal, order_management, receipt_printing, daily_reports, shift_reports, mpesa_pos, offline_sync | multi_cashier | — |
 | Inventory core | stock_tracking, purchase_orders, supplier_portal, basic_reports, stock_transfers, **stock_take** (T1 in every family since 2026-11-12; **no bulk_import / stock alerts at T1**) | bulk_import, requisitions, multi_warehouse, inventory_multiple_images, low_stock_alerts*, stock_alerts* | rfqs, procurement_contracts, report_menu_engineering |
@@ -94,6 +94,13 @@ rolling forecast, scenarios) gates on `financial_planning` and the BI decision r
 `bi_reports`, both treasury-tagged, granted at T3 and in every plan that grants
 `advanced_reports`; projects-ui's Financials tab and portfolio gate on the projects code
 `budget_tracking` (T3).
+
+Projects gating (decided 2026-11-16, projects-api `plan.md` section 10): the board, task drawer and
+My Work use `task_tracking`; comments, mentions and attachments use `team_collaboration`; the timer
+and timesheets use `time_tracking`; the client portal uses `client_portal`. All four are on every
+Projects tier. The Gantt chart and baselines use `gantt_chart`, and milestone and time invoicing use
+`milestone_billing` (both T3). Two codes were added at T3: `workload_planning` (workload planner) and
+`project_automation` (status rules and automations).
 
 Treasury note: hospitality gets `vendor_management` from T2 ("All"); retail lists
 Suppliers & Vendors at T1 so its `psTreasuryBlock(vendorAtT1=true)`.
