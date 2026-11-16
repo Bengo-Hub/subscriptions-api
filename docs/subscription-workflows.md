@@ -989,7 +989,7 @@ What each lifecycle event now carries and which email it sends:
 | `cancelled` | `plan_code`, `plan_name`, `access_until` (current period end) | `subscription/subscription_cancelled` |
 | `created` | already sent `plan_name`; the email now uses it before the code | `subscription/subscription_created` |
 | `payment_required` | unchanged | `subscription/account_notice` (new) |
-| `dormancy.warning`, `dormancy.suspended` | unchanged; the email uses the event's `notification.message` | `subscription/account_notice` (new); a suspension links to support@codevertexafrica.com |
+| `dormancy.warning`, `dormancy.suspended` | unchanged; the email uses the event's `notification.message` | `subscription/account_notice` (new); a suspension links to billing@codevertexafrica.com |
 
 `renewal_initiated` stays internal: the `renewed` email that follows a payment is the confirmation.
 The grace and cancellation templates also hide the plan line when an event has no plan, so a
