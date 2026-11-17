@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bengobox/subscription-service/internal/ent/subscriptionplan"
 	"github.com/bengobox/subscription-service/internal/ent/tenantsubscription"
 	"github.com/google/uuid"
 )
@@ -21,11 +22,10 @@ type TokenTopUpInput struct {
 	ReturnURL  string
 }
 
-// defaultTokenPriceKes is used when a tenant has no active plan carrying token_price_kes for
-// ServiceTag (e.g. topping up before ever subscribing) — set to the richest published rate
-// (ETIMS_API_SCALE's KES 0.40/token) so an unconfigured top-up never OVER-charges relative to
-// any real plan; a tenant who later subscribes gets the plan's own rate on subsequent top-ups.
-const defaultTokenPriceKes = 0.40
+// fallbackTokenPriceKes is the last-resort rate, used only when no active public plan for the
+// service tag carries token_price_kes at all (a misconfigured catalog). Normal pricing always
+// comes from the plan rows, which platform admins edit without a deploy.
+const fallbackTokenPriceKes = 0.60
 
 // CreateTokenTopUpIntent creates a Treasury payment intent for a self-serve token purchase.
 // Mirrors CreateEmailLicensePurchaseIntent's pattern: tokens are only credited once
@@ -97,24 +97,72 @@ func (s *Service) GetTokenTopUpIntentMetadata(ctx context.Context, tenantID, int
 	return serviceTag, tokens, unitCostKes, nil
 }
 
-// resolveTokenPriceKes looks up the tenant's active plan's token_price_kes for serviceTag
-// (mirrors the rate-limit resolver's tenant-subscription-plan lookup in
-// internal/http/handlers/rate_limit.go), falling back to defaultTokenPriceKes when the tenant
-// has no subscription yet, or their plan doesn't carry this key (a non-token-metered plan).
+// resolveTokenPriceKes returns the KES-per-token rate for a tenant's top-up on serviceTag.
+//
+// Order of resolution:
+//  1. The tenant's main plan, when its service_tag matches (a standalone API subscriber).
+//  2. An active product add-on whose override plan matches (for example ETIMS_API_BUNDLED
+//     attached to a POS or PowerSuite tenant through AssignProductPlan).
+//  3. No matching plan (only an exempt tenant gets this far, since the top-up handler gates on
+//     HasActiveServiceTagSubscription): the highest token_price_kes among the active public
+//     plans for the tag, so topping up without a plan is never cheaper than subscribing.
 func (s *Service) resolveTokenPriceKes(ctx context.Context, tenantID uuid.UUID, serviceTag string) float64 {
 	sub, err := s.client.TenantSubscription.Query().
 		Where(tenantsubscription.TenantIDEQ(tenantID)).
 		WithPlan().
 		Only(ctx)
-	if err != nil || sub.Edges.Plan == nil || sub.Edges.Plan.ServiceTag == nil || *sub.Edges.Plan.ServiceTag != serviceTag {
-		return defaultTokenPriceKes
+	if err == nil {
+		if p := sub.Edges.Plan; p != nil && p.ServiceTag != nil && *p.ServiceTag == serviceTag {
+			if f, ok := tokenPriceFromLimits(p.TierLimitsJSON); ok {
+				return f
+			}
+		}
+		if overlays, perr := s.resolveProductPlans(ctx, sub.ID); perr == nil {
+			for _, p := range overlays {
+				if p.ServiceTag != nil && *p.ServiceTag == serviceTag {
+					if f, ok := tokenPriceFromLimits(p.TierLimitsJSON); ok {
+						return f
+					}
+				}
+			}
+		}
 	}
-	raw, ok := sub.Edges.Plan.TierLimitsJSON["token_price_kes"]
-	if !ok {
-		return defaultTokenPriceKes
+	return s.noPlanTokenPriceKes(ctx, serviceTag)
+}
+
+// noPlanTokenPriceKes is the highest published token_price_kes for serviceTag across active
+// public plans, read from the catalog so a price change needs only a plan edit.
+func (s *Service) noPlanTokenPriceKes(ctx context.Context, serviceTag string) float64 {
+	plans, err := s.client.SubscriptionPlan.Query().
+		Where(
+			subscriptionplan.ServiceTagEQ(serviceTag),
+			subscriptionplan.IsActiveEQ(true),
+			subscriptionplan.IsPublicEQ(true),
+		).
+		All(ctx)
+	if err != nil {
+		return fallbackTokenPriceKes
 	}
-	if f, ok := raw.(float64); ok && f > 0 {
-		return f
+	highest := 0.0
+	for _, p := range plans {
+		if f, ok := tokenPriceFromLimits(p.TierLimitsJSON); ok && f > highest {
+			highest = f
+		}
 	}
-	return defaultTokenPriceKes
+	if highest <= 0 {
+		return fallbackTokenPriceKes
+	}
+	return highest
+}
+
+func tokenPriceFromLimits(limits map[string]any) (float64, bool) {
+	switch v := limits["token_price_kes"].(type) {
+	case float64:
+		return v, v > 0
+	case int:
+		return float64(v), v > 0
+	case int64:
+		return float64(v), v > 0
+	}
+	return 0, false
 }

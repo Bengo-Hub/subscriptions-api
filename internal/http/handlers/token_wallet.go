@@ -311,6 +311,9 @@ type planComparison struct {
 	TokenPriceKes     float64 `json:"token_price_kes"`
 	CoversEstimate    bool    `json:"covers_estimate"`
 	ProjectedTopUpKes float64 `json:"projected_topup_kes"`
+	// ProjectedTotalKes is the monthly fee plus the projected top-up spend. The recommended plan
+	// is the one with the lowest total, which is not always the smallest plan that covers usage.
+	ProjectedTotalKes float64 `json:"projected_total_kes"`
 }
 
 type estimateResponse struct {
@@ -384,19 +387,31 @@ func (h *TokenWalletHandler) Estimate(w http.ResponseWriter, r *http.Request) {
 					TokenPriceKes:     priceKes,
 					CoversEstimate:    covers,
 					ProjectedTopUpKes: projected,
+					ProjectedTotalKes: p.BasePrice + projected,
 				})
-				if covers && resp.RecommendedPlan == "" {
-					resp.RecommendedPlan = p.PlanCode
-				}
 			}
-			// No plan alone covers it — recommend the largest tier (least overage cost per token).
-			if resp.RecommendedPlan == "" && len(resp.PlansCompared) > 0 {
-				resp.RecommendedPlan = resp.PlansCompared[len(resp.PlansCompared)-1].PlanCode
-			}
+			resp.RecommendedPlan = cheapestPlan(resp.PlansCompared)
 		}
 	}
 
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// cheapestPlan returns the plan code with the lowest projected monthly total. Plans arrive in
+// tier order, so a tie goes to the smaller tier. A plan without a top-up price that cannot cover
+// the estimate is skipped, since its true cost is unknown.
+func cheapestPlan(plans []planComparison) string {
+	best := ""
+	bestTotal := 0.0
+	for _, p := range plans {
+		if !p.CoversEstimate && p.TokenPriceKes <= 0 {
+			continue
+		}
+		if best == "" || p.ProjectedTotalKes < bestTotal {
+			best, bestTotal = p.PlanCode, p.ProjectedTotalKes
+		}
+	}
+	return best
 }
 
 func toInt64(v any) (int64, bool) {

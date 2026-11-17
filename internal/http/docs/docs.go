@@ -5230,6 +5230,10 @@ const docTemplate = `{
                 "projected_topup_kes": {
                     "type": "number"
                 },
+                "projected_total_kes": {
+                    "description": "ProjectedTotalKes is the monthly fee plus the projected top-up spend. The recommended plan\nis the one with the lowest total, which is not always the smallest plan that covers usage.",
+                    "type": "number"
+                },
                 "token_price_kes": {
                     "type": "number"
                 }
