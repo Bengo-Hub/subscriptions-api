@@ -49,9 +49,9 @@ type ServicesConfig struct {
 	// ISPBillingAPI is the isp-billing backend used to fetch the exact point-in-time active
 	// PPPoE subscriber count for ISP usage billing (S2S, authenticated with INTERNAL_SERVICE_KEY).
 	ISPBillingAPI string `envconfig:"ISP_BILLING_API_URL" default:"https://ispbillingapi.codevertexafrica.com"`
-	// EmailProvisionerAPI is email-provisioner's cluster-internal-only endpoint (no Ingress,
-	// no auth — same unauthenticated cluster-network-scoped convention as its existing
-	// /internal/mail-stats//healthz endpoints, mirrored from auth-api's own client for it).
+	// EmailProvisionerAPI is email-provisioner's cluster-internal-only endpoint (no Ingress).
+	// Since 2026-11-17 its /internal/* routes require X-API-Key equal to INTERNAL_SERVICE_KEY,
+	// which the email handlers send (provisionerHeaders).
 	// Used for domain onboarding (Part 1.3): subscriptions-api never talks to Stalwart's own
 	// JMAP API directly, email-provisioner is the sole JMAP speaker.
 	EmailProvisionerAPI string `envconfig:"EMAIL_PROVISIONER_API_URL" default:"http://email-provisioner.email.svc.cluster.local:8080"`

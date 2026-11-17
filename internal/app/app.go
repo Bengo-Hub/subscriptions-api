@@ -156,9 +156,10 @@ func New(ctx context.Context) (*App, error) {
 	ispBillingCfg := serviceclient.DefaultConfig(cfg.Services.ISPBillingAPI, "isp-billing-backend", log)
 	ispBillingClient := serviceclient.New(ispBillingCfg)
 
-	// Initialize email-provisioner service client (cluster-internal only, no
-	// Ingress/auth — subscriptions-api never talks to Stalwart's own JMAP API
-	// directly; email-provisioner is the sole JMAP speaker, per plan Part 1.3).
+	// Initialize email-provisioner service client (cluster-internal only, no Ingress). Calls carry
+	// X-API-Key (INTERNAL_SERVICE_KEY) per request, see EmailLicenseHandler.provisionerHeaders.
+	// subscriptions-api never talks to Stalwart's own JMAP API directly; email-provisioner is the
+	// sole JMAP speaker, per plan Part 1.3.
 	emailProvisionerCfg := serviceclient.DefaultConfig(cfg.Services.EmailProvisionerAPI, "email-provisioner", log)
 	emailProvisionerClient := serviceclient.New(emailProvisionerCfg)
 

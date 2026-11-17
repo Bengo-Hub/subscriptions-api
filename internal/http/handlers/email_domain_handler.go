@@ -35,6 +35,17 @@ type emailProvisionerCreateDomainResponse struct {
 	DNSZoneFile      string `json:"dns_zone_file"`
 }
 
+// provisionerHeaders carries the shared S2S key. email-provisioner refuses every /internal/*
+// call without X-API-Key equal to INTERNAL_SERVICE_KEY (2026-11-17), so both services must hold
+// the same value.
+func (h *EmailLicenseHandler) provisionerHeaders() map[string]string {
+	headers := map[string]string{}
+	if h.internalAPIKey != "" {
+		headers["X-API-Key"] = h.internalAPIKey
+	}
+	return headers
+}
+
 // emailProvisionerUsageSummary mirrors email-provisioner's DomainUsageSummary.
 type emailProvisionerUsageSummary struct {
 	MailboxCount int `json:"mailbox_count"`
@@ -99,7 +110,7 @@ func (h *EmailLicenseHandler) GetEmailUsageSummary(w http.ResponseWriter, r *htt
 	usedByEmail := map[string]int64{}
 	if h.emailProvisionerClient != nil {
 		for domain := range domains {
-			resp, err := h.emailProvisionerClient.Get(ctx, fmt.Sprintf("/internal/domains/%s/usage-summary", domain), nil)
+			resp, err := h.emailProvisionerClient.Get(ctx, fmt.Sprintf("/internal/domains/%s/usage-summary", domain), h.provisionerHeaders())
 			if err != nil || !resp.IsSuccess() {
 				h.log.Warn("fetch domain usage summary failed", zap.String("domain", domain), zap.Error(err))
 				continue
@@ -179,7 +190,7 @@ func (h *EmailLicenseHandler) CreateEmailDomain(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	resp, err := h.emailProvisionerClient.Post(ctx, "/internal/domains", map[string]any{"domain": in.Domain}, nil)
+	resp, err := h.emailProvisionerClient.Post(ctx, "/internal/domains", map[string]any{"domain": in.Domain}, h.provisionerHeaders())
 	if err != nil || !resp.IsSuccess() {
 		h.log.Error("provision domain via email-provisioner failed", zap.String("domain", in.Domain), zap.Error(err))
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "failed to provision domain"})
