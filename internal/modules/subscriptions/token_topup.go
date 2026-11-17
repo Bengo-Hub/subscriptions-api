@@ -12,7 +12,7 @@ import (
 // TokenTopUpInput carries the tenant/service/amount for a self-serve API-token top-up. Amount is
 // KES, converted to tokens at CreateTokenTopUpIntent time using the tenant's current plan's
 // token_price_kes (falling back to a platform-default rate for a tenant with no matching plan
-// yet, e.g. a brand-new integrator who hasn't subscribed at all) — the resolved token count is
+// yet, e.g. a brand-new integrator who hasn't subscribed at all). The resolved token count is
 // then stored on the intent's own metadata (same read-back pattern as
 // GetEmailLicensePurchaseIntentMetadata) so fulfillment never has to re-derive pricing.
 type TokenTopUpInput struct {
@@ -55,7 +55,7 @@ func (s *Service) CreateTokenTopUpIntent(ctx context.Context, in TokenTopUpInput
 		"source_service": "subscriptions",
 		"description":    fmt.Sprintf("API token top-up: %d tokens (%s)", tokens, in.ServiceTag),
 		"callback_url":   in.ReturnURL,
-		// Read back at fulfillment time via GetIntent — the token count and unit price are
+		// Read back at fulfillment time via GetIntent. The token count and unit price are
 		// resolved HERE (checkout time), not re-derived from the payment webhook/NATS event,
 		// which carries neither reliably.
 		"metadata": map[string]any{
