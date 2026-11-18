@@ -139,7 +139,7 @@ jobs:
           echo "SETUP_DATABASES=true" >> $GITHUB_ENV
           echo "DB_TYPES=postgres,redis" >> $GITHUB_ENV
           echo "NAMESPACE=subscriptions" >> $GITHUB_ENV
-          echo "ENV_SECRET_NAME=subscriptions-api-secrets" >> $GITHUB_ENV
+          echo "ENV_SECRET_NAME=subscription-api-secrets" >> $GITHUB_ENV
           echo "REGISTRY_SERVER=docker.io" >> $GITHUB_ENV
           echo "REGISTRY_NAMESPACE=codevertex" >> $GITHUB_ENV
           echo "VALUES_FILE_PATH=apps/subscriptions-api/values.yaml" >> $GITHUB_ENV
@@ -196,7 +196,7 @@ jobs:
           SETUP_DATABASES: true
           DB_TYPES: postgres,redis
           NAMESPACE: subscriptions
-          ENV_SECRET_NAME: subscriptions-api-secrets
+          ENV_SECRET_NAME: subscription-api-secrets
           REGISTRY_SERVER: docker.io
           REGISTRY_NAMESPACE: codevertex
           VALUES_FILE_PATH: apps/subscriptions-api/values.yaml

@@ -16,7 +16,9 @@ error()   { echo -e "${RED}[ERROR]${NC} $1"; }
 
 APP_NAME=${APP_NAME:-"subscriptions-api"}
 NAMESPACE=${NAMESPACE:-"subscriptions"}
-ENV_SECRET_NAME=${ENV_SECRET_NAME:-"subscriptions-api-secrets"}
+# The app reads subscription-api-secrets (singular, sealed in devops-k8s). subscriptions-api-secrets
+# was a duplicate written here every deploy and nothing mounted it.
+ENV_SECRET_NAME=${ENV_SECRET_NAME:-"subscription-api-secrets"}
 DEPLOY=${DEPLOY:-true}
 SETUP_DATABASES=${SETUP_DATABASES:-true}
 DB_TYPES=${DB_TYPES:-postgres,redis}
@@ -98,7 +100,10 @@ fi
 
 kubectl get ns "$NAMESPACE" >/dev/null 2>&1 || kubectl create ns "$NAMESPACE"
 
-if [[ -n ${REGISTRY_USERNAME:-} && -n ${REGISTRY_PASSWORD:-} ]]; then
+# registry-credentials is sealed in devops-k8s (registry-credentials.yml writes it); create it here
+# only in a namespace that has no SealedSecret for it yet.
+if [[ -n ${REGISTRY_USERNAME:-} && -n ${REGISTRY_PASSWORD:-} ]] \
+  && [[ -z "$(kubectl -n "$NAMESPACE" get secret registry-credentials -o jsonpath='{.metadata.ownerReferences[?(@.kind=="SealedSecret")].name}' 2>/dev/null)" ]]; then
   kubectl -n "$NAMESPACE" create secret docker-registry registry-credentials \
     --docker-server="$REGISTRY_SERVER" \
     --docker-username="$REGISTRY_USERNAME" \
