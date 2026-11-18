@@ -16,7 +16,7 @@ require (
 	github.com/Bengo-Hub/shared-service-client v0.3.1
 	github.com/alicebob/miniredis/v2 v2.39.0
 	github.com/gin-gonic/gin v1.11.0
-	github.com/go-chi/chi/v5 v5.3.2
+	github.com/go-chi/chi/v5 v5.4.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/joho/godotenv v1.5.1

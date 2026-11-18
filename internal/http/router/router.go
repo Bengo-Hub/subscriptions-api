@@ -48,7 +48,10 @@ func New(
 	// Standard middleware — use httpware for structured zap logging and recovery,
 	// consistent with all other platform services.
 	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
+	// Client IP from X-Real-IP, which ingress-nginx overwrites on every request with the address it
+	// resolved from CF-Connecting-IP (trusted only from Cloudflare ranges). RealIP is not used: it
+	// trusted client-supplied True-Client-IP and X-Forwarded-For (GHSA-3fxj-6jh8-hvhx).
+	r.Use(middleware.ClientIPFromHeader("X-Real-IP"))
 	r.Use(httpware.RequestID)
 	r.Use(httpware.Logging(log))
 	r.Use(httpware.Recover(log))

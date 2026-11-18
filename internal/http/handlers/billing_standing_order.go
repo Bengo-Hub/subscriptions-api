@@ -10,6 +10,7 @@ import (
 	"time"
 
 	authclient "github.com/Bengo-Hub/shared-auth-client"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
@@ -313,8 +314,12 @@ func (h *BillingHandler) CancelStandingOrder(w http.ResponseWriter, r *http.Requ
 	_, _ = w.Write(resp.Body)
 }
 
-// requestIP is the caller's address (the router's RealIP middleware has already resolved it).
+// requestIP is the caller's address as resolved by the router's ClientIPFromHeader middleware,
+// else the connection's remote address.
 func requestIP(r *http.Request) string {
+	if ip := middleware.GetClientIP(r.Context()); ip != "" {
+		return ip
+	}
 	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
 		return host
 	}
